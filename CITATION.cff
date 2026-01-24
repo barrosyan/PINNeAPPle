@@ -1,11 +1,11 @@
 cff-version: 1.2.0
-message: "If you use Pinneaple in your research, please cite it."
-title: "Pinneaple"
+message: "If you use PINNeAPPle in your research, please cite it."
+title: "PINNeAPPle"
 type: software
 authors:
   - family-names: "Barros"
     given-names: "Yan"
 version: "0.1.0"
 date-released: "2026-01-23"
-repository-code: "https://github.com/<YOUR_ORG>/pinneaple"
+repository-code: "https://github.com/barrosyan/PINNeAPPle"
 license: "Apache-2.0"
