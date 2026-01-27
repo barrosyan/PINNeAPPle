@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from pinneaple_geom.core.mesh import MeshData
@@ -29,11 +27,11 @@ def repair_mesh(
     )
 
     if remove_duplicates:
-        tm.remove_duplicate_faces()
+        tm.update_faces(tm.unique_faces())
         tm.remove_unreferenced_vertices()
 
     if remove_degenerate:
-        tm.remove_degenerate_faces()
+        tm.update_faces(tm.nondegenerate_faces())
 
     if fix_normals:
         try:
