@@ -1,10 +1,10 @@
-🍍 PINNeAPPle — Physics-Informed AI Case Study: STL Field Mapping
+# 🍍 PINNeAPPle — Physics-Informed AI Case Study: STL Field Mapping
 This repository contains a full-stack implementation demonstrating how to integrate Physics-Informed Neural Networks (PINNs) with standard CAD geometry (STL) to predict and visualize physical scalar fields (e.g., temperature) directly in the browser.
 
-🚀 Overview
+# 🚀 Overview
 The project uses the PINNeAPPle Toolkit to bridge the gap between classic Finite Difference Method (FDM) baselines and modern Deep Learning solvers. It features a Flask-based backend for heavy computation and a Three.js frontend for interactive 3D visualization.
 
-Key Features
+# Key Features
 Geometry Ingestion: Automated STL processing and normalization using trimesh.
 
 Smart Cache: MD5 binary hashing to reuse trained models for identical geometries.
@@ -13,7 +13,7 @@ Hybrid Solver: Combines classic Laplace/Dirichlet solvers with PINN optimization
 
 Interactive 3D Mapping: Real-time scalar field projection with vertex-colored PLY exports.
 
-🛠️ Installation & Setup
+# 🛠️ Installation & Setup
 1. Prerequisites
 Ensure you have Python 3.9+ and a modern web browser installed.
 
@@ -39,7 +39,7 @@ outputs/: Stores generated PLY results for inference.
 
 checkpoints/: Stores .pt model weights and .json metadata.
 
-🏃 How to Run
+# 🏃 How to Run
 Step 1: Start the Backend
 Navigate to the backend folder and run the Flask application:
 
