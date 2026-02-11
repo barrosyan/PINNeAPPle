@@ -1,0 +1,1421 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PINNeAPPle | Use Case</title>
+
+  <style>
+    :root{
+      --bg0:#0b0b12;
+      --bg1:#141427;
+      --card:#111126cc;
+      --stroke:#2a2a4d;
+      --text:#e9e9ff;
+      --muted:#a9a9d9;
+      --accent:#7c5cff;
+      --accent2:#a78bfa;
+      --good:#33d69f;
+      --warn:#f7c948;
+      --bad:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background: radial-gradient(900px 600px at 20% 10%, #1b1b3a 0%, var(--bg0) 45%),
+                  radial-gradient(900px 600px at 70% 60%, #201245 0%, var(--bg0) 55%),
+                  linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+    header{
+      padding:32px 22px 10px;
+      max-width:1100px;
+      margin:0 auto;
+    }
+    .kicker{
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-weight:700;
+      color:var(--muted);
+      font-size:12px;
+      opacity:.9;
+    }
+    h1{
+      margin:12px 0 8px;
+      font-size:42px;
+      line-height:1.05;
+      font-weight:800;
+    }
+    .sub{
+      margin:0;
+      color:var(--muted);
+      font-size:18px;
+      max-width:720px;
+    }
+
+    main{
+      max-width:1100px;
+      margin:0 auto;
+      padding:18px 22px 40px;
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:18px;
+    }
+    @media (max-width: 980px){
+      main{grid-template-columns:1fr;}
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+
+    .card .hd{
+      padding:16px 16px 12px;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .title{
+      font-weight:800;
+      font-size:14px;
+      letter-spacing:.02em;
+      color:#f0f0ff;
+    }
+    .badge{
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:rgba(124,92,255,.15);
+      border:1px solid rgba(124,92,255,.35);
+      color:#dcd6ff;
+      white-space:nowrap;
+    }
+
+    .bd{ padding:14px 16px 16px; }
+
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:10px 0; }
+    .hint{ color:var(--muted); font-size:13px; line-height:1.4; margin:10px 0 0; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(124,92,255,.18);
+      color:var(--text);
+      padding:11px 14px;
+      border-radius:12px;
+      font-weight:800;
+      cursor:pointer;
+      transition:transform .06s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+      user-select:none;
+    }
+    .btn:hover{ background:rgba(124,92,255,.28); border-color:rgba(124,92,255,.55); }
+    .btn:active{ transform:translateY(1px); }
+    .btn[disabled]{ opacity:.45; cursor:not-allowed; }
+    .btn.secondary{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.10);
+    }
+
+    input[type="file"]{
+      width:100%;
+      padding:10px;
+      border-radius:12px;
+      border:1px dashed rgba(255,255,255,.18);
+      background:rgba(0,0,0,.15);
+      color:var(--muted);
+    }
+    .status{
+      margin-top:10px;
+      padding:12px 12px;
+      border-radius:12px;
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);
+      font-size:13px;
+      min-height:44px;
+      white-space:pre-wrap;
+    }
+
+    /* Viewer */
+    .viewerWrap{
+      position:relative;
+      min-height:480px;
+      background:linear-gradient(180deg, rgba(124,92,255,.08), rgba(0,0,0,.22));
+    }
+    canvas{ display:block; width:100%; height:100%; }
+    .overlayTag{
+      position:absolute;
+      left:14px; top:14px;
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.10);
+      color:var(--text);
+      pointer-events:none;
+    }
+    .overlayLegend{
+      position:absolute;
+      right:14px; top:14px;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.10);
+      min-width:180px;
+    }
+    .legendBar{
+      height:10px;
+      border-radius:999px;
+      background:linear-gradient(90deg, #440154, #3b528b, #21918c, #5ec962, #fde725);
+      margin:8px 0 6px;
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .legendText{
+      display:flex;
+      justify-content:space-between;
+      font-size:12px;
+      color:var(--muted);
+      gap:8px;
+    }
+
+    /* Tabs */
+    .tabs{
+      display:flex;
+      gap:8px;
+      padding:12px 12px 0;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.0));
+    }
+    .tab{
+      flex:1;
+      border:none;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);
+      padding:10px 10px;
+      border-top-left-radius:14px;
+      border-top-right-radius:14px;
+      font-weight:800;
+      cursor:pointer;
+      transition:.2s ease;
+    }
+    .tab:hover{
+      background:rgba(124,92,255,.10);
+      border-color:rgba(124,92,255,.22);
+      color:#e9e9ff;
+    }
+    .tab.active{
+      background:rgba(124,92,255,.14);
+      border-color:rgba(124,92,255,.35);
+      color:#f0f0ff;
+    }
+    .tabPanels{ padding:0; }
+    .panel{ display:none; padding:14px 16px 16px; }
+    .panel.active{ display:block; }
+
+    /* Form grid helpers */
+    .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .field label{ display:block; font-size:12px; color:var(--muted); margin:0 0 6px; }
+    .field input, .field select, .field textarea{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.12);
+      color:var(--text);
+      outline:none;
+    }
+    .field textarea{ min-height:110px; resize:vertical; }
+
+    .arch{
+      margin-top:10px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.14);
+      border-radius:12px;
+      padding:10px;
+    }
+    .archRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      margin-top:8px;
+    }
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      white-space:nowrap;
+    }
+    .arrow{ opacity:.55; }
+    .divider{ height:1px; background:rgba(255,255,255,.07); margin:12px 0; }
+
+    .footerNote{
+      color:rgba(255,255,255,.35);
+      font-size:12px;
+      padding:10px 16px 16px;
+      border-top:1px solid rgba(255,255,255,.07);
+    }
+
+    /* Header top row */
+    .headerRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+    }
+
+    /* Tools Drawer */
+    .drawerMask{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.55);
+      opacity:0; pointer-events:none;
+      transition:.18s ease;
+      z-index:50;
+    }
+    .drawerMask.on{ opacity:1; pointer-events:auto; }
+
+    .drawer{
+      position:fixed; top:0; right:0; height:100vh; width:min(560px, 94vw);
+      background:linear-gradient(180deg, rgba(17,17,38,.98), rgba(11,11,18,.98));
+      border-left:1px solid rgba(255,255,255,.10);
+      box-shadow:-20px 0 60px rgba(0,0,0,.45);
+      transform:translateX(100%);
+      transition:.18s ease;
+      z-index:51;
+      display:flex; flex-direction:column;
+    }
+    .drawer.on{ transform:translateX(0); }
+    .drawerHd{
+      padding:16px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .drawerTitle{ font-weight:900; letter-spacing:.02em; display:flex; align-items:center; gap:10px; }
+    .drawerBody{ padding:14px 16px 18px; overflow:auto; }
+
+    .toolCard{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.18);
+      border-radius:16px;
+      padding:12px;
+      margin-bottom:12px;
+    }
+    .toolCard h3{ margin:0 0 6px; font-size:14px; }
+    .toolCard p{ margin:0 0 10px; color:var(--muted); font-size:13px; line-height:1.4; }
+    .toolRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .toolOut{
+      margin-top:10px;
+      padding:10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.18);
+      color:var(--muted);
+      font-size:12px;
+      white-space:pre-wrap;
+      overflow:auto;
+    }
+    .toolOut a{
+      color:#dcd6ff;
+      text-decoration:none;
+      border-bottom:1px dashed rgba(220,214,255,.35);
+    }
+    .toolOut a:hover{ border-bottom-color:rgba(220,214,255,.8); }
+    .tiny{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .chip{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      color:#f0f0ff;
+    }
+    .chipDot{
+      width:8px;height:8px;border-radius:999px;
+      background:rgba(124,92,255,.85);
+      box-shadow:0 0 14px rgba(124,92,255,.35);
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="headerRow">
+      <div>
+        <div class="kicker">RAPID DESIGN ITERATION</div>
+        <h1>PINNeAPPle | Use Case</h1>
+        <p class="sub">Upload an STL, configure model + physics, train a symbolic PINN, then infer and visualize a field on the mesh.</p>
+      </div>
+
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px; padding-top:4px;">
+        <button id="toolsBtn" class="btn secondary" style="height:44px; border-radius:14px; white-space:nowrap;">
+          ☰ Tools
+        </button>
+        <div class="tiny">Extras: registry • mesh ops • NASA POWER</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left panel (tabs) -->
+    <section class="card">
+      <div class="hd">
+        <div class="title">Control panel</div>
+        <div id="badge" class="badge">Idle</div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Control tabs">
+        <button class="tab active" data-tab="geometry" role="tab" aria-selected="true">Geometry</button>
+        <button class="tab" data-tab="model" role="tab" aria-selected="false">Model</button>
+        <button class="tab" data-tab="physics" role="tab" aria-selected="false">Physics</button>
+        <button class="tab" data-tab="training" role="tab" aria-selected="false">Training</button>
+      </div>
+
+      <div class="tabPanels">
+        <!-- Geometry -->
+        <div class="panel active" id="panel-geometry" role="tabpanel">
+          <div class="row">
+            <input id="file" type="file" accept=".stl" />
+          </div>
+
+          <div class="row">
+            <button id="upload" class="btn">Upload STL</button>
+            <button id="view" class="btn secondary" disabled>View STL (wire)</button>
+          </div>
+
+          <div class="hint">
+            Upload STL first. You can preview locally in the viewer on the right.
+          </div>
+
+          <div id="status" class="status">Select an .stl file to start.</div>
+        </div>
+
+        <!-- Model -->
+        <div class="panel" id="panel-model" role="tabpanel">
+          <div class="grid2">
+            <div class="field">
+              <label>Activation</label>
+              <select id="activation">
+                <option value="tanh" selected>tanh</option>
+                <option value="relu">relu</option>
+                <option value="gelu">gelu</option>
+                <option value="silu">silu</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Hidden layers (comma)</label>
+              <input id="hidden" class="mono" value="128,128,128,128" />
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Epochs</label>
+              <input id="epochs" type="number" min="1" step="1" value="120" />
+            </div>
+            <div class="field">
+              <label>LR</label>
+              <input id="lr" type="number" min="0" step="0.000001" value="0.001" />
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Batch train</label>
+              <input id="batch_train" type="number" min="1" step="1" value="1024" />
+            </div>
+            <div class="field">
+              <label>Batch val</label>
+              <input id="batch_val" type="number" min="1" step="1" value="2048" />
+            </div>
+          </div>
+
+          <div class="grid3">
+            <div class="field">
+              <label>nx</label>
+              <input id="nx" type="number" min="10" step="1" value="40" />
+            </div>
+            <div class="field">
+              <label>ny</label>
+              <input id="ny" type="number" min="10" step="1" value="30" />
+            </div>
+            <div class="field">
+              <label>nz</label>
+              <input id="nz" type="number" min="5" step="1" value="15" />
+            </div>
+          </div>
+
+          <div class="grid3">
+            <div class="field">
+              <label>n_col</label>
+              <input id="n_col" type="number" min="1000" step="1000" value="60000" />
+            </div>
+            <div class="field">
+              <label>n_bc</label>
+              <input id="n_bc" type="number" min="1000" step="1000" value="24000" />
+            </div>
+            <div class="field">
+              <label>n_data</label>
+              <input id="n_data" type="number" min="1000" step="1000" value="24000" />
+            </div>
+          </div>
+
+          <div class="grid3">
+            <div class="field">
+              <label>w_pde</label>
+              <input id="w_pde" type="number" min="0" step="0.1" value="1.0" />
+            </div>
+            <div class="field">
+              <label>w_bc</label>
+              <input id="w_bc" type="number" min="0" step="0.1" value="10.0" />
+            </div>
+            <div class="field">
+              <label>w_data</label>
+              <input id="w_data" type="number" min="0" step="0.1" value="1.0" />
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <button id="previewModel" class="btn secondary">Preview architecture</button>
+            <div id="modelBadge" class="badge">Not previewed</div>
+          </div>
+
+          <div class="arch" id="archBox">
+            <div style="font-weight:800;font-size:12px;letter-spacing:.02em">Architecture</div>
+            <div id="archMeta" class="hint" style="margin-top:6px;">Click “Preview architecture”.</div>
+            <div class="archRow" id="archRow"></div>
+          </div>
+        </div>
+
+        <!-- Physics -->
+        <div class="panel" id="panel-physics" role="tabpanel">
+          <div class="field">
+            <label>Problem</label>
+            <select id="physicsSelect"></select>
+          </div>
+
+          <div id="physicsDesc" class="hint" style="margin-top:10px;"></div>
+
+          <div class="divider"></div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Independent vars (comma)</label>
+              <input id="indepVars" class="mono" value="x,y,z" />
+            </div>
+            <div class="field">
+              <label>Dependent vars (comma)</label>
+              <input id="depVars" class="mono" value="T" />
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Inverse params (comma)</label>
+              <input id="invParams" class="mono" value="" />
+            </div>
+            <div class="field">
+              <label>Loss weights: pde</label>
+              <input id="physicsWpde" type="number" min="0" step="0.1" value="1.0" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>PDE residuals (one per line)</label>
+            <textarea id="residuals" class="mono"></textarea>
+          </div>
+
+          <div class="field">
+            <label>Conditions (optional, one per line)</label>
+            <textarea id="conditions" class="mono" placeholder="(optional)"></textarea>
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <button id="previewPhysics" class="btn secondary">Preview / validate physics</button>
+            <div id="physicsBadge" class="badge">Not previewed</div>
+          </div>
+
+          <div class="arch">
+            <div style="font-weight:800;font-size:12px;letter-spacing:.02em">Physics preview</div>
+            <div id="physicsMeta" class="hint" style="margin-top:6px;">Pick a preset or write a custom PDE, then preview.</div>
+          </div>
+
+          <div class="hint">
+            Note: BCs are enforced by a separate Dirichlet term (hot/cold) in this demo.
+          </div>
+        </div>
+
+        <!-- Training -->
+        <div class="panel" id="panel-training" role="tabpanel">
+          <div class="hint">
+            Train after uploading an STL. You can optionally preview model + physics first.
+          </div>
+
+          <div class="row">
+            <button id="train" class="btn" disabled>Train Model</button>
+            <button id="run" class="btn" disabled>Run Inference</button>
+          </div>
+
+          <div class="hint">
+            Inference will download a vertex-colored PLY and visualize it in the viewer.
+          </div>
+
+          <div class="footerNote" style="padding:10px 0 0; border-top:none;">
+            Expected Backend: Flask on <code>http://localhost:8000</code> with routes:
+            <code>/api/upload</code>, <code>/api/model_spec</code>, <code>/api/physics_problems</code>,
+            <code>/api/physics_spec</code>, <code>/api/train</code>, <code>/api/status/&lt;job_id&gt;</code>,
+            <code>/api/infer</code>, <code>/api/result/&lt;job_id&gt;</code>.
+            <br/>
+            Tools (optional): <code>/api/tools/models</code>, <code>/api/tools/mesh_ops</code>, <code>/api/tools/nasa_power_to_zarr</code>, <code>/api/tools/download</code>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Viewer -->
+    <section class="card viewerWrap">
+      <div class="overlayTag" id="overlayTag">Viewer</div>
+
+      <div class="overlayLegend">
+        <div style="font-weight:800;font-size:12px;letter-spacing:.02em">Field</div>
+        <div class="legendBar"></div>
+        <div class="legendText">
+          <span id="legendMin">min</span>
+          <span id="legendMax">max</span>
+        </div>
+      </div>
+
+      <canvas id="c"></canvas>
+    </section>
+  </main>
+
+  <!-- Tools Drawer -->
+  <div id="drawerMask" class="drawerMask"></div>
+
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawerHd">
+      <div class="drawerTitle">
+        <span class="chip"><span class="chipDot"></span>Tools</span>
+        <span class="tiny">Independent utilities</span>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="drawerClose" class="btn secondary">Close</button>
+      </div>
+    </div>
+
+    <div class="drawerBody">
+      <div class="toolCard">
+        <h3>Model Registry</h3>
+        <p>List registered models (incl. PINNs family) from Pinneaple registry.</p>
+        <div class="toolRow">
+          <button id="btnModels" class="btn secondary">List models</button>
+        </div>
+        <div id="outModels" class="toolOut">—</div>
+      </div>
+
+      <div class="toolCard">
+        <h3>Mesh Repair + Simplify</h3>
+        <p>Repair and simplify the uploaded STL for the current <span class="mono">job_id</span>. Outputs a downloadable STL (via backend).</p>
+        <div class="toolRow">
+          <div class="field" style="width:160px; margin:0;">
+            <label>Target faces</label>
+            <input id="simpFaces" type="number" min="100" step="100" value="5000" />
+          </div>
+          <button id="btnMeshOps" class="btn secondary" style="margin-top:18px;">Run</button>
+        </div>
+        <div id="outMeshOps" class="toolOut">Requires an uploaded STL (job_id).</div>
+      </div>
+
+      <div class="toolCard">
+        <h3>NASA POWER → Zarr</h3>
+        <p>Fetch daily point data and write a UPD Zarr artifact (plus raw JSON).</p>
+
+        <div class="grid2">
+          <div class="field">
+            <label>Latitude</label>
+            <input id="npLat" type="number" step="0.01" value="-8.05" />
+          </div>
+          <div class="field">
+            <label>Longitude</label>
+            <input id="npLon" type="number" step="0.01" value="-34.9" />
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top:10px;">
+          <div class="field">
+            <label>Start (YYYYMMDD)</label>
+            <input id="npStart" class="mono" value="20240101" />
+          </div>
+          <div class="field">
+            <label>End (YYYYMMDD)</label>
+            <input id="npEnd" class="mono" value="20240131" />
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:10px;">
+          <label>Parameters (comma)</label>
+          <input id="npParams" class="mono" value="T2M,PRECTOTCORR,ALLSKY_SFC_SW_DWN" />
+        </div>
+
+        <div class="toolRow" style="margin-top:10px;">
+          <button id="btnNasa" class="btn secondary">Fetch + Write Zarr</button>
+        </div>
+
+        <div id="outNasa" class="toolOut">—</div>
+      </div>
+
+      <div class="tiny" style="padding:8px 2px 2px;">
+        Tip: these tools are intentionally decoupled from the training pipe.
+        If an endpoint doesn’t exist, you’ll just see an error here (no impact on the main app).
+      </div>
+    </div>
+  </aside>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { STLLoader } from "three/addons/loaders/STLLoader.js";
+    import { PLYLoader } from "three/addons/loaders/PLYLoader.js";
+
+    const API = "http://localhost:8000";
+
+    // Tabs
+    const tabs = [...document.querySelectorAll(".tab")];
+    const panels = {
+      geometry: document.getElementById("panel-geometry"),
+      model: document.getElementById("panel-model"),
+      physics: document.getElementById("panel-physics"),
+      training: document.getElementById("panel-training"),
+    };
+    function setActiveTab(name){
+      for(const t of tabs){
+        const on = (t.dataset.tab === name);
+        t.classList.toggle("active", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
+      }
+      for(const [k, p] of Object.entries(panels)){
+        p.classList.toggle("active", k === name);
+      }
+    }
+    tabs.forEach(t => t.addEventListener("click", () => setActiveTab(t.dataset.tab)));
+
+    // Pipeline DOM
+    const fileEl = document.getElementById("file");
+    const uploadBtn = document.getElementById("upload");
+    const trainBtn = document.getElementById("train");
+    const runBtn = document.getElementById("run");
+    const viewBtn = document.getElementById("view");
+
+    const statusEl = document.getElementById("status");
+    const badgeEl = document.getElementById("badge");
+    const tagEl = document.getElementById("overlayTag");
+    const legendMinEl = document.getElementById("legendMin");
+    const legendMaxEl = document.getElementById("legendMax");
+
+    // Model DOM
+    const previewModelBtn = document.getElementById("previewModel");
+    const modelBadge = document.getElementById("modelBadge");
+    const archMeta = document.getElementById("archMeta");
+    const archRow = document.getElementById("archRow");
+
+    const activationEl = document.getElementById("activation");
+    const hiddenEl = document.getElementById("hidden");
+    const epochsEl = document.getElementById("epochs");
+    const lrEl = document.getElementById("lr");
+    const batchTrainEl = document.getElementById("batch_train");
+    const batchValEl = document.getElementById("batch_val");
+    const nxEl = document.getElementById("nx");
+    const nyEl = document.getElementById("ny");
+    const nzEl = document.getElementById("nz");
+    const nColEl = document.getElementById("n_col");
+    const nBcEl = document.getElementById("n_bc");
+    const nDataEl = document.getElementById("n_data");
+    const wPdeEl = document.getElementById("w_pde");
+    const wBcEl = document.getElementById("w_bc");
+    const wDataEl = document.getElementById("w_data");
+
+    // Physics DOM
+    const physicsSelect = document.getElementById("physicsSelect");
+    const physicsDesc = document.getElementById("physicsDesc");
+    const indepVarsEl = document.getElementById("indepVars");
+    const depVarsEl = document.getElementById("depVars");
+    const invParamsEl = document.getElementById("invParams");
+    const physicsWpdeEl = document.getElementById("physicsWpde");
+    const residualsEl = document.getElementById("residuals");
+    const conditionsEl = document.getElementById("conditions");
+    const previewPhysicsBtn = document.getElementById("previewPhysics");
+    const physicsBadge = document.getElementById("physicsBadge");
+    const physicsMeta = document.getElementById("physicsMeta");
+
+    // Tools Drawer DOM
+    const toolsBtn = document.getElementById("toolsBtn");
+    const drawer = document.getElementById("drawer");
+    const drawerMask = document.getElementById("drawerMask");
+    const drawerClose = document.getElementById("drawerClose");
+
+    const btnModels = document.getElementById("btnModels");
+    const outModels = document.getElementById("outModels");
+
+    const btnMeshOps = document.getElementById("btnMeshOps");
+    const outMeshOps = document.getElementById("outMeshOps");
+    const simpFaces = document.getElementById("simpFaces");
+
+    const btnNasa = document.getElementById("btnNasa");
+    const outNasa = document.getElementById("outNasa");
+    const npLat = document.getElementById("npLat");
+    const npLon = document.getElementById("npLon");
+    const npStart = document.getElementById("npStart");
+    const npEnd = document.getElementById("npEnd");
+    const npParams = document.getElementById("npParams");
+
+    let jobId = null;
+    let lastStlArrayBuffer = null;
+
+    let lastValidatedCfg = null;
+    let physicsProblems = [];
+    let lastValidatedPhysics = null;
+
+    // Viewer (Three.js)
+    const canvas = document.getElementById("c");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
+    camera.position.set(1.6, 1.2, 1.8);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x202035, 1.0));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+    dir.position.set(2, 3, 2);
+    scene.add(dir);
+
+    const grid = new THREE.GridHelper(2, 20, 0x333366, 0x222244);
+    grid.position.y = -0.6;
+    scene.add(grid);
+
+    let currentObject = null;
+
+    function setStatus(msg){ statusEl.textContent = msg; }
+
+    function setBadge(text, tone="accent"){
+      badgeEl.textContent = text;
+      const el = badgeEl;
+      if(tone === "good"){
+        el.style.borderColor = "rgba(51,214,159,.45)";
+        el.style.background = "rgba(51,214,159,.15)";
+        el.style.color = "#caffe9";
+      } else if(tone === "bad"){
+        el.style.borderColor = "rgba(255,107,107,.45)";
+        el.style.background = "rgba(255,107,107,.12)";
+        el.style.color = "#ffe1e1";
+      } else if(tone === "warn"){
+        el.style.borderColor = "rgba(247,201,72,.45)";
+        el.style.background = "rgba(247,201,72,.12)";
+        el.style.color = "#fff2cc";
+      } else {
+        el.style.borderColor = "rgba(124,92,255,.35)";
+        el.style.background = "rgba(124,92,255,.15)";
+        el.style.color = "#dcd6ff";
+      }
+    }
+
+    function setSmallBadge(el, text, tone="accent"){
+      el.textContent = text;
+      if(tone === "good"){
+        el.style.borderColor = "rgba(51,214,159,.45)";
+        el.style.background = "rgba(51,214,159,.15)";
+        el.style.color = "#caffe9";
+      } else if(tone === "bad"){
+        el.style.borderColor = "rgba(255,107,107,.45)";
+        el.style.background = "rgba(255,107,107,.12)";
+        el.style.color = "#ffe1e1";
+      } else if(tone === "warn"){
+        el.style.borderColor = "rgba(247,201,72,.45)";
+        el.style.background = "rgba(247,201,72,.12)";
+        el.style.color = "#fff2cc";
+      } else {
+        el.style.borderColor = "rgba(124,92,255,.35)";
+        el.style.background = "rgba(124,92,255,.15)";
+        el.style.color = "#dcd6ff";
+      }
+    }
+
+    function resize(){
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    new ResizeObserver(resize).observe(canvas);
+    resize();
+
+    function frame(){
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    function clearObject(){
+      if(!currentObject) return;
+      scene.remove(currentObject);
+      currentObject.traverse?.((n)=>{
+        if(n.geometry) n.geometry.dispose();
+        if(n.material){
+          if(Array.isArray(n.material)) n.material.forEach(m=>m.dispose());
+          else n.material.dispose();
+        }
+      });
+      currentObject = null;
+    }
+
+    function fitToObject(obj){
+      const box = new THREE.Box3().setFromObject(obj);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const dist = maxDim * 2.2;
+      camera.position.set(center.x + dist, center.y + dist*0.7, center.z + dist);
+      controls.target.copy(center);
+      controls.update();
+    }
+
+    function loadStlFromArrayBuffer(buf, wire=false){
+      const loader = new STLLoader();
+      const geom = loader.parse(buf);
+      geom.computeVertexNormals();
+      const mat = wire
+        ? new THREE.MeshStandardMaterial({ color: 0xd6d6ff, wireframe: true, metalness: 0.1, roughness: 0.95 })
+        : new THREE.MeshStandardMaterial({ color: 0xd6d6ff, metalness: 0.1, roughness: 0.65 });
+      const mesh = new THREE.Mesh(geom, mat);
+
+      geom.computeBoundingBox();
+      const bb = geom.boundingBox;
+      const c = bb.getCenter(new THREE.Vector3());
+      const s = bb.getSize(new THREE.Vector3());
+      const maxDim = Math.max(s.x, s.y, s.z) || 1;
+
+      mesh.position.sub(c);
+      mesh.scale.setScalar(1 / maxDim);
+      return mesh;
+    }
+
+    function loadPlyFromArrayBuffer(buf){
+      const loader = new PLYLoader();
+      const geom = loader.parse(buf);
+      geom.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        metalness: 0.05,
+        roughness: 0.6
+      });
+      const mesh = new THREE.Mesh(geom, mat);
+
+      geom.computeBoundingBox();
+      const bb = geom.boundingBox;
+      const c = bb.getCenter(new THREE.Vector3());
+      const s = bb.getSize(new THREE.Vector3());
+      const maxDim = Math.max(s.x, s.y, s.z) || 1;
+
+      mesh.position.sub(c);
+      mesh.scale.setScalar(1 / maxDim);
+      return mesh;
+    }
+
+    function getModelConfigPayload(){
+      return {
+        activation: activationEl.value,
+        hidden: hiddenEl.value,
+        epochs: Number(epochsEl.value),
+        lr: Number(lrEl.value),
+        batch_train: Number(batchTrainEl.value),
+        batch_val: Number(batchValEl.value),
+        nx: Number(nxEl.value),
+        ny: Number(nyEl.value),
+        nz: Number(nzEl.value),
+        n_col: Number(nColEl.value),
+        n_bc: Number(nBcEl.value),
+        n_data: Number(nDataEl.value),
+        w_pde: Number(wPdeEl.value),
+        w_bc: Number(wBcEl.value),
+        w_data: Number(wDataEl.value),
+      };
+    }
+
+    function renderArch(arch){
+      archRow.innerHTML = "";
+      const layers = arch.layers || [];
+      for(let i=0;i<layers.length;i++){
+        const L = layers[i];
+        const pill = document.createElement("div");
+        pill.className = "pill mono";
+        if(L.type === "Linear"){
+          pill.textContent = `Linear(${L.in}→${L.out})`;
+        } else {
+          pill.textContent = `${L.name}()`;
+        }
+        archRow.appendChild(pill);
+        if(i < layers.length-1){
+          const a = document.createElement("span");
+          a.className = "arrow";
+          a.textContent = "→";
+          archRow.appendChild(a);
+        }
+      }
+      archMeta.textContent =
+        `Params: ${Number(arch.total_params || 0).toLocaleString()} | hidden=[${(arch.hidden||[]).join(",")}] | act=${arch.activation}`;
+    }
+
+    async function loadPhysicsRegistry(){
+      try{
+        const r = await fetch(`${API}/api/physics_problems`);
+        const j = await r.json();
+        physicsProblems = j.problems || [];
+
+        physicsSelect.innerHTML = "";
+        const opt0 = document.createElement("option");
+        opt0.value = "__custom__";
+        opt0.textContent = "Custom (edit PDE)";
+        physicsSelect.appendChild(opt0);
+
+        for(const p of physicsProblems){
+          const opt = document.createElement("option");
+          opt.value = p.id;
+          opt.textContent = p.label;
+          physicsSelect.appendChild(opt);
+        }
+
+        const hasLaplace = physicsProblems.some(p => p.id === "laplace_T_3d");
+        physicsSelect.value = hasLaplace ? "laplace_T_3d" : (physicsProblems[0]?.id ?? "__custom__");
+        applyPhysicsSelection();
+      }catch(e){
+        physicsDesc.textContent = "Cannot fetch physics registry (backend offline?)";
+        physicsSelect.innerHTML = `<option value="__custom__">Custom (backend offline)</option>`;
+        physicsSelect.value = "__custom__";
+        applyPhysicsSelection();
+      }
+    }
+
+    function applyPhysicsSelection(){
+      const id = physicsSelect.value;
+      const isCustom = (id === "__custom__");
+      const p = physicsProblems.find(x => x.id === id);
+
+      const lock = !isCustom;
+      indepVarsEl.disabled = lock;
+      depVarsEl.disabled = lock;
+      invParamsEl.disabled = lock;
+      physicsWpdeEl.disabled = lock;
+      residualsEl.disabled = lock;
+      conditionsEl.disabled = lock;
+
+      if(!isCustom && p){
+        physicsDesc.textContent = `${p.description}`;
+        const spec = p.spec;
+        indepVarsEl.value = (spec.independent_vars || []).join(",");
+        depVarsEl.value = (spec.dependent_vars || []).join(",");
+        invParamsEl.value = (spec.inverse_params || []).join(",");
+        physicsWpdeEl.value = Number(spec.loss_weights?.pde ?? 1.0);
+        residualsEl.value = (spec.pde_residuals || []).join("\n");
+        conditionsEl.value = (spec.conditions || []).join("\n");
+      } else {
+        physicsDesc.textContent = "Custom PDE mode: edit the symbolic spec below.";
+        if(!residualsEl.value.trim()){
+          residualsEl.value =
+            "Derivative(T(x,y,z), x, x) + Derivative(T(x,y,z), y, y) + Derivative(T(x,y,z), z, z)";
+        }
+      }
+    }
+
+    function getPhysicsPayload(){
+      const id = physicsSelect.value;
+      if(id !== "__custom__"){
+        return { problem_id: id };
+      }
+      const spec = {
+        pde_residuals: residualsEl.value.split("\n").map(s=>s.trim()).filter(Boolean),
+        conditions: conditionsEl.value.split("\n").map(s=>s.trim()).filter(Boolean),
+        independent_vars: indepVarsEl.value.split(",").map(s=>s.trim()).filter(Boolean),
+        dependent_vars: depVarsEl.value.split(",").map(s=>s.trim()).filter(Boolean),
+        inverse_params: invParamsEl.value.split(",").map(s=>s.trim()).filter(Boolean),
+        loss_weights: { pde: Number(physicsWpdeEl.value || 1.0) },
+        verbose: false,
+      };
+      return { spec };
+    }
+
+    physicsSelect.addEventListener("change", () => {
+      applyPhysicsSelection();
+      lastValidatedPhysics = null;
+      setSmallBadge(physicsBadge, "Not previewed", "accent");
+      physicsMeta.textContent = "Pick a preset or edit the custom spec, then preview.";
+    });
+
+    previewPhysicsBtn.addEventListener("click", async () => {
+      setSmallBadge(physicsBadge, "Previewing…", "warn");
+      physicsMeta.textContent = "Compiling physics spec on backend…";
+      try{
+        const payload = getPhysicsPayload();
+        const r = await fetch(`${API}/api/physics_spec`, {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if(!r.ok){
+          setSmallBadge(physicsBadge, "Error", "bad");
+          physicsMeta.textContent = `HTTP error: ${j.error || r.status}`;
+          lastValidatedPhysics = null;
+          return;
+        }
+        if(j.ok){
+          setSmallBadge(physicsBadge, "Ready", "good");
+          lastValidatedPhysics = payload;
+          const spec = j.spec;
+          physicsMeta.textContent =
+            `OK. indep=[${(spec.independent_vars||[]).join(",")}] dep=[${(spec.dependent_vars||[]).join(",")}] residuals=${(spec.pde_residuals||[]).length} conditions=${(spec.conditions||[]).length}`;
+        } else {
+          setSmallBadge(physicsBadge, "Invalid", "bad");
+          physicsMeta.textContent = `Spec error: ${j.error}`;
+          lastValidatedPhysics = null;
+        }
+      }catch(e){
+        setSmallBadge(physicsBadge, "Offline", "bad");
+        physicsMeta.textContent = "Backend unreachable.";
+        lastValidatedPhysics = null;
+      }
+    });
+
+    previewModelBtn.addEventListener("click", async () => {
+      setSmallBadge(modelBadge, "Previewing…", "warn");
+      archMeta.textContent = "Contacting backend…";
+      archRow.innerHTML = "";
+      try{
+        const r = await fetch(`${API}/api/model_spec`, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(getModelConfigPayload())
+        });
+        const j = await r.json();
+        if(!r.ok){
+          setSmallBadge(modelBadge, "Preview failed", "bad");
+          archMeta.textContent = `Error: ${j.error || r.status}`;
+          lastValidatedCfg = null;
+          return;
+        }
+        lastValidatedCfg = j.cfg;
+        renderArch(j.arch);
+        setSmallBadge(modelBadge, "Ready", "good");
+      }catch(e){
+        setSmallBadge(modelBadge, "Offline", "bad");
+        archMeta.textContent = "Cannot reach backend. Is Flask running on :8000?";
+        lastValidatedCfg = null;
+      }
+    });
+
+    uploadBtn.addEventListener("click", async () => {
+      const f = fileEl.files?.[0];
+      if(!f){
+        setBadge("No file", "warn");
+        setStatus("Select an .stl first.");
+        return;
+      }
+      lastStlArrayBuffer = await f.arrayBuffer();
+      const form = new FormData();
+      form.append("file", f);
+
+      setBadge("Uploading…", "warn");
+      setStatus("Sending STL to backend…");
+
+      try {
+        const r = await fetch(`${API}/api/upload`, { method:"POST", body: form });
+        const j = await r.json();
+        if(!r.ok){
+          setBadge("Upload failed", "bad");
+          setStatus(`Error: ${j.error || r.status}`);
+          return;
+        }
+
+        jobId = j.job_id;
+        setBadge("Uploaded", "good");
+        setStatus(`Upload successful.\njob_id: ${jobId}\nGo to Model/Physics tabs to preview, then Train.`);
+
+        trainBtn.disabled = false;
+        viewBtn.disabled = false;
+
+        clearObject();
+        const obj = loadStlFromArrayBuffer(lastStlArrayBuffer, false);
+        scene.add(obj);
+        currentObject = obj;
+        fitToObject(obj);
+        tagEl.textContent = "STL (local)";
+
+        // UX: jump to Model tab after upload
+        setActiveTab("model");
+      } catch (e) {
+        setBadge("Error", "bad");
+        setStatus("Server connection error. Check CORS and ensure Flask is running.");
+      }
+    });
+
+    viewBtn.addEventListener("click", () => {
+      if(!lastStlArrayBuffer) return;
+      clearObject();
+      const obj = loadStlFromArrayBuffer(lastStlArrayBuffer, true);
+      scene.add(obj);
+      currentObject = obj;
+      fitToObject(obj);
+      tagEl.textContent = "STL (wireframe)";
+    });
+
+    trainBtn.addEventListener("click", async () => {
+      if(!jobId) return;
+
+      trainBtn.disabled = true;
+      runBtn.disabled = true;
+      setBadge("Training", "warn");
+
+      const payload = {
+        job_id: jobId,
+        ...getModelConfigPayload(),
+        physics: (lastValidatedPhysics || getPhysicsPayload())
+      };
+
+      setStatus("Starting training on server…");
+      setActiveTab("training");
+
+      try {
+        const r = await fetch(`${API}/api/train`, {
+          method:"POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+
+        if (j.status === "completed") {
+          setBadge("Trained (cache)", "good");
+          const best = j.result?.best_val;
+          setStatus(`Model found in cache!\nBest Val: ${best ?? "?"}`);
+          runBtn.disabled = false;
+          trainBtn.disabled = false;
+          return;
+        }
+
+        const poll = setInterval(async () => {
+          try {
+            const res = await fetch(`${API}/api/status/${jobId}`);
+            if (res.status === 404) { clearInterval(poll); return setStatus("Job lost."); }
+            const data = await res.json();
+
+            if (data.status === "completed") {
+              clearInterval(poll);
+              setBadge("Trained", "good");
+              const best = data.result?.best_val;
+              setStatus(`Training complete!\nBest Val: ${best ?? "?"}`);
+              runBtn.disabled = false;
+              trainBtn.disabled = false;
+            } else if (data.status === "processing") {
+              setStatus(`Progress: ${data.message || 'Training...'}`);
+            } else if (data.status === "failed") {
+              clearInterval(poll);
+              setBadge("Failed", "bad");
+              setStatus(`Error: ${data.error || "Training failed."}`);
+              trainBtn.disabled = false;
+            } else if (data.status === "idle") {
+              clearInterval(poll);
+              setStatus("Server reset. Click Train again.");
+              trainBtn.disabled = false;
+            }
+          } catch (e) { console.warn("Polling error..."); }
+        }, 3000);
+      } catch (e) {
+        setStatus("Error: Training request failed.");
+        trainBtn.disabled = false;
+      }
+    });
+
+    runBtn.addEventListener("click", async () => {
+      if(!jobId) return;
+      runBtn.disabled = true;
+      setBadge("Running…", "warn");
+      setStatus("Running inference and downloading colored PLY…");
+      setActiveTab("training");
+
+      try {
+        const r = await fetch(`${API}/api/infer`, {
+          method:"POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({ job_id: jobId, use_trained: true })
+        });
+
+        const j = await r.json();
+        if(!r.ok){
+          setBadge("Infer failed", "bad");
+          setStatus(`Error: ${j.error || r.status}`);
+          runBtn.disabled = false;
+          return;
+        }
+
+        const url = `${API}${j.ply_url}`;
+        const rr = await fetch(url);
+        const buf = await rr.arrayBuffer();
+
+        clearObject();
+        const obj = loadPlyFromArrayBuffer(buf);
+        scene.add(obj);
+        currentObject = obj;
+        fitToObject(obj);
+
+        tagEl.textContent = j.trained_used ? "PLY (trained)" : "PLY (untrained)";
+        legendMinEl.textContent = Number(j.range?.min ?? 0).toFixed(2);
+        legendMaxEl.textContent = Number(j.range?.max ?? 0).toFixed(2);
+
+        setBadge("Done", "good");
+        setStatus("Inference successful. PLY loaded.");
+      } catch (e) {
+        setStatus("Error processing inference.");
+      }
+      runBtn.disabled = false;
+    });
+
+    // ---------------------------------------------------------
+    // Tools Drawer behavior
+    // ---------------------------------------------------------
+    function openDrawer(){
+      drawer.classList.add("on");
+      drawerMask.classList.add("on");
+      drawer.setAttribute("aria-hidden", "false");
+    }
+    function closeDrawer(){
+      drawer.classList.remove("on");
+      drawerMask.classList.remove("on");
+      drawer.setAttribute("aria-hidden", "true");
+    }
+    toolsBtn.addEventListener("click", openDrawer);
+    drawerClose.addEventListener("click", closeDrawer);
+    drawerMask.addEventListener("click", closeDrawer);
+
+    // Tools: Model registry
+    btnModels.addEventListener("click", async () => {
+      outModels.textContent = "Loading...";
+      try{
+        const r = await fetch(`${API}/api/tools/models`);
+        const j = await r.json();
+        if(!r.ok || !j.ok) throw new Error(j.error || `HTTP ${r.status}`);
+
+        const pinns = Array.isArray(j.pinns) ? j.pinns : [];
+        const models = Array.isArray(j.models) ? j.models : [];
+
+        outModels.textContent =
+          `Total: ${j.total ?? models.length}\nPINNs: ${j.pinns_total ?? pinns.length}\n\n` +
+          `PINNs (preview):\n- ${pinns.slice(0, 80).join("\n- ")}${pinns.length>80 ? "\n..." : ""}\n\n` +
+          `All models (count): ${models.length}`;
+      }catch(e){
+        outModels.textContent = `Error: ${e.message || e}\n\nMake sure the backend has /api/tools/models.`;
+      }
+    });
+
+    // Tools: Mesh ops (requires jobId)
+    btnMeshOps.addEventListener("click", async () => {
+      if(!jobId){
+        outMeshOps.textContent = "No job_id yet. Upload an STL first.";
+        return;
+      }
+      outMeshOps.textContent = "Running...";
+      try{
+        const faces = Number(simpFaces.value || 5000);
+        const r = await fetch(`${API}/api/tools/mesh_ops`, {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ job_id: jobId, target_faces: faces, backend: "trimesh" })
+        });
+        const j = await r.json();
+        if(!r.ok || !j.ok) throw new Error(j.error || `HTTP ${r.status}`);
+
+        const link = `${API}${j.download_url}`;
+        outMeshOps.innerHTML =
+          `OK\nfaces=${j.n_faces} verts=${j.n_vertices}\n\n` +
+          `Download: <a href="${link}" target="_blank" rel="noreferrer">simplified STL</a>\n\n` +
+          `Tip: you can re-upload the simplified STL to retrain faster.`;
+      }catch(e){
+        outMeshOps.textContent = `Error: ${e.message || e}\n\nMake sure the backend has /api/tools/mesh_ops and /api/tools/download.`;
+      }
+    });
+
+    // Tools: NASA POWER -> Zarr
+    btnNasa.addEventListener("click", async () => {
+      outNasa.textContent = "Fetching...";
+      try{
+        const payload = {
+          latitude: Number(npLat.value),
+          longitude: Number(npLon.value),
+          start: String(npStart.value).trim(),
+          end: String(npEnd.value).trim(),
+          parameters: String(npParams.value).split(",").map(s=>s.trim()).filter(Boolean),
+        };
+
+        const r = await fetch(`${API}/api/tools/nasa_power_to_zarr`, {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if(!r.ok || !j.ok) throw new Error(j.error || `HTTP ${r.status}`);
+
+        const zurl = `${API}${j.download_zarr_url}`;
+        const rawurl = `${API}${j.download_raw_url}`;
+
+        outNasa.innerHTML =
+          `OK\nshape: T=${j.shape?.T} D=${j.shape?.D}\n` +
+          `cols: ${(j.columns||[]).join(", ")}\n\n` +
+          `Download Zarr: <a href="${zurl}" target="_blank" rel="noreferrer">${j.zarr}</a>\n` +
+          `Download raw: <a href="${rawurl}" target="_blank" rel="noreferrer">${j.raw_json}</a>\n\n` +
+          `dates: ${(j.dates_preview||[]).join(", ")}`;
+      }catch(e){
+        outNasa.textContent = `Error: ${e.message || e}\n\nMake sure the backend has /api/tools/nasa_power_to_zarr and /api/tools/download.`;
+      }
+    });
+
+    // boot
+    loadPhysicsRegistry();
+    applyPhysicsSelection();
+  </script>
+</body>
+</html>
