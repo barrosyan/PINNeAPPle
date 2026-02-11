@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PINNeAPPle | Use Case</title>
+
+  <style>
+    :root{
+      --bg0:#0b0b12;
+      --bg1:#141427;
+      --card:#111126cc;
+      --stroke:#2a2a4d;
+      --text:#e9e9ff;
+      --muted:#a9a9d9;
+      --accent:#7c5cff;
+      --accent2:#a78bfa;
+      --good:#33d69f;
+      --warn:#f7c948;
+      --bad:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background: radial-gradient(900px 600px at 20% 10%, #1b1b3a 0%, var(--bg0) 45%),
+                  radial-gradient(900px 600px at 70% 60%, #201245 0%, var(--bg0) 55%),
+                  linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+    header{
+      padding:32px 22px 10px;
+      max-width:1100px;
+      margin:0 auto;
+    }
+    .kicker{
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-weight:700;
+      color:var(--muted);
+      font-size:12px;
+      opacity:.9;
+    }
+    h1{
+      margin:12px 0 8px;
+      font-size:42px;
+      line-height:1.05;
+      font-weight:800;
+    }
+    .sub{
+      margin:0;
+      color:var(--muted);
+      font-size:18px;
+      max-width:720px;
+    }
+    main{
+      max-width:1100px;
+      margin:0 auto;
+      padding:18px 22px 40px;
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:18px;
+    }
+    @media (max-width: 980px){
+      main{grid-template-columns:1fr; }
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:16px 16px 12px;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .title{
+      font-weight:800;
+      font-size:14px;
+      letter-spacing:.02em;
+      color:#f0f0ff;
+    }
+    .badge{
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:rgba(124,92,255,.15);
+      border:1px solid rgba(124,92,255,.35);
+      color:#dcd6ff;
+      white-space:nowrap;
+    }
+    .bd{ padding:14px 16px 16px; }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:10px 0; }
+    .hint{ color:var(--muted); font-size:13px; line-height:1.4; margin:10px 0 0; }
+    .btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(124,92,255,.18);
+      color:var(--text);
+      padding:11px 14px;
+      border-radius:12px;
+      font-weight:800;
+      cursor:pointer;
+      transition:transform .06s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+      user-select:none;
+    }
+    .btn:hover{ background:rgba(124,92,255,.28); border-color:rgba(124,92,255,.55); }
+    .btn:active{ transform:translateY(1px); }
+    .btn[disabled]{ opacity:.45; cursor:not-allowed; }
+    .btn.secondary{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.10);
+    }
+    input[type="file"]{
+      width:100%;
+      padding:10px;
+      border-radius:12px;
+      border:1px dashed rgba(255,255,255,.18);
+      background:rgba(0,0,0,.15);
+      color:var(--muted);
+    }
+    .status{
+      margin-top:10px;
+      padding:12px 12px;
+      border-radius:12px;
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);
+      font-size:13px;
+      min-height:44px;
+      white-space:pre-wrap;
+    }
+
+    .viewerWrap{
+      position:relative;
+      min-height:480px;
+      background:linear-gradient(180deg, rgba(124,92,255,.08), rgba(0,0,0,.22));
+    }
+    canvas{ display:block; width:100%; height:100%; }
+    .overlayTag{
+      position:absolute;
+      left:14px; top:14px;
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.10);
+      color:var(--text);
+      pointer-events:none;
+    }
+    .overlayLegend{
+      position:absolute;
+      right:14px; top:14px;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.10);
+      min-width:180px;
+    }
+    .legendBar{
+      height:10px;
+      border-radius:999px;
+      background:linear-gradient(90deg, #440154, #3b528b, #21918c, #5ec962, #fde725);
+      margin:8px 0 6px;
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .legendText{
+      display:flex;
+      justify-content:space-between;
+      font-size:12px;
+      color:var(--muted);
+      gap:8px;
+    }
+    .footerNote{
+      color:rgba(255,255,255,.35);
+      font-size:12px;
+      padding:10px 16px 16px;
+      border-top:1px solid rgba(255,255,255,.07);
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="kicker">RAPID DESIGN ITERATION</div>
+    <h1>PINNeAPPle | Use Case</h1>
+    <p class="sub">Upload a STL file, train a model on the backend (PINNeAPPle), and run inference to visualize a physical field (e.g., temperature) directly on the mesh.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="hd">
+        <div class="title">Pipeline</div>
+        <div id="badge" class="badge">Idle</div>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <input id="file" type="file" accept=".stl" />
+        </div>
+
+        <div class="row">
+          <button id="upload" class="btn">Upload STL</button>
+          <button id="view" class="btn secondary" disabled>View STL (wire)</button>
+        </div>
+
+        <div class="row">
+          <button id="train" class="btn" disabled>Train Model</button>
+          <button id="run" class="btn" disabled>Run Inference</button>
+        </div>
+
+        <div class="hint">
+          Tip: first <b>Upload</b>. Then <b>Train</b> (generates baseline + trains). Finally <b>Run Inference</b> to download a vertex-colored PLY and visualize it here.
+        </div>
+
+        <div id="status" class="status">Select an .stl file to start.</div>
+      </div>
+
+      <div class="footerNote">
+        Expected Backend: Flask on <code>http://localhost:8000</code> with routes <code>/api/upload</code>, <code>/api/train</code>, <code>/api/infer</code>, <code>/api/result/&lt;job_id&gt;</code>.
+      </div>
+    </section>
+
+    <section class="card viewerWrap">
+      <div class="overlayTag" id="overlayTag">Viewer</div>
+
+      <div class="overlayLegend">
+        <div style="font-weight:800;font-size:12px;letter-spacing:.02em">Field</div>
+        <div class="legendBar"></div>
+        <div class="legendText">
+          <span id="legendMin">min</span>
+          <span id="legendMax">max</span>
+        </div>
+      </div>
+
+      <canvas id="c"></canvas>
+    </section>
+  </main>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { STLLoader } from "three/addons/loaders/STLLoader.js";
+    import { PLYLoader } from "three/addons/loaders/PLYLoader.js";
+
+    const API = "http://localhost:8000";
+
+    const fileEl = document.getElementById("file");
+    const uploadBtn = document.getElementById("upload");
+    const trainBtn = document.getElementById("train");
+    const runBtn = document.getElementById("run");
+    const viewBtn = document.getElementById("view");
+
+    const statusEl = document.getElementById("status");
+    const badgeEl = document.getElementById("badge");
+    const tagEl = document.getElementById("overlayTag");
+    const legendMinEl = document.getElementById("legendMin");
+    const legendMaxEl = document.getElementById("legendMax");
+
+    let jobId = null;
+    let lastStlArrayBuffer = null;
+
+    const canvas = document.getElementById("c");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
+    camera.position.set(1.6, 1.2, 1.8);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x202035, 1.0);
+    scene.add(hemi);
+
+    const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+    dir.position.set(2, 3, 2);
+    scene.add(dir);
+
+    const grid = new THREE.GridHelper(2, 20, 0x333366, 0x222244);
+    grid.position.y = -0.6;
+    scene.add(grid);
+
+    let currentObject = null;
+
+    function setStatus(msg){ statusEl.textContent = msg; }
+    function setBadge(text, tone="accent"){
+      badgeEl.textContent = text;
+      if(tone === "good"){
+        badgeEl.style.borderColor = "rgba(51,214,159,.45)";
+        badgeEl.style.background = "rgba(51,214,159,.15)";
+        badgeEl.style.color = "#caffe9";
+      } else if(tone === "bad"){
+        badgeEl.style.borderColor = "rgba(255,107,107,.45)";
+        badgeEl.style.background = "rgba(255,107,107,.12)";
+        badgeEl.style.color = "#ffe1e1";
+      } else if(tone === "warn"){
+        badgeEl.style.borderColor = "rgba(247,201,72,.45)";
+        badgeEl.style.background = "rgba(247,201,72,.12)";
+        badgeEl.style.color = "#fff2cc";
+      } else {
+        badgeEl.style.borderColor = "rgba(124,92,255,.35)";
+        badgeEl.style.background = "rgba(124,92,255,.15)";
+        badgeEl.style.color = "#dcd6ff";
+      }
+    }
+
+    function resize(){
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    new ResizeObserver(resize).observe(canvas);
+    resize();
+
+    function frame(){
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    function clearObject(){
+      if(!currentObject) return;
+      scene.remove(currentObject);
+      currentObject.traverse?.((n)=>{
+        if(n.geometry) n.geometry.dispose();
+        if(n.material){
+          if(Array.isArray(n.material)) n.material.forEach(m=>m.dispose());
+          else n.material.dispose();
+        }
+      });
+      currentObject = null;
+    }
+
+    function fitToObject(obj){
+      const box = new THREE.Box3().setFromObject(obj);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const dist = maxDim * 2.2;
+      camera.position.set(center.x + dist, center.y + dist*0.7, center.z + dist);
+      controls.target.copy(center);
+      controls.update();
+    }
+
+    function loadStlFromArrayBuffer(buf, wire=false){
+      const loader = new STLLoader();
+      const geom = loader.parse(buf);
+      geom.computeVertexNormals();
+      const mat = wire
+        ? new THREE.MeshStandardMaterial({ color: 0xd6d6ff, wireframe: true, metalness: 0.1, roughness: 0.95 })
+        : new THREE.MeshStandardMaterial({ color: 0xd6d6ff, metalness: 0.1, roughness: 0.65 });
+      const mesh = new THREE.Mesh(geom, mat);
+      geom.computeBoundingBox();
+      const bb = geom.boundingBox;
+      const c = bb.getCenter(new THREE.Vector3());
+      const s = bb.getSize(new THREE.Vector3());
+      const maxDim = Math.max(s.x, s.y, s.z) || 1;
+      mesh.position.sub(c);
+      mesh.scale.setScalar(1 / maxDim);
+      return mesh;
+    }
+
+    function loadPlyFromArrayBuffer(buf){
+      const loader = new PLYLoader();
+      const geom = loader.parse(buf);
+      geom.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        metalness: 0.05,
+        roughness: 0.6
+      });
+      const mesh = new THREE.Mesh(geom, mat);
+      geom.computeBoundingBox();
+      const bb = geom.boundingBox;
+      const c = bb.getCenter(new THREE.Vector3());
+      const s = bb.getSize(new THREE.Vector3());
+      const maxDim = Math.max(s.x, s.y, s.z) || 1;
+      mesh.position.sub(c);
+      mesh.scale.setScalar(1 / maxDim);
+      return mesh;
+    }
+
+    uploadBtn.addEventListener("click", async () => {
+      const f = fileEl.files?.[0];
+      if(!f){
+        setBadge("No file", "warn");
+        setStatus("Select an .stl first.");
+        return;
+      }
+      lastStlArrayBuffer = await f.arrayBuffer();
+      const form = new FormData();
+      form.append("file", f);
+      setBadge("Uploading…", "warn");
+      setStatus("Sending STL to backend…");
+      try {
+        const r = await fetch(`${API}/api/upload`, { method:"POST", body: form });
+        const j = await r.json();
+        if(!r.ok){
+          setBadge("Upload failed", "bad");
+          setStatus(`Error: ${j.error || r.status}`);
+          return;
+        }
+        jobId = j.job_id;
+        setBadge("Uploaded", "good");
+        setStatus(`Upload successful.\njob_id: ${jobId}\nYou can now train the model.`);
+        trainBtn.disabled = false;
+        viewBtn.disabled = false;
+        clearObject();
+        const obj = loadStlFromArrayBuffer(lastStlArrayBuffer, false);
+        scene.add(obj);
+        currentObject = obj;
+        fitToObject(obj);
+        tagEl.textContent = "STL (local)";
+      } catch (e) {
+        setBadge("Error", "bad");
+        setStatus("Server connection error. Check CORS and ensure Flask is running.");
+      }
+    });
+
+    viewBtn.addEventListener("click", () => {
+      if(!lastStlArrayBuffer) return;
+      clearObject();
+      const obj = loadStlFromArrayBuffer(lastStlArrayBuffer, true);
+      scene.add(obj);
+      currentObject = obj;
+      fitToObject(obj);
+      tagEl.textContent = "STL (wireframe)";
+    });
+
+    trainBtn.addEventListener("click", async () => {
+      if(!jobId) return;
+
+      trainBtn.disabled = true;
+      runBtn.disabled = true;
+      setBadge("Syncing", "warn");
+      setStatus("Checking for existing model on server...");
+
+      try {
+        const r = await fetch(`${API}/api/train`, {
+          method:"POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({ job_id: jobId, epochs: 120, nx: 40, ny: 30, nz: 15 })
+        });
+        const j = await r.json();
+
+        // --- MUDANÇA NO FRONT-END: VERIFICAÇÃO IMEDIATA DO CACHE ---
+        // Se o backend retornar "completed" logo no primeiro clique, habilita o botão e encerra
+        if (j.status === "completed") {
+            setBadge("Trained", "good");
+            setStatus(`Model found in cache!\nBest Val: ${j.result.best_val.toFixed(6)}`);
+            runBtn.disabled = false; // <-- Habilita o botão aqui
+            trainBtn.disabled = false;
+            return; // Impede que o código entre no setInterval desnecessário
+        }
+        // ----------------------------------------------------------
+
+        setBadge("Training", "warn");
+        const poll = setInterval(async () => {
+          try {
+            const res = await fetch(`${API}/api/status/${jobId}`);
+            if (res.status === 404) { clearInterval(poll); return setStatus("Job lost."); }
+            const data = await res.json();
+
+            if (data.status === "completed") {
+              clearInterval(poll);
+              setBadge("Trained", "good");
+              setStatus(`Training complete!\nBest Val: ${data.result.best_val.toFixed(6)}`);
+              runBtn.disabled = false; // Habilita após o treino terminar
+              trainBtn.disabled = false;
+            } else if (data.status === "processing") {
+              setStatus(`Progress: ${data.message || 'Back-propagating...'}`);
+            } else if (data.status === "failed") {
+              clearInterval(poll);
+              setBadge("Failed", "bad");
+              setStatus("Error: Training failed.");
+              trainBtn.disabled = false;
+            } else if (data.status === "idle") {
+                clearInterval(poll);
+                setStatus("Server reset. Click Train again.");
+                trainBtn.disabled = false;
+            }
+          } catch (e) { console.warn("Polling error..."); }
+        }, 3000);
+      } catch (e) { setStatus("Error: Training request failed."); trainBtn.disabled = false; }
+    });
+
+    runBtn.addEventListener("click", async () => {
+      if(!jobId) return;
+      runBtn.disabled = true;
+      setBadge("Running…", "warn");
+      setStatus("Running inference on backend and downloading colored PLY…");
+
+      try {
+        const r = await fetch(`${API}/api/infer`, {
+          method:"POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({ job_id: jobId, use_trained: true })
+        });
+
+        const j = await r.json();
+        if(!r.ok){
+          setBadge("Infer failed", "bad");
+          setStatus(`Error: ${j.error || r.status}`);
+          runBtn.disabled = false;
+          return;
+        }
+
+        const url = `${API}${j.ply_url}`;
+        const rr = await fetch(url);
+        const buf = await rr.arrayBuffer();
+
+        clearObject();
+        const obj = loadPlyFromArrayBuffer(buf);
+        scene.add(obj);
+        currentObject = obj;
+        fitToObject(obj);
+
+        tagEl.textContent = j.trained_used ? "PLY (trained)" : "PLY (untrained)";
+        legendMinEl.textContent = (j.range?.min ?? "min").toFixed(2);
+        legendMaxEl.textContent = (j.range?.max ?? "max").toFixed(2);
+
+        setBadge("Done", "good");
+        setStatus("Inference successful. PLY loaded.");
+      } catch (e) {
+        setStatus("Error processing inference.");
+      }
+      runBtn.disabled = false;
+    });
+
+  </script>
+</body>
+</html>
