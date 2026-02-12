@@ -9,7 +9,7 @@ from .base import ClassicalTSBase, ClassicalTSOutput
 
 class KalmanFilter(ClassicalTSBase):
     """
-    Linear Kalman Filter (batch, MVP):
+    Linear Kalman Filter (batch, robust):
 
       x_{t} = A x_{t-1} + B u_t + w,  w ~ N(0,Q)
       y_{t} = H x_{t}   + v,          v ~ N(0,R)
@@ -42,9 +42,9 @@ class KalmanFilter(ClassicalTSBase):
 
     def forward(
         self,
-        y: torch.Tensor,                 # (B,T,m)
+        y: torch.Tensor,                  # (B,T,m)
         *,
-        u: Optional[torch.Tensor] = None, # (B,T,du)
+        u: Optional[torch.Tensor] = None,  # (B,T,du)
         x0: Optional[torch.Tensor] = None, # (B,n)
         P0: Optional[torch.Tensor] = None, # (B,n,n) or (n,n)
         return_gain: bool = False,
@@ -57,6 +57,7 @@ class KalmanFilter(ClassicalTSBase):
         H = self.H.to(device=device, dtype=dtype)
         Q = self.Q.to(device=device, dtype=dtype)
         R = self.R.to(device=device, dtype=dtype)
+
         I = torch.eye(n, device=device, dtype=dtype).expand(Bsz, n, n)
 
         if x0 is None:
@@ -73,7 +74,9 @@ class KalmanFilter(ClassicalTSBase):
 
         xs, Ps, Ks = [], [], []
         for t in range(T):
+            # -------------------------
             # predict
+            # -------------------------
             if self.B is not None and u is not None:
                 Bt = self.B.to(device=device, dtype=dtype)
                 x = (A @ x.unsqueeze(-1)).squeeze(-1) + (Bt @ u[:, t, :].unsqueeze(-1)).squeeze(-1)
@@ -81,15 +84,32 @@ class KalmanFilter(ClassicalTSBase):
                 x = (A @ x.unsqueeze(-1)).squeeze(-1)
 
             P = A @ P @ A.transpose(-1, -2) + Q
+            P = 0.5 * (P + P.transpose(-1, -2))  # (3) keep symmetric
 
+            # -------------------------
             # update
-            yt = y[:, t, :]
+            # -------------------------
+            yt = y[:, t, :]  # (B,m)
+
             S = H @ P @ H.transpose(-1, -2) + R  # (B,m,m)
-            K = P @ H.transpose(-1, -2) @ torch.linalg.inv(S)  # (B,n,m)
+
+            # (1) avoid inv(S): K = P H^T S^{-1} via solve
+            PHt = P @ H.transpose(-1, -2)  # (B,n,m)
+            # solve S^T X^T = (PHt)^T  => X = PHt @ inv(S)
+            K = torch.linalg.solve(
+                S.transpose(-1, -2),
+                PHt.transpose(-1, -2),
+            ).transpose(-1, -2)  # (B,n,m)
 
             innov = yt - (H @ x.unsqueeze(-1)).squeeze(-1)  # (B,m)
             x = x + (K @ innov.unsqueeze(-1)).squeeze(-1)
-            P = (I - K @ H) @ P
+
+            # (2) Joseph stabilized covariance update
+            IKH = I - K @ H
+            P = IKH @ P @ IKH.transpose(-1, -2) + K @ R @ K.transpose(-1, -2)
+
+            # (3) keep symmetric (numerical cleanup)
+            P = 0.5 * (P + P.transpose(-1, -2))
 
             xs.append(x)
             Ps.append(P)
@@ -101,4 +121,8 @@ class KalmanFilter(ClassicalTSBase):
         if return_gain:
             extras["K"] = torch.stack(Ks, dim=1)
 
-        return ClassicalTSOutput(y=x_filt, losses={"total": torch.tensor(0.0, device=device)}, extras=extras)
+        return ClassicalTSOutput(
+            y=x_filt,
+            losses={"total": torch.tensor(0.0, device=device, dtype=dtype)},
+            extras=extras,
+        )

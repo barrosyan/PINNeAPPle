@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 import torch
 import torch.nn as nn
@@ -18,8 +18,22 @@ class ARIMA(ClassicalTSBase):
     Use:
       fit(x) where x: (B,T,dim) or (B,T,1)
       forecast(x_hist, steps)
+
+    Notes:
+      - For d>0, forward() returns predictions in ORIGINAL space (aligned), and also
+        provides differenced predictions in extras["y_differenced"].
+      - This is effectively an AR(p) on Δ^d(x), i.e., ARI(p,d) since MA(q) is not implemented.
     """
-    def __init__(self, dim: int = 1, p: int = 3, d: int = 0, q: int = 0, l2: float = 1e-6, use_bias: bool = True):
+
+    def __init__(
+        self,
+        dim: int = 1,
+        p: int = 3,
+        d: int = 0,
+        q: int = 0,
+        l2: float = 1e-6,
+        use_bias: bool = True,
+    ):
         super().__init__()
         self.dim = int(dim)
         self.p = int(p)
@@ -39,21 +53,66 @@ class ARIMA(ClassicalTSBase):
             y = y[:, 1:, :] - y[:, :-1, :]
         return y
 
+    def _last_diff_states(self, x_hist: torch.Tensor) -> List[torch.Tensor]:
+        """
+        Builds integration state for undifferencing up to order d-1.
+
+        Returns:
+          states = [x_T, Δx_T, Δ^2 x_T, ..., Δ^{d-1} x_T]  each (B,D)
+        where T is the last time index in x_hist.
+
+        For d=0: returns [].
+        """
+        if self.d == 0:
+            return []
+
+        if x_hist.shape[1] <= self.d:
+            raise ValueError(
+                f"Need at least d+1={self.d+1} points in x_hist to undifference, got T={x_hist.shape[1]}."
+            )
+
+        states: List[torch.Tensor] = []
+        cur = x_hist  # (B,T,D)
+
+        # order 0: last level
+        states.append(cur[:, -1, :])
+
+        # orders 1..d-1: last differences
+        for _ in range(1, self.d):
+            cur = cur[:, 1:, :] - cur[:, :-1, :]
+            states.append(cur[:, -1, :])
+
+        return states
+
     def _undifference_forecast(self, x_hist: torch.Tensor, dx_fore: torch.Tensor) -> torch.Tensor:
         """
-        Reconstruct forecast in original space given differenced forecasts.
-        For d>0, we cumulatively sum with last known values.
+        Reconstruct forecast in original space given Δ^d-forecasts.
+
+        Args:
+          x_hist: (B,T,D) original history
+          dx_fore: (B,steps,D) forecasts in differenced space of order d (i.e., Δ^d x)
+
+        Returns:
+          y: (B,steps,D) forecast in original space
         """
         if self.d == 0:
             return dx_fore
 
-        # base = last observed level(s)
-        base = x_hist[:, -1, :]  # (B,D)
+        # states: [x_T, Δx_T, ..., Δ^{d-1} x_T]
+        states = self._last_diff_states(x_hist)
+
         y = []
-        cur = base
         for t in range(dx_fore.shape[1]):
-            cur = cur + dx_fore[:, t, :]
-            y.append(cur)
+            top = dx_fore[:, t, :]  # Δ^d x at step t
+            tmp = states + [top]    # length d+1
+
+            # integrate down: Δ^{k-1} += Δ^k
+            for k in range(self.d, 0, -1):
+                tmp[k - 1] = tmp[k - 1] + tmp[k]
+
+            states = tmp[:-1]  # keep [x, Δx, ..., Δ^{d-1}] for next step
+            y.append(states[0])
+
         return torch.stack(y, dim=1)
 
     @staticmethod
@@ -69,7 +128,10 @@ class ARIMA(ClassicalTSBase):
             lagged = [x[:, t - k, :] for k in range(1, self.p + 1)]
             row = torch.cat(lagged, dim=-1)
             if self.use_bias:
-                row = torch.cat([row, torch.ones((B, 1), device=x.device, dtype=x.dtype)], dim=-1)
+                row = torch.cat(
+                    [row, torch.ones((B, 1), device=x.device, dtype=x.dtype)],
+                    dim=-1,
+                )
             rows.append(row)
         return torch.cat(rows, dim=0)
 
@@ -80,6 +142,7 @@ class ARIMA(ClassicalTSBase):
     def fit(self, x: torch.Tensor) -> "ARIMA":
         if x.shape[-1] != self.dim:
             raise ValueError(f"Expected dim={self.dim}, got {x.shape[-1]}")
+
         xd = self._difference(x)
         if xd.shape[1] <= self.p:
             raise ValueError(f"Not enough timesteps after differencing: T'={xd.shape[1]} <= p={self.p}")
@@ -94,6 +157,7 @@ class ARIMA(ClassicalTSBase):
     def forecast(self, x_hist: torch.Tensor, steps: int) -> torch.Tensor:
         if x_hist.shape[-1] != self.dim:
             raise ValueError(f"Expected dim={self.dim}, got {x_hist.shape[-1]}")
+
         xd = self._difference(x_hist)
         B, T, D = xd.shape
         if T < self.p:
@@ -104,31 +168,81 @@ class ARIMA(ClassicalTSBase):
         for _ in range(int(steps)):
             feat = torch.cat(buf, dim=-1)
             if self.use_bias:
-                feat = torch.cat([feat, torch.ones((B, 1), device=x_hist.device, dtype=x_hist.dtype)], dim=-1)
+                feat = torch.cat(
+                    [feat, torch.ones((B, 1), device=x_hist.device, dtype=x_hist.dtype)],
+                    dim=-1,
+                )
             dx = feat @ self.W
             dx_preds.append(dx)
             buf = [dx] + buf[:-1]
+
         dx_fore = torch.stack(dx_preds, dim=1)  # (B,steps,D)
 
-        # undifference back to original
+        # undifference back to original (now correct for any d)
         return self._undifference_forecast(x_hist, dx_fore)
 
-    def forward(self, x: torch.Tensor, *, y_true: Optional[torch.Tensor] = None, return_loss: bool = False) -> ClassicalTSOutput:
-        # one-step-ahead predictions on provided x
+    def forward(
+        self,
+        x: torch.Tensor,
+        *,
+        y_true: Optional[torch.Tensor] = None,
+        return_loss: bool = False
+    ) -> ClassicalTSOutput:
+        """
+        One-step-ahead predictions along the provided sequence.
+
+        Returns predictions in ORIGINAL space by default.
+        Also exposes differenced predictions in extras["y_differenced"].
+        """
         xd = self._difference(x)
-        B, T, D = xd.shape
+        B, Tp, D = xd.shape
+
+        if Tp <= self.p:
+            raise ValueError(f"Not enough timesteps after differencing: T'={Tp} <= p={self.p}")
+
         X = self._make_design(xd)
         Yhat = X @ self.W
-        yhat_d = Yhat.view(T - self.p, B, D).permute(1, 0, 2)  # differenced space
+        yhat_d = Yhat.view(Tp - self.p, B, D).permute(1, 0, 2)  # (B, steps, D), steps=Tp-p
 
-        # map to original for comparison (approx): undifference using rolling base
-        # for d>0, we'll compare on differenced space by default to keep it correct.
-        y_out = yhat_d
+        # Map predictions to original space (aligned)
+        if self.d == 0:
+            y_out = yhat_d
+            start = self.p
+        else:
+            # First predicted Δ^d corresponds to original time index (p + d)
+            base_hist = x[:, : self.p + self.d, :]
+            y_out = self._undifference_forecast(base_hist, yhat_d)
+            start = self.p + self.d
 
         losses: Dict[str, torch.Tensor] = {"total": torch.tensor(0.0, device=x.device)}
+
         if return_loss and y_true is not None:
-            yd_true = self._difference(y_true)
-            losses["mse"] = torch.mean((yhat_d - yd_true[:, self.p:, :]) ** 2)
+            if y_true.shape != x.shape:
+                raise ValueError(f"Expected y_true with shape {x.shape}, got {y_true.shape}")
+
+            # Original-space MSE (aligned with y_out)
+            y_true_aligned = y_true[:, start:, :]
+            if y_true_aligned.shape[1] != y_out.shape[1]:
+                m = min(y_true_aligned.shape[1], y_out.shape[1])
+                y_true_aligned = y_true_aligned[:, :m, :]
+                y_out_cmp = y_out[:, :m, :]
+            else:
+                y_out_cmp = y_out
+
+            losses["mse"] = torch.mean((y_out_cmp - y_true_aligned) ** 2)
             losses["total"] = losses["mse"]
 
-        return ClassicalTSOutput(y=y_out, losses=losses, extras={"fitted": self._fitted, "space": "differenced"})
+            # Differenced-space diagnostic MSE
+            yd_true = self._difference(y_true)
+            losses["mse_d"] = torch.mean((yhat_d - yd_true[:, self.p:, :]) ** 2)
+
+        return ClassicalTSOutput(
+            y=y_out,
+            losses=losses,
+            extras={
+                "fitted": self._fitted,
+                "space": "original",
+                "y_differenced": yhat_d,
+                "start_index_original": start,
+            },
+        )
