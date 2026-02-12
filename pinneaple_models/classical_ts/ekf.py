@@ -8,7 +8,7 @@ from .base import ClassicalTSBase, ClassicalTSOutput
 
 class ExtendedKalmanFilter(ClassicalTSBase):
     """
-    EKF (MVP):
+    EKF (robust MVP):
       x_t = f(x_{t-1}, u_t) + w
       y_t = h(x_t) + v
 
@@ -17,6 +17,11 @@ class ExtendedKalmanFilter(ClassicalTSBase):
       h: x->y
       F_jac: Jacobian of f wrt x, shape (B,n,n)
       H_jac: Jacobian of h wrt x, shape (B,m,n)
+
+    Changes vs previous:
+      (1) F_jac evaluated at x_prev (pre-propagation) to match standard discrete EKF linearization
+      (2) Joseph-form covariance update for numerical stability / PSD preservation
+      (3) Replace inv(S) with solve(S, ·)
     """
     def __init__(
         self,
@@ -52,11 +57,11 @@ class ExtendedKalmanFilter(ClassicalTSBase):
 
         if x0 is None:
             # infer n from Q
-            n = Q.shape[0]
+            n = int(Q.shape[-1])
             x = torch.zeros((Bsz, n), device=device, dtype=dtype)
         else:
             x = x0.to(device=device, dtype=dtype)
-            n = x.shape[1]
+            n = int(x.shape[1])
 
         if P0 is None:
             P = torch.eye(n, device=device, dtype=dtype).expand(Bsz, n, n).clone()
@@ -71,31 +76,48 @@ class ExtendedKalmanFilter(ClassicalTSBase):
         for t in range(T):
             ut = None if u is None else u[:, t, :]
 
+            # -------------------------
             # predict
-            x = self.f(x, ut)
-            Fm = self.F_jac(x, ut)  # (B,n,n)
-            P = Fm @ P @ Fm.transpose(-1, -2) + Q
+            # -------------------------
+            x_prev = x
+            Fm = self.F_jac(x_prev, ut)     # (B,n,n)  [item 1]
+            x = self.f(x_prev, ut)          # (B,n)
 
+            P = Fm @ P @ Fm.transpose(-1, -2) + Q  # (B,n,n)
+
+            # -------------------------
             # update
-            yt = y[:, t, :]
-            Hm = self.H_jac(x)      # (B,m,n)
-            yhat = self.h(x)        # (B,m)
+            # -------------------------
+            yt = y[:, t, :]                 # (B,m)
+            Hm = self.H_jac(x)              # (B,m,n)
+            yhat = self.h(x)                # (B,m)
 
-            S = Hm @ P @ Hm.transpose(-1, -2) + R
-            K = P @ Hm.transpose(-1, -2) @ torch.linalg.inv(S)  # (B,n,m)
+            S = Hm @ P @ Hm.transpose(-1, -2) + R  # (B,m,m)
 
-            innov = yt - yhat
-            x = x + (K @ innov.unsqueeze(-1)).squeeze(-1)
-            P = (I - K @ Hm) @ P
+            # K = P H^T S^{-1}  (avoid inv via solve) [item 3]
+            PHt = P @ Hm.transpose(-1, -2)  # (B,n,m)
+            # Solve: S * X = (PHt)^T  => X = solve(S, (PHt)^T); then transpose back
+            K = torch.linalg.solve(S, PHt.transpose(-1, -2)).transpose(-1, -2)  # (B,n,m)
+
+            innov = yt - yhat               # (B,m)
+            x = x + (K @ innov.unsqueeze(-1)).squeeze(-1)  # (B,n)
+
+            # Joseph-form covariance update [item 2]
+            IKH = I - K @ Hm                # (B,n,n)
+            P = IKH @ P @ IKH.transpose(-1, -2) + K @ R @ K.transpose(-1, -2)
 
             xs.append(x)
             Ps.append(P)
             if return_gain:
                 Ks.append(K)
 
-        x_filt = torch.stack(xs, dim=1)
-        extras: Dict[str, Any] = {"P": torch.stack(Ps, dim=1)}
+        x_filt = torch.stack(xs, dim=1)  # (B,T,n)
+        extras: Dict[str, Any] = {"P": torch.stack(Ps, dim=1)}  # (B,T,n,n)
         if return_gain:
-            extras["K"] = torch.stack(Ks, dim=1)
+            extras["K"] = torch.stack(Ks, dim=1)  # (B,T,n,m)
 
-        return ClassicalTSOutput(y=x_filt, losses={"total": torch.tensor(0.0, device=device)}, extras=extras)
+        return ClassicalTSOutput(
+            y=x_filt,
+            losses={"total": torch.tensor(0.0, device=device)},
+            extras=extras,
+        )

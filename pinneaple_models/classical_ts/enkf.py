@@ -32,7 +32,10 @@ class EnsembleKalmanFilter(ClassicalTSBase):
         self.h = h
         self.register_buffer("Q", Q)
         self.register_buffer("R", R)
+
         self.ensemble_size = int(ensemble_size)
+        if self.ensemble_size < 2:
+            raise ValueError("EnKF requires ensemble_size >= 2")
 
     def forward(
         self,
@@ -86,14 +89,14 @@ class EnsembleKalmanFilter(ClassicalTSBase):
             dX = Xpred - xbar[:, None, :]
             dY = Ypred - ybar[:, None, :]
 
-            # covariances
-            Pxy = (dX.transpose(1, 2) @ dY) / max(M - 1, 1)  # (B,n,m)
-            Pyy = (dY.transpose(1, 2) @ dY) / max(M - 1, 1)  # (B,m,m)
+            # covariances (unbiased sample cov)
+            Pxy = (dX.transpose(1, 2) @ dY) / (M - 1)  # (B,n,m)
+            Pyy = (dY.transpose(1, 2) @ dY) / (M - 1)  # (B,m,m)
             Pyy = Pyy + R
 
-            K = Pxy @ torch.linalg.inv(Pyy)  # (B,n,m)
-
-            innov = y[:, t, :] - ybar  # (B,m)
+            # K = Pxy @ inv(Pyy)  (but use solve for numerical stability)
+            # Solve: Pyy^T K^T = Pxy^T  => K = (solve(Pyy, Pxy^T))^T
+            K = torch.linalg.solve(Pyy, Pxy.transpose(1, 2)).transpose(1, 2)  # (B,n,m)
 
             # update ensemble with perturbed obs (stochastic EnKF)
             Lr = torch.linalg.cholesky(R + 1e-9 * torch.eye(m, device=device, dtype=dtype))
@@ -110,4 +113,8 @@ class EnsembleKalmanFilter(ClassicalTSBase):
         if return_ensembles:
             extras["ensembles"] = torch.stack(ens_store, dim=1)  # (B,T,M,n)
 
-        return ClassicalTSOutput(y=torch.stack(xs, dim=1), losses={"total": torch.tensor(0.0, device=device)}, extras=extras)
+        return ClassicalTSOutput(
+            y=torch.stack(xs, dim=1),
+            losses={"total": torch.tensor(0.0, device=device)},
+            extras=extras,
+        )
