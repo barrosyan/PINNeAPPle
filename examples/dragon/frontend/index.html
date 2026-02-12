@@ -626,70 +626,257 @@
       </div>
     </div>
 
-    <div class="drawerBody">
-      <div class="toolCard">
-        <h3>Model Registry</h3>
-        <p>List registered models (incl. PINNs family) from Pinneaple registry.</p>
-        <div class="toolRow">
-          <button id="btnModels" class="btn secondary">List models</button>
+    <div class="tabs" id="toolTabs" role="tablist" aria-label="Tool tabs" style="padding:0; margin:-6px 0 14px;">
+      <button class="tab active" data-tooltab="registry" role="tab">Registry</button>
+      <button class="tab" data-tooltab="mesh" role="tab">Mesh</button>
+      <button class="tab" data-tooltab="nasa" role="tab">NASA</button>
+      <button class="tab" data-tooltab="toy" role="tab">Toy Zarr</button>
+      <button class="tab" data-tooltab="fft" role="tab">FFT Demo</button>
+      <button class="tab" data-tooltab="cad" role="tab">CAD Vars</button>
+      <button class="tab" data-tooltab="inspect" role="tab">Inspector</button>
+    </div>
+
+    <div class="tabPanels" id="toolPanels" style="padding:0;">
+      <!-- Registry -->
+      <div class="panel active" id="tool-panel-registry">
+        <div class="toolCard">
+          <h3>Model Registry</h3>
+          <p>List registered models (incl. PINNs family) from Pinneaple registry.</p>
+          <div class="toolRow">
+            <button id="btnModels" class="btn secondary">List models</button>
+          </div>
+          <div id="outModels" class="toolOut">—</div>
         </div>
-        <div id="outModels" class="toolOut">—</div>
       </div>
 
-      <div class="toolCard">
-        <h3>Mesh Repair + Simplify</h3>
-        <p>Repair and simplify the uploaded STL for the current <span class="mono">job_id</span>. Outputs a downloadable STL (via backend).</p>
-        <div class="toolRow">
-          <div class="field" style="width:160px; margin:0;">
-            <label>Target faces</label>
-            <input id="simpFaces" type="number" min="100" step="100" value="5000" />
+      <!-- Mesh -->
+      <div class="panel" id="tool-panel-mesh">
+        <div class="toolCard">
+          <h3>Mesh Repair + Simplify</h3>
+          <p>Repair and simplify the uploaded STL for the current <span class="mono">job_id</span>.</p>
+          <div class="toolRow">
+            <div class="field" style="width:160px; margin:0;">
+              <label>Target faces</label>
+              <input id="simpFaces" type="number" min="100" step="100" value="5000" />
+            </div>
+            <button id="btnMeshOps" class="btn secondary" style="margin-top:18px;">Run</button>
           </div>
-          <button id="btnMeshOps" class="btn secondary" style="margin-top:18px;">Run</button>
+          <div id="outMeshOps" class="toolOut">Requires an uploaded STL (job_id).</div>
         </div>
-        <div id="outMeshOps" class="toolOut">Requires an uploaded STL (job_id).</div>
       </div>
 
-      <div class="toolCard">
-        <h3>NASA POWER → Zarr</h3>
-        <p>Fetch daily point data and write a UPD Zarr artifact (plus raw JSON).</p>
+      <!-- NASA -->
+      <div class="panel" id="tool-panel-nasa">
+        <div class="toolCard">
+          <h3>NASA POWER → Zarr</h3>
+          <p>Fetch daily point data and write a UPD Zarr artifact (plus raw JSON).</p>
 
-        <div class="grid2">
-          <div class="field">
-            <label>Latitude</label>
-            <input id="npLat" type="number" step="0.01" value="-8.05" />
+          <div class="grid2">
+            <div class="field">
+              <label>Latitude</label>
+              <input id="npLat" type="number" step="0.01" value="-8.05" />
+            </div>
+            <div class="field">
+              <label>Longitude</label>
+              <input id="npLon" type="number" step="0.01" value="-34.9" />
+            </div>
           </div>
-          <div class="field">
-            <label>Longitude</label>
-            <input id="npLon" type="number" step="0.01" value="-34.9" />
+
+          <div class="grid2" style="margin-top:10px;">
+            <div class="field">
+              <label>Start (YYYYMMDD)</label>
+              <input id="npStart" class="mono" value="20240101" />
+            </div>
+            <div class="field">
+              <label>End (YYYYMMDD)</label>
+              <input id="npEnd" class="mono" value="20240131" />
+            </div>
           </div>
-        </div>
 
-        <div class="grid2" style="margin-top:10px;">
-          <div class="field">
-            <label>Start (YYYYMMDD)</label>
-            <input id="npStart" class="mono" value="20240101" />
+          <div class="field" style="margin-top:10px;">
+            <label>Parameters (comma)</label>
+            <input id="npParams" class="mono" value="T2M,PRECTOTCORR,ALLSKY_SFC_SW_DWN" />
           </div>
-          <div class="field">
-            <label>End (YYYYMMDD)</label>
-            <input id="npEnd" class="mono" value="20240131" />
+
+          <div class="toolRow" style="margin-top:10px;">
+            <button id="btnNasa" class="btn secondary">Fetch + Write Zarr</button>
           </div>
-        </div>
 
-        <div class="field" style="margin-top:10px;">
-          <label>Parameters (comma)</label>
-          <input id="npParams" class="mono" value="T2M,PRECTOTCORR,ALLSKY_SFC_SW_DWN" />
+          <div id="outNasa" class="toolOut">—</div>
         </div>
+      </div>
 
-        <div class="toolRow" style="margin-top:10px;">
-          <button id="btnNasa" class="btn secondary">Fetch + Write Zarr</button>
+      <!-- Toy Zarr -->
+      <div class="panel" id="tool-panel-toy">
+        <div class="toolCard">
+          <h3>UPD Toy → Zarr</h3>
+          <p>Generate a random UPD dataset and export a zipped <span class="mono">.zarr</span>.</p>
+
+          <div class="grid2">
+            <div class="field">
+              <label>n_samples</label>
+              <input id="toyN" type="number" min="1" step="1" value="256" />
+            </div>
+            <div class="field">
+              <label>T</label>
+              <input id="toyT" type="number" min="1" step="1" value="64" />
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div class="field">
+              <label>Dx</label>
+              <input id="toyDx" type="number" min="1" step="1" value="8" />
+            </div>
+            <div class="field">
+              <label>Dy</label>
+              <input id="toyDy" type="number" min="1" step="1" value="2" />
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div class="field">
+              <label>seed</label>
+              <input id="toySeed" type="number" step="1" value="123" />
+            </div>
+            <div class="field">
+              <label>name</label>
+              <input id="toyName" class="mono" value="toy_ts" />
+            </div>
+          </div>
+
+          <div class="toolRow" style="margin-top:10px;">
+            <button id="btnToy" class="btn secondary">Generate</button>
+          </div>
+
+          <div id="outToy" class="toolOut">—</div>
         </div>
+      </div>
 
-        <div id="outNasa" class="toolOut">—</div>
+      <!-- FFT Demo -->
+      <div class="panel" id="tool-panel-fft">
+        <div class="toolCard">
+          <h3>FFT Feature Step Demo</h3>
+          <p>Runs 2 epochs and returns <span class="mono">best_val</span>, best checkpoint and logs.</p>
+
+          <div class="grid2">
+            <div class="field">
+              <label>epochs</label>
+              <input id="fftEpochs" type="number" min="1" step="1" value="2" />
+            </div>
+            <div class="field">
+              <label>seed</label>
+              <input id="fftSeed" type="number" step="1" value="123" />
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div class="field">
+              <label>signal_len</label>
+              <input id="fftLen" type="number" min="8" step="1" value="64" />
+            </div>
+            <div class="field">
+              <label>out_dim</label>
+              <input id="fftOut" type="number" min="1" step="1" value="2" />
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div class="field">
+              <label>n_train</label>
+              <input id="fftNtr" type="number" min="16" step="16" value="1600" />
+            </div>
+            <div class="field">
+              <label>n_val</label>
+              <input id="fftNva" type="number" min="16" step="16" value="448" />
+            </div>
+          </div>
+
+          <div class="toolRow" style="margin-top:10px;">
+            <button id="btnFFT" class="btn secondary">Run demo</button>
+          </div>
+
+          <div id="outFFT" class="toolOut">—</div>
+        </div>
+      </div>
+
+      <!-- CAD Vars -->
+      <div class="panel" id="tool-panel-cad">
+        <div class="toolCard">
+          <h3>CAD Variants</h3>
+          <p>Generates CadQuery box variants, samples surface points+normals, saves <span class="mono">.zarr</span> (and optional STL).</p>
+
+          <div class="grid2">
+            <div class="field">
+              <label>widths (comma)</label>
+              <input id="cadW" class="mono" value="0.8,1.0,1.2" />
+            </div>
+            <div class="field">
+              <label>heights (comma)</label>
+              <input id="cadH" class="mono" value="0.2,0.3" />
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div class="field">
+              <label>depths (comma)</label>
+              <input id="cadD" class="mono" value="1.0" />
+            </div>
+            <div class="field">
+              <label>n_points</label>
+              <input id="cadPts" type="number" min="100" step="100" value="8000" />
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div class="field">
+              <label>name</label>
+              <input id="cadName" class="mono" value="cad_variants" />
+            </div>
+            <div class="field">
+              <label>write_stl</label>
+              <select id="cadSTL">
+                <option value="true" selected>true</option>
+                <option value="false">false</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="toolRow" style="margin-top:10px;">
+            <button id="btnCAD" class="btn secondary">Generate</button>
+          </div>
+
+          <div id="outCAD" class="toolOut">—</div>
+        </div>
+      </div>
+
+      <!-- Inspector -->
+      <div class="panel" id="tool-panel-inspect">
+        <div class="toolCard">
+          <h3>Zarr Inspector</h3>
+          <p>Inspect a tool output (<span class="mono">tool_id</span> + <span class="mono">zarr_name</span>) and show arrays metadata.</p>
+
+          <div class="grid2">
+            <div class="field">
+              <label>tool_id</label>
+              <input id="insTool" class="mono" placeholder="toy_zarr_... or cad_vars_..." />
+            </div>
+            <div class="field">
+              <label>zarr_name</label>
+              <input id="insZarr" class="mono" placeholder="toy_ts.zarr" />
+            </div>
+          </div>
+
+          <div class="toolRow" style="margin-top:10px;">
+            <button id="btnInspect" class="btn secondary">Inspect</button>
+          </div>
+
+          <div id="outInspect" class="toolOut">—</div>
+        </div>
       </div>
 
       <div class="tiny" style="padding:8px 2px 2px;">
-        Tip: these tools are intentionally decoupled from the training pipe.
-        If an endpoint doesn’t exist, you’ll just see an error here (no impact on the main app).
+        Tip: tools are intentionally decoupled from the training pipe.
       </div>
     </div>
   </aside>
@@ -799,6 +986,188 @@
     const npStart = document.getElementById("npStart");
     const npEnd = document.getElementById("npEnd");
     const npParams = document.getElementById("npParams");
+
+    // --- Toy Zarr DOM
+    const btnToy = document.getElementById("btnToy");
+    const outToy = document.getElementById("outToy");
+    const toyN = document.getElementById("toyN");
+    const toyT = document.getElementById("toyT");
+    const toyDx = document.getElementById("toyDx");
+    const toyDy = document.getElementById("toyDy");
+    const toySeed = document.getElementById("toySeed");
+    const toyName = document.getElementById("toyName");
+
+    // --- FFT DOM
+    const btnFFT = document.getElementById("btnFFT");
+    const outFFT = document.getElementById("outFFT");
+    const fftEpochs = document.getElementById("fftEpochs");
+    const fftSeed = document.getElementById("fftSeed");
+    const fftLen = document.getElementById("fftLen");
+    const fftOut = document.getElementById("fftOut");
+    const fftNtr = document.getElementById("fftNtr");
+    const fftNva = document.getElementById("fftNva");
+
+    // --- CAD DOM
+    const btnCAD = document.getElementById("btnCAD");
+    const outCAD = document.getElementById("outCAD");
+    const cadW = document.getElementById("cadW");
+    const cadD = document.getElementById("cadD");
+    const cadH = document.getElementById("cadH");
+    const cadPts = document.getElementById("cadPts");
+    const cadName = document.getElementById("cadName");
+    const cadSTL = document.getElementById("cadSTL");
+
+    // --- Inspect DOM
+    const btnInspect = document.getElementById("btnInspect");
+    const outInspect = document.getElementById("outInspect");
+    const insTool = document.getElementById("insTool");
+    const insZarr = document.getElementById("insZarr");
+
+    // ---------------------------------------------------------
+    // Tool: Toy Zarr
+    // ---------------------------------------------------------
+    btnToy.addEventListener("click", async () => {
+      outToy.textContent = "Generating...";
+      try{
+        const payload = {
+          n_samples: Number(toyN.value),
+          T: Number(toyT.value),
+          Dx: Number(toyDx.value),
+          Dy: Number(toyDy.value),
+          seed: Number(toySeed.value),
+          name: String(toyName.value).trim() || "toy_ts",
+        };
+        const r = await fetch(`${API}/api/tools/upd_toy_zarr`, {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if(!r.ok || !j.ok) throw new Error(j.error || `HTTP ${r.status}`);
+
+        const zipUrl = `${API}${j.download_zip_url}`;
+        outToy.innerHTML =
+          `OK\ntool_id: ${j.tool_id}\n\n` +
+          `Download zip: <a href="${zipUrl}" target="_blank" rel="noreferrer">${j.zip}</a>\n` +
+          `zarr: ${j.zarr}`;
+      }catch(e){
+        outToy.textContent = `Error: ${e.message || e}`;
+      }
+    });
+
+    // ---------------------------------------------------------
+    // Tool: FFT Demo
+    // ---------------------------------------------------------
+    btnFFT.addEventListener("click", async () => {
+      outFFT.textContent = "Running...";
+      try{
+        const payload = {
+          epochs: Number(fftEpochs.value),
+          seed: Number(fftSeed.value),
+          signal_len: Number(fftLen.value),
+          out_dim: Number(fftOut.value),
+          n_train: Number(fftNtr.value),
+          n_val: Number(fftNva.value),
+        };
+        const r = await fetch(`${API}/api/tools/fft_feature_demo`, {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if(!r.ok || !j.ok) throw new Error(j.error || `HTTP ${r.status}`);
+
+        const logsUrl = `${API}${j.download_logs_url}`;
+        const bestUrl = j.download_best_url ? `${API}${j.download_best_url}` : null;
+
+        outFFT.innerHTML =
+          `OK\ntool_id: ${j.tool_id}\n` +
+          `best_val: ${j.best_val ?? "?"}\n\n` +
+          (bestUrl ? `Best ckpt: <a href="${bestUrl}" target="_blank" rel="noreferrer">${j.best_path}</a>\n` : `Best ckpt: ${j.best_path ?? "(none)"}\n`) +
+          `Logs: <a href="${logsUrl}" target="_blank" rel="noreferrer">${j.logs_jsonl || j.logs}</a>`;
+      }catch(e){
+        outFFT.textContent = `Error: ${e.message || e}`;
+      }
+    });
+
+    // ---------------------------------------------------------
+    // Tool: CAD Variants
+    // ---------------------------------------------------------
+    function parseCsvFloats(s){
+      return String(s).split(",").map(x=>x.trim()).filter(Boolean).map(Number).filter(v=>Number.isFinite(v));
+    }
+
+    btnCAD.addEventListener("click", async () => {
+      outCAD.textContent = "Generating...";
+      try{
+        const payload = {
+          widths: parseCsvFloats(cadW.value),
+          depths: parseCsvFloats(cadD.value),
+          heights: parseCsvFloats(cadH.value),
+          n_points: Number(cadPts.value),
+          name: String(cadName.value).trim() || "cad_variants",
+          write_stl: String(cadSTL.value) === "true",
+        };
+        const r = await fetch(`${API}/api/tools/cad_variants`, {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if(!r.ok || !j.ok) throw new Error(j.error || `HTTP ${r.status}`);
+
+        const zipUrl = `${API}${j.download_zip_url}`;
+        const stls = Array.isArray(j.stl_download_urls) ? j.stl_download_urls : [];
+
+        outCAD.innerHTML =
+          `OK\ntool_id: ${j.tool_id}\n\n` +
+          `Download zip: <a href="${zipUrl}" target="_blank" rel="noreferrer">${j.zip}</a>\n` +
+          `zarr: ${j.zarr}\n\n` +
+          (stls.length
+            ? `STLs (preview):\n${stls.slice(0, 10).map(u => `- <a href="${API}${u}" target="_blank" rel="noreferrer">${u.split("/").pop()}</a>`).join("\n")}${stls.length>10 ? "\n..." : ""}`
+            : `STLs: (none / disabled / exporter failed)`);
+      }catch(e){
+        outCAD.textContent = `Error: ${e.message || e}`;
+      }
+    });
+
+    // ---------------------------------------------------------
+    // Tool: Zarr Inspector
+    // ---------------------------------------------------------
+    btnInspect.addEventListener("click", async () => {
+      outInspect.textContent = "Inspecting...";
+      try{
+        const payload = {
+          tool_id: String(insTool.value).trim(),
+          zarr_name: String(insZarr.value).trim(),
+        };
+        if(!payload.tool_id || !payload.zarr_name){
+          throw new Error("Provide tool_id and zarr_name.");
+        }
+        const r = await fetch(`${API}/api/tools/zarr_inspect`, {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        const j = await r.json();
+        if(!r.ok || !j.ok) throw new Error(j.error || `HTTP ${r.status}`);
+
+        const arrays = Array.isArray(j.arrays) ? j.arrays : [];
+        const lines = arrays.slice(0, 80).map(a => {
+          const shp = (a.shape || []).join("x");
+          const ch = (a.chunks || []).join("x");
+          return `- ${a.key} | shape=${shp} | chunks=${ch} | dtype=${a.dtype}`;
+        });
+
+        outInspect.textContent =
+          `OK\npath: ${j.zarr_path}\narrays: ${j.n_arrays}\n\n` +
+          (j.manifest ? `manifest: ${JSON.stringify(j.manifest, null, 2)}\n\n` : "manifest: (none)\n\n") +
+          `arrays:\n${lines.join("\n")}${arrays.length>80 ? "\n..." : ""}`;
+      }catch(e){
+        outInspect.textContent = `Error: ${e.message || e}`;
+      }
+    });
+
 
     let jobId = null;
     let lastStlArrayBuffer = null;
@@ -1318,11 +1687,11 @@
     // ---------------------------------------------------------
     // Tools Drawer behavior
     // ---------------------------------------------------------
-    function openDrawer(){
-      drawer.classList.add("on");
-      drawerMask.classList.add("on");
-      drawer.setAttribute("aria-hidden", "false");
-    }
+    // function openDrawer(){
+    //   drawer.classList.add("on");
+    //   drawerMask.classList.add("on");
+    //   drawer.setAttribute("aria-hidden", "false");
+    // }
     function closeDrawer(){
       drawer.classList.remove("on");
       drawerMask.classList.remove("on");
@@ -1331,6 +1700,41 @@
     toolsBtn.addEventListener("click", openDrawer);
     drawerClose.addEventListener("click", closeDrawer);
     drawerMask.addEventListener("click", closeDrawer);
+
+    // ---------------------------------------------------------
+    // Tools Drawer tabs (only one tool visible at a time)
+    // ---------------------------------------------------------
+    const toolTabs = [...document.querySelectorAll("#toolTabs .tab")];
+    const toolPanels = {
+      registry: document.getElementById("tool-panel-registry"),
+      mesh: document.getElementById("tool-panel-mesh"),
+      nasa: document.getElementById("tool-panel-nasa"),
+      toy: document.getElementById("tool-panel-toy"),
+      fft: document.getElementById("tool-panel-fft"),
+      cad: document.getElementById("tool-panel-cad"),
+      inspect: document.getElementById("tool-panel-inspect"),
+    };
+
+    function setActiveToolTab(name){
+      for(const t of toolTabs){
+        const on = (t.dataset.tooltab === name);
+        t.classList.toggle("active", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
+      }
+      for(const [k,p] of Object.entries(toolPanels)){
+        p.classList.toggle("active", k === name);
+      }
+    }
+
+    // default tool tab when opening drawer
+    function openDrawer(){
+      drawer.classList.add("on");
+      drawerMask.classList.add("on");
+      drawer.setAttribute("aria-hidden", "false");
+      setActiveToolTab("registry");
+    }
+
+    toolTabs.forEach(t => t.addEventListener("click", () => setActiveToolTab(t.dataset.tooltab)));
 
     // Tools: Model registry
     btnModels.addEventListener("click", async () => {
