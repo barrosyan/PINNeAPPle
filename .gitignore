@@ -61,3 +61,4 @@ examples/clients/alstom_example.py
 examples/clients/godela_example.py
 examples/clients/lane_emden_example.py
 examples/clients/splash_cfd_example.py
+/env

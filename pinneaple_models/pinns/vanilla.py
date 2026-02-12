@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Callable, Any
+from typing import Dict, List, Optional, Callable, Any, Tuple
 
 import torch
 import torch.nn as nn
@@ -14,27 +14,24 @@ def _act(name: str) -> nn.Module:
 
 
 class VanillaPINN(PINNBase):
-    """
-    Standard fully-connected PINN for regression:
-      y = f(x)
-
-    Args:
-      in_dim: number of input coordinates (e.g. t,x,y,z)
-      out_dim: number of predicted fields (e.g. u,v,p)
-      hidden: widths
-      activation: tanh/relu/gelu/silu
-    """
     def __init__(
         self,
         in_dim: int,
         out_dim: int,
         hidden: List[int] = (128, 128, 128, 128),
         activation: str = "tanh",
+        *,
+        inverse_params_names: Optional[List[str]] = None,
+        initial_guesses: Optional[Dict[str, float]] = None,
+        dtype: torch.dtype = torch.float32,
     ):
         super().__init__()
         act = _act(activation)
 
-        dims = [in_dim, *list(hidden), out_dim]
+        self.in_dim = int(in_dim)
+        self.out_dim = int(out_dim)
+
+        dims = [self.in_dim, *list(hidden), self.out_dim]
         layers: List[nn.Module] = []
         for i in range(len(dims) - 1):
             layers.append(nn.Linear(dims[i], dims[i + 1]))
@@ -42,17 +39,54 @@ class VanillaPINN(PINNBase):
                 layers.append(act)
         self.net = nn.Sequential(*layers)
 
+        # --- required by PINNFactory loss_fn ---
+        self.inverse_params = nn.ParameterDict()
+        if inverse_params_names:
+            initial_guesses = initial_guesses or {}
+            for name in inverse_params_names:
+                init = float(initial_guesses.get(name, 0.1))
+                self.inverse_params[name] = nn.Parameter(torch.tensor(init, dtype=dtype))
+
+    def _concat_inputs(self, inputs: Tuple[torch.Tensor, ...]) -> torch.Tensor:
+        if len(inputs) == 0:
+            raise ValueError("VanillaPINN.forward expected at least 1 input tensor.")
+        if len(inputs) == 1:
+            x = inputs[0]
+            if x.ndim == 1:
+                x = x[:, None]
+            return x
+        cols = []
+        for t in inputs:
+            if t.ndim == 1:
+                t = t[:, None]
+            cols.append(t)
+        return torch.cat(cols, dim=1)
+
     def forward(
         self,
-        x: torch.Tensor,
-        *,
+        *inputs: torch.Tensor,
         physics_fn: Optional[Callable[..., Any]] = None,
         physics_data: Optional[Dict[str, Any]] = None,
     ) -> PINNOutput:
+        x = self._concat_inputs(inputs)
+
+        if (physics_fn is not None and physics_data is not None) and (not x.requires_grad):
+            x = x.requires_grad_(True)
+
         y = self.net(x)
-        losses: Dict[str, torch.Tensor] = {"total": torch.tensor(0.0, device=y.device)}
+
+        z0 = torch.zeros((), device=y.device, dtype=y.dtype)
+        losses: Dict[str, torch.Tensor] = {"total": z0}
+
         if physics_fn is not None and physics_data is not None:
-            pl = self.physics_loss(physics_fn=physics_fn, physics_data=physics_data)
-            losses.update(pl)
-            losses["total"] = losses["total"] + losses.get("physics", torch.tensor(0.0, device=y.device))
+            total_phys, comps = physics_fn(self, physics_data)
+
+            losses["physics"] = total_phys
+            for k, v in comps.items():
+                if k == "total":
+                    continue
+                losses[k] = torch.as_tensor(v, device=y.device, dtype=y.dtype)
+
+            losses["total"] = losses["total"] + losses["physics"]
+
         return PINNOutput(y=y, losses=losses, extras={})
