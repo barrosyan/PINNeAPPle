@@ -24,9 +24,11 @@ from pinneaple_models.pinns.vanilla import VanillaPINN
 from pinneaple_train.trainer import Trainer, TrainConfig
 from pinneaple_train.metrics import default_metrics
 
-# ---- NEW: symbolic physics (PINNFactory) + combined loss hook
 from pinneaple_pinn.factory.pinn_factory import PINNFactory, PINNProblemSpec
 from pinneaple_train.losses import CombinedLoss, SupervisedLoss, PhysicsLossHook
+import time
+import shutil
+from typing import Any, Dict, List
 
 # =========================================================
 # Flask
@@ -960,6 +962,497 @@ def tools_download():
     if not os.path.exists(full):
         return jsonify({"ok": False, "error": "not found"}), 404
     return send_file(full, as_attachment=True)
+
+def _tool_dir(tool_id: str) -> str:
+    d = os.path.join(TOOLS_DIR, tool_id)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+def _new_tool_id(prefix: str) -> str:
+    return f"{prefix}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
+
+def _safe_abs_path(base_dir: str, rel_path: str) -> str:
+    # Avoid path traversal
+    rel_path = rel_path.replace("\\", "/").lstrip("/")
+    abspath = os.path.abspath(os.path.join(base_dir, rel_path))
+    base_abs = os.path.abspath(base_dir)
+    if not abspath.startswith(base_abs + os.sep) and abspath != base_abs:
+        raise ValueError("Invalid path")
+    return abspath
+
+@app.get("/api/tools/download/<tool_id>/<path:filename>")
+def tools_download_toolfile(tool_id, filename):
+    d = _tool_dir(tool_id)
+    p = _safe_abs_path(d, filename)
+    if not os.path.exists(p):
+        return jsonify({"ok": False, "error": "file not found"}), 404
+    return send_file(p, as_attachment=True)
+
+
+# ---------------------------------------------------------
+# 1) UPD/Zarr Toy Generator
+# ---------------------------------------------------------
+@app.post("/api/tools/upd_toy_zarr")
+def tools_upd_toy_zarr():
+    """
+    Generates a random UPD dataset and writes it to a Zarr store.
+    Returns tool_id + download url for the .zarr directory zipped.
+    """
+    data = request.get_json(force=True) or {}
+
+    n_samples = int(data.get("n_samples", 256))
+    T = int(data.get("T", 64))
+    Dx = int(data.get("Dx", 8))
+    Dy = int(data.get("Dy", 2))
+    seed = int(data.get("seed", 123))
+    name = str(data.get("name", "toy_ts"))
+
+    tool_id = _new_tool_id("toy_zarr")
+    out_dir = _tool_dir(tool_id)
+    zarr_dir = os.path.join(out_dir, f"{name}.zarr")
+
+    try:
+        import torch
+        from pinneaple_data.physical_sample import PhysicalSample
+        from pinneaple_data.zarr_store import UPDZarrStore
+
+        g = torch.Generator(device="cpu")
+        g.manual_seed(seed)
+
+        samples = []
+        for i in range(n_samples):
+            x = torch.randn((T, Dx), generator=g)
+            y = torch.randn((T, Dy), generator=g)
+            samples.append(
+                PhysicalSample(
+                    state={"x": x, "y": y},
+                    domain={"type": "timeseries", "grid": {"t": T}},
+                    provenance={"i": int(i), "source": "toy"},
+                    schema={"units": {"x": "arb", "y": "arb"}, "columns": {"x": Dx, "y": Dy}},
+                )
+            )
+
+        UPDZarrStore.write(
+            zarr_dir,
+            samples,
+            manifest={
+                "name": name,
+                "kind": "toy",
+                "n_samples": n_samples,
+                "T": T,
+                "Dx": Dx,
+                "Dy": Dy,
+                "seed": seed,
+            },
+        )
+
+        zip_path = shutil.make_archive(
+            os.path.join(out_dir, name),
+            "zip",
+            root_dir=out_dir,
+            base_dir=f"{name}.zarr",
+        )
+
+        return jsonify({
+            "ok": True,
+            "tool_id": tool_id,
+            "zarr": os.path.basename(zarr_dir),
+            "zip": os.path.basename(zip_path),
+            "download_zip_url": f"/api/tools/download/{tool_id}/{os.path.basename(zip_path)}",
+        })
+    except Exception as e:
+        tb = traceback.format_exc()
+        return jsonify({"ok": False, "error": str(e), "traceback": tb}), 400
+
+
+# ---------------------------------------------------------
+# 2) FFT Feature Step Demo (2 epochs)
+# ---------------------------------------------------------
+@app.post("/api/tools/fft_feature_demo")
+def tools_fft_feature_demo():
+    """
+    Runs a small supervised training with FFT feature step for 2 epochs.
+    Returns best_val, best_path + logs jsonl.
+    """
+    data = request.get_json(force=True) or {}
+
+    seed = int(data.get("seed", 123))
+    epochs = int(data.get("epochs", 2))
+    n_train = int(data.get("n_train", 1600))
+    n_val = int(data.get("n_val", 448))
+    signal_len = int(data.get("signal_len", 64))
+    out_dim = int(data.get("out_dim", 2))
+    batch_train = int(data.get("batch_train", 64))
+    batch_val = int(data.get("batch_val", 128))
+    lr = float(data.get("lr", 1e-3))
+
+    tool_id = _new_tool_id("fft_demo")
+    out_dir = _tool_dir(tool_id)
+    runs_dir = os.path.join(out_dir, "_runs")
+    os.makedirs(runs_dir, exist_ok=True)
+
+    log_jsonl = os.path.join(out_dir, "train_logs.jsonl")
+
+    def log_event(obj: Dict[str, Any]):
+        with open(log_jsonl, "a", encoding="utf-8") as f:
+            f.write(json.dumps(obj) + "\n")
+
+    try:
+        import torch
+
+        torch.manual_seed(seed)
+
+        # --- toy data
+        X = torch.randn((n_train + n_val, signal_len))
+        Y = torch.randn((n_train + n_val, out_dim))
+
+        class DictDS(Dataset):
+            def __init__(self, x, y):
+                self.x = x
+                self.y = y
+            def __len__(self):
+                return self.x.shape[0]
+            def __getitem__(self, i):
+                return {"x": self.x[i], "y": self.y[i]}
+
+        def _collate(batch):
+            return {
+                "x": torch.stack([b["x"] for b in batch], 0),
+                "y": torch.stack([b["y"] for b in batch], 0),
+            }
+
+        train_loader = DataLoader(
+            DictDS(X[:n_train], Y[:n_train]),
+            batch_size=batch_train,
+            shuffle=True,
+            collate_fn=_collate,
+        )
+        val_loader = DataLoader(
+            DictDS(X[n_train:], Y[n_train:]),
+            batch_size=batch_val,
+            shuffle=False,
+            collate_fn=_collate,
+        )
+
+        # --- preprocess FFT feature step
+        from pinneaple_solvers.fft import FFTSolver
+        from pinneaple_train.preprocess import PreprocessPipeline, SolverFeatureStep
+
+        fft_solver = FFTSolver()
+        preprocess = PreprocessPipeline(
+            steps=[
+                SolverFeatureStep(
+                    solver=fft_solver,
+                    mode="append",
+                    select_var_dim=None,
+                    reduce_fft_to="magnitude",
+                )
+            ]
+        )
+
+        # infer in_dim by probing one batch (metadata only)
+        peek = next(iter(train_loader))
+        preprocess.fit([peek])
+        peek2 = preprocess.apply(peek)
+        in_dim = int(peek2["x"].shape[-1])
+
+        # --- model
+        class M(torch.nn.Module):
+            def __init__(self, in_dim, out_dim):
+                super().__init__()
+                self.net = torch.nn.Sequential(
+                    torch.nn.Linear(in_dim, 64),
+                    torch.nn.Tanh(),
+                    torch.nn.Linear(64, out_dim),
+                )
+            def forward(self, x):
+                return self.net(x)
+
+        model = M(in_dim, out_dim)
+
+        # --- supervised loss via your CombinedLoss
+        combined = CombinedLoss(
+            supervised=SupervisedLoss("mse"),
+            physics=None,
+            w_supervised=1.0,
+            w_physics=0.0,
+        )
+
+        def loss_fn(model, y_hat, batch):
+            # Trainer espera dict {x,y}
+            return combined(model, y_hat, batch)
+
+        # --- trainer
+        trainer = Trainer(
+            model=model,
+            loss_fn=loss_fn,
+            metrics=default_metrics(),
+            preprocess=preprocess,
+        )
+
+        cfg = TrainConfig(
+            epochs=epochs,
+            lr=lr,
+            device=DEVICE,
+            log_dir=runs_dir,
+            run_name=f"fft_demo_{tool_id}",
+            seed=seed,
+            deterministic=False,
+            amp=False,
+            save_best=True,
+        )
+
+        log_event({"event": "start", "tool_id": tool_id, "seed": seed, "epochs": epochs, "signal_len": signal_len, "in_dim": in_dim, "out_dim": out_dim})
+
+        out = trainer.fit(train_loader, val_loader, cfg)
+
+        best_path = out.get("best_path")
+        best_name = None
+        if best_path and os.path.exists(best_path):
+            best_name = os.path.basename(best_path)
+            dst = os.path.join(out_dir, best_name)
+            if os.path.abspath(best_path) != os.path.abspath(dst):
+                shutil.copy2(best_path, dst)
+
+        best_val = float(out.get("best_val")) if out.get("best_val") is not None else None
+
+        # dump summary
+        log_event({
+            "event": "summary",
+            "tool_id": tool_id,
+            "best_val": best_val,
+            "best_file": best_name,
+            "run_dir": runs_dir,
+        })
+
+        resp = {
+            "ok": True,
+            "tool_id": tool_id,
+            "best_val": best_val,
+            "best_path": best_name,
+            "logs": os.path.basename(log_jsonl),
+            "download_logs_url": f"/api/tools/download/{tool_id}/{os.path.basename(log_jsonl)}",
+        }
+        if best_name:
+            resp["download_best_url"] = f"/api/tools/download/{tool_id}/{best_name}"
+
+        return jsonify(resp)
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        return jsonify({"ok": False, "error": str(e), "traceback": tb}), 400
+
+
+# ---------------------------------------------------------
+# 3) CAD Variants (CadQuery optional)
+# ---------------------------------------------------------
+@app.post("/api/tools/cad_variants")
+def tools_cad_variants():
+    """
+    If cadquery is available:
+      - Generate simple parametric box variants
+      - Export STL per variant (optional)
+      - Sample surface points (+ normals) -> UPD -> Zarr
+    """
+    data = request.get_json(force=True) or {}
+
+    widths = data.get("widths", [0.8, 1.0, 1.2])
+    depths = data.get("depths", [1.0])
+    heights = data.get("heights", [0.2, 0.3])
+
+    n_points = int(data.get("n_points", 8000))
+    write_stl = bool(data.get("write_stl", True))
+    zarr_name = str(data.get("name", "cad_variants"))
+
+    tool_id = _new_tool_id("cad_vars")
+    out_dir = _tool_dir(tool_id)
+    zarr_dir = os.path.join(out_dir, f"{zarr_name}.zarr")
+
+    try:
+        try:
+            import cadquery as cq
+        except Exception as e:
+            return jsonify({"ok": False, "error": f"cadquery not available: {e}"}), 400
+
+        import torch
+        import numpy as np
+        import trimesh
+
+        from pinneaple_data.physical_sample import PhysicalSample
+        from pinneaple_data.zarr_store import UPDZarrStore
+
+        # sampling fallback: prefer pinneaple_geom if available, else trimesh
+        def sample_pts_normals(tm: trimesh.Trimesh, n: int):
+            try:
+                from pinneaple_geom.sample.points import sample_surface_points
+                pts, nrm, _ = sample_surface_points(tm, n=n, return_normals=True, return_face_id=False)
+                return np.asarray(pts, np.float32), np.asarray(nrm, np.float32)
+            except Exception:
+                pts, face_idx = trimesh.sample.sample_surface(tm, n)
+                nrm = tm.face_normals[face_idx]
+                return np.asarray(pts, np.float32), np.asarray(nrm, np.float32)
+
+        stl_files = []
+        samples = []
+
+        def make_box(w: float, d: float, h: float):
+            return cq.Workplane("XY").box(w, d, h)
+
+        variants = [(float(w), float(d), float(h)) for w in widths for d in depths for h in heights]
+
+        for (w, d, h) in variants:
+            cq_obj = make_box(w, d, h)
+
+            stl_name = f"box_w{w}_d{d}_h{h}.stl".replace(".", "p")
+            stl_path = os.path.join(out_dir, stl_name)
+
+            tm = None
+            if write_stl:
+                try:
+                    cq.exporters.export(cq_obj, stl_path)
+                    stl_files.append(stl_name)
+                    tm = trimesh.load_mesh(stl_path, force="mesh")
+                except Exception:
+                    tm = None
+
+            # if STL export failed, try to mesh anyway by exporting to STL in-memory (best effort)
+            if tm is None:
+                try:
+                    cq.exporters.export(cq_obj, stl_path)
+                    tm = trimesh.load_mesh(stl_path, force="mesh")
+                    if stl_name not in stl_files and write_stl:
+                        stl_files.append(stl_name)
+                except Exception as e:
+                    raise RuntimeError(f"Failed to produce mesh for variant w={w},d={d},h={h}: {e}")
+
+            if not isinstance(tm, trimesh.Trimesh):
+                tm = trimesh.util.concatenate(tuple(tm.geometry.values()))
+
+            pts, nrm = sample_pts_normals(tm, n_points)
+
+            x = torch.from_numpy(pts)
+            y = torch.from_numpy(nrm)
+
+            samples.append(
+                PhysicalSample(
+                    state={"x": x, "y": y},
+                    domain={"type": "mesh_surface", "representation": "pointcloud"},
+                    provenance={"w": w, "d": d, "h": h, "source": "cadquery"},
+                    schema={"task": "xyz_to_normals"},
+                )
+            )
+
+        UPDZarrStore.write(
+            zarr_dir,
+            samples,
+            manifest={
+                "name": zarr_name,
+                "kind": "cad_variants",
+                "n_variants": len(samples),
+                "n_points": n_points,
+                "write_stl": write_stl,
+                "variants_preview": variants[:10] + (["..."] if len(variants) > 10 else []),
+            },
+        )
+
+        zip_path = shutil.make_archive(
+            os.path.join(out_dir, zarr_name),
+            "zip",
+            root_dir=out_dir,
+            base_dir=f"{zarr_name}.zarr",
+        )
+
+        return jsonify({
+            "ok": True,
+            "tool_id": tool_id,
+            "zarr": os.path.basename(zarr_dir),
+            "zip": os.path.basename(zip_path),
+            "download_zip_url": f"/api/tools/download/{tool_id}/{os.path.basename(zip_path)}",
+            "stl_files": stl_files,
+            "stl_download_urls": [f"/api/tools/download/{tool_id}/{fn}" for fn in stl_files],
+        })
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        return jsonify({"ok": False, "error": str(e), "traceback": tb}), 400
+
+
+# ---------------------------------------------------------
+# 4) Zarr Inspector (manifest + metadata only)
+# ---------------------------------------------------------
+@app.post("/api/tools/zarr_inspect")
+def tools_zarr_inspect():
+    """
+    Inspect a zarr directory under runs/tools by tool_id + relative zarr name,
+    or a path relative to BASE_DIR/runs (safe).
+    Returns manifest (if present) + arrays keys/shapes/chunks/dtypes.
+    Does NOT read array contents.
+    """
+    data = request.get_json(force=True) or {}
+
+    tool_id = data.get("tool_id")
+    zarr_name = data.get("zarr_name")  # e.g. "toy_ts.zarr"
+    any_path = data.get("path")        # optional, but restricted to BASE_DIR/runs
+
+    try:
+        if tool_id and zarr_name:
+            base = _tool_dir(str(tool_id))
+            zarr_path = _safe_abs_path(base, str(zarr_name))
+        elif any_path:
+            runs_root = os.path.join(BASE_DIR, "runs")
+            zarr_path = _safe_abs_path(runs_root, str(any_path))
+        else:
+            return jsonify({"ok": False, "error": "Provide {tool_id, zarr_name} or {path}"}), 400
+
+        if not os.path.isdir(zarr_path):
+            return jsonify({"ok": False, "error": f"Not a directory: {zarr_path}"}), 404
+
+        manifest = None
+        for cand in ["manifest.json", "manifest.yaml", "manifest.yml"]:
+            p = os.path.join(zarr_path, cand)
+            if os.path.exists(p):
+                if cand.endswith(".json"):
+                    with open(p, "r", encoding="utf-8") as f:
+                        manifest = json.load(f)
+                else:
+                    try:
+                        import yaml
+                        with open(p, "r", encoding="utf-8") as f:
+                            manifest = yaml.safe_load(f)
+                    except Exception:
+                        manifest = {"note": f"Found {cand} but yaml not available"}
+                break
+
+        import zarr
+        g = zarr.open_group(zarr_path, mode="r")
+
+        arrays = []
+
+        def walk(group, prefix=""):
+            for k, arr in group.arrays():
+                arrays.append({
+                    "key": (prefix + k) if prefix else k,
+                    "shape": list(arr.shape),
+                    "chunks": list(arr.chunks) if arr.chunks is not None else None,
+                    "dtype": str(arr.dtype),
+                    "compressor": str(arr.compressor) if getattr(arr, "compressor", None) is not None else None,
+                })
+            for k, sg in group.groups():
+                walk(sg, prefix=(prefix + k + "/") if prefix else (k + "/"))
+
+        walk(g)
+
+        return jsonify({
+            "ok": True,
+            "zarr_path": zarr_path,
+            "manifest": manifest,
+            "arrays": arrays,
+            "n_arrays": len(arrays),
+        })
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        return jsonify({"ok": False, "error": str(e), "traceback": tb}), 400
 
 
 if __name__ == "__main__":
