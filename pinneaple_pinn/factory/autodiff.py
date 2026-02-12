@@ -107,6 +107,9 @@ class DerivativeComputer:
 
         # Forward pass once
         pred = model(*inputs)  # shape (N, n_dep)
+        if hasattr(pred, "y"):   # PINNOutput
+            pred = pred.y
+
         if pred.ndim != 2 or pred.shape[1] != len(self.dependent_vars):
             raise RuntimeError(
                 f"Model output expected shape (N, {len(self.dependent_vars)}), got {tuple(pred.shape)}"

@@ -78,7 +78,17 @@ class SympyTorchCompiler:
         return [syms]
 
     def compile(self, eq_str: str) -> CompiledEquation:
-        expr = sp.sympify(eq_str, locals=self.namespace)
+        expr = sp.sympify(eq_str, locals=self.namespace, evaluate=False)
+        def _expand_numeric_pow(e):
+            if isinstance(e, sp.Pow) and e.base.is_Number and e.exp.is_Integer and int(e.exp) >= 0:
+                n = int(e.exp)
+                if n == 0:
+                    return sp.Integer(1)
+                return sp.Mul(*([e.base] * n), evaluate=False)
+            return e
+
+        expr = expr.replace(lambda e: isinstance(e, sp.Pow) and e.base.is_Number and e.exp.is_Integer, _expand_numeric_pow)
+
         derivatives = set(expr.atoms(sp.Derivative))
 
         # Stable ordering:
