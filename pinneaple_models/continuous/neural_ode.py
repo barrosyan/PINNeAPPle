@@ -8,11 +8,12 @@ from .base import ContinuousModelBase, ContOutput
 
 
 def _rk4_step(f, t, y, dt):
+    # Expect t and dt already on y.device / y.dtype (handled in forward)
     k1 = f(t, y)
     k2 = f(t + 0.5 * dt, y + 0.5 * dt * k1)
     k3 = f(t + 0.5 * dt, y + 0.5 * dt * k2)
     k4 = f(t + dt, y + dt * k3)
-    return y + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
+    return y + (dt / 6.0) * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
 class NeuralODE(ContinuousModelBase):
@@ -49,8 +50,8 @@ class NeuralODE(ContinuousModelBase):
 
     def forward(
         self,
-        y0: torch.Tensor,               # (B,D)
-        t: torch.Tensor,                # (T,) increasing
+        y0: torch.Tensor,                     # (B,D)
+        t: torch.Tensor,                      # (T,) increasing
         *,
         y_true: Optional[torch.Tensor] = None,  # (B,T,D)
         return_loss: bool = False,
@@ -58,23 +59,31 @@ class NeuralODE(ContinuousModelBase):
         B, D = y0.shape
         T = t.numel()
 
+        # Ensure time grid is on same device/dtype as state for safe arithmetic in solvers
+        t_ = t.to(device=y0.device, dtype=y0.dtype)
+
         ys = [y0]
         y = y0
 
         for i in range(T - 1):
-            ti = t[i]
-            dt = (t[i + 1] - t[i]).to(y.dtype)
+            ti = t_[i]                        # scalar on y.device/y.dtype
+            dt = t_[i + 1] - t_[i]            # scalar on y.device/y.dtype
+
             if self.method == "euler":
                 y = y + dt * self.dynamics(ti, y)
             else:
                 y = _rk4_step(self.dynamics, ti, y, dt)
+
             ys.append(y)
 
         y_path = torch.stack(ys, dim=1)  # (B,T,D)
 
-        losses: Dict[str, torch.Tensor] = {"total": torch.tensor(0.0, device=y_path.device)}
+        losses: Dict[str, torch.Tensor] = {
+            "total": torch.zeros((), device=y_path.device, dtype=y_path.dtype)
+        }
         if return_loss and y_true is not None:
             losses["mse"] = self.mse(y_path, y_true)
             losses["total"] = losses["mse"]
 
-        return ContOutput(y=y_path, losses=losses, extras={"t": t})
+        # Keep original t for extras (but ensure it's usable downstream if needed)
+        return ContOutput(y=y_path, losses=losses, extras={"t": t_})
