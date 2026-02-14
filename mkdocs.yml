@@ -1,0 +1,34 @@
+site_name: PINNeAPPle Docs
+site_url: https://barrosyan.github.io/PINNeAPPle/
+repo_url: https://github.com/barrosyan/PINNeAPPle
+use_directory_urls: true
+
+theme:
+  name: material
+  features:
+    - navigation.expand
+    - navigation.instant
+    - navigation.tracking
+    - navigation.path
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+
+
+plugins:
+  - search
+  - awesome-pages
+  - section-index
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
