@@ -1,0 +1,28 @@
+run_name: vanilla_pinn_native_mvp
+
+backend:
+  name: pinneaple_native
+
+train:
+  device: cpu
+  epochs: 5000
+  lr: 0.001
+  seed: 0
+  log_every: 200
+
+  weights:
+    pde: 1.0
+    bc: 10.0
+    data: 0.0
+
+arena:
+  n_collocation: 4096
+  n_boundary: 2048
+  n_data: 0
+
+model:
+  name: vanilla
+  in_dim: 2
+  out_dim: 3
+  hidden: [256, 256, 256, 256]
+  activation: tanh
