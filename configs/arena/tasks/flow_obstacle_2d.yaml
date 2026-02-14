@@ -1,0 +1,8 @@
+task_id: flow_obstacle_2d
+version: v0
+
+# bundle gerado por Omniverse export / mesh pipeline
+bundle_root: data/bundles/flow_obstacle_2d/v0
+
+# Se true, exige bundle/sensors.parquet e calcula L2 no split test
+require_sensors: false

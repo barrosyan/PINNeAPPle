@@ -1,0 +1,39 @@
+problem_id: flow_obstacle_2d
+
+pde:
+  name: navier_stokes_2d
+  time_dependent: false
+  incompressible: true
+
+fields:
+  inputs: [x, y]
+  outputs: [u, v, p]
+
+parameters:
+  nu: 0.01
+
+domain:
+  x: [0.0, 2.0]
+  y: [0.0, 1.0]
+
+geometry:
+  type: channel_with_circular_obstacle
+  obstacle_circle:
+    cx: 0.7
+    cy: 0.5
+    r: 0.15
+
+bc_regions:
+  inlet:   { u: 1.0, v: 0.0 }
+  outlet:  { p: 0.0 }
+  walls:   { u: 0.0, v: 0.0 }
+  obstacle:{ u: 0.0, v: 0.0 }
+
+default_weights:
+  pde: 1.0
+  bc: 10.0
+  data: 0.0
+
+sampling_plan:
+  n_collocation: 200000
+  n_boundary_total: 20000

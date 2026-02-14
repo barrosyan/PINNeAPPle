@@ -1,0 +1,111 @@
+# Schema em YAML (estilo "JSON schema" simplificado e prático)
+# Seu DesignAgent/validator pode usar isso como referência de campos obrigatórios.
+
+spec_schema_version: "1.0"
+type: object
+required:
+  - problem_id
+  - pde
+  - fields
+  - parameters
+  - domain
+  - geometry
+  - bc_regions
+  - default_weights
+  - sampling_plan
+properties:
+  problem_id:
+    type: string
+    const: "flow_obstacle_2d"
+  pde:
+    type: object
+    required: [name, time_dependent, incompressible]
+    properties:
+      name: { type: string, const: "navier_stokes_2d" }
+      time_dependent: { type: boolean, const: false }
+      incompressible: { type: boolean, const: true }
+  fields:
+    type: object
+    required: [inputs, outputs]
+    properties:
+      inputs:
+        type: array
+        items: { type: string }
+        minItems: 2
+        maxItems: 2
+      outputs:
+        type: array
+        items: { type: string }
+        minItems: 3
+        maxItems: 3
+  parameters:
+    type: object
+    required: [nu]
+    properties:
+      nu: { type: number }
+  domain:
+    type: object
+    required: [x, y]
+    properties:
+      x:
+        type: array
+        items: { type: number }
+        minItems: 2
+        maxItems: 2
+      y:
+        type: array
+        items: { type: number }
+        minItems: 2
+        maxItems: 2
+  geometry:
+    type: object
+    required: [type, obstacle_circle]
+    properties:
+      type: { type: string, const: "channel_with_circular_obstacle" }
+      obstacle_circle:
+        type: object
+        required: [cx, cy, r]
+        properties:
+          cx: { type: number }
+          cy: { type: number }
+          r: { type: number }
+  bc_regions:
+    type: object
+    required: [inlet, outlet, walls, obstacle]
+    properties:
+      inlet:
+        type: object
+        required: [u, v]
+        properties:
+          u: { type: number }
+          v: { type: number }
+      outlet:
+        type: object
+        required: [p]
+        properties:
+          p: { type: number }
+      walls:
+        type: object
+        required: [u, v]
+        properties:
+          u: { type: number }
+          v: { type: number }
+      obstacle:
+        type: object
+        required: [u, v]
+        properties:
+          u: { type: number }
+          v: { type: number }
+  default_weights:
+    type: object
+    required: [pde, bc, data]
+    properties:
+      pde: { type: number }
+      bc: { type: number }
+      data: { type: number }
+  sampling_plan:
+    type: object
+    required: [n_collocation, n_boundary_total]
+    properties:
+      n_collocation: { type: integer }
+      n_boundary_total: { type: integer }

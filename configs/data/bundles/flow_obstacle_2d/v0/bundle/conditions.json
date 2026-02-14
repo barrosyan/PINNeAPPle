@@ -1,0 +1,32 @@
+{
+  "task_id": "flow_obstacle_2d",
+  "version": "v0",
+  "regions": ["inlet", "outlet", "walls", "obstacle"],
+  "inlet": {
+    "type": "dirichlet",
+    "targets": {
+      "u": 1.0,
+      "v": 0.0
+    }
+  },
+  "outlet": {
+    "type": "dirichlet",
+    "targets": {
+      "p": 0.0
+    }
+  },
+  "walls": {
+    "type": "dirichlet",
+    "targets": {
+      "u": 0.0,
+      "v": 0.0
+    }
+  },
+  "obstacle": {
+    "type": "dirichlet",
+    "targets": {
+      "u": 0.0,
+      "v": 0.0
+    }
+  }
+}

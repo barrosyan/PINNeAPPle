@@ -1,0 +1,40 @@
+name: flow_obstacle_2d_design
+version: v1
+
+system_rules:
+  - "Return STRICT YAML only, no prose."
+  - "Use SI units."
+  - "Assume steady, incompressible flow."
+  - "Use 2D coordinates x,y."
+  - "Outputs must include pde, fields, parameters, domain, geometry, bc_regions, default_weights, sampling_plan."
+  - "Boundary regions must be exactly: inlet, outlet, walls, obstacle."
+  - "Inlet velocity for MVP must be constant (u=1.0, v=0.0) unless explicitly asked otherwise."
+  - "Outlet pressure must be fixed p=0.0."
+  - "Walls and obstacle are no-slip: u=0, v=0."
+  - "nu must be a single float for MVP."
+
+user_prompt_template: |
+  You are designing a Physics-Informed benchmark task.
+
+  Problem: flow_obstacle_2d
+  Goal: produce a minimal but complete spec for Navier–Stokes 2D incompressible steady flow in a channel with a circular obstacle.
+
+  Use this geometry:
+    domain:
+      x: [0.0, 2.0]
+      y: [0.0, 1.0]
+    obstacle_circle:
+      cx: 0.7
+      cy: 0.5
+      r: 0.15
+
+  Fluid:
+    nu: 0.01
+
+  Sampling target sizes (for derived points):
+    n_collocation: 200000
+    n_boundary_total: 20000
+
+  Produce the spec YAML following the schema.
+
+schema_path: configs/problemdesign/flow_obstacle_2d_spec_schema.yaml

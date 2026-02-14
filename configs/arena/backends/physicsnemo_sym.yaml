@@ -1,0 +1,21 @@
+backend:
+  name: physicsnemo_sym
+
+train:
+  device: cuda
+  max_steps: 20000
+  lr: 0.001
+
+  weights:
+    pde: 1.0
+    bc: 10.0
+    data: 0.0
+
+arena:
+  n_collocation: 4096
+  n_boundary: 2048
+
+model:
+  nr_layers: 6
+  layer_size: 256
+  activation: tanh
