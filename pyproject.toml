@@ -78,6 +78,11 @@ earthdata = [
   "earthaccess>=0.10.0",
 ]
 
+research = [
+  "requests>=2.31",
+  "pdfminer.six>=20231228",
+]
+
 # Everything (convenience)
 all = [
   "trimesh>=4.0.0",
@@ -112,12 +117,16 @@ pinneaple = "pinneaple_pdb.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = [
+  "pinneaple_arena",
   "pinneaple_data",
   "pinneaple_geom",
   "pinneaple_models",
   "pinneaple_pdb",
   "pinneaple_pinn",
+  "pinneaple_problemdesign",
+  "pinneaple_researcher",
   "pinneaple_solvers",
+  "pinneaple_timeseries",
   "pinneaple_train",
 ]
 
