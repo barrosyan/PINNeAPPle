@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Physics-informed Koopman autoencoder for dynamical systems."""
 
 from typing import Dict, List, Optional, Union
 

@@ -12,27 +12,86 @@ from pinneaple_arena.bundle.loader import BundleData
 
 @dataclass(frozen=True)
 class FlowObstacle2DTask:
+    """
+    Task definition for the 2D steady flow around obstacle benchmark.
+
+    This task:
+        - Computes PDE residual metrics (Navier–Stokes)
+        - Computes boundary condition MSE
+        - Optionally computes supervised L2 error if sensor data is available
+    """
+
     task_id: str = "flow_obstacle_2d"
 
     @staticmethod
     def _to_torch_xy(df: pd.DataFrame, device: str) -> torch.Tensor:
+        """
+        Convert a dataframe with x,y columns to a torch tensor.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            DataFrame containing columns ["x", "y"].
+        device : str
+            Torch device string.
+
+        Returns
+        -------
+        torch.Tensor
+            Tensor of shape (N, 2) with requires_grad enabled.
+        """
         xy = torch.tensor(df[["x", "y"]].to_numpy(), dtype=torch.float32, device=device)
         xy.requires_grad_(True)
         return xy
 
     @staticmethod
     def _grad(y: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
+        """
+        Compute gradient of y with respect to x.
+
+        Parameters
+        ----------
+        y : torch.Tensor
+            Output tensor.
+        x : torch.Tensor
+            Input tensor with requires_grad=True.
+
+        Returns
+        -------
+        torch.Tensor
+            First derivative dy/dx.
+        """
         return torch.autograd.grad(
             y, x, grad_outputs=torch.ones_like(y), retain_graph=True, create_graph=True, allow_unused=False
         )[0]
 
     def compute_metrics(self, bundle: BundleData, backend_outputs: Dict[str, Any]) -> Dict[str, float]:
         """
-        backend_outputs may contain:
-          - "model": a torch.nn.Module mapping (N,2)->(N,3) (u,v,p)
-          - "device": string
-          - optionally precomputed metrics
-        If not available, returns whatever backend provided.
+        Compute evaluation metrics for the flow obstacle task.
+
+        Parameters
+        ----------
+        bundle : BundleData
+            Data bundle containing collocation, boundary, and optional sensor data.
+        backend_outputs : Dict[str, Any]
+            Dictionary returned by backend containing:
+                - "model": torch model (optional)
+                - "device": device string
+                - optionally precomputed "metrics"
+
+        Returns
+        -------
+        Dict[str, float]
+            Dictionary with:
+                - test_pde_rms
+                - test_div_rms
+                - bc_mse
+                - test_l2_uv (optional supervised metric)
+
+        Notes
+        -----
+        If backend already provides metrics, they are passed through.
+        If no model is provided, returns empty dictionary.
         """
         # If backend already produced full metrics, pass-through
         if "metrics" in backend_outputs and isinstance(backend_outputs["metrics"], dict):
@@ -135,6 +194,19 @@ class FlowObstacle2DTask:
 
 
 def _is_number(v: Any) -> bool:
+    """
+    Check whether a value can be safely converted to float.
+
+    Parameters
+    ----------
+    v : Any
+        Value to test.
+
+    Returns
+    -------
+    bool
+        True if float(v) succeeds, otherwise False.
+    """
     try:
         float(v)
         return True

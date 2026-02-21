@@ -1,3 +1,4 @@
+"""VerifierAgent for verifying project runnability and suggesting patches."""
 from __future__ import annotations
 
 import json

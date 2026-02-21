@@ -1,3 +1,4 @@
+"""Normalizers: StandardScaler and MinMaxScaler for tensor preprocessing."""
 from __future__ import annotations
 
 from dataclasses import dataclass

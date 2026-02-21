@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Temporal convolutional network for time series."""
 from typing import Dict, Optional, List
 
 import torch

@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Temporal Fusion Transformer for interpretable time series forecasting."""
 
 from typing import Dict, Optional
 

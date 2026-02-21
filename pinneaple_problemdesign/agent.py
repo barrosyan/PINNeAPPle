@@ -1,3 +1,4 @@
+"""Design agent for interactive problem elicitation via LLM."""
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional

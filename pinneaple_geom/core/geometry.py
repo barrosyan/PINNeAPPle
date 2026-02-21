@@ -1,3 +1,4 @@
+"""GeometrySpec, GeometryAsset, and mesh transform utilities for Pinneaple geometry."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -12,6 +13,7 @@ import numpy as np
 # Helpers (no external deps)
 # =========================================================
 def _as_np3(x: Any, name: str) -> np.ndarray:
+    """Convert input to (3,) float64 array; raise if shape is not (3,)."""
     a = np.asarray(x, dtype=np.float64)
     if a.shape != (3,):
         raise ValueError(f"{name} must be shape (3,), got {a.shape}")
@@ -19,16 +21,19 @@ def _as_np3(x: Any, name: str) -> np.ndarray:
 
 
 def _stable_json(obj: Any) -> str:
+    """Serialize object to canonical JSON string for fingerprinting."""
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def _hash_bytes(data: bytes, algo: str = "sha256") -> str:
+    """Compute hex digest of raw bytes using the given algorithm."""
     h = hashlib.new(algo)
     h.update(data)
     return h.hexdigest()
 
 
 def _hash_array(a: np.ndarray, algo: str = "sha256") -> str:
+    """Compute stable hash of array (shape + dtype + bytes) for fingerprinting."""
     a = np.asarray(a)
     # Include shape + dtype + raw bytes for robust fingerprinting
     payload = (
@@ -42,6 +47,7 @@ def _hash_array(a: np.ndarray, algo: str = "sha256") -> str:
 
 
 def _compute_bounds(vertices: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Return (min_xyz, max_xyz) for (N,3) vertex array."""
     v = np.asarray(vertices, dtype=np.float64)
     if v.ndim != 2 or v.shape[1] != 3:
         raise ValueError(f"vertices must be (N,3), got {v.shape}")
@@ -63,6 +69,7 @@ def _apply_transform(vertices: np.ndarray, T: np.ndarray) -> np.ndarray:
 
 
 def _normalize_vecs(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+    """Normalize rows of (N,3) array to unit length."""
     n = np.linalg.norm(x, axis=1, keepdims=True)
     return x / np.maximum(n, eps)
 

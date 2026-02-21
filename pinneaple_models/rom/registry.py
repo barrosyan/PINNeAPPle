@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Registry and catalog for reduced-order model family."""
 
 from dataclasses import dataclass
 from typing import Dict, Type

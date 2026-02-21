@@ -1,3 +1,4 @@
+"""Discovery pipeline: papers and repos from topic query."""
 from __future__ import annotations
 
 import os

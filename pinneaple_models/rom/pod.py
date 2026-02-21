@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Proper orthogonal decomposition via SVD for ROM."""
 from typing import Dict, Optional
 
 import torch

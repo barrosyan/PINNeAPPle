@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Vector autoregression model for multivariate time series."""
 from typing import Dict, Optional
 
 import torch

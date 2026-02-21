@@ -1,3 +1,4 @@
+"""DataLoader builders for UPD shards and PhysicalSample-based PINN training."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,9 +16,24 @@ from .physical_sample import PhysicalSample
 @dataclass
 class DataLoaderSpec:
     """
-    Torch DataLoader specification.
+    Configuration container for torch.utils.data.DataLoader parameters.
+
+    Attributes
+    ----------
+    batch_size : int
+        Number of shard items per batch. For PINN training, this is often 1
+        because each shard may internally contain many sampled points.
+    num_workers : int
+        Number of subprocesses used for data loading.
+    shuffle : bool
+        Whether to shuffle dataset indices at every epoch.
+    pin_memory : bool
+        If True, the DataLoader will copy tensors into CUDA pinned memory
+        before returning them.
+    drop_last : bool
+        Whether to drop the last incomplete batch.
     """
-    batch_size: int = 1                 # number of shard-items per batch (we often keep 1)
+    batch_size: int = 1
     num_workers: int = 0
     shuffle: bool = True
     pin_memory: bool = False
@@ -26,9 +42,14 @@ class DataLoaderSpec:
 
 class _UPDShardTorchDataset(Dataset):
     """
-    Wraps UPDDataset.sample(spec) into a torch.utils.data.Dataset item generator.
+    Torch Dataset wrapper around a UPDDataset shard.
 
-    Each __getitem__ returns a dict in the format expected by collate_pinn_batches.
+    This class adapts the UPDDataset sampling interface to the PyTorch
+    Dataset API so it can be consumed by a DataLoader.
+
+    Each call to __getitem__ produces a newly sampled batch of collocation,
+    condition, and data points based on a SamplingSpec. The sampling seed
+    is varied per index to ensure fresh stochastic sampling.
     """
 
     def __init__(
@@ -40,6 +61,25 @@ class _UPDShardTorchDataset(Dataset):
         dtype: torch.dtype = torch.float32,
         length: int = 10_000,
     ):
+        """
+        Initialize the shard-backed dataset.
+
+        Parameters
+        ----------
+        item : UPDItem
+            Descriptor pointing to Zarr dataset and metadata.
+        mapping : PINNMapping
+            Mapping describing how dataset variables correspond to PINN inputs/outputs.
+        sampling : SamplingSpec
+            Specification controlling collocation, condition, and data sampling.
+        device : str or torch.device
+            Device where sampled tensors will be allocated.
+        dtype : torch.dtype
+            Data type of sampled tensors.
+        length : int
+            Virtual dataset length. Since sampling is stochastic,
+            this defines how many indices the dataset exposes.
+        """
         self.item = item
         self.mapping = mapping
         self.sampling = sampling
@@ -50,9 +90,34 @@ class _UPDShardTorchDataset(Dataset):
         self._upd = UPDDataset(item=item, mapping=mapping, device=device, dtype=dtype)
 
     def __len__(self) -> int:
+        """
+        Return the virtual dataset length.
+
+        Returns
+        -------
+        int
+            Number of accessible indices for sampling.
+        """
         return self.length
 
     def __getitem__(self, idx: int) -> Dict[str, Any]:
+        """
+        Sample a new batch from the underlying UPDDataset.
+
+        The random seed is offset by the index to ensure different
+        stochastic samples across dataset indices.
+
+        Parameters
+        ----------
+        idx : int
+            Dataset index.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing collocation points, conditions,
+            supervised data, and metadata required by collate_pinn_batches.
+        """
         # vary seed per idx for fresh random points
         spec = SamplingSpec(
             n_collocation=self.sampling.n_collocation,
@@ -88,7 +153,35 @@ def build_upd_dataloader(
     length: int = 10_000,
 ) -> DataLoader:
     """
-    Build a DataLoader from a single UPD shard (Zarr+JSON).
+    Construct a PyTorch DataLoader from a single UPD shard (Zarr + JSON).
+
+    This function wraps a UPDDataset shard inside a Torch Dataset
+    adapter and exposes it via a DataLoader configured with
+    DataLoaderSpec parameters.
+
+    Parameters
+    ----------
+    zarr_path : str
+        Path to the Zarr dataset.
+    meta_path : str
+        Path to the metadata JSON file.
+    mapping : PINNMapping
+        Mapping between dataset variables and PINN structure.
+    sampling : SamplingSpec
+        Sampling configuration for collocation, conditions, and data.
+    loader : Optional[DataLoaderSpec]
+        DataLoader configuration. Defaults to DataLoaderSpec().
+    device : str or torch.device
+        Device for sampled tensors.
+    dtype : torch.dtype
+        Tensor data type.
+    length : int
+        Virtual dataset length for stochastic sampling.
+
+    Returns
+    -------
+    DataLoader
+        Configured PyTorch DataLoader instance.
     """
     loader = loader or DataLoaderSpec()
     item = UPDItem(zarr_path=zarr_path, meta_path=meta_path)
@@ -122,12 +215,40 @@ def build_physical_sample_dataloader(
     length: int = 10_000,
 ) -> DataLoader:
     """
-    Build a DataLoader from a PhysicalSample.
+    Construct a PyTorch DataLoader from a PhysicalSample instance.
 
-    MVP behavior:
-      - If sample is grid (xarray.Dataset), we create a temporary UPDItem-like wrapper
-        using in-memory ds/meta form supported by UPDDataset.
-      - Mesh samples will be supported later by MeshPhysicalDataset.
+    Current MVP behavior:
+      - If the sample represents a structured grid (xarray.Dataset),
+        it is wrapped into an in-memory UPD-like interface.
+      - Mesh-based samples are not yet supported and will be handled
+        in a future MeshPhysicalDataset implementation.
+
+    Parameters
+    ----------
+    sample : PhysicalSample
+        Physical sample containing state, schema, domain, and provenance.
+    mapping : PINNMapping
+        Mapping between dataset variables and PINN structure.
+    sampling : SamplingSpec
+        Sampling configuration.
+    loader : Optional[DataLoaderSpec]
+        DataLoader configuration.
+    device : str or torch.device
+        Device for sampled tensors.
+    dtype : torch.dtype
+        Tensor data type.
+    length : int
+        Virtual dataset length for stochastic sampling.
+
+    Returns
+    -------
+    DataLoader
+        Configured PyTorch DataLoader instance.
+
+    Raises
+    ------
+    NotImplementedError
+        If the PhysicalSample is not a structured grid.
     """
     loader = loader or DataLoaderSpec()
 
@@ -138,14 +259,38 @@ def build_physical_sample_dataloader(
     upd_input = {"ds": sample.state, "meta": {"schema": sample.schema, "domain": sample.domain, "provenance": sample.provenance}}
 
     class _MemUPDItem:
+        """
+        Minimal in-memory UPDItem-like adapter.
+
+        Provides the interface required by UPDDataset for
+        datasets stored in memory instead of disk-backed Zarr files.
+        """
         def __init__(self, ds, meta):
+            """
+            Initialize in-memory dataset wrapper.
+
+            Parameters
+            ----------
+            ds : Any
+                Dataset object (e.g., xarray.Dataset).
+            meta : Dict[str, Any]
+                Associated metadata dictionary.
+            """
             self._ds = ds
             self._meta = meta
             self.zarr_path = "<in-memory>"
             self.meta_path = "<in-memory>"
+
         def open_dataset(self):
+            """
+            Return the in-memory dataset.
+            """
             return self._ds
+
         def load_meta(self):
+            """
+            Return the in-memory metadata.
+            """
             return self._meta
 
     mem_item = _MemUPDItem(upd_input["ds"], upd_input["meta"])

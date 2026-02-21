@@ -1,3 +1,4 @@
+"""UPD shard loading and PhysicalSample conversion adapters."""
 from __future__ import annotations
 
 import json
@@ -20,6 +21,28 @@ UPDInput = Union[
 
 
 def load_upd_item(upd: UPDInput) -> Tuple[xr.Dataset, Dict[str, Any]]:
+    """
+    Load a UPD shard dataset and its associated metadata.
+
+    Parameters
+    ----------
+    upd : UPDInput
+        Input describing the UPD shard. Supported forms:
+        - Tuple[str, str] representing (zarr_path, meta_path)
+        - Dict with {"zarr_path": ..., "meta_path": ...}
+        - Dict with {"ds": xarray.Dataset, "meta": dict}
+        - UPDItem-like object exposing open_dataset() and load_meta()
+
+    Returns
+    -------
+    Tuple[xr.Dataset, Dict[str, Any]]
+        Loaded xarray Dataset and metadata dictionary.
+
+    Raises
+    ------
+    TypeError
+        If the input type or structure is unsupported.
+    """
     """
     Load UPD shard data (Zarr) and metadata (JSON).
 
@@ -59,12 +82,44 @@ def load_upd_item(upd: UPDInput) -> Tuple[xr.Dataset, Dict[str, Any]]:
 
 
 def _load_paths(zarr_path: str, meta_path: str) -> Tuple[xr.Dataset, Dict[str, Any]]:
+    """
+    Load a Zarr dataset and corresponding JSON metadata from filesystem paths.
+
+    Parameters
+    ----------
+    zarr_path : str
+        Filesystem path to the Zarr store.
+    meta_path : str
+        Filesystem path to the metadata JSON file.
+
+    Returns
+    -------
+    Tuple[xr.Dataset, Dict[str, Any]]
+        Loaded dataset and parsed metadata dictionary.
+    """
     ds = xr.open_zarr(str(zarr_path))
     meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
     return ds, meta
 
 
 def _infer_domain_from_upd(ds: xr.Dataset) -> Dict[str, Any]:
+    """
+    Infer domain metadata from a UPD xarray Dataset.
+
+    This function inspects coordinates and dimension sizes to determine
+    grid structure and coordinate system assumptions.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Dataset loaded from a UPD shard.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Domain dictionary describing grid type, coordinate system,
+        and dimensionality information.
+    """
     """
     Domain inference for UPD grid shards.
 
@@ -98,6 +153,29 @@ def upd_to_physical_sample(
     schema_override: Optional[Dict[str, Any]] = None,
     provenance_extra: Optional[Dict[str, Any]] = None,
 ) -> Any:
+    """
+    Convert a UPD shard into a PhysicalSample instance.
+
+    Parameters
+    ----------
+    upd : UPDInput
+        UPD shard input (see load_upd_item).
+    schema_override : Optional[Dict[str, Any]]
+        Optional schema dictionary overriding metadata schema.
+    provenance_extra : Optional[Dict[str, Any]]
+        Additional provenance entries to merge into the generated metadata.
+
+    Returns
+    -------
+    Any
+        Instance of PhysicalSample containing dataset, schema,
+        domain, and provenance information.
+
+    Raises
+    ------
+    ImportError
+        If PhysicalSample class cannot be imported.
+    """
     """
     Creates a PhysicalSample from a UPD shard (Zarr+JSON).
 
@@ -143,6 +221,24 @@ def upd_to_physical_sample(
 
 
 def attach_upd_state(sample: Any, upd: UPDInput) -> Any:
+    """
+    Attach UPD dataset state and metadata to an existing sample object.
+
+    This function updates state, schema, domain, and provenance fields.
+    It supports both dictionary-based and attribute-based sample structures.
+
+    Parameters
+    ----------
+    sample : Any
+        Existing PhysicalSample-like object or dictionary.
+    upd : UPDInput
+        UPD shard input to load and attach.
+
+    Returns
+    -------
+    Any
+        Updated sample with attached dataset and metadata.
+    """
     """
     Attaches UPD state (xarray.Dataset) and schema/domain/provenance into an existing sample.
 

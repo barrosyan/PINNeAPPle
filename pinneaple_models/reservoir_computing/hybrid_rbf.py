@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Hybrid RBF network combining linear and nonlinear features."""
 from typing import Dict, Optional
 
 import torch

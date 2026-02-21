@@ -1,3 +1,4 @@
+"""Plan builder: FNO-first approach mapping from ProblemSpec and gaps."""
 from __future__ import annotations
 
 from typing import List

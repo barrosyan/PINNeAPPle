@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Dynamic mode decomposition for linear ROM dynamics."""
 from typing import Dict, Optional
 
 import torch

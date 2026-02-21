@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Variational autoencoder with reparameterization trick."""
 
 from typing import Dict, List, Optional
 

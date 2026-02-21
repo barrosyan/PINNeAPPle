@@ -1,3 +1,4 @@
+"""CLI for interactive Pinneaple Design agent."""
 from __future__ import annotations
 
 from .protocol import GeminiProvider

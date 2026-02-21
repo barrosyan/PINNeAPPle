@@ -1,3 +1,4 @@
+"""UPD mesh adapter for solver inputs (vertices, faces, topology)."""
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple

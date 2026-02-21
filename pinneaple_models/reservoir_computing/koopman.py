@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Koopman operator for linearized dynamics in lifted space."""
 from typing import Dict, Optional, Literal
 
 import torch

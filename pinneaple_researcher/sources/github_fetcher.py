@@ -1,3 +1,4 @@
+"""GitHub API fetcher for repo file tree and content."""
 from __future__ import annotations
 
 import base64

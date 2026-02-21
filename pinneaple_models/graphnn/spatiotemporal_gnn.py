@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Spatiotemporal graph neural network for space-time data."""
 from typing import Dict, Optional
 
 import torch

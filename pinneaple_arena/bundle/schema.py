@@ -9,6 +9,23 @@ from pinneaple_arena.io.yamlx import load_yaml
 
 @dataclass(frozen=True)
 class BundleSchema:
+    """
+    Schema definition for validating a PINNeAPPle bundle.
+
+    Attributes
+    ----------
+    schema_version : str
+        Version identifier of the bundle schema.
+    required_files : List[str]
+        Relative file paths that must exist under the bundle root.
+    required_regions : Set[str]
+        Set of region names that must appear in conditions.json and boundary data.
+    manifest_required_keys : Set[str]
+        Required keys that must exist in manifest.json.
+    sensors_required_columns : List[str]
+        Required column names for sensors.parquet if present.
+    """
+
     schema_version: str
     required_files: List[str]
     required_regions: Set[str]
@@ -16,6 +33,22 @@ class BundleSchema:
     sensors_required_columns: List[str]
 
     def validate_bundle_root(self, bundle_root: str | Path) -> None:
+        """
+        Validate that the bundle root directory exists and contains
+        all required files defined in the schema.
+
+        Parameters
+        ----------
+        bundle_root : str | Path
+            Root directory of the bundle.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the bundle root directory does not exist.
+        RuntimeError
+            If any required files are missing.
+        """
         root = Path(bundle_root)
         if not root.exists():
             raise FileNotFoundError(f"Bundle root not found: {root}")
@@ -36,6 +69,28 @@ class BundleSchema:
 
 
 def load_bundle_schema(path: str | Path) -> BundleSchema:
+    """
+    Load a bundle schema definition from a YAML configuration file.
+
+    The YAML file must define:
+        - required_files (non-empty list)
+        - optional condition, manifest, and sensor validation rules
+
+    Parameters
+    ----------
+    path : str | Path
+        Path to the bundle_schema.yaml file.
+
+    Returns
+    -------
+    BundleSchema
+        Parsed and validated schema object.
+
+    Raises
+    ------
+    RuntimeError
+        If required fields in the YAML configuration are missing or invalid.
+    """
     cfg = load_yaml(path)
 
     ver = str(cfg.get("bundle_schema_version", "1.0"))

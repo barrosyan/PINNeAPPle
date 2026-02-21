@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""FEDformer with frequency-enhanced decomposition for time series."""
 
 from typing import Dict, Optional
 

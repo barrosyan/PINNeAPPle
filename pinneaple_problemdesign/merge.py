@@ -1,3 +1,4 @@
+"""Deep merge of extracted spec into existing ProblemSpec."""
 from __future__ import annotations
 
 from typing import Any, Dict

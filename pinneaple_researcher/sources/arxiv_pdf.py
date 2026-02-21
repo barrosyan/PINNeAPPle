@@ -1,3 +1,4 @@
+"""Arxiv PDF download and text extraction with section splitting."""
 from __future__ import annotations
 
 import os

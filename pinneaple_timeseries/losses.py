@@ -1,4 +1,6 @@
+"""Time series forecast loss functions."""
 import torch.nn.functional as F
+
 
 def mse_forecast(model, y_hat, batch):
     _, y = batch

@@ -1,3 +1,4 @@
+"""KB build pipeline: papers and repos to KBStore."""
 from __future__ import annotations
 
 import json

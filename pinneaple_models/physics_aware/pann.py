@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Physics-aware neural network with PDE-informed losses."""
 from typing import Dict, Optional, Callable, Any
 
 import torch

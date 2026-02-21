@@ -1,6 +1,10 @@
+"""Physical schema templates for common datasets (e.g. atmosphere reanalysis)."""
+
 from typing import Dict, Any
 
+
 def schema_templates() -> Dict[str, Dict[str, Any]]:
+    """Return mapping of template_id -> PhysicalSchema-compatible dict."""
     return {
         "atmosphere_reanalysis_v1": {
             "physical_system": "atmosphere",

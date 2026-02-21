@@ -1,5 +1,6 @@
 # pinneaple_models/convolutions/conv2d.py
 from __future__ import annotations
+"""2D convolutional model for spatial data."""
 
 from typing import Dict, Optional
 

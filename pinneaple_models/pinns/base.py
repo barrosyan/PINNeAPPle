@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Base classes and PINNOutput for physics-informed neural networks."""
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple, Callable

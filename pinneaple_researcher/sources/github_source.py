@@ -1,3 +1,4 @@
+"""GitHub API source for repository search."""
 from __future__ import annotations
 
 from dataclasses import dataclass

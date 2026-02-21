@@ -1,3 +1,4 @@
+"""Shard-aware IterableDataset for balanced iteration over multi-shard Zarr UPD stores."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,6 +15,20 @@ from .zarr_cached_store_bytes import CachedUPDZarrStoreBytes, ZarrByteCacheConfi
 
 @dataclass
 class ShardAwareConfig:
+    """
+    Configuration for shard-aware iteration behavior.
+
+    Attributes
+    ----------
+    pin_memory : bool
+        Whether to pin tensors in CPU pinned memory. Default is True.
+    target_device : str
+        Target device ("cpu" or "cuda"). Default is "cpu".
+    transfer_non_blocking : bool
+        Whether to use non-blocking GPU transfers. Default is True.
+    use_sample_cache : bool
+        Whether to use per-sample caching. Default is True.
+    """
     pin_memory: bool = True
     target_device: str = "cpu"  # "cpu" or "cuda"
     transfer_non_blocking: bool = True
@@ -74,6 +89,26 @@ class ShardAwareZarrUPDIterable(IterableDataset):
         cache: Optional[ZarrByteCacheConfig] = None,
         cfg: Optional[ShardAwareConfig] = None,
     ):
+        """
+        Initialize the shard-aware iterable dataset.
+
+        Parameters
+        ----------
+        root : str
+            Root path containing index.json and shard directories.
+        fields : Optional[Sequence[str]], optional
+            Field names to load.
+        coords : Optional[Sequence[str]], optional
+            Coordinate names to load.
+        dtype : Optional[torch.dtype], optional
+            Target dtype for tensors.
+        sample_ctor : Any, optional
+            Optional sample constructor.
+        cache : Optional[ZarrByteCacheConfig], optional
+            Cache configuration.
+        cfg : Optional[ShardAwareConfig], optional
+            Iteration configuration.
+        """
         super().__init__()
         self.root = root
         self.fields = fields
@@ -86,6 +121,14 @@ class ShardAwareZarrUPDIterable(IterableDataset):
         self._parts = _load_index(root)
 
     def __iter__(self) -> Iterator[Any]:
+        """
+        Iterate over samples from assigned shards with optional pinning and GPU transfer.
+
+        Yields
+        ------
+        Any
+            Sample from the store, optionally pinned and/or moved to target device.
+        """
         wi = get_worker_info()
         if wi is None:
             assigned = self._parts

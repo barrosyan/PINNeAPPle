@@ -1,3 +1,4 @@
+"""CadQuery-based geometry synthesis: parametric templates and STL-driven variants."""
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, Optional, Tuple, Union
@@ -10,6 +11,14 @@ from .sample_adapter import to_physical_sample
 
 
 def _try_import_cadquery():
+    """
+    Attempt to import CadQuery.
+
+    Returns
+    -------
+    Any
+        The imported `cadquery` module if available; otherwise None.
+    """
     try:
         import cadquery as cq  # type: ignore
         return cq
@@ -18,6 +27,14 @@ def _try_import_cadquery():
 
 
 def _try_import_trimesh():
+    """
+    Attempt to import trimesh.
+
+    Returns
+    -------
+    Any
+        The imported `trimesh` module if available; otherwise None.
+    """
     try:
         import trimesh  # type: ignore
         return trimesh
@@ -26,6 +43,27 @@ def _try_import_trimesh():
 
 
 def _mesh_from_cq_solid(cq, solid, *, linear_deflection=0.2, angular_deflection=0.3):
+    """
+    Tessellate a CadQuery solid into triangle mesh arrays.
+
+    Uses CadQuery/OCP tessellation to obtain vertices and triangle indices.
+
+    Parameters
+    ----------
+    cq : Any
+        CadQuery module reference.
+    solid : Any
+        CadQuery Workplane/Shape-like object (or object exposing `.val()`).
+    linear_deflection : float, optional
+        Tessellation linear deflection parameter. Default is 0.2.
+    angular_deflection : float, optional
+        Tessellation angular deflection parameter. Default is 0.3.
+
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray]
+        Vertices V of shape (N, 3) as float32 and faces F of shape (M, 3) as int64.
+    """
     """
     Convert a CadQuery solid to a triangle mesh (trimesh) if available, else numpy arrays.
     """
@@ -39,6 +77,28 @@ def _mesh_from_cq_solid(cq, solid, *, linear_deflection=0.2, angular_deflection=
 
 
 def _extract_mesh_arrays(mesh: Any):
+    """
+    Extract vertices and faces arrays from a mesh-like object.
+
+    Supports:
+    - trimesh-like objects exposing `.vertices` and `.faces`
+    - dict-based meshes with "vertices" and "faces" keys
+
+    Parameters
+    ----------
+    mesh : Any
+        Mesh object or dictionary.
+
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray]
+        Vertices array and faces array.
+
+    Raises
+    ------
+    TypeError
+        If the mesh does not match supported structures.
+    """
     # trimesh
     if hasattr(mesh, "vertices") and hasattr(mesh, "faces"):
         V = np.asarray(mesh.vertices)
@@ -51,6 +111,24 @@ def _extract_mesh_arrays(mesh: Any):
 
 
 def _bbox_params(V: np.ndarray):
+    """
+    Compute axis-aligned bounding-box statistics for a vertex cloud.
+
+    Parameters
+    ----------
+    V : np.ndarray
+        Vertex array of shape (N, 3).
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing:
+        - "min": per-axis minimum (3,)
+        - "max": per-axis maximum (3,)
+        - "size": bbox size (max-min) (3,)
+        - "center": bbox center (3,)
+        - "diag": Euclidean norm of bbox size (float)
+    """
     mn = V.min(axis=0)
     mx = V.max(axis=0)
     size = mx - mn
@@ -60,6 +138,30 @@ def _bbox_params(V: np.ndarray):
 
 
 class ParametricCadQuerySynthGenerator:
+    """
+    Generate geometry variants from a parametric CadQuery template.
+
+    This generator samples parameter values within provided ranges, builds
+    a CadQuery solid via `template_fn`, tessellates it to a triangle mesh, and
+    wraps results as PhysicalSample-like objects using `to_physical_sample`.
+
+    Inputs
+    ------
+    - template_fn(params) -> cadquery.Workplane or Shape
+    - param_ranges: {name: (lo, hi)}
+    - n_variants: number of variants to generate
+
+    Outputs
+    -------
+    Samples carry:
+    - fields: vertices (N,3), faces (F,3)
+    - meta: generator name, template name, sampled params, and parameter ranges
+
+    Parameters
+    ----------
+    cfg : Optional[SynthConfig]
+        Configuration controlling reproducibility, device, and dtype.
+    """
     """
     Generate geometry variants from a parametric CadQuery template.
 
@@ -73,6 +175,14 @@ class ParametricCadQuerySynthGenerator:
       meta: template name, ranges
     """
     def __init__(self, cfg: Optional[SynthConfig] = None):
+        """
+        Initialize the parametric CadQuery geometry generator.
+
+        Parameters
+        ----------
+        cfg : Optional[SynthConfig]
+            Optional generator configuration. If not provided, defaults are used.
+        """
         self.cfg = cfg or SynthConfig()
 
     def generate(
@@ -86,6 +196,36 @@ class ParametricCadQuerySynthGenerator:
         seed_offset: int = 0,
         name: str = "cadquery_template",
     ) -> SynthOutput:
+        """
+        Sample parameters, generate CadQuery solids, tessellate, and return samples.
+
+        Parameters
+        ----------
+        template_fn : Callable[[Dict[str, float]], Any]
+            Function that builds a CadQuery solid/workplane from sampled parameters.
+        param_ranges : Dict[str, Tuple[float, float]]
+            Mapping of parameter name -> (lo, hi) sampling bounds.
+        n_variants : int, optional
+            Number of variants to generate. Default is 16.
+        tess_linear_deflection : float, optional
+            Tessellation linear deflection. Default is 0.2.
+        tess_angular_deflection : float, optional
+            Tessellation angular deflection. Default is 0.3.
+        seed_offset : int, optional
+            Offset added to cfg.seed for deterministic variation. Default is 0.
+        name : str, optional
+            Template name recorded in metadata. Default is "cadquery_template".
+
+        Returns
+        -------
+        SynthOutput
+            Output containing generated PhysicalSample-like objects and metadata.
+
+        Raises
+        ------
+        ImportError
+            If CadQuery is not available.
+        """
         cq = _try_import_cadquery()
         if cq is None:
             raise ImportError("cadquery is not available. Install cadquery to use ParametricCadQuerySynthGenerator.")
@@ -121,6 +261,31 @@ class ParametricCadQuerySynthGenerator:
 
 class STLTemplateSynthGenerator:
     """
+    Synthetic geometry generator driven by an existing STL/mesh template.
+
+    Behavior
+    --------
+    1) Loads a mesh (via trimesh if a path is provided).
+    2) Computes its axis-aligned bounding box.
+    3) If CadQuery is available and `template` is one of ("box", "cylinder", "capsule"):
+       builds a simple parametric primitive matched to bbox scale, jitters parameters,
+       tessellates, and recenters to the original bbox center.
+    4) Otherwise falls back to vertex-space augmentation of the original mesh:
+       similarity-preserving transforms (uniform + axis scaling, small rotations)
+       plus optional additive vertex noise.
+
+    Supported templates (when CadQuery exists)
+    -----------------------------------------
+    - "box": length/width/height
+    - "cylinder": radius/height (radius inferred from xy bbox)
+    - "capsule": radius/height (approx)
+
+    Parameters
+    ----------
+    cfg : Optional[SynthConfig]
+        Configuration controlling reproducibility, device, and dtype.
+    """
+    """
     Fallback generator:
       - takes an STL/mesh, infers bbox,
       - optionally builds a simple parametric CadQuery primitive matching bbox,
@@ -135,9 +300,35 @@ class STLTemplateSynthGenerator:
       - does similarity-preserving transforms (scale/axis-scale/rot/noise) on original mesh vertices.
     """
     def __init__(self, cfg: Optional[SynthConfig] = None):
+        """
+        Initialize the STL template generator.
+
+        Parameters
+        ----------
+        cfg : Optional[SynthConfig]
+            Optional generator configuration. If not provided, defaults are used.
+        """
         self.cfg = cfg or SynthConfig()
 
     def _load_mesh(self, mesh_or_path: Union[str, Any]) -> Any:
+        """
+        Load a mesh from a filesystem path or pass through an in-memory mesh object.
+
+        Parameters
+        ----------
+        mesh_or_path : Union[str, Any]
+            Path to a mesh file (e.g., STL/OBJ) or an already loaded mesh object.
+
+        Returns
+        -------
+        Any
+            Loaded mesh object.
+
+        Raises
+        ------
+        ImportError
+            If trimesh is required for path loading but not available.
+        """
         tm = _try_import_trimesh()
         if isinstance(mesh_or_path, str):
             if tm is None:
@@ -159,6 +350,47 @@ class STLTemplateSynthGenerator:
         seed_offset: int = 0,
         name: str = "stl_template",
     ) -> SynthOutput:
+        """
+        Generate geometry variants from an STL/mesh template.
+
+        Parameters
+        ----------
+        mesh_or_path : Union[str, Any]
+            Mesh object or path to mesh file.
+        n_variants : int, optional
+            Number of variants to generate. Default is 16.
+        template : str, optional
+            Generation mode/template:
+            - "box", "cylinder", "capsule" (CadQuery primitive if available)
+            - otherwise falls back to vertex augmentation. Default is "box".
+        param_jitter : float, optional
+            Relative jitter applied to primitive parameters and augment scaling.
+            Default is 0.08.
+        rot_deg : float, optional
+            Maximum rotation magnitude (degrees) for vertex augmentation.
+            Default is 8.0.
+        noise_amp : float, optional
+            Standard deviation of additive vertex noise (augmentation fallback).
+            Default is 0.001.
+        tess_linear_deflection : float, optional
+            Tessellation linear deflection for CadQuery primitives. Default is 0.2.
+        tess_angular_deflection : float, optional
+            Tessellation angular deflection for CadQuery primitives. Default is 0.3.
+        seed_offset : int, optional
+            Offset added to cfg.seed for deterministic variation. Default is 0.
+        name : str, optional
+            Name recorded in metadata. Default is "stl_template".
+
+        Returns
+        -------
+        SynthOutput
+            Output containing generated PhysicalSample-like objects and metadata.
+
+        Raises
+        ------
+        ImportError
+            If trimesh is required to load paths but not available.
+        """
         tm = _try_import_trimesh()
         mesh = self._load_mesh(mesh_or_path)
         V0, F0 = _extract_mesh_arrays(mesh)
@@ -173,6 +405,26 @@ class STLTemplateSynthGenerator:
         samples = []
 
         def augment_vertices(V: np.ndarray) -> np.ndarray:
+            """
+            Apply geometric augmentations to a vertex array.
+
+            Augmentations include:
+            - recentering around the source bbox center
+            - uniform scaling and per-axis scaling jitter
+            - small random Euler rotations
+            - optional additive Gaussian noise
+            - retranslation back to original center
+
+            Parameters
+            ----------
+            V : np.ndarray
+                Vertex array of shape (N, 3).
+
+            Returns
+            -------
+            np.ndarray
+                Augmented vertex array of shape (N, 3).
+            """
             # centered
             center = bb["center"]
             Vc = V - center

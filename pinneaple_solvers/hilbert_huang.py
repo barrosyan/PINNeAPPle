@@ -1,3 +1,4 @@
+"""Hilbert-Huang transform (EMD + Hilbert) solver for time series."""
 from __future__ import annotations
 from typing import Dict, Optional, Tuple
 

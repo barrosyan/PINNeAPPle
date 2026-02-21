@@ -1,3 +1,4 @@
+"""JSON extraction from user text for requirements analysis."""
 from __future__ import annotations
 
 import json

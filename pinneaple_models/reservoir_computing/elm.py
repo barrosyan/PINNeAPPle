@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Extreme learning machine with random hidden features and ridge output."""
 from typing import Dict, Optional, Literal
 
 import torch

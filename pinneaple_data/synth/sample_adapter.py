@@ -1,3 +1,4 @@
+"""PhysicalSample-like conversion and torchify utilities for synth module outputs."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,12 +9,28 @@ import torch
 
 @runtime_checkable
 class PhysicalSampleLike(Protocol):
+    """Protocol defining the minimal interface of a PhysicalSample-like object.
+
+    Any object conforming to this protocol must expose:
+      - `fields`: mapping of field names to data (often tensors/arrays)
+      - `coords`: mapping of coordinate names to data (often tensors/arrays)
+      - `meta`: mapping of metadata keys to arbitrary values
+
+    This is used for duck-typing compatibility between the synth module and
+    external `PhysicalSample` implementations.
+    """
     fields: Dict[str, Any]
     coords: Dict[str, Any]
     meta: Dict[str, Any]
 
 
 def has_pinnego_physical_sample() -> bool:
+    """Check whether `pinneaple_data.physical_sample.PhysicalSample` is importable.
+
+    Returns:
+        True if `PhysicalSample` can be imported from `pinneaple_data`,
+        otherwise False.
+    """
     try:
         from pinneaple_data.physical_sample import PhysicalSample  # noqa: F401
         return True
@@ -25,6 +42,16 @@ def _torchify_tree(obj: Any, *, device=None, dtype=None) -> Any:
     """
     Convert numpy/lists -> torch.Tensor recursively when possible.
     Keeps non-tensor metadata as is.
+
+    Args:
+        obj: Arbitrary nested structure (tensor, list/tuple, dict, numpy array, etc.).
+        device: Optional device to move created/existing tensors to.
+        dtype: Optional dtype to cast created/existing tensors to.
+
+    Returns:
+        A structure with the same overall shape as `obj`, where numeric arrays/lists
+        are converted to `torch.Tensor` when feasible. Non-numeric / non-convertible
+        objects are returned unchanged.
     """
     if isinstance(obj, torch.Tensor):
         t = obj
@@ -73,6 +100,27 @@ def to_physical_sample(
     Returns:
       - pinneaple_data.physical_sample.PhysicalSample if available
       - else returns a minimal dataclass fallback (SynthPhysicalSample)
+
+    Args:
+        sample_like: Input object to convert. Supported forms include:
+            - An existing `pinneaple_data.physical_sample.PhysicalSample` instance
+              (returned as-is).
+            - Any object with attributes `fields`, `coords`, and `meta`.
+            - A dict in one of the supported layouts:
+                * {"fields": ..., "coords": ..., "meta": ...}
+                * {"state": ..., "coords": ..., "meta": ...}
+                * A plain dict treated as fields directly (excluding "coords"/"meta").
+        device: Optional device (string or torch.device) to move tensors to.
+        dtype: Optional torch dtype to cast tensors to.
+
+    Returns:
+        A `PhysicalSample` instance if the external implementation is available;
+        otherwise, a locally-defined minimal dataclass `SynthPhysicalSample`
+        carrying `fields`, `coords`, and `meta`.
+
+    Raises:
+        TypeError: If `sample_like` cannot be interpreted as a PhysicalSample-like
+            object or dict.
     """
     device = torch.device(device) if device is not None and not isinstance(device, torch.device) else device
 
@@ -134,6 +182,13 @@ def to_physical_sample(
     # Fallback minimal
     @dataclass
     class SynthPhysicalSample:
+        """Minimal fallback PhysicalSample implementation for standalone usage.
+
+        Attributes:
+            fields: Field tensor mapping (typically containing "u", etc.).
+            coords: Coordinate mapping (e.g., time and space grids).
+            meta: Metadata mapping describing how the sample was generated.
+        """
         fields: Dict[str, Any]
         coords: Dict[str, Any]
         meta: Dict[str, Any]

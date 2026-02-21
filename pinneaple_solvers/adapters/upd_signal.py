@@ -1,3 +1,4 @@
+"""UPD signal/sample adapter for solver field extraction and stacking."""
 from __future__ import annotations
 
 from dataclasses import dataclass

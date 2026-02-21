@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Deep state-space model for probabilistic dynamics."""
 
 from dataclasses import dataclass
 from typing import Dict, Optional, Any, Tuple

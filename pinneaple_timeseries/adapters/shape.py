@@ -1,3 +1,4 @@
+"""Shape adapters for time series models (e.g. LastStepToHorizon)."""
 import torch.nn as nn
 
 

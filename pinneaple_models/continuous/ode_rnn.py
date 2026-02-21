@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""ODE-RNN hybrid for continuous-time sequence modeling."""
 from typing import Dict, Optional
 
 import torch

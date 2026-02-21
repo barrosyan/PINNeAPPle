@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Equivariant graph neural network for symmetry-preserving learning."""
 from typing import Dict, Optional
 
 import torch

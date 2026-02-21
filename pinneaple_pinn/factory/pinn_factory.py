@@ -1,3 +1,5 @@
+"""PINN model factory: compiles symbolic equations and builds unified loss function."""
+
 from __future__ import annotations
 
 import collections
@@ -41,6 +43,7 @@ class NeuralNetwork(nn.Module):
         self.layers = nn.Sequential(*layers)
 
     def forward(self, *inputs: Tensor) -> Tensor:
+        """Concatenate inputs along dim=1 and pass through MLP."""
         x = torch.cat(inputs, dim=1)
         return self.layers(x)
 
@@ -67,6 +70,7 @@ class PINN(nn.Module):
                 self.inverse_params[name] = nn.Parameter(torch.tensor(init, dtype=dtype))
 
     def forward(self, *inputs: Tensor) -> Tensor:
+        """Forward pass through wrapped network."""
         return self.net(*inputs)
 
 
@@ -131,7 +135,8 @@ class PINNFactory:
         if self.spec.verbose:
             self._print_summary()
 
-    def _print_summary(self):
+    def _print_summary(self) -> None:
+        """Print problem summary (vars, derivatives) to stdout."""
         print("--- PINN Problem Summary ---")
         print("  Independent Vars:", self.spec.independent_vars)
         print("  Dependent Vars:", self.spec.dependent_vars)

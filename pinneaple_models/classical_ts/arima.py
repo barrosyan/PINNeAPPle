@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""ARIMA model for univariate time series forecasting."""
 from typing import Dict, Optional, List
 
 import torch

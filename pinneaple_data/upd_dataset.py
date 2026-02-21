@@ -1,3 +1,4 @@
+"""Hardened UPDDataset wrapper with validation, persistence, and save/load support."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -28,14 +29,17 @@ class UPDDataset:
     manifest: Dict[str, Any] | None = None
 
     def __post_init__(self):
+        """Initialize manifest with default version and count."""
         self.manifest = dict(self.manifest or {})
         self.manifest.setdefault("upd_version", "0.1")
         self.manifest.setdefault("count", len(self.samples))
 
     def __len__(self) -> int:
+        """Return the number of samples in the dataset."""
         return len(self.samples)
 
     def __getitem__(self, idx: int) -> PhysicalSample:
+        """Return the sample at the given index."""
         return self.samples[idx]
 
     def validate(
@@ -48,6 +52,29 @@ class UPDDataset:
         monotonic_dims: Optional[Sequence[str]] = None,
         raise_on_error: bool = False,
     ) -> Dict[str, Any]:
+        """
+        Validate all samples and aggregate issues into a report.
+
+        Parameters
+        ----------
+        units_policy : str, optional
+            Policy for units validation ("warn", "strict", "off"). Default is "warn".
+        required_units : Optional[Sequence[str]], optional
+            Field names that must have units metadata.
+        ranges : Optional[Dict[str, Tuple[float, float]]], optional
+            Allowed value ranges per field.
+        non_negative : Optional[Sequence[str]], optional
+            Field names that must be non-negative.
+        monotonic_dims : Optional[Sequence[str]], optional
+            Coordinate specs that must be monotonic increasing.
+        raise_on_error : bool, optional
+            If True, raise on any validation error. Default is False.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Report with count, total_errors, total_warnings, and per-sample issues.
+        """
         total_errors = 0
         total_warnings = 0
         by_sample: List[Dict[str, Any]] = []
@@ -90,6 +117,16 @@ class UPDDataset:
     # Persistence
     # -------------------------
     def save(self, path: str, *, format: str = "pt") -> None:
+        """
+        Save the dataset to disk in the specified format.
+
+        Parameters
+        ----------
+        path : str
+            Output path (directory for zarr, file for pt/hdf5).
+        format : str, optional
+            Format: "pt", "zarr", or "hdf5"/"h5". Default is "pt".
+        """
         fmt = format.lower()
         os.makedirs(path if fmt in ("zarr",) else os.path.dirname(path) or ".", exist_ok=True)
 
@@ -112,6 +149,21 @@ class UPDDataset:
 
     @staticmethod
     def load(path: str, *, format: str = "pt") -> "UPDDataset":
+        """
+        Load a UPDDataset from disk.
+
+        Parameters
+        ----------
+        path : str
+            Path to the saved dataset.
+        format : str, optional
+            Format: "pt", "zarr", or "hdf5"/"h5". Default is "pt".
+
+        Returns
+        -------
+        UPDDataset
+            Loaded dataset instance.
+        """
         fmt = format.lower()
         if fmt == "pt":
             samples = load_pt(path)

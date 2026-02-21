@@ -1,4 +1,4 @@
-# primitives_and_architected.py
+"""Trimesh-based primitive mesh builders and architected geometries (woven, braid)."""
 from __future__ import annotations
 
 from dataclasses import dataclass

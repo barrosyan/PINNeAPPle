@@ -1,3 +1,5 @@
+"""UPD dataset loader and PINN-ready sampling (collocation, conditions, data)."""
+
 from __future__ import annotations
 
 import json
@@ -24,9 +26,11 @@ class UPDItem:
     meta_path: str
 
     def load_meta(self) -> Dict[str, Any]:
+        """Load JSON metadata from meta_path."""
         return json.loads(Path(self.meta_path).read_text(encoding="utf-8"))
 
     def open_dataset(self) -> xr.Dataset:
+        """Open Zarr dataset at zarr_path."""
         return xr.open_zarr(self.zarr_path)
 
 
@@ -115,6 +119,7 @@ class UPDDataset:
     # Public API
     # -----------------------
     def sample(self, spec: SamplingSpec) -> Batch:
+        """Sample collocation, condition, and optional data points per spec."""
         rng = np.random.default_rng(spec.seed)
 
         collocation = None
@@ -147,9 +152,11 @@ class UPDDataset:
     # Internals: sampling
     # -----------------------
     def _coord_arrays(self) -> Dict[str, np.ndarray]:
+        """Build coordinate arrays (transformed/normalized) for independent vars."""
         return self.mapping.coord.make_coord_arrays(self.ds, time0=self._time0)
 
     def _random_index(self, rng, size: int, n: int, replace: bool) -> np.ndarray:
+        """Sample n indices from [0, size); with or without replacement."""
         if size <= 0:
             raise ValueError("Cannot sample from empty dimension.")
         if replace:
@@ -222,6 +229,7 @@ class UPDDataset:
         return self._gather_inputs(idx)
 
     def _sample_condition(self, rng, cond: ConditionSpec) -> Tuple[Tensor, ...]:
+        """Sample points for a single condition (initial, boundary, slice, interior)."""
         ctype = cond.type.lower().strip()
         n = int(cond.n)
 

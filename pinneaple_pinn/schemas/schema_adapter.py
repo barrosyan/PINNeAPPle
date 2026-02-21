@@ -1,3 +1,5 @@
+"""Adapter from Physical Schema (UPD) to PINN problem and sampling specs."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -38,6 +40,7 @@ class SchemaAdapterOptions:
 # ----------------------------
 
 def _get(d: Dict[str, Any], keys: List[str], default=None):
+    """Get nested value at path keys; return default if any key missing."""
     cur = d
     for k in keys:
         if not isinstance(cur, dict) or k not in cur:
@@ -47,6 +50,7 @@ def _get(d: Dict[str, Any], keys: List[str], default=None):
 
 
 def _as_list(x) -> List[Any]:
+    """Convert value to list (None->[], list->identity, else wrap)."""
     if x is None:
         return []
     if isinstance(x, list):
@@ -55,6 +59,7 @@ def _as_list(x) -> List[Any]:
 
 
 def _pick_first_present(schema: Dict[str, Any], candidates: List[List[str]], default=None):
+    """Return first value found at any candidate path in schema; else default."""
     for path in candidates:
         val = _get(schema, path, default=None)
         if val is not None:
@@ -81,7 +86,7 @@ class SchemaAdapter:
         self,
         mapping: PINNMapping,
         options: Optional[SchemaAdapterOptions] = None,
-    ):
+    ) -> None:
         self.mapping = mapping
         self.options = options or SchemaAdapterOptions()
 

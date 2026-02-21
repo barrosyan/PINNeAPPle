@@ -1,3 +1,4 @@
+"""Finite Volume Method solver scaffold with flux/source callbacks."""
 from __future__ import annotations
 from typing import Dict, Optional, Callable, Any
 

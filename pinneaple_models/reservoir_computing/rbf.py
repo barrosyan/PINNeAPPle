@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Radial basis function network for reservoir-style regression."""
 from typing import Dict, Optional
 
 import torch

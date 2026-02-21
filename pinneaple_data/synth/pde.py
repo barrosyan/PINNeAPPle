@@ -1,3 +1,4 @@
+"""PDE/ODE synthetic generator for heat, advection, and logistic equations."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,7 +13,14 @@ from .base import SynthConfig, SynthOutput
 class SimplePhysicalSample:
     """
     MVP duck-typed PhysicalSample to keep synth module usable standalone.
-    Replace with your pinneaple_data.physical_sample.PhysicalSample later.
+
+    This lightweight container mirrors the expected interface of a richer
+    `PhysicalSample` class used elsewhere in the codebase.
+
+    Attributes:
+        fields: Mapping from field name to tensor (e.g., {"u": (T+1, X)}).
+        coords: Mapping from coordinate name to tensor (e.g., {"t": (T+1,), "x": (X,)}).
+        meta: Free-form metadata describing the sample (equation params, BCs, etc.).
     """
     fields: Dict[str, torch.Tensor]
     coords: Dict[str, torch.Tensor]
@@ -32,11 +40,28 @@ class PDESynthGenerator:
       kind: "heat1d" | "advection1d" | "logistic"
       domain/grid/time params
       initial condition function
+
+    Notes:
+        - For PDEs, returns trajectories for u(t, x) sampled on a 1D grid.
+        - For the logistic ODE, returns u(t) reshaped to (T, 1) for consistency.
+        - Boundary condition handling is minimal: "periodic" or clamped "dirichlet0".
     """
+
     def __init__(self, cfg: Optional[SynthConfig] = None):
+        """Create a PDE/ODE synthetic data generator.
+
+        Args:
+            cfg: Optional `SynthConfig` controlling device, dtype, and RNG seed.
+                If omitted, defaults to `SynthConfig()`.
+        """
         self.cfg = cfg or SynthConfig()
 
     def _rng(self):
+        """Create a deterministic CPU RNG based on the configured seed.
+
+        Returns:
+            A `torch.Generator` on CPU seeded with `self.cfg.seed`.
+        """
         return torch.Generator(device="cpu").manual_seed(int(self.cfg.seed))
 
     def generate(
@@ -64,6 +89,42 @@ class PDESynthGenerator:
         # IC
         ic_fn: Optional[Callable[[torch.Tensor, torch.Generator], torch.Tensor]] = None,
     ) -> SynthOutput:
+        """Generate synthetic trajectories for a supported PDE/ODE kind.
+
+        Depending on `kind`, this method simulates:
+          - "heat1d": explicit Euler time stepping with central-difference Laplacian
+          - "advection1d": explicit Euler time stepping with upwind spatial derivative
+          - "logistic": explicit Euler stepping of the logistic ODE
+
+        Args:
+            kind: Which system to simulate. One of:
+                - "heat1d"
+                - "advection1d"
+                - "logistic"
+            n_samples: Number of independent trajectories to generate.
+            dt: Time step size.
+            steps: Number of time steps (trajectory length is steps+1).
+            x_min: Minimum spatial coordinate (PDE cases only).
+            x_max: Maximum spatial coordinate (PDE cases only).
+            nx: Number of spatial grid points (PDE cases only).
+            bc: Boundary condition mode for PDEs:
+                - "periodic" uses wrap-around with `torch.roll`
+                - other values are treated as "dirichlet0" (clamped endpoints)
+            alpha: Diffusivity for heat equation (used when kind=="heat1d").
+            c: Advection speed for advection equation (used when kind=="advection1d").
+            r: Growth rate for logistic ODE (used when kind=="logistic").
+            K: Carrying capacity for logistic ODE (used when kind=="logistic").
+            ic_fn: Optional initial-condition sampler for PDEs:
+                `ic_fn(x, rng) -> u0(x)`. If not provided, a random Fourier series is used.
+
+        Returns:
+            A `SynthOutput` containing:
+              - samples: list of `SimplePhysicalSample` trajectories
+              - extras: summary metadata including `n_samples` and `kind`
+
+        Raises:
+            ValueError: If `kind` is not one of: heat1d, advection1d, logistic.
+        """
         kind = kind.lower().strip()
         rng = self._rng()
 
@@ -77,6 +138,15 @@ class PDESynthGenerator:
             dx = (x_max - x_min) / max(nx - 1, 1)
 
             def default_ic(x: torch.Tensor, g: torch.Generator):
+                """Default PDE initial condition: random low-frequency Fourier series.
+
+                Args:
+                    x: Spatial grid tensor of shape (nx,).
+                    g: RNG used to sample amplitudes and frequencies.
+
+                Returns:
+                    Initial condition u0(x) with shape (nx,).
+                """
                 # random sum of sines
                 amps = torch.randn((4,), generator=g, device=x.device, dtype=x.dtype) * 0.3
                 freqs = torch.randint(1, 6, (4,), generator=g, device=x.device)

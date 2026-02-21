@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""DeepONet operator learning with branch-trunk architecture."""
 from typing import Dict, Optional
 
 import torch

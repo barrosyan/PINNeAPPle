@@ -1,3 +1,4 @@
+"""Cached wrapper around UPDZarrStore with LRU sample and field-level caching."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,6 +11,19 @@ from .cache import LRUCache
 
 
 def _norm_keys(keys: Optional[Sequence[str]]) -> Tuple[str, ...]:
+    """
+    Normalize a sequence of keys into a sorted tuple for cache key hashing.
+
+    Parameters
+    ----------
+    keys : Optional[Sequence[str]]
+        Key names or None.
+
+    Returns
+    -------
+    Tuple[str, ...]
+        Sorted tuple of string keys, or empty tuple if keys is None.
+    """
     if keys is None:
         return tuple()
     return tuple(sorted([str(k) for k in keys]))
@@ -17,6 +31,18 @@ def _norm_keys(keys: Optional[Sequence[str]]) -> Tuple[str, ...]:
 
 @dataclass
 class ZarrCacheConfig:
+    """
+    Configuration for Zarr-backed cache limits.
+
+    Attributes
+    ----------
+    max_samples : int
+        Maximum number of full samples to cache. Default is 256.
+    max_fields : int
+        Maximum number of individual field reads to cache. Default is 2048.
+    enable_field_cache : bool
+        Whether to enable per-field caching. Default is True.
+    """
     max_samples: int = 256       # cache of full samples
     max_fields: int = 2048       # cache of individual field reads
     enable_field_cache: bool = True
@@ -27,6 +53,18 @@ class CachedUPDZarrStore:
     Cached wrapper around UPDZarrStore.
     """
     def __init__(self, root: str, *, cache: Optional[ZarrCacheConfig] = None, mode: str = "r"):
+        """
+        Initialize the cached Zarr store.
+
+        Parameters
+        ----------
+        root : str
+            Root path of the underlying Zarr store.
+        cache : Optional[ZarrCacheConfig]
+            Cache configuration. Defaults to ZarrCacheConfig().
+        mode : str, optional
+            Access mode for the store. Default is "r".
+        """
         self.store = UPDZarrStore(root, mode=mode)
         self.cache_cfg = cache or ZarrCacheConfig()
 
@@ -34,9 +72,11 @@ class CachedUPDZarrStore:
         self.field_cache = LRUCache(max_items=self.cache_cfg.max_fields)
 
     def count(self) -> int:
+        """Return the number of samples in the store."""
         return self.store.count()
 
     def manifest(self) -> Dict[str, Any]:
+        """Return the store manifest dictionary."""
         return self.store.manifest()
 
     def _sample_key(
@@ -74,6 +114,31 @@ class CachedUPDZarrStore:
         sample_ctor=None,
         use_sample_cache: bool = True,
     ):
+        """
+        Read a sample by index with optional field-level caching.
+
+        Parameters
+        ----------
+        i : int
+            Sample index.
+        fields : Optional[Sequence[str]], optional
+            Field names to load. Default is all.
+        coords : Optional[Sequence[str]], optional
+            Coordinate names to load.
+        device : str or torch.device, optional
+            Target device. Default is "cpu".
+        dtype : Optional[torch.dtype], optional
+            Target dtype.
+        sample_ctor : callable, optional
+            Constructor for building sample from (fields, coords, meta).
+        use_sample_cache : bool, optional
+            Whether to use full-sample cache. Default is True.
+
+        Returns
+        -------
+        Any
+            PhysicalSample-like object or sample_ctor output.
+        """
         # 1) full sample cache
         sk = self._sample_key(i, fields, coords, device, dtype)
         if use_sample_cache:
@@ -144,6 +209,7 @@ class CachedUPDZarrStore:
         return sample
 
     def cache_stats(self) -> Dict[str, Any]:
+        """Return cache hit/miss/eviction statistics for sample and field caches."""
         return {
             "sample_cache": {
                 "size": len(self.sample_cache),

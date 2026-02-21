@@ -1,3 +1,4 @@
+"""Base SolverOutput and SolverBase for numerical solvers."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -22,6 +23,8 @@ class SolverOutput:
 
 
 class SolverBase(nn.Module):
+    """Base class for numerical solvers."""
+
     def __init__(self):
         super().__init__()
 

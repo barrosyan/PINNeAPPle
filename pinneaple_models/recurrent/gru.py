@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""GRU and bidirectional GRU models."""
 
 from typing import Dict, Optional
 

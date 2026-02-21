@@ -1,3 +1,4 @@
+"""Symbolic PDE parser and finite-difference-based synthetic trajectory generator."""
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, Optional
@@ -10,11 +11,36 @@ from .sample_adapter import to_physical_sample
 
 
 def _safe_import_sympy():
+    """Safely import and return the `sympy` module.
+
+    This helper isolates the dependency so importing this module doesn't
+    immediately require SymPy unless a symbolic function is actually called.
+
+    Returns:
+        The imported `sympy` module.
+    """
     import sympy  # type: ignore
     return sympy
 
 
 def _fd_u_x(u: torch.Tensor, dx: float, bc: str) -> torch.Tensor:
+    """Compute the first spatial derivative u_x using finite differences.
+
+    Uses a central difference stencil in space. Boundary behavior depends on `bc`.
+
+    Args:
+        u: Field values with last dimension being space (X). Supported shapes
+            include (..., X), e.g. (B, T, X) or (B, X) or (X,).
+        dx: Spatial grid spacing.
+        bc: Boundary condition mode. Supported:
+            - "periodic": wrap-around via `torch.roll`.
+            - other (treated as "dirichlet0"): clamp boundary values to zero
+              before applying the stencil.
+
+    Returns:
+        Tensor of the same shape as `u`, containing the finite-difference
+        approximation to u_x.
+    """
     if bc == "periodic":
         return (torch.roll(u, -1, dims=-1) - torch.roll(u, 1, dims=-1)) / (2.0 * dx)
     # dirichlet0: clamp at boundaries
@@ -27,6 +53,23 @@ def _fd_u_x(u: torch.Tensor, dx: float, bc: str) -> torch.Tensor:
 
 
 def _fd_u_xx(u: torch.Tensor, dx: float, bc: str) -> torch.Tensor:
+    """Compute the second spatial derivative u_xx using finite differences.
+
+    Uses a central difference stencil in space. Boundary behavior depends on `bc`.
+
+    Args:
+        u: Field values with last dimension being space (X). Supported shapes
+            include (..., X), e.g. (B, T, X) or (B, X) or (X,).
+        dx: Spatial grid spacing.
+        bc: Boundary condition mode. Supported:
+            - "periodic": wrap-around via `torch.roll`.
+            - other (treated as "dirichlet0"): clamp boundary values to zero
+              before applying the stencil.
+
+    Returns:
+        Tensor of the same shape as `u`, containing the finite-difference
+        approximation to u_xx.
+    """
     if bc == "periodic":
         return (torch.roll(u, -1, dims=-1) - 2.0 * u + torch.roll(u, 1, dims=-1)) / (dx * dx)
     up = u.clone()
@@ -42,13 +85,28 @@ def _build_rhs_from_equation(
     *,
     parameters: Optional[Dict[str, float]] = None,
 ) -> Callable[[torch.Tensor, torch.Tensor, torch.Tensor, Dict[str, torch.Tensor]], torch.Tensor]:
-    """
-    Returns rhs(u, t, x, derivs) = u_t as tensor.
-    Supported symbolic tokens:
+    """Build a callable RHS function u_t = RHS(...) from a symbolic PDE string.
+
+    Parses `equation` with SymPy, solves it for `u_t`, and returns a PyTorch-backed
+    function that evaluates the resulting RHS using provided derivative tensors.
+
+    Supported symbolic tokens in `equation`:
       - u, u_t, u_x, u_xx
       - t, x
       - named params (alpha, c, nu, etc.) from `parameters`
       - basic funcs: sin, cos, exp, pi
+
+    Args:
+        equation: PDE written as a residual expression equal to 0, e.g.
+            "u_t - alpha*u_xx" or "u_t + u*u_x - nu*u_xx".
+        parameters: Optional mapping of parameter name to numeric value (float).
+
+    Returns:
+        A function `rhs(u_tens, t_tens, x_tens, derivs) -> torch.Tensor` that
+        computes du/dt (same shape as `u_tens`, broadcast-compatible).
+
+    Raises:
+        ValueError: If the equation cannot be solved for `u_t`.
     """
     sympy = _safe_import_sympy()
 
@@ -97,6 +155,20 @@ def _build_rhs_from_equation(
     rhs_fn = sympy.lambdify(arg_list, rhs_expr, "torch")
 
     def rhs(u_tens: torch.Tensor, t_tens: torch.Tensor, x_tens: torch.Tensor, derivs: Dict[str, torch.Tensor]) -> torch.Tensor:
+        """Evaluate the RHS du/dt for given state, coordinates, and derivatives.
+
+        Args:
+            u_tens: Field tensor `u` (state) to evaluate RHS on. Common shapes:
+                (X,), (B, X), (B, T, X), etc., as long as broadcasting works.
+            t_tens: Time coordinate tensor (scalar or broadcastable).
+            x_tens: Space coordinate tensor (vector or broadcastable).
+            derivs: Dictionary of derivative tensors containing:
+                - "u_x": first spatial derivative of `u_tens`
+                - "u_xx": second spatial derivative of `u_tens`
+
+        Returns:
+            Tensor representing du/dt with shape broadcast-compatible to `u_tens`.
+        """
         # broadcast: u is (B,nx) or (nx,)
         ux = derivs["u_x"]
         uxx = derivs["u_xx"]
@@ -112,12 +184,30 @@ def make_fd_residual_fn(
     parameters: Optional[Dict[str, float]] = None,
     bc: str = "periodic",
 ) -> Callable[[torch.Tensor, torch.Tensor, torch.Tensor, float, float], torch.Tensor]:
-    """
-    Returns residual(u, t, x, dt, dx) -> tensor residual over (T,X)
+    """Create a residual evaluator using finite-difference approximations.
 
-    u: (T, X) or (B, T, X)
-    t: (T,)
-    x: (X,)
+    Builds a function that computes the original symbolic residual expression
+    (as provided) after substituting u_t, u_x, u_xx with finite-difference
+    approximations:
+      - u_t: forward difference along time dimension
+      - u_x/u_xx: central differences along space dimension
+
+    Args:
+        equation: PDE residual expression equal to 0, e.g. "u_t - alpha*u_xx".
+        parameters: Optional mapping of parameter names to floats.
+        bc: Boundary condition mode for spatial derivatives ("periodic" or
+            clamped/Dirichlet-0 style).
+
+    Returns:
+        A function `residual(u, t, x, dt, dx) -> torch.Tensor` returning the
+        residual over the spatiotemporal grid.
+
+        Expected inputs:
+            u: (T, X) or (B, T, X)
+            t: (T,)
+            x: (X,)
+            dt: time step size
+            dx: space step size
     """
     sympy = _safe_import_sympy()
 
@@ -153,6 +243,19 @@ def make_fd_residual_fn(
     expr_fn = sympy.lambdify(arg_list, expr, "torch")
 
     def residual(u: torch.Tensor, t: torch.Tensor, x: torch.Tensor, dt: float, dx: float) -> torch.Tensor:
+        """Evaluate the FD-based residual on a spatiotemporal grid.
+
+        Args:
+            u: Field values shaped (T, X) or (B, T, X).
+            t: Time coordinates shaped (T,).
+            x: Space coordinates shaped (X,).
+            dt: Time step size used to compute forward differences for u_t.
+            dx: Space step size used to compute central differences for u_x/u_xx.
+
+        Returns:
+            Residual tensor with shape (T, X) if input `u` is (T, X),
+            otherwise (B, T, X).
+        """
         # u shape: (T,X) or (B,T,X)
         if u.ndim == 2:
             u_ = u[None, ...]
@@ -203,10 +306,22 @@ class SymbolicFDSynthGenerator:
         - rhs_fn (callable)
         - residual_fn (callable)
     """
+
     def __init__(self, cfg: Optional[SynthConfig] = None):
+        """Initialize the generator with an optional synthesis configuration.
+
+        Args:
+            cfg: Optional `SynthConfig` controlling device, dtype, seed, etc.
+                If not provided, a default `SynthConfig()` is used.
+        """
         self.cfg = cfg or SynthConfig()
 
     def _rng(self):
+        """Create a CPU torch.Generator seeded from the config.
+
+        Returns:
+            A `torch.Generator` with deterministic seed based on `self.cfg.seed`.
+        """
         return torch.Generator(device="cpu").manual_seed(int(self.cfg.seed))
 
     def generate(
@@ -224,6 +339,37 @@ class SymbolicFDSynthGenerator:
         ic_fn: Optional[Callable[[torch.Tensor, torch.Generator], torch.Tensor]] = None,
         store_residual: bool = False,
     ) -> SynthOutput:
+        """Generate synthetic trajectories by time-stepping the symbolic RHS.
+
+        Builds:
+          - rhs_fn: solved from the symbolic equation for u_t
+          - residual_fn: evaluates the original symbolic residual with FD subs
+
+        Then, for each sample:
+          1) draw an initial condition u(x, t=0)
+          2) time-step forward `steps` times with explicit Euler: u_{n+1}=u_n+dt*RHS
+          3) package as a PhysicalSample-like object via `to_physical_sample`
+
+        Args:
+            equation: PDE residual expression equal to 0 (must include `u_t`).
+            parameters: Optional mapping of parameter names to numeric values.
+            n_samples: Number of trajectories to generate.
+            dt: Time step size for explicit Euler stepping.
+            steps: Number of time steps to simulate (trajectory length is steps+1).
+            x_min: Minimum spatial coordinate.
+            x_max: Maximum spatial coordinate.
+            nx: Number of spatial grid points.
+            bc: Boundary condition mode ("periodic" or "dirichlet0").
+            ic_fn: Optional initial condition sampler `ic_fn(x, rng) -> u0(x)`.
+                If not provided, a random Fourier-series IC is used.
+            store_residual: If True, compute and store residuals for each sample.
+
+        Returns:
+            `SynthOutput` containing:
+              - samples: list of samples (adapted via `to_physical_sample`)
+              - extras: dict with rhs_fn, residual_fn, equation, parameters, and
+                optionally residuals if `store_residual=True`.
+        """
         device = torch.device(self.cfg.device)
         dtype = getattr(torch, self.cfg.dtype)
         rng = self._rng()
@@ -235,6 +381,15 @@ class SymbolicFDSynthGenerator:
 
         # default IC: random Fourier series
         def default_ic(x_: torch.Tensor, g: torch.Generator) -> torch.Tensor:
+            """Sample a smooth random initial condition using a short Fourier series.
+
+            Args:
+                x_: Spatial grid (X,).
+                g: Random generator used for sampling amplitudes/frequencies.
+
+            Returns:
+                Initial condition u0 with shape (X,).
+            """
             amps = torch.randn((4,), generator=g, device=x_.device, dtype=x_.dtype) * 0.3
             freqs = torch.randint(1, 6, (4,), generator=g, device=x_.device)
             u0 = torch.zeros_like(x_)

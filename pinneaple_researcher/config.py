@@ -1,3 +1,4 @@
+"""ResearcherConfig for topic, k_papers, k_repos, ranking weights."""
 from __future__ import annotations
 
 from dataclasses import dataclass

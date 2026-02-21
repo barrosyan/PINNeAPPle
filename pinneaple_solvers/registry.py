@@ -1,3 +1,4 @@
+"""Solver catalog registry for FFT, Hilbert-Huang, FEM, FVM."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -27,6 +28,8 @@ _REGISTRY: Dict[str, Type[SolverBase]] = {
 
 @dataclass
 class SolverCatalog:
+    """Registry of solver implementations (FFT, Hilbert-Huang, FEM, FVM)."""
+
     registry: Dict[str, Type[SolverBase]] = None
 
     def __post_init__(self):

@@ -1,3 +1,4 @@
+"""CadQuery mesh import, parametric CAD spec, and STEP/STL conversion."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field

@@ -1,3 +1,4 @@
+"""Meshio mesh loading and UPD PhysicalSample packaging for VTK/VTU/MSH/XDMF."""
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,3 +1,4 @@
+"""FFT solver for spectrum computation with rFFT/FFT support."""
 from __future__ import annotations
 from typing import Dict, Optional, Tuple, List
 

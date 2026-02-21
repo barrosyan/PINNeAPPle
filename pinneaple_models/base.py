@@ -1,3 +1,4 @@
+"""BaseModel and ModelOutput for Pinneaple model family."""
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Any, Optional

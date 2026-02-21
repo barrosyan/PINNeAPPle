@@ -1,3 +1,5 @@
+"""Builder for physical datasets from Earth data hubs (NASA CMR, earthaccess)."""
+
 from __future__ import annotations
 
 import json
@@ -42,14 +44,19 @@ VARIABLE_PACKS: Dict[str, List[str]] = {
 }
 
 def _uid(txt: str) -> str:
+    """Generate a 16-char hex hash from text for unique identifiers."""
     return hashlib.sha256(txt.encode("utf-8")).hexdigest()[:16]
 
+
 def _ensure_dir(p: Union[str, Path]) -> Path:
+    """Create directory (and parents) if missing; return Path."""
     p = Path(p)
     p.mkdir(parents=True, exist_ok=True)
     return p
 
+
 def _normalize_time(s: Optional[str]) -> Optional[str]:
+    """Normalize time string to ISO format (YYYY-MM-DD -> YYYY-MM-DDT00:00:00Z)."""
     if s is None:
         return None
     s = str(s).strip()
@@ -63,7 +70,9 @@ def _normalize_time(s: Optional[str]) -> Optional[str]:
         return s
     return s  # user responsibility (kept simple for MVP)
 
+
 def _temporal(time_start: Optional[str], time_end: Optional[str]) -> Optional[Tuple[str, str]]:
+    """Parse and validate temporal range; returns (start, end) tuple or None."""
     if time_start is None and time_end is None:
         return None
     a = _normalize_time(time_start)
@@ -72,7 +81,9 @@ def _temporal(time_start: Optional[str], time_end: Optional[str]) -> Optional[Tu
         raise ValueError("time_start e time_end precisam ser informados juntos.")
     return (a, b)
 
+
 def _match(names: List[str], patterns: List[str]) -> List[str]:
+    """Match names against patterns (glob or re:... prefix); returns sorted list of matches."""
     import re, fnmatch
     out = set()
     for pat in patterns or []:
@@ -93,7 +104,9 @@ def _match(names: List[str], patterns: List[str]) -> List[str]:
                 out.add(pat)
     return sorted(out)
 
+
 def _resolve_packs(packs: List[str], available: List[str], packs_dict: Dict[str, List[str]]) -> List[str]:
+    """Resolve pack names to variable list, filtered by available; preserves order."""
     want: List[str] = []
     for p in packs or []:
         want += packs_dict.get(p, [])
@@ -104,7 +117,9 @@ def _resolve_packs(packs: List[str], available: List[str], packs_dict: Dict[str,
             out.append(v); seen.add(v)
     return out
 
+
 def _pick_url(granule: Any, prefer: str = "any") -> str:
+    """Pick best URL from granule links (opendap, https, or any)."""
     prefer = (prefer or "any").lower()
     gd = getattr(granule, "data", granule)
     links = gd.get("links", []) or []
@@ -134,12 +149,16 @@ def _pick_url(granule: Any, prefer: str = "any") -> str:
 
 @dataclass
 class HubQuery:
+    """Query parameters for Earth data hub search."""
+
     provider: Optional[str] = None
     short_name: Optional[str] = None
     keyword: Optional[str] = None
 
 @dataclass
 class SpaceTime:
+    """Temporal and spatial extent plus stride/chunking options."""
+
     time_start: Optional[str] = None
     time_end: Optional[str] = None
     bbox: Optional[Tuple[float, float, float, float]] = None  # (W,S,E,N)
@@ -148,12 +167,16 @@ class SpaceTime:
 
 @dataclass
 class VariableSelection:
+    """Variable include/exclude/pack selection."""
+
     include: List[str] = field(default_factory=list)
     exclude: List[str] = field(default_factory=list)
     packs: List[str] = field(default_factory=list)
 
 @dataclass
 class PhysicalSchema:
+    """Physical system metadata: equations, BCs, ICs, units policy, regime tags."""
+
     physical_system: str = "unknown"
     governing_equations: Dict[str, Any] = field(default_factory=dict)
     ics: Optional[Dict[str, Any]] = None
@@ -180,10 +203,18 @@ class PhysicalDatasetBuilder:
         self.selection = VariableSelection()
         self.schema = PhysicalSchema()
 
-    def login(self, persist: bool = True):
+    def login(self, persist: bool = True) -> None:
+        """Log in to Earth data hub (earthaccess); persists credentials if requested."""
         earthaccess.login(persist=persist)
 
-    def list_collections(self, keyword: Optional[str]=None, provider: Optional[str]=None, short_name: Optional[str]=None, limit: int=20) -> List[Dict[str, Any]]:
+    def list_collections(
+        self,
+        keyword: Optional[str] = None,
+        provider: Optional[str] = None,
+        short_name: Optional[str] = None,
+        limit: int = 20,
+    ) -> List[Dict[str, Any]]:
+        """Search and list available datasets; returns list of metadata dicts."""
         self.login(True)
         kw: Dict[str, Any] = {}
         if keyword: kw["keyword"] = keyword
@@ -205,12 +236,25 @@ class PhysicalDatasetBuilder:
                 out.append({"title": str(it)})
         return out
 
-    def set_dataset(self, provider: Optional[str]=None, short_name: Optional[str]=None, keyword: Optional[str]=None):
+    def set_dataset(
+        self,
+        provider: Optional[str] = None,
+        short_name: Optional[str] = None,
+        keyword: Optional[str] = None,
+    ):
+        """Set hub query (provider, short_name, keyword); returns self for chaining."""
         self.hub = HubQuery(provider=provider, short_name=short_name, keyword=keyword)
         return self
 
-    def set_spacetime(self, time_start: Optional[str], time_end: Optional[str], bbox: Optional[Tuple[float,float,float,float]]=None,
-                      stride: Optional[Dict[str,int]]=None, chunking: Optional[Dict[str,int]]=None):
+    def set_spacetime(
+        self,
+        time_start: Optional[str],
+        time_end: Optional[str],
+        bbox: Optional[Tuple[float, float, float, float]] = None,
+        stride: Optional[Dict[str, int]] = None,
+        chunking: Optional[Dict[str, int]] = None,
+    ):
+        """Set temporal range, bbox (W,S,E,N), stride, and chunking; returns self."""
         tr = _temporal(time_start, time_end) if (time_start or time_end) else None
         self.spacetime = SpaceTime(
             time_start=tr[0] if tr else None,
@@ -221,11 +265,18 @@ class PhysicalDatasetBuilder:
         )
         return self
 
-    def set_selection(self, include: Optional[List[str]]=None, exclude: Optional[List[str]]=None, packs: Optional[List[str]]=None):
+    def set_selection(
+        self,
+        include: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+        packs: Optional[List[str]] = None,
+    ):
+        """Set variable include/exclude lists and pack names; returns self."""
         self.selection = VariableSelection(include=include or [], exclude=exclude or [], packs=packs or [])
         return self
 
     def set_schema_from_template(self, template_id: str):
+        """Load schema from templates and set it; returns self."""
         tpl = schema_templates().get(template_id)
         if not tpl:
             raise ValueError(f"Template '{template_id}' não encontrado.")
@@ -233,10 +284,18 @@ class PhysicalDatasetBuilder:
         return self
 
     def set_schema(self, schema: PhysicalSchema):
+        """Set physical schema directly; returns self."""
         self.schema = schema
         return self
 
-    def inspect(self, prefer: str="any", engine: str="pydap", chunks: Optional[Dict[str,int]]=None, max_granules: int=3) -> Dict[str, Any]:
+    def inspect(
+        self,
+        prefer: str = "any",
+        engine: str = "pydap",
+        chunks: Optional[Dict[str, int]] = None,
+        max_granules: int = 3,
+    ) -> Dict[str, Any]:
+        """Open first granule, standardize dims, and return variable/dim metadata and suggested packs."""
         self.login(True)
         granules, notes = self._search_granules(max_granules=max_granules)
         url = _pick_url(granules[0], prefer=prefer)
@@ -266,14 +325,15 @@ class PhysicalDatasetBuilder:
         self,
         out_dir: str,
         catalog_path: str,
-        shards: Optional[ShardSpec]=None,
-        derived: Optional[DerivedSpec]=None,
-        validate: Optional[ValidationSpec]=None,
-        prefer: str="any",
-        engine: str="pydap",
-        chunks: Optional[Dict[str,int]]=None,
-        max_granules: int=10,
+        shards: Optional[ShardSpec] = None,
+        derived: Optional[DerivedSpec] = None,
+        validate: Optional[ValidationSpec] = None,
+        prefer: str = "any",
+        engine: str = "pydap",
+        chunks: Optional[Dict[str, int]] = None,
+        max_granules: int = 10,
     ) -> Dict[str, Any]:
+        """Fetch granules, apply selection/derived/validation, shard, and write UPD zarr + catalog."""
         self.login(True)
         shards = shards or ShardSpec()
         derived = derived or DerivedSpec()
@@ -358,6 +418,7 @@ class PhysicalDatasetBuilder:
 
     # -------- internals --------
     def _search_granules(self, max_granules: int) -> Tuple[List[Any], Dict[str, Any]]:
+        """Search granules via earthaccess or CMR; returns (granules, notes)."""
         temporal = _temporal(self.spacetime.time_start, self.spacetime.time_end) if (self.spacetime.time_start and self.spacetime.time_end) else None
         bbox = self.spacetime.bbox
 
@@ -394,8 +455,19 @@ class PhysicalDatasetBuilder:
         items = q.get()
         return items[:max_granules], {"used": "python-cmr", "earthaccess_error": ea_err, "bbox_error": bbox_error}
 
-    def _write_upd(self, ds: xr.Dataset, out_dir: Path, catalog_path: str, url: str, notes: Dict[str, Any],
-                   t0, t1, tags: List[str], tile: Optional[Tuple[float,float,float,float]]):
+    def _write_upd(
+        self,
+        ds: xr.Dataset,
+        out_dir: Path,
+        catalog_path: str,
+        url: str,
+        notes: Dict[str, Any],
+        t0,
+        t1,
+        tags: List[str],
+        tile: Optional[Tuple[float, float, float, float]],
+    ):
+        """Write dataset to zarr + JSON meta and append to parquet catalog."""
         # source id includes shard interval + tile (so different uid per shard)
         source_id = f"{self.hub.provider}|{self.hub.short_name or self.hub.keyword}|{url}|{str(t0)}|{str(t1)}|{tile or ''}"
         uid_ = _uid(source_id)
@@ -447,7 +519,8 @@ class PhysicalDatasetBuilder:
 
         return {"uid": uid_, "zarr_path": str(zarr_path), "meta_path": str(meta_path), "regime_tags": tags, "tile": tile}
 
-    def _suggest_packs(self, available_vars: List[str], top_k: int=5) -> List[str]:
+    def _suggest_packs(self, available_vars: List[str], top_k: int = 5) -> List[str]:
+        """Suggest pack names by overlap with available variables."""
         av = set(available_vars)
         scored = []
         for name, vars_ in self.packs.items():

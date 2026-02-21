@@ -1,3 +1,4 @@
+"""Time series model catalog and default FNO forecaster registration."""
 from __future__ import annotations
 
 from dataclasses import dataclass

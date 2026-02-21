@@ -1,3 +1,4 @@
+"""Zarr-backed UPD store for PhysicalSample persistence with columnar layout."""
 from __future__ import annotations
 
 import json
@@ -24,10 +25,36 @@ ArrayLike = Union[np.ndarray, "torch.Tensor"]
 
 
 def _is_torch(x: Any) -> bool:
+    """
+    Check if the input is a torch.Tensor.
+
+    Parameters
+    ----------
+    x : Any
+        Object to test.
+
+    Returns
+    -------
+    bool
+        True if x is a torch.Tensor and torch is available; otherwise False.
+    """
     return torch is not None and isinstance(x, torch.Tensor)
 
 
 def _to_numpy(x: ArrayLike) -> np.ndarray:
+    """
+    Convert array-like input to numpy.ndarray.
+
+    Parameters
+    ----------
+    x : ArrayLike
+        Input (numpy array or torch.Tensor).
+
+    Returns
+    -------
+    np.ndarray
+        NumPy array representation.
+    """
     if _is_torch(x):
         x = x.detach().cpu()
         return np.asarray(x.numpy())
@@ -126,6 +153,16 @@ class UPDZarrStore:
     """
 
     def __init__(self, root: str, mode: str = "r"):
+        """
+        Initialize the UPD Zarr store.
+
+        Parameters
+        ----------
+        root : str
+            Root directory path of the Zarr store.
+        mode : str, optional
+            Access mode ("r" for read-only, "w" for write). Default is "r".
+        """
         self.root = str(root)
         self.mode = str(mode)
 
@@ -251,6 +288,14 @@ class UPDZarrStore:
         return root
 
     def num_samples(self) -> int:
+        """
+        Return the number of samples in the store.
+
+        Returns
+        -------
+        int
+            Sample count.
+        """
         n = self.grp.attrs.get("num_samples", None)
         if n is not None:
             return int(n)
@@ -262,6 +307,14 @@ class UPDZarrStore:
         return int(a0.shape[0])
 
     def field_names(self) -> List[str]:
+        """
+        Return the list of field names stored in the store.
+
+        Returns
+        -------
+        List[str]
+            Field names.
+        """
         keys = self.grp.attrs.get("fields", None)
         if keys is not None:
             return list(keys)

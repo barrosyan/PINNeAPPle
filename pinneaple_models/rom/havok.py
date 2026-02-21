@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""HAVOK Hankel alternative view of Koopman for chaotic dynamics."""
 from typing import Dict, Optional
 
 import torch

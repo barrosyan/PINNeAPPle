@@ -12,6 +12,24 @@ from pinneaple_arena.bundle.schema import BundleSchema
 
 @dataclass(frozen=True)
 class BundleData:
+    """
+    Immutable container for a validated PINNeAPPle bundle.
+
+    Attributes
+    ----------
+    root : Path
+        Root directory of the bundle.
+    manifest : Dict[str, Any]
+        Parsed contents of manifest.json containing physical parameters and metadata.
+    conditions : Dict[str, Any]
+        Parsed contents of conditions.json defining boundary/initial conditions.
+    points_collocation : pd.DataFrame
+        Collocation points used for PDE residual evaluation.
+    points_boundary : pd.DataFrame
+        Boundary points including region labels.
+    sensors : Optional[pd.DataFrame]
+        Optional sensor or measurement data.
+    """
     root: Path
     manifest: Dict[str, Any]
     conditions: Dict[str, Any]
@@ -21,6 +39,19 @@ class BundleData:
 
 
 def _read_json(path: Path) -> Dict[str, Any]:
+    """
+    Read a JSON file using UTF-8 encoding and return its parsed content.
+
+    Parameters
+    ----------
+    path : Path
+        Path to the JSON file.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Parsed JSON content as a dictionary.
+    """
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -30,6 +61,35 @@ def load_bundle(
     schema: BundleSchema,
     require_sensors: bool = False,
 ) -> BundleData:
+    """
+    Load and validate a PINNeAPPle bundle from disk.
+
+    This function:
+        - Validates the bundle structure against a schema.
+        - Loads manifest.json and conditions.json.
+        - Loads collocation and boundary parquet files.
+        - Optionally loads sensor data.
+        - Performs structural and schema-based validation checks.
+
+    Parameters
+    ----------
+    bundle_root : str | Path
+        Root directory of the bundle.
+    schema : BundleSchema
+        Schema object defining required keys, regions, and columns.
+    require_sensors : bool, optional
+        If True, raises an error when sensors.parquet is not present.
+
+    Returns
+    -------
+    BundleData
+        Validated and structured bundle data container.
+
+    Raises
+    ------
+    RuntimeError
+        If required files, keys, columns, or regions are missing.
+    """
     root = Path(bundle_root)
     schema.validate_bundle_root(root)
 

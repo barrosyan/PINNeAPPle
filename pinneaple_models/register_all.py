@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Register all model families into the global ModelRegistry."""
 
 def register_all() -> None:
     from pinneaple_models.autoencoders.registry import register_into_global as reg_autoenc

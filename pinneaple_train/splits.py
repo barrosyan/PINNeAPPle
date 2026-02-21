@@ -1,3 +1,4 @@
+"""Train/val/test split strategies (random, time, group)."""
 from __future__ import annotations
 
 from dataclasses import dataclass

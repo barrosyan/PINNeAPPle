@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Base classes for classical time series models."""
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional

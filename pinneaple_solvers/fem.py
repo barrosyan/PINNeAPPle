@@ -1,3 +1,4 @@
+"""Finite Element Method solver scaffold with assemble/solve API."""
 from __future__ import annotations
 from typing import Dict, Optional, Callable, Any
 

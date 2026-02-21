@@ -1,3 +1,4 @@
+"""Ranking heuristics: lexical overlap, freshness, quality scores."""
 from __future__ import annotations
 
 import math

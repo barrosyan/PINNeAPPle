@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Autoencoder-ROM hybrid for dimensionality reduction and dynamics."""
 
 from typing import Dict, List, Optional, Union
 

@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""PINN-LSTM hybrid combining physics-informed losses with LSTM dynamics."""
 
 from typing import Dict, Optional, List
 import torch

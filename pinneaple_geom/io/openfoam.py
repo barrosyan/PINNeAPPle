@@ -1,3 +1,4 @@
+"""OpenFOAM case loading and field extraction for UPD PhysicalSample."""
 from __future__ import annotations
 
 from typing import Dict, List, Optional, Sequence, Tuple

@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Autoformer with auto-correlation mechanism for time series."""
 
 from typing import Dict, Optional
 

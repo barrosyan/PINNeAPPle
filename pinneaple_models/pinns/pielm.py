@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Physics-informed extreme learning machine for fast PINN training."""
 
 from typing import Dict, List, Optional, Callable, Any, Tuple
 

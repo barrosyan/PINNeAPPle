@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""ESN-RC hybrid for reservoir computing with readout regression."""
 from typing import Dict, Optional
 
 import torch

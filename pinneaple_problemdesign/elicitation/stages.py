@@ -1,3 +1,4 @@
+"""Elicitation stage definitions and STAGES_ORDER."""
 from __future__ import annotations
 
 from dataclasses import dataclass

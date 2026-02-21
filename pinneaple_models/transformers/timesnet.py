@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""TimesNet with multi-scale 2D-variation modeling for time series."""
 
 from typing import Dict, Optional
 

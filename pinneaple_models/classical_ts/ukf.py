@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Unscented Kalman filter for nonlinear state estimation."""
 from typing import Callable, Dict, Optional, Any
 
 import torch

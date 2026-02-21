@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Graph neural operator for mesh-based PDEs."""
 import torch
 import torch.nn as nn
 

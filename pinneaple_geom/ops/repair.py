@@ -1,3 +1,4 @@
+"""Best-effort mesh repair using trimesh (duplicates, degenerate, normals, holes)."""
 from __future__ import annotations
 
 import numpy as np

@@ -1,3 +1,4 @@
+"""Collate functions for PINN batches and UPD supervision batches."""
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
@@ -8,6 +9,30 @@ Tensor = torch.Tensor
 
 
 def _stack_or_cat(xs: List[Tensor], dim: int = 0) -> Tensor:
+    """
+   Combine a list of tensors into a single tensor.
+
+    This helper attempts to preserve structure when possible:
+    - If all tensors have exactly the same shape, it stacks them along `dim`.
+    - Otherwise, it concatenates them along `dim`.
+
+    Parameters
+    ----------
+    xs : List[torch.Tensor]
+        List of tensors to combine. Must be non-empty.
+    dim : int
+        Dimension along which to stack or concatenate.
+
+    Returns
+    -------
+    torch.Tensor
+        Stacked tensor if shapes match; otherwise concatenated tensor.
+
+    Raises
+    ------
+    ValueError
+        If `xs` is empty.
+    """
     """
     Tries to stack if shapes match perfectly; otherwise concatenates on dim.
     """
@@ -20,6 +45,37 @@ def _stack_or_cat(xs: List[Tensor], dim: int = 0) -> Tensor:
 
 
 def _collate_tuple_of_tensors(items: List[Tuple[Tensor, ...]]) -> Tuple[Tensor, ...]:
+    """
+    Collate a list of tuples of tensors by concatenating each tuple position.
+
+    Example
+    -------
+    Given items like:
+        [(t0, x0), (t1, x1), ...]
+    returns:
+        (cat([t0,t1,...], dim=0), cat([x0,x1,...], dim=0))
+
+    Assumptions
+    -----------
+    - Each element in the tuple is a tensor whose first dimension is a batch-like
+      dimension (e.g., (N_i, 1) or (N_i, d)).
+    - Concatenation is performed along dim=0.
+
+    Parameters
+    ----------
+    items : List[Tuple[torch.Tensor, ...]]
+        List of tuples to collate. Must be non-empty and have consistent tuple length.
+
+    Returns
+    -------
+    Tuple[torch.Tensor, ...]
+        Tuple of concatenated tensors.
+
+    Raises
+    ------
+    ValueError
+        If `items` is empty or tuple lengths are inconsistent.
+    """
     """
     Collate a list of tuples: [(t,x), (t,x), ...] -> (T, X) as concatenated tensors.
     Assumes each element tensor is (N_i, 1) or (N_i, d).
@@ -38,6 +94,42 @@ def _collate_tuple_of_tensors(items: List[Tuple[Tensor, ...]]) -> Tuple[Tensor, 
 
 
 def collate_pinn_batches(batches: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Collate function compatible with torch DataLoader for PINNFactory batches.
+
+    Each element in `batches` is expected to be a dictionary potentially containing:
+      - "collocation": Tuple[Tensor, ...]
+      - "conditions": List[Tuple[Tensor, ...]]
+      - "data": (Tuple[Tensor, ...], Tensor)
+      - "meta": dict
+
+    Collation Rules
+    --------------
+    - collocation:
+        Concatenate each tensor in the tuple along dim=0.
+    - conditions:
+        Treat as a list of conditions, each condition being a tuple of tensors.
+        For each condition index, concatenate tensors along dim=0.
+    - data:
+        Concatenate input tuple tensors along dim=0 and concatenate y_true along dim=0.
+    - meta:
+        Preserve metas as a list (no merging).
+
+    Parameters
+    ----------
+    batches : List[Dict[str, Any]]
+        List of per-sample/per-batch dicts emitted by the dataset.
+
+    Returns
+    -------
+    Dict[str, Any]
+        A single collated batch dictionary.
+
+    Raises
+    ------
+    ValueError
+        If conditions have inconsistent lengths across batch entries.
+    """
     """
     Collate function compatible with torch DataLoader for PINNFactory batches.
 
@@ -95,12 +187,48 @@ def collate_pinn_batches(batches: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 def move_batch_to_device(batch: Dict[str, Any], device: Union[str, torch.device]) -> Dict[str, Any]:
     """
+    Move all tensors in a collated batch dictionary onto the specified device.
+
+    This function traverses known keys produced by `collate_pinn_batches` and moves
+    any tensors found under:
+      - "collocation": Tuple[Tensor, ...]
+      - "conditions": List[Tuple[Tensor, ...]]
+      - "data": (Tuple[Tensor, ...], Tensor)
+
+    The "meta" field (if present) is left unchanged.
+
+    Parameters
+    ----------
+    batch : Dict[str, Any]
+        Collated batch dictionary.
+    device : Union[str, torch.device]
+        Target device (e.g., "cpu", "cuda", torch.device("cuda:0")).
+
+    Returns
+    -------
+    Dict[str, Any]
+        A new dict with the same structure as `batch`, but with tensors moved to `device`.
+    """
+    """
     Moves all tensors in a collated batch to device.
     Leaves meta unchanged.
     """
     dev = torch.device(device)
 
     def to_dev(x):
+        """
+        Move a single tensor to the target device, leaving non-tensors unchanged.
+
+        Parameters
+        ----------
+        x : Any
+            Object that may be a torch.Tensor.
+
+        Returns
+        -------
+        Any
+            Tensor moved to device if `x` is a tensor; otherwise `x` unchanged.
+        """
         if isinstance(x, torch.Tensor):
             return x.to(dev)
         return x
@@ -119,7 +247,48 @@ def move_batch_to_device(batch: Dict[str, Any], device: Union[str, torch.device]
 
     return out
 
+
 def collate_upd_supervised(samples: List[Any]) -> Dict[str, Any]:
+    """
+    Collate for UPD PhysicalSample supervision batches.
+
+    Expected Input
+    --------------
+    A list of PhysicalSample-like objects (or any objects with a `.state` dict),
+    where each sample.state must contain:
+      - "x": torch.Tensor
+          Typically (T, D) or (D,) or (T, D, ...) depending on the dataset.
+      - optional "y": torch.Tensor
+          Typically (T, Do) or (Do,)
+
+    Output
+    ------
+    A dictionary with:
+      - "x": Tensor
+          Combined tensor for inputs. If shapes match across samples, stacks along
+          dim=0. Otherwise concatenates along dim=0.
+      - optional "y": Tensor
+          Combined supervision tensor, stacked or concatenated similarly.
+      - "meta": List[Dict[str, Any]]
+          Best-effort metadata extracted from each sample: provenance/domain/schema.
+
+    Parameters
+    ----------
+    samples : List[Any]
+        List of PhysicalSample-like objects.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Collated supervision batch dictionary.
+
+    Raises
+    ------
+    TypeError
+        If a sample has no `.state` dict or if `x`/`y` are not torch.Tensors.
+    KeyError
+        If a sample.state dict is missing required key "x".
+    """
     """
     Collate for UPD PhysicalSample supervision batches.
 

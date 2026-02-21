@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Bayesian RNN with variational dropout for uncertainty quantification."""
 
 from typing import Dict, Optional, Literal
 

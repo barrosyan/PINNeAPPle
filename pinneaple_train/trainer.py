@@ -1,3 +1,4 @@
+"""Unified Trainer with physics-aware losses, callbacks, and audit logging."""
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict

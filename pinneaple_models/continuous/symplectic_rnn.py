@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Symplectic RNN for structure-preserving recurrent dynamics."""
 
 from typing import Dict, Optional
 

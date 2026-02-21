@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Deep UQ ROM with uncertainty quantification."""
 from typing import Dict, Optional
 
 import torch

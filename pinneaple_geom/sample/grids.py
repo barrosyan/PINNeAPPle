@@ -1,3 +1,4 @@
+"""Uniform and Latin hypercube sampling in axis-aligned boxes."""
 from __future__ import annotations
 
 from typing import Optional, Tuple
