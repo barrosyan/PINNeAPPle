@@ -1,3 +1,4 @@
+"""Mapping of Pinneaple module capabilities for plan generation."""
 PINNEAPLE_CAPABILITIES = {
     "training": [
         "pinneaple_train.trainer.Trainer",

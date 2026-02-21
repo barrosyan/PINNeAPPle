@@ -1,3 +1,4 @@
+"""ExtractorAgent for extracting problem/solution from KB artifacts."""
 from __future__ import annotations
 
 import json

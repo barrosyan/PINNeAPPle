@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Utility functions for graph neural network operations."""
 import torch
 
 

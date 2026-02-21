@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Echo state network with reservoir dynamics."""
 from typing import Dict, Optional, Literal
 
 import torch

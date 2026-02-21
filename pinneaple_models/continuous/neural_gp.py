@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Neural Gaussian process for Bayesian continuous dynamics."""
 
 from typing import Dict, Optional, Literal, Tuple
 

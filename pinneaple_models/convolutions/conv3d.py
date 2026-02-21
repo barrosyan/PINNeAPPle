@@ -1,5 +1,6 @@
 # pinneaple_models/convolutions/conv3d.py
 from __future__ import annotations
+"""3D convolutional model for volumetric data."""
 
 from typing import Dict, Optional
 

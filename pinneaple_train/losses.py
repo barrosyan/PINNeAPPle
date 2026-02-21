@@ -1,4 +1,4 @@
-# pinneaple_train/losses.py
+"""Loss functions for supervised and physics-aware training."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field

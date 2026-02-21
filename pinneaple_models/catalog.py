@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Aggregated ModelCatalog combining all model family catalogs."""
 from dataclasses import dataclass
 
 from .autoencoders.registry import AutoencoderCatalog

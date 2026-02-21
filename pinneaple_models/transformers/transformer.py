@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Vanilla Transformer encoder for time series."""
 
 import torch
 import torch.nn as nn

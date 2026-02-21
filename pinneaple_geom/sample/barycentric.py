@@ -1,3 +1,4 @@
+"""Barycentric sampling and interpolation on triangles."""
 from __future__ import annotations
 
 from typing import Optional, Tuple

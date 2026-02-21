@@ -1,3 +1,4 @@
+"""Metrics for evaluation (MSE, MAE, RMSE, R2, MetricBundle)."""
 from __future__ import annotations
 
 from dataclasses import dataclass

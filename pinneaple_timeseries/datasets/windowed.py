@@ -1,3 +1,4 @@
+"""Windowed time series dataset for input/horizon pairs."""
 import torch
 from torch.utils.data import Dataset
 from ..spec import TimeSeriesSpec

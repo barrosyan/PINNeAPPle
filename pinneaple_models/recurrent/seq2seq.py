@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Seq2Seq encoder-decoder RNN for sequence-to-sequence tasks."""
 
 from typing import Dict, Optional
 

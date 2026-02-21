@@ -1,3 +1,4 @@
+"""Geometry asset builder registry and build_geometry_asset factory."""
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,3 +1,4 @@
+"""Prefetch IterableDataset for Zarr-backed UPD stores with background producer and optional GPU transfer."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -61,6 +62,32 @@ class PrefetchZarrUPDIterable(IterableDataset):
         cache: Optional[ZarrCacheConfig] = None,
         prefetch_cfg: Optional[PrefetchConfig] = None,
     ):
+        """
+        Initialize the prefetch iterable dataset.
+
+        Parameters
+        ----------
+        root : str
+            Root path of the Zarr store.
+        fields : Optional[Sequence[str]], optional
+            Field names to load. Default is None (all fields).
+        coords : Optional[Sequence[str]], optional
+            Coordinate names to load. Default is None.
+        dtype : Optional[torch.dtype], optional
+            Target dtype for tensors.
+        start : int, optional
+            Start index. Default is 0.
+        end : Optional[int], optional
+            End index (exclusive). Default is None.
+        stride : int, optional
+            Step between indices. Default is 1.
+        sample_ctor : Any, optional
+            Optional sample constructor.
+        cache : Optional[ZarrCacheConfig], optional
+            Cache configuration.
+        prefetch_cfg : Optional[PrefetchConfig], optional
+            Prefetch configuration.
+        """
         super().__init__()
         self.root = root
         self.fields = fields
@@ -74,6 +101,14 @@ class PrefetchZarrUPDIterable(IterableDataset):
         self.prefetch_cfg = prefetch_cfg or PrefetchConfig()
 
     def __iter__(self) -> Iterator[Any]:
+        """
+        Iterate over samples with background prefetch, optional pinning, and GPU transfer.
+
+        Yields
+        ------
+        Any
+            Sample from the store, optionally moved to target device.
+        """
         store = CachedUPDZarrStore(self.root, cache=self.cache, mode="r")
         n = store.count()
         end = n if self.end is None else min(self.end, n)
@@ -96,6 +131,7 @@ class PrefetchZarrUPDIterable(IterableDataset):
         io_device = "cpu"
 
         def producer():
+            """Producer thread that reads samples from the store and enqueues them."""
             try:
                 for i in indices:
                     if stop.is_set():

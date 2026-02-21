@@ -8,12 +8,44 @@ from pinneaple_arena.bundle.loader import BundleData
 
 
 class PhysicsNeMoSymBackend:
+    """
+    Backend integration for PhysicsNeMo Sym (formerly Modulus Sym).
+
+    This backend builds a Navier-Stokes PINN using PhysicsNeMo Sym's
+    domain, constraint, and solver abstractions. It relies entirely
+    on the PhysicsNeMo internal training loop and does not guarantee
+    returning a PyTorch model object.
+    """
+
     name = "physicsnemo_sym"
 
     def train(self, bundle: BundleData, run_cfg: Dict[str, Any]) -> Dict[str, Any]:
         """
-        This backend relies on PhysicsNeMo Sym being installed.
-        It trains internally and returns metrics (no torch model object is guaranteed).
+        Train a steady 2D Navier-Stokes PINN using PhysicsNeMo Sym.
+
+        Parameters
+        ----------
+        bundle : BundleData
+            Data bundle containing collocation points, boundary points,
+            and physical parameters (e.g., viscosity `nu`).
+        run_cfg : Dict[str, Any]
+            Configuration dictionary containing:
+                - train parameters (device, max_steps, lr, weights)
+                - arena sampling parameters
+                - model architecture parameters
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing:
+                - device used
+                - minimal training metadata (nu, max_steps, lr)
+
+        Notes
+        -----
+        This backend requires `physicsnemo.sym` to be installed.
+        Training logs and detailed metrics depend on the PhysicsNeMo
+        configuration and logging setup.
         """
         train_cfg = dict(run_cfg.get("train", {}))
         arena_cfg = dict(run_cfg.get("arena", {}))
@@ -57,6 +89,12 @@ class PhysicsNeMoSymBackend:
         rng = np.random.default_rng(0)
 
         def _sample_df(df, n):
+            """
+            Randomly sample n rows from a dataframe without replacement.
+
+            If n exceeds dataframe length, sampling is clipped to
+            the available number of rows.
+            """
             n = min(int(n), len(df))
             if n <= 0:
                 return df.iloc[:0]
@@ -105,6 +143,9 @@ class PhysicsNeMoSymBackend:
 
         # boundary constraints helper
         def _mask(region: str):
+            """
+            Filter boundary dataframe by region label.
+            """
             return bnd[bnd["region"].astype(str) == region]
 
         # inlet u=1 v=0

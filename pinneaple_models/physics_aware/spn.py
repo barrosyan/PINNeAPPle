@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Structure-preserving network for constrained dynamics."""
 from typing import Dict, Optional, Callable
 
 import torch

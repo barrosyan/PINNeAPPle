@@ -1,3 +1,4 @@
+"""ModelRegistry and ModelSpec for model registration and lookup."""
 from __future__ import annotations
 
 from dataclasses import dataclass

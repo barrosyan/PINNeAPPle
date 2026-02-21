@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Extended PINN for domain decomposition and multi-subnet architecture."""
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Callable, Union, Tuple

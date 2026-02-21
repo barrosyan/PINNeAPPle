@@ -1,3 +1,4 @@
+"""Validation and suggestion for ProblemSpec (warnings, assumptions)."""
 from __future__ import annotations
 
 from typing import List, Tuple

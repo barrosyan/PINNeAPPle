@@ -1,3 +1,4 @@
+"""Sharded Zarr writer for partitioning UPD samples by key with index-based discovery."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -59,6 +60,20 @@ class UPDZarrShardedWriter:
         shards_dirname: str = "shards",
         index_filename: str = "index.json",
     ):
+        """
+        Initialize the sharded Zarr writer.
+
+        Parameters
+        ----------
+        root : str
+            Root directory for the sharded layout.
+        shard_spec : ShardSpec
+            Specification for key extraction and max samples per shard.
+        shards_dirname : str, optional
+            Subdirectory name for shards. Default is "shards".
+        index_filename : str, optional
+            Filename for the index JSON. Default is "index.json".
+        """
         self.root = str(root)
         self.shard_spec = shard_spec
         self.shards_dir = os.path.join(self.root, shards_dirname)

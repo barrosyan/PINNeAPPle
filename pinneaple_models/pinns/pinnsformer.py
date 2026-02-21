@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""PINNsFormer transformer-based architecture for physics-informed learning."""
 from typing import Optional
 
 import torch

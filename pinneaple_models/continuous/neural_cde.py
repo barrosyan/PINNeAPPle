@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Neural controlled differential equation models."""
 
 from typing import Dict, Optional
 

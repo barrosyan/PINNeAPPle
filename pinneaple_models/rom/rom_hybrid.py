@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Hybrid ROM combining projection and neural correction."""
 from typing import Dict, Optional
 
 import torch

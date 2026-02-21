@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""XTFC extended trigonometric function composition for PINNs."""
 
 from dataclasses import dataclass
 from typing import Dict, Optional, Callable, Any, Literal, Tuple, List

@@ -1,3 +1,4 @@
+"""DesignState, Turn for problem design conversation state."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field

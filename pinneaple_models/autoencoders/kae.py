@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Kernel autoencoder with MMD regularization."""
 
 from typing import Dict, List, Optional, Sequence
 

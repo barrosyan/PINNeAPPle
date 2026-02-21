@@ -1,3 +1,4 @@
+"""JSON renderer for DesignReport."""
 from __future__ import annotations
 
 import json

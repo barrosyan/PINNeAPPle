@@ -1,3 +1,4 @@
+"""PhysicalSample validation: units, ranges, non-negativity, and monotonic coordinate checks."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,12 +9,25 @@ import torch
 
 @dataclass
 class ValidationIssue:
+    """
+    Single validation issue from validate_physical_sample.
+
+    Attributes
+    ----------
+    level : str
+        Severity: "error" or "warning".
+    message : str
+        Human-readable description.
+    field : Optional[str]
+        Optional field name the issue relates to.
+    """
     level: str  # "error" | "warning"
     message: str
     field: Optional[str] = None
 
 
 def _is_number(x: Any) -> bool:
+    """Return True if x is an int or float."""
     return isinstance(x, (int, float))
 
 
@@ -26,6 +40,29 @@ def validate_physical_sample(
     non_negative: Optional[Iterable[str]] = None,
     monotonic_dims: Optional[Iterable[str]] = None,  # e.g. ["pressure:z"]
 ) -> List[ValidationIssue]:
+    """
+    Validate a PhysicalSample and return a list of issues.
+
+    Parameters
+    ----------
+    sample : Any
+        PhysicalSample-like object with fields, coords, meta.
+    units_policy : str, optional
+        "strict" | "warn" | "off". Default is "warn".
+    required_units : Optional[Iterable[str]], optional
+        Field names that must have units metadata.
+    ranges : Optional[Dict[str, Tuple[float, float]]], optional
+        Allowed (lo, hi) ranges per field.
+    non_negative : Optional[Iterable[str]], optional
+        Field names that must be non-negative.
+    monotonic_dims : Optional[Iterable[str]], optional
+        Coordinate specs (e.g. "pressure:z") that must be monotonic increasing.
+
+    Returns
+    -------
+    List[ValidationIssue]
+        List of validation issues found.
+    """
     issues: List[ValidationIssue] = []
 
     required_units = list(required_units or [])
@@ -101,6 +138,21 @@ def validate_physical_sample(
 
 
 def assert_valid_physical_sample(*args, **kwargs) -> None:
+    """
+    Validate a PhysicalSample and raise ValueError if any errors are found.
+
+    Parameters
+    ----------
+    *args
+        Positional arguments passed to validate_physical_sample.
+    **kwargs
+        Keyword arguments passed to validate_physical_sample.
+
+    Raises
+    ------
+    ValueError
+        If validation produces any errors.
+    """
     issues = validate_physical_sample(*args, **kwargs)
     errors = [i for i in issues if i.level == "error"]
     if errors:

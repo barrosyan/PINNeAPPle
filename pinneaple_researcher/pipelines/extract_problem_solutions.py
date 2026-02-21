@@ -1,3 +1,4 @@
+"""Extract problem/solution pairs from KB via ExtractorAgent."""
 from __future__ import annotations
 
 import json

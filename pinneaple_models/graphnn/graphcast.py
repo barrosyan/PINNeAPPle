@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""GraphCast-style mesh-based forecasting architecture."""
 from typing import Dict, Optional
 
 import torch

@@ -1,5 +1,6 @@
 # uno.py
 from __future__ import annotations
+"""U-Net neural operator for multi-scale operator learning."""
 import torch
 import torch.nn as nn
 

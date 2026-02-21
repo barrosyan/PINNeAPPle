@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Operator inference for data-driven reduced-order modeling."""
 from typing import Dict, Optional, Literal
 
 import torch

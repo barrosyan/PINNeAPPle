@@ -1,3 +1,5 @@
+"""Mappings between UPD coordinates/variables and PINN independent/dependent vars."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -40,7 +42,10 @@ class CoordMapping:
     # coord_transform values: "identity" | "seconds_since_start" | "deg2rad" | "minmax_-1_1"
     normalize_to_unit: bool = True
 
-    def _apply_transform(self, name: str, arr: np.ndarray, ref: Dict[str, np.ndarray]) -> np.ndarray:
+    def _apply_transform(
+        self, name: str, arr: np.ndarray, ref: Dict[str, np.ndarray]
+    ) -> np.ndarray:
+        """Apply coord_transform for name (identity, deg2rad, seconds_since_start) and optional normalize."""
         tfm = (self.coord_transform.get(name) or "identity").lower()
         if tfm == "identity":
             out = arr.astype(np.float64)
@@ -60,7 +65,10 @@ class CoordMapping:
                 out = 2.0 * (out - mn) / (mx - mn) - 1.0
         return out
 
-    def make_coord_arrays(self, ds: xr.Dataset, time0: Optional[np.datetime64] = None) -> Dict[str, np.ndarray]:
+    def make_coord_arrays(
+        self, ds: xr.Dataset, time0: Optional[np.datetime64] = None
+    ) -> Dict[str, np.ndarray]:
+        """Build coord arrays for each independent var from dataset (transformed)."""
         ref = {"_time0": time0}
         out: Dict[str, np.ndarray] = {}
         for v in self.ind_vars:
@@ -89,6 +97,7 @@ class VarMapping:
     enforce_present: bool = True
 
     def pick_dataset_vars(self, ds: xr.Dataset) -> xr.Dataset:
+        """Select dataset variables matching dependent vars; raise if missing and enforce_present."""
         missing = []
         keep = []
         for dep in self.dep_vars:
@@ -114,14 +123,17 @@ class PINNMapping:
     var: VarMapping
 
     def infer_time0(self, ds: xr.Dataset) -> Optional[np.datetime64]:
+        """Infer start time from dataset time coord."""
         if "time" in ds.coords:
             return ds["time"].values.min()
         return None
 
     def independent_vars(self) -> List[str]:
+        """Return list of independent variable names."""
         return list(self.coord.ind_vars)
 
     def dependent_vars(self) -> List[str]:
+        """Return list of dependent variable names."""
         return list(self.var.dep_vars)
 
 

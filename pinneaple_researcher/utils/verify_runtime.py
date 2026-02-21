@@ -1,3 +1,4 @@
+"""Runtime verification: project tree, py_compile, smoke run."""
 from __future__ import annotations
 
 import os

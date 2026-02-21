@@ -1,3 +1,4 @@
+"""Arxiv API source for paper search and metadata."""
 from __future__ import annotations
 
 import urllib.parse

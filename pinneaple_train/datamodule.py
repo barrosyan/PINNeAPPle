@@ -1,3 +1,4 @@
+"""DataModule, loaders, and item adapters for training."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field

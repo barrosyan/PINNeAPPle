@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""2D convolutional autoencoder for spatial data."""
 
 from typing import Tuple, Optional
 

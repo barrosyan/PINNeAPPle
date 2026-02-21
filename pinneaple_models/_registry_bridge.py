@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Bridge family-local registries into the global ModelRegistry."""
 
 from typing import Dict, Type, Any, Optional, Callable
 

@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Vanilla PINN with strong-form PDE residuals."""
 
 from typing import Dict, List, Optional, Callable, Any, Tuple
 

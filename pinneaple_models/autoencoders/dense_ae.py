@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Dense autoencoder with MLP encoder-decoder."""
 
 from dataclasses import dataclass
 from typing import List, Dict

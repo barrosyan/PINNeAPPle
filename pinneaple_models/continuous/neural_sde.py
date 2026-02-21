@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Neural stochastic differential equation models."""
 
 from typing import Dict, Optional, Literal
 

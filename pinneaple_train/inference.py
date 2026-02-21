@@ -1,3 +1,4 @@
+"""Inference utilities: load_checkpoint and predict."""
 from __future__ import annotations
 
 from typing import Any, Dict, Optional

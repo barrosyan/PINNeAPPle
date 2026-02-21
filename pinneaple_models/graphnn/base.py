@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Base classes and GraphBatch for graph neural network models."""
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional

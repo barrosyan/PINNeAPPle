@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""GNN-ODE hybrid for continuous-time graph dynamics."""
 from typing import Dict, Optional, Literal
 
 import torch

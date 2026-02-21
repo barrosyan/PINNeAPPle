@@ -1,3 +1,5 @@
+"""Autograd-based derivative computation for PINN residual evaluation."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,6 +12,7 @@ import sympy as sp
 Tensor = torch.Tensor
 
 def _safe_grad(outputs: torch.Tensor, inputs: torch.Tensor) -> torch.Tensor:
+    """Compute gradient of outputs w.r.t. inputs; returns zeros if outputs don't depend on inputs."""
     # If outputs doesn't depend on inputs, derivative is zero.
     if (not outputs.requires_grad) or (outputs.grad_fn is None):
         return torch.zeros_like(inputs)
@@ -63,7 +66,12 @@ class DerivativeComputer:
       - results cached by DerivativeKey for reuse across equations/conditions
     """
 
-    def __init__(self, independent_vars: List[str], dependent_vars: List[str], device: torch.device):
+    def __init__(
+        self,
+        independent_vars: List[str],
+        dependent_vars: List[str],
+        device: torch.device,
+    ) -> None:
         self.independent_vars = list(independent_vars)
         self.dependent_vars = list(dependent_vars)
         self.device = device

@@ -1,3 +1,4 @@
+"""Image reconstruction and inpainting synthetic generator."""
 from __future__ import annotations
 
 from typing import Any, Optional, Callable
@@ -9,6 +10,24 @@ from .pde import SimplePhysicalSample
 
 
 def _as_tensor(img: Any, device, dtype) -> torch.Tensor:
+    """
+    Convert an input array-like object to a torch.Tensor on a target device/dtype.
+
+    Parameters
+    ----------
+    img : Any
+        Input data. May be a torch.Tensor or any array-like object convertible
+        via `torch.tensor(...)`.
+    device : Any
+        Target torch device (e.g., torch.device("cpu"), torch.device("cuda")).
+    dtype : Any
+        Target torch dtype (e.g., torch.float32).
+
+    Returns
+    -------
+    torch.Tensor
+        Tensor representation of `img` moved to the specified device/dtype.
+    """
     if isinstance(img, torch.Tensor):
         t = img
     else:
@@ -17,6 +36,32 @@ def _as_tensor(img: Any, device, dtype) -> torch.Tensor:
 
 
 def _smooth2d(x: torch.Tensor) -> torch.Tensor:
+    """
+    Apply simple 2D smoothing via 4-neighbor averaging.
+
+    The input may be either:
+    - (H, W): single-channel image
+    - (C, H, W): multi-channel image
+
+    Smoothing is performed using a fixed 3x3 convolution kernel that averages
+    the four direct neighbors (up, down, left, right). For multi-channel inputs,
+    the convolution is applied depthwise (per-channel).
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        Input tensor with shape (H, W) or (C, H, W).
+
+    Returns
+    -------
+    torch.Tensor
+        Smoothed tensor with the same shape as the input.
+
+    Raises
+    ------
+    ValueError
+        If `x` does not have 2 or 3 dimensions.
+    """
     """
     Simple 2D smoothing via neighbor averaging.
     x: (H,W) or (C,H,W)
@@ -48,6 +93,43 @@ def _smooth2d(x: torch.Tensor) -> torch.Tensor:
 
 class ImageReconstructionSynthGenerator:
     """
+    Synthetic generator for image reconstruction tasks.
+
+    This generator produces corrupted inputs and corresponding reconstructions,
+    packaged as PhysicalSample-like outputs.
+
+    Supported modes
+    ---------------
+    - "inpaint_smooth":
+        Performs iterative inpainting inside the missing mask region by repeatedly
+        smoothing the current reconstruction and copying values into masked pixels.
+    - "autoencoder":
+        Uses a provided autoencoder model to reconstruct the corrupted image.
+
+    Inputs
+    ------
+    img : (H, W) or (C, H, W)
+        Image tensor/array.
+    mask : (H, W) or (1, H, W) or (C, H, W), optional
+        Mask indicating missing region. Values > 0.5 are treated as missing (True).
+        If not provided, a deterministic rectangular missing block is created.
+        Convention: mask == 1 means MISSING region to reconstruct.
+
+    Output
+    ------
+    A `SimplePhysicalSample` with:
+    - fields["img"]: original image
+    - fields["img_corrupt"]: corrupted image (masked region zeroed)
+    - fields["img_recon"]: reconstructed image
+    - fields["mask"]: float mask in {0,1}
+    and extras containing the original shape.
+
+    Parameters
+    ----------
+    cfg : Optional[SynthConfig]
+        Configuration controlling device/dtype/seed behavior.
+    """
+    """
     Image reconstruction / synthesis generator.
 
     MVP modes:
@@ -60,6 +142,14 @@ class ImageReconstructionSynthGenerator:
         mask==1 means MISSING region to reconstruct
     """
     def __init__(self, cfg: Optional[SynthConfig] = None):
+        """
+        Initialize the image reconstruction generator.
+
+        Parameters
+        ----------
+        cfg : Optional[SynthConfig]
+            Optional generator configuration. If not provided, defaults are used.
+        """
         self.cfg = cfg or SynthConfig()
 
     @torch.no_grad()
@@ -73,6 +163,45 @@ class ImageReconstructionSynthGenerator:
         ae_model: Optional[nn.Module] = None,
         post_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None,
     ) -> SynthOutput:
+        """
+        Generate a corrupted image and a reconstruction according to the selected mode.
+
+        Parameters
+        ----------
+        img : Any
+            Input image as a torch.Tensor or array-like object. Expected shape
+            is (H, W) or (C, H, W).
+        mask : Optional[Any], optional
+            Missing-region mask as a torch.Tensor or array-like object. Expected
+            spatial shape (H, W) (optionally with leading channel dimension).
+            Values > 0.5 indicate missing pixels. If None, a fixed rectangular
+            missing block is created. Default is None.
+        mode : str, optional
+            Reconstruction mode: "inpaint_smooth" or "autoencoder".
+            Default is "inpaint_smooth".
+        steps : int, optional
+            Number of smoothing iterations for "inpaint_smooth". Default is 200.
+        ae_model : Optional[nn.Module], optional
+            Autoencoder model used when mode="autoencoder". Must accept input of
+            shape (1, C, H, W) (or (1, 1, H, W)) and return a matching output.
+            Default is None.
+        post_fn : Optional[Callable[[torch.Tensor], torch.Tensor]], optional
+            Optional post-processing function applied to the reconstruction.
+            Default is None.
+
+        Returns
+        -------
+        SynthOutput
+            Output containing one `SimplePhysicalSample` with original/corrupted/
+            reconstructed images and the mask, plus extras containing the original
+            image shape.
+
+        Raises
+        ------
+        ValueError
+            If an invalid mode is provided, or if `ae_model` is missing when
+            mode="autoencoder".
+        """
         device = torch.device(self.cfg.device)
         dtype = getattr(torch, self.cfg.dtype)
 

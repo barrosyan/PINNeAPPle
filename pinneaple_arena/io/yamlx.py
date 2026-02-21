@@ -7,6 +7,27 @@ import yaml
 
 
 def load_yaml(path: str | Path) -> Dict[str, Any]:
+    """
+    Load a YAML file and return its content as a dictionary.
+
+    Parameters
+    ----------
+    path : str | Path
+        Path to the YAML file.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Parsed YAML content as a dictionary. If the file is empty,
+        an empty dictionary is returned.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file does not exist.
+    TypeError
+        If the YAML root object is not a mapping (dict).
+    """
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(str(p))
@@ -19,4 +40,17 @@ def load_yaml(path: str | Path) -> Dict[str, Any]:
 
 
 def dump_yaml(obj: Any) -> str:
+    """
+    Serialize a Python object into a YAML-formatted string.
+
+    Parameters
+    ----------
+    obj : Any
+        Python object to serialize.
+
+    Returns
+    -------
+    str
+        YAML string representation of the object.
+    """
     return yaml.safe_dump(obj, sort_keys=False, allow_unicode=True)

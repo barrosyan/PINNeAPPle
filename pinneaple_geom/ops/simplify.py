@@ -1,3 +1,4 @@
+"""Mesh simplification via trimesh or Open3D quadric decimation."""
 from __future__ import annotations
 
 from typing import Optional

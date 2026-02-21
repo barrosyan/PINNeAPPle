@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Kalman filter for linear state estimation."""
 from typing import Dict, Optional, Any
 
 import torch

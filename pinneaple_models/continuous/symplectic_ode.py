@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Symplectic ODE network for structure-preserving dynamics."""
 import torch
 import torch.nn as nn
 

@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Variational PINN with weak form and finite element discretization."""
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Callable, List, Tuple, Union

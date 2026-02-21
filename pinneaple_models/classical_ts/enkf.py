@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Ensemble Kalman filter for high-dimensional state estimation."""
 from typing import Callable, Dict, Optional, Any
 
 import torch

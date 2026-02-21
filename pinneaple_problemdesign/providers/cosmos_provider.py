@@ -1,3 +1,4 @@
+"""Cosmos LLM provider for HTTP gateway access."""
 from __future__ import annotations
 
 import json

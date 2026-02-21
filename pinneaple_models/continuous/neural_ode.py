@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Neural ordinary differential equation models with RK4 integration."""
 from typing import Dict, Optional, Literal
 
 import torch

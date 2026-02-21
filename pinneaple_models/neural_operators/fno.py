@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Fourier neural operator for global spectral learning."""
 from typing import Dict, Optional
 
 import torch

@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Inverse PINN for parameter and coefficient identification."""
 
 from typing import Dict, List, Optional, Callable, Any, Sequence
 

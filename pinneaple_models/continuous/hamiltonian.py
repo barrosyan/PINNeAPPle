@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Hamiltonian neural network for energy-conserving dynamics."""
 from typing import Dict, Optional
 
 import torch

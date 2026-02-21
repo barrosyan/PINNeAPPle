@@ -17,12 +17,45 @@ from pinneaple_arena.backends import NativePINNBackend, PhysicsNeMoSymBackend
 
 
 def _make_run_id(task_id: str, run_name: str) -> str:
+    """
+    Generate a unique run identifier.
+
+    Parameters
+    ----------
+    task_id : str
+        Identifier of the task being executed.
+    run_name : str
+        User-defined name for the run.
+
+    Returns
+    -------
+    str
+        Unique run ID composed of task_id, run_name,
+        and a short SHA1 hash based on timestamp.
+    """
     t = str(time.time()).encode("utf-8")
     h = hashlib.sha1(t + task_id.encode("utf-8") + run_name.encode("utf-8")).hexdigest()[:12]
     return f"{task_id}-{run_name}-{h}"
 
 
 def _select_backend(name: str):
+    """
+    Instantiate backend based on its registered name.
+
+    Parameters
+    ----------
+    name : str
+        Backend name.
+
+    Returns
+    -------
+    Backend instance
+
+    Raises
+    ------
+    ValueError
+        If the backend name is unknown.
+    """
     name = str(name)
     if name == "pinneaple_native":
         return NativePINNBackend()
@@ -38,6 +71,44 @@ def run_benchmark(
     run_cfg_path: str | Path,
     bundle_schema_path: str | Path,
 ) -> Dict[str, Any]:
+    """
+    Execute a full benchmark run.
+
+    This function:
+        - Loads task, run, and schema configurations
+        - Loads and validates the data bundle
+        - Selects and trains the backend
+        - Computes task-specific metrics
+        - Stores artifacts (report, metrics, summary)
+        - Updates leaderboard
+
+    Parameters
+    ----------
+    artifacts_dir : str | Path
+        Directory where benchmark artifacts will be stored.
+    task_cfg_path : str | Path
+        Path to task configuration YAML.
+    run_cfg_path : str | Path
+        Path to run configuration YAML.
+    bundle_schema_path : str | Path
+        Path to bundle schema YAML.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing:
+            - run_id
+            - run_dir
+            - report
+            - metrics
+            - summary
+
+    Raises
+    ------
+    RuntimeError
+        If required configuration fields are missing
+        or unsupported task is requested.
+    """
     artifacts_dir = str(artifacts_dir)
 
     task_cfg = load_yaml(task_cfg_path)

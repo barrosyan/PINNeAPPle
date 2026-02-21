@@ -1,5 +1,6 @@
 # pinneaple_models/convolutions/conv1d.py
 from __future__ import annotations
+"""1D convolutional model for sequence data."""
 
 from typing import Dict, Optional, Sequence
 

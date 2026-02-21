@@ -1,3 +1,4 @@
+"""Reproduce pipeline: apply patches and verify project runnability."""
 from __future__ import annotations
 
 import json

@@ -1,3 +1,4 @@
+"""IterableDataset for streaming PhysicalSamples from a UPDZarrStore with worker-aware sharding."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -30,6 +31,14 @@ class ZarrUPDIterable(IterableDataset):
     seed: int = 123
 
     def __iter__(self) -> Iterator[PhysicalSample]:
+        """
+        Iterate over samples from the store with optional shuffle and worker sharding.
+
+        Yields
+        ------
+        PhysicalSample
+            Sample from the Zarr store.
+        """
         store = UPDZarrStore(self.root, mode="r")
         n = store.num_samples()
 

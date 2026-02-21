@@ -1,3 +1,4 @@
+"""Curve-fit synthetic generator for polynomial ridge regression and sample synthesis."""
 from __future__ import annotations
 
 from typing import Optional, Tuple
@@ -8,6 +9,25 @@ from .pde import SimplePhysicalSample
 
 
 def _poly_features(x: torch.Tensor, degree: int) -> torch.Tensor:
+    """
+    Construct polynomial feature expansions for 1D inputs.
+
+    Given an input tensor `x` of shape (N, 1), this builds a design matrix
+    of shape (N, degree + 1) with columns:
+        [1, x, x^2, ..., x^degree].
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        Input tensor of shape (N, 1).
+    degree : int
+        Maximum polynomial degree to include.
+
+    Returns
+    -------
+    torch.Tensor
+        Polynomial feature matrix of shape (N, degree + 1).
+    """
     # x: (N,1) -> (N, degree+1) [1, x, x^2, ...]
     feats = [torch.ones_like(x)]
     for d in range(1, degree + 1):
@@ -17,14 +37,34 @@ def _poly_features(x: torch.Tensor, degree: int) -> torch.Tensor:
 
 class CurveFitSynthGenerator:
     """
-    Learn a curve/trend from a dataset and synthesize missing values or densify sampling.
+    Synthetic generator that fits a polynomial trend to 1D data and synthesizes samples.
 
-    MVP:
-      - assumes you provide 1D input x and target y
-      - fits polynomial regression (ridge)
-      - generates new points and returns filled dataset
+    This generator performs a simple polynomial regression with ridge regularization
+    on provided (x, y) pairs, then generates a new set of x locations and produces
+    corresponding y predictions. Optionally, missing values can be ignored during
+    fitting and Gaussian noise can be added to synthesized outputs.
+
+    Notes
+    -----
+    - Assumes `x` and `y` are shaped (N, 1).
+    - Uses a closed-form ridge solution via `torch.linalg.solve`.
+    - Outputs a `SimplePhysicalSample` containing synthesized x/y and learned weights.
+
+    Parameters
+    ----------
+    cfg : Optional[SynthConfig]
+        Configuration controlling device/dtype/seed behavior.
     """
+
     def __init__(self, cfg: Optional[SynthConfig] = None):
+        """
+        Initialize the curve-fit synthetic generator.
+
+        Parameters
+        ----------
+        cfg : Optional[SynthConfig]
+            Optional generator configuration. If not provided, defaults are used.
+        """
         self.cfg = cfg or SynthConfig()
 
     def generate(
@@ -39,6 +79,40 @@ class CurveFitSynthGenerator:
         noise_std: float = 0.0,
         mask_missing: Optional[torch.Tensor] = None,  # (N,1) bool; True means missing
     ) -> SynthOutput:
+        """
+        Fit a polynomial ridge regression model and synthesize a new dataset.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input coordinates of shape (N, 1).
+        y : torch.Tensor
+            Target values of shape (N, 1).
+        degree : int, optional
+            Polynomial degree for the regression model. Default is 3.
+        ridge : float, optional
+            Ridge regularization strength (λ). Default is 1e-6.
+        n_new : int, optional
+            Number of new x points to synthesize. Default is 1024.
+        x_range : Optional[Tuple[float, float]], optional
+            If provided, defines (lo, hi) range for synthesized x. If None, uses
+            the min/max of the provided `x`. Default is None.
+        noise_std : float, optional
+            Standard deviation of optional Gaussian noise added to synthesized y.
+            Default is 0.0 (no noise).
+        mask_missing : Optional[torch.Tensor], optional
+            Boolean mask of shape (N, 1) where True indicates missing entries
+            that should be excluded from fitting. Default is None.
+
+        Returns
+        -------
+        SynthOutput
+            Output containing one `SimplePhysicalSample` with fields:
+            - "x": synthesized x values (n_new, 1)
+            - "y": synthesized y values (n_new, 1)
+            - "w": learned regression weights (degree+1, 1)
+            and extras including the learned weights shape.
+        """
         device = torch.device(self.cfg.device)
         dtype = getattr(torch, self.cfg.dtype)
         x = x.to(device=device, dtype=dtype)

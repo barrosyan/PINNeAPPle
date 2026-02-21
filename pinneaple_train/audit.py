@@ -1,3 +1,4 @@
+"""Auditability: seed, deterministic mode, RunLogger, env fingerprint."""
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict

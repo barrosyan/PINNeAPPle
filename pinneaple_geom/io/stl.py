@@ -1,3 +1,4 @@
+"""STL loading utilities and UPD-aligned PhysicalSample packaging."""
 from __future__ import annotations
 
 from pathlib import Path

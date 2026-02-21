@@ -1,3 +1,5 @@
+"""Validation and standardization for physical datasets (UPD)."""
+
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
@@ -5,8 +7,11 @@ from typing import Dict, List, Tuple
 import numpy as np
 import xarray as xr
 
+
 @dataclass
 class ValidationSpec:
+    """Specification for dataset validation (units, ranges, monotonicity)."""
+
     require_units: bool = True
     ranges: Dict[str, Tuple[float, float]] = field(default_factory=lambda: {
         "T": (150.0, 350.0),    # K
@@ -18,7 +23,9 @@ class ValidationSpec:
     enforce_lev_monotonic: bool = True
     enforce_time_monotonic: bool = True
 
+
 def standardize_dims(ds: xr.Dataset) -> xr.Dataset:
+    """Standardize dimension names and transpose data vars to canonical order (time, lev, lat, lon)."""
     rename = {}
     for k in list(ds.dims):
         lk = k.lower()
@@ -48,7 +55,9 @@ def standardize_dims(ds: xr.Dataset) -> xr.Dataset:
         data_vars[name] = da.transpose(*target_order(list(da.dims)))
     return xr.Dataset(data_vars=data_vars, coords=ds.coords, attrs=ds.attrs)
 
+
 def _sample_flat(da: xr.DataArray, max_n: int = 200_000):
+    """Sample finite values from a DataArray (subsampled if larger than max_n)."""
     x = da.values.ravel()
     if x.size > max_n:
         idx = np.random.choice(x.size, size=max_n, replace=False)
@@ -56,7 +65,9 @@ def _sample_flat(da: xr.DataArray, max_n: int = 200_000):
     x = x[np.isfinite(x)]
     return x
 
+
 def validate_dataset(ds: xr.Dataset, spec: ValidationSpec) -> List[str]:
+    """Validate dataset against spec; returns list of issue messages (empty if valid)."""
     issues: List[str] = []
 
     # Units

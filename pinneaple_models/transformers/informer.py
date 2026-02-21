@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Informer transformer with efficient attention for long sequences."""
 
 from typing import Dict, Optional
 

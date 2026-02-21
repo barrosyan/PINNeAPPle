@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Latent ODE with GRU-ODE encoder for irregular time series."""
 from typing import Dict, Optional, Tuple
 
 import torch

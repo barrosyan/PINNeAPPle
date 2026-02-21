@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Physics-informed neural operator for PDE solution learning."""
 from typing import Callable, Dict, Any
 
 import torch

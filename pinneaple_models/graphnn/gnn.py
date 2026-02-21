@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Message passing graph neural network."""
 from typing import Dict, Optional
 
 import torch

@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""LSTM and bidirectional LSTM models."""
 
 from typing import Dict, Optional
 

@@ -1,3 +1,4 @@
+"""MeshData container for triangle meshes with PINN sampling and collocation support."""
 from __future__ import annotations
 
 from dataclasses import dataclass

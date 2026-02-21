@@ -1,3 +1,4 @@
+"""Time series DataModule with train/val split and loaders."""
 from dataclasses import dataclass
 import torch
 from torch.utils.data import DataLoader, random_split

@@ -1,3 +1,5 @@
+"""SymPy-based compiler for symbolic equations to torch-callable lambdas."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -70,6 +72,7 @@ class SympyTorchCompiler:
 
     @staticmethod
     def _create_symbols(names: List[str]) -> List[sp.Symbol]:
+        """Create SymPy symbols from variable names; returns list of symbols."""
         if not names:
             return []
         syms = sp.symbols(" ".join(names))
@@ -78,6 +81,7 @@ class SympyTorchCompiler:
         return [syms]
 
     def compile(self, eq_str: str) -> CompiledEquation:
+        """Compile equation string to CompiledEquation with torch-callable residual."""
         expr = sp.sympify(eq_str, locals=self.namespace, evaluate=False)
         def _expand_numeric_pow(e):
             if isinstance(e, sp.Pow) and e.base.is_Number and e.exp.is_Integer and int(e.exp) >= 0:
@@ -117,7 +121,7 @@ class SympyBackend:
     make_compiler(...) method returning SympyTorchCompiler.
     """
 
-    def __init__(self, *, extra_namespace: Optional[Dict[str, Any]] = None):
+    def __init__(self, *, extra_namespace: Optional[Dict[str, Any]] = None) -> None:
         self.extra_namespace = extra_namespace or {}
 
     def make_compiler(
@@ -127,6 +131,7 @@ class SympyBackend:
         dependent_vars: List[str],
         inverse_params: Optional[List[str]] = None,
     ) -> SympyTorchCompiler:
+        """Create SympyTorchCompiler with given vars and optional inverse params."""
         return SympyTorchCompiler(
             independent_vars=independent_vars,
             dependent_vars=dependent_vars,

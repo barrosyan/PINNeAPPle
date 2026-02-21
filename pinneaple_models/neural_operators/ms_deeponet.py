@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Multi-scale DeepONet for multi-resolution operator learning."""
 import torch
 import torch.nn as nn
 

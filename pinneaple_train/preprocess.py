@@ -1,3 +1,4 @@
+"""Preprocessing pipeline and standard scaler for training batches."""
 from __future__ import annotations
 
 from dataclasses import dataclass

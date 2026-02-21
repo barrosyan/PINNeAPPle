@@ -1,3 +1,4 @@
+"""RankedItem, DiscoveryResult data models for researcher output."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
