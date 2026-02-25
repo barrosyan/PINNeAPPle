@@ -1,34 +1,71 @@
-site_name: PINNeAPPle Docs
-site_url: https://barrosyan.github.io/PINNeAPPle/
+site_name: PINNeAPPle
+site_description: Modular Physics AI framework for reproducible PINN research
+repo_name: barrosyan/PINNeAPPle
 repo_url: https://github.com/barrosyan/PINNeAPPle
-use_directory_urls: true
+edit_uri: edit/main/docs/
 
 theme:
   name: material
   features:
-    - navigation.expand
-    - navigation.instant
-    - navigation.tracking
-    - navigation.path
     - navigation.sections
     - navigation.indexes
     - navigation.top
-    - navigation.footer
-    - content.code.copy
-    - search.suggest
+    - toc.follow
     - search.highlight
-
-
-plugins:
-  - search
-  - awesome-pages
-  - section-index
+    - search.suggest
+    - content.action.edit
+    - content.action.view
+    - content.code.copy
+  icon:
+    repo: fontawesome/brands/github
 
 markdown_extensions:
   - admonition
+  - footnotes
+  - tables
   - toc:
       permalink: true
-  - pymdownx.details
+      toc_depth: 2
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
   - pymdownx.superfences
+  - pymdownx.details
   - pymdownx.tabbed:
       alternate_style: true
+
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - tools/gen_api_docs.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_signature_annotations: true
+            show_root_heading: true
+            show_root_toc_entry: false
+            heading_level: 2
+            members_order: source
+            docstring_section_style: list
+            show_if_no_docstring: false
+            filters:
+              - "!^_"
+
+watch:
+  - docs
+  - pinneaple_arena
+  - pinneaple_data
+  - pinneaple_geom
+  - pinneaple_models
+  - pinneaple_pdb
+  - pinneaple_pinn
+  - pinneaple_problemdesign
+  - pinneaple_researcher
+  - pinneaple_solvers
+  - pinneaple_timeseries
+  - pinneaple_train
