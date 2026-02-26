@@ -266,7 +266,7 @@ class Trainer:
                     optim_state=opt.state_dict(),
                     cfg={"train": asdict(cfg)},
                     meta={"best_val": float(best_val), "epoch": epoch},
-                    normalizers=None,  # you can store preprocess scalers here later
+                    normalizers=None if self.preprocess is None else self.preprocess.state_dict(),
                 )
                 save_checkpoint(path=f"{cfg.log_dir}/{cfg.run_name}.best.pt", ckpt=ckpt)
 
