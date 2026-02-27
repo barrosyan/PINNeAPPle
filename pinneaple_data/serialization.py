@@ -1,7 +1,12 @@
-"""Serialization utilities for PhysicalSample to/from PT, Zarr, and HDF5 formats."""
+"""Serialization utilities for PhysicalSample to/from PT, Zarr, and HDF5 formats.
+
+This module is backward/forward compatible:
+- New UPD PhysicalSample: state/geometry/schema/domain/provenance/extras
+- Legacy PhysicalSample: fields/coords/meta
+"""
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Optional
 import os
 import json
 
@@ -10,185 +15,145 @@ import torch
 from .physical_sample import PhysicalSample
 
 
-def save_pt(samples: Sequence[PhysicalSample], path: str) -> None:
-    """
-    Save a sequence of PhysicalSamples to a PyTorch (.pt) file.
-
-    Parameters
-    ----------
-    samples : Sequence[PhysicalSample]
-        Sequence of PhysicalSample objects to serialize.
-    path : str
-        Output file path.
-    """
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    payload = []
-    for s in samples:
-        payload.append(
-            {
-                "fields": s.fields,
-                "coords": s.coords,
-                "meta": s.meta,
-            }
-        )
-    torch.save(payload, path)
-
-
-def load_pt(path: str) -> List[PhysicalSample]:
-    """
-    Load PhysicalSamples from a PyTorch (.pt) file.
-
-    Parameters
-    ----------
-    path : str
-        Path to the .pt file.
-
-    Returns
-    -------
-    List[PhysicalSample]
-        List of deserialized PhysicalSample objects.
-    """
-    payload = torch.load(path, map_location="cpu")
-    out: List[PhysicalSample] = []
-    for item in payload:
-        out.append(PhysicalSample(fields=item["fields"], coords=item.get("coords", {}), meta=item.get("meta", {})))
-    return out
-
-
+# -------------------------
+# Manifest helpers
+# -------------------------
 def save_manifest(path: str, manifest: Dict[str, Any]) -> None:
-    """
-    Save a manifest dictionary to a JSON file.
-
-    Parameters
-    ----------
-    path : str
-        Output file path.
-    manifest : Dict[str, Any]
-        Manifest dictionary to serialize.
-    """
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
 
 def load_manifest(path: str) -> Dict[str, Any]:
-    """
-    Load a manifest dictionary from a JSON file.
-
-    Parameters
-    ----------
-    path : str
-        Path to the JSON file.
-
-    Returns
-    -------
-    Dict[str, Any]
-        Deserialized manifest dictionary.
-    """
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def save_zarr(samples: Sequence[PhysicalSample], root: str, *, compressor: str = "default") -> None:
+# -------------------------
+# Compatibility helpers
+# -------------------------
+def _is_new(sample: Any) -> bool:
+    return hasattr(sample, "state")
+
+
+def _to_payload(sample: PhysicalSample) -> Dict[str, Any]:
     """
-    Save PhysicalSamples to a Zarr directory store (legacy implementation).
+    Convert PhysicalSample -> serializable payload.
 
-    Parameters
-    ----------
-    samples : Sequence[PhysicalSample]
-        Sequence of PhysicalSample objects to serialize.
-    root : str
-        Root directory path for the Zarr store.
-    compressor : str, optional
-        Compression method. Default is "default".
+    New format payload keys:
+      state, geometry, schema, domain, provenance, extras, _format="upd_v1"
+    Legacy format payload keys:
+      fields, coords, meta, _format="legacy_v0"
     """
-    import zarr  # optional
-    import numpy as np
+    if _is_new(sample):
+        return {
+            "_format": "upd_v1",
+            "state": sample.state,
+            "geometry": getattr(sample, "geometry", None),
+            "schema": getattr(sample, "schema", {}) or {},
+            "domain": getattr(sample, "domain", {}) or {},
+            "provenance": getattr(sample, "provenance", {}) or {},
+            "extras": getattr(sample, "extras", {}) or {},
+        }
 
-    os.makedirs(root, exist_ok=True)
-    grp = zarr.open_group(root, mode="w")
-
-    # store meta as json strings per sample (simple, robust)
-    metas = [json.dumps(s.meta) for s in samples]
-    grp.create_dataset("meta_json", data=np.array(metas, dtype=object), dtype=object)
-
-    # store fields/coords as separate groups
-    g_fields = grp.create_group("fields")
-    g_coords = grp.create_group("coords")
-
-    # naive approach: all samples must have the same field keys + shapes
-    # industry-friendly: deterministic structure
-    field_keys = sorted(samples[0].fields.keys())
-    coord_keys = sorted(samples[0].coords.keys())
-
-    grp.attrs["field_keys"] = field_keys
-    grp.attrs["coord_keys"] = coord_keys
-    grp.attrs["count"] = len(samples)
-
-    for k in field_keys:
-        arr0 = samples[0].fields[k]
-        if not torch.is_tensor(arr0):
-            # store non-tensor as meta only
-            continue
-        data = torch.stack([s.fields[k].cpu() for s in samples], dim=0).numpy()
-        g_fields.create_dataset(k, data=data, chunks=(1, *data.shape[1:]))
-
-    for k in coord_keys:
-        arr0 = samples[0].coords[k]
-        if not torch.is_tensor(arr0):
-            continue
-        data = torch.stack([s.coords[k].cpu() for s in samples], dim=0).numpy()
-        g_coords.create_dataset(k, data=data, chunks=(1, *data.shape[1:]))
+    # legacy fallback
+    return {
+        "_format": "legacy_v0",
+        "fields": getattr(sample, "fields", {}) or {},
+        "coords": getattr(sample, "coords", {}) or {},
+        "meta": getattr(sample, "meta", {}) or {},
+    }
 
 
-def load_zarr(root: str) -> List[PhysicalSample]:
+def _from_payload(item: Dict[str, Any]) -> PhysicalSample:
     """
-    Load PhysicalSamples from a Zarr directory store (legacy implementation).
-
-    Parameters
-    ----------
-    root : str
-        Root directory path of the Zarr store.
-
-    Returns
-    -------
-    List[PhysicalSample]
-        List of deserialized PhysicalSample objects.
+    Convert payload -> PhysicalSample (always returns the NEW PhysicalSample class).
     """
-    import zarr  # optional
-    import numpy as np
+    fmt = item.get("_format")
 
-    grp = zarr.open_group(root, mode="r")
-    n = int(grp.attrs["count"])
-    field_keys = list(grp.attrs.get("field_keys", []))
-    coord_keys = list(grp.attrs.get("coord_keys", []))
+    # New format (preferred)
+    if fmt == "upd_v1" or ("state" in item):
+        return PhysicalSample(
+            state=item["state"],
+            geometry=item.get("geometry"),
+            schema=item.get("schema", {}) or {},
+            domain=item.get("domain", {}) or {},
+            provenance=item.get("provenance", {}) or {},
+            extras=item.get("extras", {}) or {},
+        )
 
-    metas = [json.loads(x) for x in grp["meta_json"][:]]
+    # Legacy -> map into new
+    fields = item.get("fields", {}) or {}
+    coords = item.get("coords", {}) or {}
+    meta = item.get("meta", {}) or {}
 
+    state: Dict[str, Any] = {}
+    # Legacy tended to store coords separately; we merge into state
+    if isinstance(coords, dict):
+        state.update(coords)
+    if isinstance(fields, dict):
+        state.update(fields)
+
+    schema: Dict[str, Any] = {}
+    provenance: Dict[str, Any] = {}
+    extras: Dict[str, Any] = {}
+
+    if isinstance(meta, dict):
+        # common legacy conventions
+        if "units" in meta:
+            schema["units"] = meta["units"]
+        if "sample_id" in meta:
+            provenance["sample_id"] = meta["sample_id"]
+        extras["legacy_meta"] = meta
+
+    # domain type is unknown unless legacy meta encoded it
+    domain = {"type": (meta or {}).get("domain_type", "unknown")} if isinstance(meta, dict) else {"type": "unknown"}
+
+    return PhysicalSample(
+        state=state,
+        geometry=None,
+        schema=schema,
+        domain=domain,
+        provenance=provenance,
+        extras=extras,
+    )
+
+
+# -------------------------
+# PT
+# -------------------------
+def save_pt(samples: Sequence[PhysicalSample], path: str) -> None:
+    """
+    Save a sequence of PhysicalSamples to a PyTorch (.pt) file.
+    """
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    payload = [_to_payload(s) for s in samples]
+    torch.save(payload, path)
+
+
+def load_pt(path: str) -> List[PhysicalSample]:
+    """
+    Load PhysicalSamples from a PyTorch (.pt) file.
+    """
+    payload = torch.load(path, map_location="cpu")
     out: List[PhysicalSample] = []
-    for i in range(n):
-        fields = {}
-        coords = {}
-        for k in field_keys:
-            if k in grp["fields"]:
-                fields[k] = torch.from_numpy(grp["fields"][k][i])
-        for k in coord_keys:
-            if k in grp["coords"]:
-                coords[k] = torch.from_numpy(grp["coords"][k][i])
-        out.append(PhysicalSample(fields=fields, coords=coords, meta=metas[i]))
+    for item in payload:
+        if not isinstance(item, dict):
+            raise TypeError("Invalid .pt payload: expected list[dict].")
+        out.append(_from_payload(item))
     return out
 
 
+# -------------------------
+# HDF5
+# -------------------------
 def save_hdf5(samples: Sequence[PhysicalSample], path: str) -> None:
     """
     Save PhysicalSamples to an HDF5 file.
 
-    Parameters
-    ----------
-    samples : Sequence[PhysicalSample]
-        Sequence of PhysicalSample objects to serialize.
-    path : str
-        Output HDF5 file path.
+    Strategy:
+      - store each sample as a torch-saved binary blob (portable, supports tensors)
+      - store small manifest attrs
     """
     import h5py  # optional
     import numpy as np
@@ -196,96 +161,104 @@ def save_hdf5(samples: Sequence[PhysicalSample], path: str) -> None:
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with h5py.File(path, "w") as f:
         f.attrs["count"] = len(samples)
-        meta_json = [json.dumps(s.meta) for s in samples]
-        f.create_dataset("meta_json", data=np.array(meta_json, dtype=h5py.string_dtype()))
+        f.attrs["format"] = "upd_v1_or_legacy_v0"
 
-        g_fields = f.create_group("fields")
-        g_coords = f.create_group("coords")
+        blobs = []
+        for s in samples:
+            obj = _to_payload(s)
+            blobs.append(torch.save(obj, _BytesIO(), _use_new_zipfile_serialization=True))  # placeholder
 
-        field_keys = sorted(samples[0].fields.keys())
-        coord_keys = sorted(samples[0].coords.keys())
 
-        f.attrs["field_keys"] = json.dumps(field_keys)
-        f.attrs["coord_keys"] = json.dumps(coord_keys)
+# NOTE: We need a real BytesIO helper; keep below outside the HDF5 function to avoid import cycles.
+class _BytesIO:
+    """
+    Minimal BytesIO-like object for torch.save into bytes without importing io in hot paths.
+    """
+    def __init__(self):
+        import io
+        self._b = io.BytesIO()
+    def write(self, x):
+        return self._b.write(x)
+    def getvalue(self):
+        return self._b.getvalue()
+    def seek(self, pos, whence=0):
+        return self._b.seek(pos, whence)
 
-        for k in field_keys:
-            v0 = samples[0].fields[k]
-            if not torch.is_tensor(v0):
-                continue
-            data = torch.stack([s.fields[k].cpu() for s in samples], dim=0).numpy()
-            g_fields.create_dataset(k, data=data, compression="gzip", chunks=True)
 
-        for k in coord_keys:
-            v0 = samples[0].coords[k]
-            if not torch.is_tensor(v0):
-                continue
-            data = torch.stack([s.coords[k].cpu() for s in samples], dim=0).numpy()
-            g_coords.create_dataset(k, data=data, compression="gzip", chunks=True)
+def save_hdf5(samples: Sequence[PhysicalSample], path: str) -> None:
+    import h5py  # optional
+    import numpy as np
+
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with h5py.File(path, "w") as f:
+        f.attrs["count"] = len(samples)
+        f.attrs["payload_kind"] = "torch_bytes"
+
+        dt = h5py.vlen_dtype(np.dtype("uint8"))
+        ds = f.create_dataset("payload_bytes", shape=(len(samples),), dtype=dt)
+
+        for i, s in enumerate(samples):
+            bio = _BytesIO()
+            torch.save(_to_payload(s), bio._b)
+            data = np.frombuffer(bio.getvalue(), dtype=np.uint8)
+            ds[i] = data
 
 
 def load_hdf5(path: str) -> List[PhysicalSample]:
-    """
-    Load PhysicalSamples from an HDF5 file.
-
-    Parameters
-    ----------
-    path : str
-        Path to the HDF5 file.
-
-    Returns
-    -------
-    List[PhysicalSample]
-        List of deserialized PhysicalSample objects.
-    """
     import h5py  # optional
+    import numpy as np
+    import io
+
     with h5py.File(path, "r") as f:
         n = int(f.attrs["count"])
-        metas = [json.loads(s) for s in f["meta_json"][:]]
-        field_keys = json.loads(f.attrs["field_keys"])
-        coord_keys = json.loads(f.attrs["coord_keys"])
+        if "payload_bytes" in f:
+            out: List[PhysicalSample] = []
+            for i in range(n):
+                raw = f["payload_bytes"][i]
+                buf = io.BytesIO(np.array(raw, dtype=np.uint8).tobytes())
+                item = torch.load(buf, map_location="cpu")
+                if not isinstance(item, dict):
+                    raise TypeError("Invalid HDF5 payload: expected dict.")
+                out.append(_from_payload(item))
+            return out
 
-        out: List[PhysicalSample] = []
-        for i in range(n):
-            fields, coords = {}, {}
-            for k in field_keys:
-                if k in f["fields"]:
-                    fields[k] = torch.from_numpy(f["fields"][k][i])
-            for k in coord_keys:
-                if k in f["coords"]:
-                    coords[k] = torch.from_numpy(f["coords"][k][i])
-            out.append(PhysicalSample(fields=fields, coords=coords, meta=metas[i]))
-        return out
+        # Legacy fallback (if someone saved with the old layout)
+        # Attempt to reconstruct fields/coords/meta layout
+        if "meta_json" in f and "fields" in f and "coords" in f:
+            metas = [json.loads(s) for s in f["meta_json"][:]]
+            field_keys = json.loads(f.attrs.get("field_keys", "[]"))
+            coord_keys = json.loads(f.attrs.get("coord_keys", "[]"))
+
+            out: List[PhysicalSample] = []
+            for i in range(n):
+                fields, coords = {}, {}
+                for k in field_keys:
+                    if k in f["fields"]:
+                        fields[k] = torch.from_numpy(f["fields"][k][i])
+                for k in coord_keys:
+                    if k in f["coords"]:
+                        coords[k] = torch.from_numpy(f["coords"][k][i])
+
+                out.append(_from_payload({"_format": "legacy_v0", "fields": fields, "coords": coords, "meta": metas[i]}))
+            return out
+
+        raise ValueError("Unrecognized HDF5 layout.")
 
 
+# -------------------------
+# Zarr (official path)
+# -------------------------
 def save_zarr(samples, root: str, *, compressor: str = "default") -> None:
     """
     Save PhysicalSamples to a Zarr directory store using UPDZarrStore.
-
-    Parameters
-    ----------
-    samples : Sequence
-        Sequence of PhysicalSample-like objects to serialize.
-    root : str
-        Root directory path for the Zarr store.
-    compressor : str, optional
-        Compression method. Default is "default".
     """
     from .zarr_store import UPDZarrStore, ZarrWriteSpec
     UPDZarrStore.write(root, samples, manifest=None, spec=ZarrWriteSpec(chunk_by_sample=True))
 
+
 def load_zarr(root: str):
     """
     Load PhysicalSamples from a Zarr directory store using UPDZarrStore.
-
-    Parameters
-    ----------
-    root : str
-        Root directory path of the Zarr store.
-
-    Returns
-    -------
-    list
-        List of PhysicalSample-like objects from the store.
     """
     from .zarr_store import UPDZarrStore
     store = UPDZarrStore(root, mode="r")

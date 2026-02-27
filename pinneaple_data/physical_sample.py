@@ -235,3 +235,7 @@ class PhysicalSample:
         if y is not None:
             out["y"] = y
         return out
+    
+    @property
+    def sample_id(self) -> str:
+        return str((self.provenance or {}).get("sample_id", ""))
