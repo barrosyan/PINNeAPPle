@@ -1,0 +1,24 @@
+run_name: jax_pinn_full_flow_obstacle_2d
+
+backend:
+  name: jax_pinn
+
+train:
+  steps: 20000
+  lr: 0.001
+  seed: 0
+  log_every: 500
+  weights:
+    pde: 1.0
+    bc: 10.0
+    data: 0.0
+
+arena:
+  n_collocation: 4096
+  n_boundary: 2048
+  n_data: 0
+
+model:
+  width: 256
+  depth: 4
+  activation: tanh

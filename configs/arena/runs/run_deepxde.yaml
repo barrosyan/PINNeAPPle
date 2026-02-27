@@ -1,0 +1,15 @@
+run_name: deepxde_supervised_flow_obstacle_2d
+
+backend:
+  name: deepxde
+
+train:
+  lr: 0.001
+  epochs: 20000
+  deepxde_backend: tensorflow   # opcional
+
+model:
+  width: 256
+  depth: 4
+  activation: tanh
+  initializer: Glorot normal

@@ -107,9 +107,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/barrosyan/pinneaple"
-Repository = "https://github.com/barrosyan/pinneaple"
-Issues = "https://github.com/barrosyan/pinneaple/issues"
+Homepage = "https://github.com/barrosyan/PINNeAPPle"
+Repository = "https://github.com/barrosyan/PINNeAPPle"
+Issues = "https://github.com/barrosyan/PINNeAPPle/issues"
 
 [project.scripts]
 pdb = "pinneaple_pdb.cli:main"
@@ -128,6 +128,7 @@ packages = [
   "pinneaple_solvers",
   "pinneaple_timeseries",
   "pinneaple_train",
+  "pinneaple_environment",
 ]
 
 [tool.ruff]
