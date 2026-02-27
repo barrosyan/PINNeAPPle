@@ -1,13 +1,44 @@
 import os
+
 from pinneaple_problemdesign import GeminiProvider, DesignAgent
 
-# 1) Setup your gemini api key
-# Windows (PowerShell):  $env:GOOGLE_API_KEY="..."
-# CMD:                 set GOOGLE_API_KEY=...
-# Linux/macOS:            export GOOGLE_API_KEY="..."
 
-llm = GeminiProvider(model="gemini-2.0-flash")
-agent = DesignAgent(llm=llm)
+def _build_agent() -> DesignAgent:
+    """Create agent with good error messages for optional deps/env."""
+    try:
+        llm = GeminiProvider(model="gemini-2.0-flash")
+    except ModuleNotFoundError as e:
+        raise SystemExit(
+            "\n".join(
+                [
+                    "[ERROR] This example requires the Google Gemini SDK.",
+                    "Install:",
+                    "  pip install google-generativeai",
+                    "",
+                    "Then set your API key:",
+                    "  export GOOGLE_API_KEY=...   (Linux/macOS)",
+                    "  set GOOGLE_API_KEY=...      (Windows CMD)",
+                    "  $env:GOOGLE_API_KEY=...     (PowerShell)",
+                ]
+            )
+        ) from e
+    except ValueError as e:
+        raise SystemExit(
+            "\n".join(
+                [
+                    "[ERROR] Missing GOOGLE_API_KEY.",
+                    "Set it before running:",
+                    "  export GOOGLE_API_KEY=...   (Linux/macOS)",
+                    "  set GOOGLE_API_KEY=...      (Windows CMD)",
+                    "  $env:GOOGLE_API_KEY=...     (PowerShell)",
+                ]
+            )
+        ) from e
+
+    return DesignAgent(llm=llm)
+
+
+agent = _build_agent()
 state = agent.start()
 
 user_messages = [

@@ -9,57 +9,57 @@ Requires:
 from __future__ import annotations
 
 try:
-    import cadquery as cq
-except Exception as e:
-    print("cadquery not available in this environment:", e)
-    raise SystemExit(0)
-
-import numpy as np
+    import cadquery as cq  # type: ignore
+except Exception as e:  # pragma: no cover
+    raise SystemExit(
+        "\n".join(
+            [
+                "[ERROR] cadquery is not available in this environment.",
+                "This example depends on the OpenCascade (OCC) stack.",
+                "",
+                "Typical install options:",
+                "  - conda install -c conda-forge cadquery",
+                "  - or follow: https://cadquery.readthedocs.io/ (installation docs)",
+                "",
+                f"Original import error: {e}",
+            ]
+        )
+    )
 
 from pinneaple_geom.gen.cadquery_gen import cadquery_to_trimesh
-from pinneaple_geom.core.mesh import MeshData
+from pinneaple_geom.io.trimesh_bridge import TrimeshBridge
 from pinneaple_geom.sample.points import sample_surface_points
 
 
-def _tm_to_meshdata(tm) -> MeshData:
-    import numpy as np
-    return MeshData(
-        vertices=tm.vertices.view(np.ndarray),
-        faces=tm.faces.view(np.ndarray),
-        normals=tm.face_normals.view(np.ndarray) if getattr(tm, "face_normals", None) is not None else None,
-    )
-
-
-def make_box_cq(width: float, depth: float, height: float):
-    """
-    Create a parametric box using CadQuery.
-    Returns a CadQuery Workplane / Shape.
-    """
-    return cq.Workplane("XY").box(width, depth, height, centered=(True, True, True))
+def make_part(width: float, height: float, thickness: float):
+    return cq.Workplane("XY").box(width, height, thickness)
 
 
 def main():
-    # Base primitive (parametric)
-    base = make_box_cq(width=1.0, depth=1.0, height=0.25)
+    # Generate a family of boxes and sample points from their surfaces.
+    variants = [
+        {"width": 1.0, "height": 1.0, "thickness": 0.2},
+        {"width": 1.2, "height": 0.8, "thickness": 0.25},
+        {"width": 0.8, "height": 1.3, "thickness": 0.15},
+    ]
 
-    # Variants (simple param sweep)
-    variants = []
-    for w in [0.8, 1.0, 1.2]:
-        for h in [0.2, 0.3]:
-            shape = make_box_cq(width=w, depth=1.0, height=h)
-            variants.append((w, h, shape))
+    bridge = TrimeshBridge()
 
-    for (w, h, shape) in variants[:5]:
-        tm = cadquery_to_trimesh(shape)  # trimesh.Trimesh
+    for i, v in enumerate(variants):
+        solid = make_part(**v)
 
-        # Convert to MeshData for a stable internal API
-        mesh = _tm_to_meshdata(tm)
+        # CADQuery -> trimesh.Trimesh
+        tm = cadquery_to_trimesh(solid)
 
-        # sample points (MeshData path)
-        pts, normals, face_id = sample_surface_points(mesh, n=2000)
-        pts = np.asarray(pts)
-        
-        print(f"variant w={w} h={h} | faces={len(mesh.faces)} | pts={pts.shape}")
+        # trimesh.Trimesh -> MeshData (Pinneaple internal)
+        mesh = bridge.from_trimesh(tm, compute_normals=True)
+
+        # Sample surface points + normals
+        pts, nrm = sample_surface_points(mesh, n=5000, seed=42 + i)
+
+        print(
+            f"variant[{i}] params={v} | points={pts.shape} normals={nrm.shape} | bbox={mesh.bbox}"
+        )
 
 
 if __name__ == "__main__":
