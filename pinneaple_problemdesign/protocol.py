@@ -1,11 +1,23 @@
-"""LLMProvider protocol, LLMMessage, LLMResponse, GeminiProvider."""
+"""LLMProvider protocol, LLMMessage, LLMResponse, GeminiProvider.
+
+This module intentionally treats external LLM SDKs as **optional dependencies**.
+
+- If `google-generativeai` is not installed, importing this module will still work,
+  but instantiating `GeminiProvider` will raise a clear, actionable error.
+
+Install:
+  pip install google-generativeai
+"""
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Protocol
 
-import google.generativeai as genai
+try:
+    import google.generativeai as genai  # type: ignore
+except Exception:  # pragma: no cover
+    genai = None
 
 
 @dataclass
@@ -21,9 +33,8 @@ class LLMResponse:
 
 
 class LLMProvider(Protocol):
-    """
-    Single interface for the module. Plug Gemini in here.
-    """
+    """Single interface for the module."""
+
     def generate(
         self,
         messages: List[LLMMessage],
@@ -36,12 +47,19 @@ class LLMProvider(Protocol):
 
 
 class GeminiProvider:
-    """
-    Real Gemini provider using Google Generative AI SDK.
-    Requires environment variable: GOOGLE_API_KEY
+    """Gemini provider using Google Generative AI SDK.
+
+    Requires:
+      - `google-generativeai` package
+      - environment variable: `GOOGLE_API_KEY`
     """
 
     def __init__(self, model: str = "gemini-1.5-pro"):
+        if genai is None:
+            raise ModuleNotFoundError(
+                "google-generativeai is not installed. Install it with: pip install google-generativeai"
+            )
+
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             raise ValueError("GOOGLE_API_KEY environment variable not set.")
@@ -49,28 +67,6 @@ class GeminiProvider:
         genai.configure(api_key=api_key)
         self.model_name = model
         self.model = genai.GenerativeModel(model)
-
-    def _convert_messages(self, messages: List[LLMMessage]):
-        """
-        Convert internal message format to Gemini format.
-        Gemini expects:
-        [
-            {"role": "user", "parts": ["text"]},
-            {"role": "model", "parts": ["text"]}
-        ]
-        """
-        converted = []
-        system_prompt = None
-
-        for m in messages:
-            if m.role == "system":
-                system_prompt = m.content
-            elif m.role == "user":
-                converted.append({"role": "user", "parts": [m.content]})
-            elif m.role == "assistant":
-                converted.append({"role": "model", "parts": [m.content]})
-
-        return system_prompt, converted
 
     def generate(
         self,
@@ -80,29 +76,25 @@ class GeminiProvider:
         max_tokens: int = 800,
         json_mode: bool = False,
     ) -> LLMResponse:
+        # Convert to Gemini chat format
+        parts = []
+        for m in messages:
+            parts.append({"role": m.role, "parts": [m.content]})
 
-        system_prompt, converted_messages = self._convert_messages(messages)
-
+        # JSON mode is best-effort; Gemini SDK behavior may vary by model.
         generation_config = {
             "temperature": temperature,
             "max_output_tokens": max_tokens,
         }
-
         if json_mode:
             generation_config["response_mime_type"] = "application/json"
 
-        chat = self.model.start_chat(history=converted_messages[:-1])
-
-        if system_prompt:
-            prompt = f"{system_prompt}\n\n{converted_messages[-1]['parts'][0]}"
-            response = chat.send_message(prompt, generation_config=generation_config)
-        else:
-            response = chat.send_message(
-                converted_messages[-1]["parts"][0],
-                generation_config=generation_config,
-            )
-
-        return LLMResponse(
-            text=response.text,
-            raw=response.to_dict() if hasattr(response, "to_dict") else None,
-        )
+        resp = self.model.generate_content(parts, generation_config=generation_config)
+        text = getattr(resp, "text", None)
+        if text is None and hasattr(resp, "candidates") and resp.candidates:
+            # fallback
+            try:
+                text = resp.candidates[0].content.parts[0].text
+            except Exception:
+                text = ""
+        return LLMResponse(text=text or "", raw={"_provider": "gemini"})

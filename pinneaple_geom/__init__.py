@@ -20,6 +20,7 @@ Design principles:
 from .core.geometry import GeometrySpec, GeometryAsset
 from .core.mesh import MeshData
 from .core.registry import build_geometry_asset, load_geometry_asset
+from .builders import STLDomainBatchBuilder, STLDomainBatchConfig
 
 __all__ = [
     "GeometrySpec",
@@ -27,4 +28,6 @@ __all__ = [
     "MeshData",
     "build_geometry_asset",
     "load_geometry_asset",
+    "STLDomainBatchBuilder",
+    "STLDomainBatchConfig"
 ]
