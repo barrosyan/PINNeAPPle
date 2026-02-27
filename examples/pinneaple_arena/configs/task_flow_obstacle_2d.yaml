@@ -1,0 +1,7 @@
+task_id: flow_obstacle_2d
+# NOTE: bundle_root must be the directory that contains:
+#   bundle/manifest.json
+#   bundle/conditions.json
+#   derived/points_*.parquet
+bundle_root: data/bundles/flow_obstacle_2d/v0
+require_sensors: false

@@ -1,0 +1,22 @@
+run_name: native_bigger_demo
+
+backend:
+  name: pinneaple_native
+
+train:
+  device: cpu
+  epochs: 1200
+  lr: 0.001
+  seed: 0
+  log_every: 200
+  weights:
+    pde: 1.0
+    bc: 10.0
+
+arena:
+  n_collocation: 4096
+  n_boundary: 2048
+
+model:
+  hidden: [256, 256, 256, 256]
+  activation: tanh
