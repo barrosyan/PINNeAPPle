@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 from pinneaple_arena.bundle.loader import BundleData
-
+from pinneaple_arena.registry import register_backend
 
 Tensor = torch.Tensor
 
@@ -136,7 +136,7 @@ def _ns2d_residuals(xy: Tensor, uvp: Tensor, nu: float) -> Dict[str, Tensor]:
     cont = u_x + v_y
     return {"mom_u": mom_u, "mom_v": mom_v, "cont": cont}
 
-
+@register_backend
 class NativePINNBackend:
     """
     Native PINN training backend for steady 2D Navier-Stokes problems.

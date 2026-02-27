@@ -8,60 +8,36 @@ from typing import Any, Dict
 from pinneaple_arena.io.yamlx import load_yaml
 from pinneaple_arena.bundle.schema import load_bundle_schema
 from pinneaple_arena.bundle.loader import load_bundle
-from pinneaple_arena.tasks.flow_obstacle_2d import FlowObstacle2DTask
 from pinneaple_arena.runner.metrics import ensure_float_dict
 from pinneaple_arena.runner.report import write_run_artifacts
 from pinneaple_arena.runner.leaderboard import update_leaderboard
+from pinneaple_arena.registry import get_backend, get_task
 
-from pinneaple_arena.backends import NativePINNBackend, PhysicsNeMoSymBackend
+# garante registro via decorators
+from pinneaple_arena import tasks as _tasks  # noqa: F401
+from pinneaple_arena import backends as _backends  # noqa: F401
 
 
 def _make_run_id(task_id: str, run_name: str) -> str:
-    """
-    Generate a unique run identifier.
-
-    Parameters
-    ----------
-    task_id : str
-        Identifier of the task being executed.
-    run_name : str
-        User-defined name for the run.
-
-    Returns
-    -------
-    str
-        Unique run ID composed of task_id, run_name,
-        and a short SHA1 hash based on timestamp.
-    """
     t = str(time.time()).encode("utf-8")
     h = hashlib.sha1(t + task_id.encode("utf-8") + run_name.encode("utf-8")).hexdigest()[:12]
     return f"{task_id}-{run_name}-{h}"
 
 
-def _select_backend(name: str):
-    """
-    Instantiate backend based on its registered name.
-
-    Parameters
-    ----------
-    name : str
-        Backend name.
-
-    Returns
-    -------
-    Backend instance
-
-    Raises
-    ------
-    ValueError
-        If the backend name is unknown.
-    """
-    name = str(name)
-    if name == "pinneaple_native":
-        return NativePINNBackend()
-    if name == "physicsnemo_sym":
-        return PhysicsNeMoSymBackend()
-    raise ValueError(f"Unknown backend: {name}")
+def _safe_git_sha(repo_root: Path) -> str | None:
+    try:
+        head = repo_root / ".git" / "HEAD"
+        if not head.exists():
+            return None
+        ref = head.read_text(encoding="utf-8").strip()
+        if ref.startswith("ref:"):
+            ref_path = repo_root / ".git" / ref.split(" ", 1)[1].strip()
+            if ref_path.exists():
+                return ref_path.read_text(encoding="utf-8").strip()[:12]
+            return None
+        return ref[:12]
+    except Exception:
+        return None
 
 
 def run_benchmark(
@@ -71,44 +47,6 @@ def run_benchmark(
     run_cfg_path: str | Path,
     bundle_schema_path: str | Path,
 ) -> Dict[str, Any]:
-    """
-    Execute a full benchmark run.
-
-    This function:
-        - Loads task, run, and schema configurations
-        - Loads and validates the data bundle
-        - Selects and trains the backend
-        - Computes task-specific metrics
-        - Stores artifacts (report, metrics, summary)
-        - Updates leaderboard
-
-    Parameters
-    ----------
-    artifacts_dir : str | Path
-        Directory where benchmark artifacts will be stored.
-    task_cfg_path : str | Path
-        Path to task configuration YAML.
-    run_cfg_path : str | Path
-        Path to run configuration YAML.
-    bundle_schema_path : str | Path
-        Path to bundle schema YAML.
-
-    Returns
-    -------
-    Dict[str, Any]
-        Dictionary containing:
-            - run_id
-            - run_dir
-            - report
-            - metrics
-            - summary
-
-    Raises
-    ------
-    RuntimeError
-        If required configuration fields are missing
-        or unsupported task is requested.
-    """
     artifacts_dir = str(artifacts_dir)
 
     task_cfg = load_yaml(task_cfg_path)
@@ -125,24 +63,19 @@ def run_benchmark(
 
     bundle = load_bundle(bundle_root, schema=schema, require_sensors=require_sensors)
 
-    # Task object
-    if task_id != "flow_obstacle_2d":
-        raise RuntimeError(f"Only flow_obstacle_2d is implemented in this MVP. Got task_id={task_id}")
-    task = FlowObstacle2DTask()
+    task_cls = get_task(task_id)
+    task = task_cls()
 
     backend_name = str(run_cfg.get("backend", {}).get("name", "pinneaple_native"))
-    backend = _select_backend(backend_name)
+    backend_cls = get_backend(backend_name)
+    backend = backend_cls()
 
     run_id = _make_run_id(task_id, run_name)
 
-    # Train backend
     backend_outputs = backend.train(bundle, run_cfg)
-
-    # Compute metrics (task may compute extra based on returned model)
     task_metrics = task.compute_metrics(bundle, backend_outputs)
 
-    # Merge metrics (backend metrics + task metrics)
-    merged = {}
+    merged: Dict[str, float] = {}
     merged.update(ensure_float_dict(backend_outputs.get("metrics", {})))
     merged.update(ensure_float_dict(task_metrics))
 
@@ -155,6 +88,9 @@ def run_benchmark(
         "timestamp_unix": time.time(),
         "run_cfg_path": str(run_cfg_path),
         "task_cfg_path": str(task_cfg_path),
+        "bundle_schema_version": getattr(schema, "schema_version", ""),
+        "git_sha": _safe_git_sha(Path.cwd()),
+        "python": __import__("sys").version.split()[0],
     }
 
     summary = {
@@ -178,7 +114,6 @@ def run_benchmark(
         summary=summary,
     )
 
-    # Update leaderboard
     leaderboard_row = {
         "run_id": run_id,
         "run_name": run_name,
@@ -188,11 +123,10 @@ def run_benchmark(
     }
     update_leaderboard(Path(artifacts_dir) / "leaderboard.json", leaderboard_row)
 
-    out = {
+    return {
         "run_id": run_id,
         "run_dir": str(run_dir),
         "report": report,
         "metrics": merged,
         "summary": summary,
     }
-    return out

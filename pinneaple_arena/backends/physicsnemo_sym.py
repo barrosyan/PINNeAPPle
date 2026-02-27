@@ -5,8 +5,10 @@ from typing import Any, Dict
 import numpy as np
 
 from pinneaple_arena.bundle.loader import BundleData
+from pinneaple_arena.registry import register_backend
 
 
+@register_backend
 class PhysicsNeMoSymBackend:
     """
     Backend integration for PhysicsNeMo Sym (formerly Modulus Sym).
