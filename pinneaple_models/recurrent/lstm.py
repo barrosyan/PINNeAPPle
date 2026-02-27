@@ -1,115 +1,115 @@
 from __future__ import annotations
-"""LSTM and bidirectional LSTM models."""
 
-from typing import Dict, Optional
+from dataclasses import dataclass
+from typing import Dict, Optional, Tuple, Iterable
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 
-from .base import RecurrentModelBase, RNNOutput
+
+@dataclass
+class FitHistory:
+    train: Dict[str, list]
+    val: Dict[str, list]
 
 
-class LSTMModel(RecurrentModelBase):
+class LSTMTrainer:
     """
-    LSTM forecaster.
+    Trainer simples para modelos do tipo RecurrentModelBase que retornam RNNOutput(y, losses,...).
 
-    MVP decoding:
-      - repeats last hidden state over horizon.
-    """
-    def __init__(
-        self,
-        in_dim: int,
-        out_dim: int,
-        horizon: int,
-        hidden_dim: int = 128,
-        num_layers: int = 2,
-        dropout: float = 0.0,
-    ):
-        super().__init__()
-        self.horizon = int(horizon)
-        self.lstm = nn.LSTM(
-            input_size=in_dim,
-            hidden_size=hidden_dim,
-            num_layers=num_layers,
-            batch_first=True,
-            dropout=float(dropout) if num_layers > 1 else 0.0,
-            bidirectional=False,
-        )
-        self.head = nn.Linear(hidden_dim, out_dim)
-
-    def forward(
-        self,
-        x_past: torch.Tensor,
-        *,
-        y_future: Optional[torch.Tensor] = None,
-        return_loss: bool = False,
-    ) -> RNNOutput:
-        B, L, _ = x_past.shape
-        H = self.horizon
-
-        _, (h, c) = self.lstm(x_past)
-        h_last = h[-1]  # (B, hidden_dim)
-
-        dec = h_last[:, None, :].repeat(1, H, 1)
-        y_hat = self.head(dec)
-
-        losses: Dict[str, torch.Tensor] = {"total": torch.tensor(0.0, device=y_hat.device)}
-        if return_loss and y_future is not None:
-            losses["mse"] = self.mse(y_hat, y_future)
-            losses["total"] = losses["mse"]
-
-        return RNNOutput(y=y_hat, losses=losses, extras={"h_last": h_last, "c_last": c[-1]})
-
-
-class BiLSTMModel(RecurrentModelBase):
-    """
-    Bidirectional LSTM forecaster.
-
-    MVP decoding:
-      - concat forward/backward last hidden, repeat over horizon.
+    Espera que cada batch do dataloader seja:
+      - (x_past, y_future)  ou  {"x_past":..., "y_future":...}
     """
     def __init__(
         self,
-        in_dim: int,
-        out_dim: int,
-        horizon: int,
-        hidden_dim: int = 128,
-        num_layers: int = 2,
-        dropout: float = 0.0,
-    ):
-        super().__init__()
-        self.horizon = int(horizon)
-        self.lstm = nn.LSTM(
-            input_size=in_dim,
-            hidden_size=hidden_dim,
-            num_layers=num_layers,
-            batch_first=True,
-            dropout=float(dropout) if num_layers > 1 else 0.0,
-            bidirectional=True,
-        )
-        self.head = nn.Linear(2 * hidden_dim, out_dim)
-
-    def forward(
-        self,
-        x_past: torch.Tensor,
+        model: nn.Module,
         *,
-        y_future: Optional[torch.Tensor] = None,
-        return_loss: bool = False,
-    ) -> RNNOutput:
-        B, L, _ = x_past.shape
-        H = self.horizon
+        lr: float = 1e-3,
+        weight_decay: float = 0.0,
+        grad_clip: Optional[float] = 1.0,
+        device: Optional[str] = None,
+    ):
+        self.model = model
+        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self.device)
 
-        _, (h, c) = self.lstm(x_past)  # h: (num_layers*2,B,hidden_dim)
-        h_f = h[-2]
-        h_b = h[-1]
-        h_last = torch.cat([h_f, h_b], dim=-1)
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr, weight_decay=weight_decay)
+        self.grad_clip = grad_clip
 
-        dec = h_last[:, None, :].repeat(1, H, 1)
-        y_hat = self.head(dec)
+    def _unpack_batch(self, batch) -> Tuple[torch.Tensor, torch.Tensor]:
+        if isinstance(batch, (tuple, list)) and len(batch) == 2:
+            x_past, y_future = batch
+        elif isinstance(batch, dict):
+            x_past, y_future = batch["x_past"], batch["y_future"]
+        else:
+            raise ValueError("Batch deve ser (x_past, y_future) ou dict com chaves x_past/y_future.")
+        return x_past.to(self.device), y_future.to(self.device)
 
-        losses: Dict[str, torch.Tensor] = {"total": torch.tensor(0.0, device=y_hat.device)}
-        if return_loss and y_future is not None:
-            losses["mse"] = self.mse(y_hat, y_future)
-            losses["total"] = losses["mse"]
+    @torch.no_grad()
+    def evaluate(self, loader: DataLoader) -> Dict[str, float]:
+        self.model.eval()
+        totals: Dict[str, float] = {}
+        n_batches = 0
 
-        return RNNOutput(y=y_hat, losses=losses, extras={"h_last": h_last, "c_last": c[-1]})
+        for batch in loader:
+            x_past, y_future = self._unpack_batch(batch)
+            out = self.model(x_past, y_future=y_future, return_loss=True)
+            for k, v in out.losses.items():
+                totals[k] = totals.get(k, 0.0) + float(v.detach().item())
+            n_batches += 1
+
+        if n_batches == 0:
+            return {"total": float("nan")}
+        return {k: v / n_batches for k, v in totals.items()}
+
+    def fit(
+        self,
+        train_loader: DataLoader,
+        *,
+        val_loader: Optional[DataLoader] = None,
+        epochs: int = 20,
+        log_every: int = 1,
+    ) -> FitHistory:
+        history = FitHistory(train={"total": [], "mse": []}, val={"total": [], "mse": []})
+
+        for epoch in range(1, int(epochs) + 1):
+            self.model.train()
+            train_totals: Dict[str, float] = {}
+            n_batches = 0
+
+            for batch in train_loader:
+                x_past, y_future = self._unpack_batch(batch)
+
+                self.optimizer.zero_grad(set_to_none=True)
+                out = self.model(x_past, y_future=y_future, return_loss=True)
+
+                loss = out.losses["total"]
+                loss.backward()
+
+                if self.grad_clip is not None:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), float(self.grad_clip))
+
+                self.optimizer.step()
+
+                for k, v in out.losses.items():
+                    train_totals[k] = train_totals.get(k, 0.0) + float(v.detach().item())
+                n_batches += 1
+
+            train_metrics = {k: v / max(1, n_batches) for k, v in train_totals.items()}
+            history.train["total"].append(train_metrics.get("total", float("nan")))
+            history.train["mse"].append(train_metrics.get("mse", float("nan")))
+
+            val_metrics = None
+            if val_loader is not None:
+                val_metrics = self.evaluate(val_loader)
+                history.val["total"].append(val_metrics.get("total", float("nan")))
+                history.val["mse"].append(val_metrics.get("mse", float("nan")))
+
+            if (epoch % log_every) == 0:
+                if val_metrics is None:
+                    print(f"Epoch {epoch:03d} | train: {train_metrics}")
+                else:
+                    print(f"Epoch {epoch:03d} | train: {train_metrics} | val: {val_metrics}")
+
+        return history

@@ -1,6 +1,6 @@
 from __future__ import annotations
-"""DeepONet operator learning with branch-trunk architecture."""
-from typing import Dict, Optional
+"""DeepONet operator learning with branch-trunk architecture (classic form)."""
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -11,10 +11,11 @@ from .base import NeuralOperatorBase, OperatorOutput
 class DeepONet(NeuralOperatorBase):
     """
     Classic DeepONet:
-      G(u)(x) = sum_k B_k(u) * T_k(x)
+      For each output channel o:
+        y_o(u, x) = sum_{k=1..modes} B_{o,k}(u) * T_k(x) + bias_o
 
-    Branch net: encodes input function
-    Trunk net: encodes coordinates
+    Branch net: encodes input function samples/sensors u
+    Trunk net: encodes coordinates x
     """
     def __init__(
         self,
@@ -25,17 +26,25 @@ class DeepONet(NeuralOperatorBase):
         modes: int = 64,
     ):
         super().__init__()
+        self.out_dim = out_dim
+        self.modes = modes
+
+        # Branch outputs (out_dim * modes) so we can do a classic dot with trunk modes per output channel
         self.branch = nn.Sequential(
             nn.Linear(branch_dim, hidden),
             nn.GELU(),
-            nn.Linear(hidden, modes),
+            nn.Linear(hidden, out_dim * modes),
         )
+
+        # Trunk outputs (modes)
         self.trunk = nn.Sequential(
             nn.Linear(trunk_dim, hidden),
             nn.GELU(),
             nn.Linear(hidden, modes),
         )
-        self.out = nn.Linear(modes, out_dim)
+
+        # Classic bias term per output channel
+        self.bias = nn.Parameter(torch.zeros(out_dim))
 
     def forward(
         self,
@@ -48,11 +57,14 @@ class DeepONet(NeuralOperatorBase):
         B = u.shape[0]
         N = coords.shape[0]
 
-        b = self.branch(u)                    # (B, modes)
-        t = self.trunk(coords)                # (N, modes)
+        # (B, out_dim*modes) -> (B, out_dim, modes)
+        b = self.branch(u).view(B, self.out_dim, self.modes)
 
-        y = torch.einsum("bm,nm->bnm", b, t)
-        y = self.out(y)                       # (B, N, out_dim)
+        # (N, modes)
+        t = self.trunk(coords)
+
+        # Classic contraction over modes: (B, out_dim, modes) x (N, modes) -> (B, N, out_dim)
+        y = torch.einsum("bom,nm->bno", b, t) + self.bias
 
         losses = {"total": torch.tensor(0.0, device=y.device)}
         if return_loss and y_true is not None:

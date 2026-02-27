@@ -109,8 +109,7 @@ class KoopmanOperator(RCBase):
 
         # ridge regression for K: minimize ||Z1 - Z0 K^T||^2
         # Solve K^T = (Z0^T Z0 + l2 I)^-1 Z0^T Z1
-        KT = self.ridge_solve(Z0, Z1, l2=self.l2)  # (F,F) but this is (F -> F) mapping
-        K = KT.t()
+        K = self.ridge_solve(Z0, Z1, l2=self.l2)  # (F,F) but this is (F -> F) mapping
         self.K.copy_(K)
 
         # decoder: best linear map from Z to x

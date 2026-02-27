@@ -1,5 +1,5 @@
 from __future__ import annotations
-"""FEDformer with frequency-enhanced decomposition for time series."""
+"""FEDformer-inspired MVP: FFT top-k features + lightweight MLP head."""
 
 from typing import Dict, Optional
 
@@ -11,10 +11,11 @@ from .base import TimeSeriesModelBase, TSOutput
 
 class FEDformer(TimeSeriesModelBase):
     """
-    FEDformer (MVP approximation):
-      - Frequency enhanced model; MVP uses FFT-based projection + lightweight MLP head.
-
-    Later you can replace this with spectral attention blocks.
+    Fast baseline inspired by FEDformer ideas:
+      - learn a 1D projection for spectral features (cheap multivariate proxy)
+      - select top-k frequency bins (batch-consistent)
+      - mix last-token embedding + spectral features with a small MLP
+      - horizon embedding to avoid constant repeated outputs
     """
     def __init__(
         self,
@@ -29,12 +30,20 @@ class FEDformer(TimeSeriesModelBase):
         self.topk = int(topk_freq)
 
         self.in_proj = nn.Linear(in_dim, d_model)
+
+        # cheap learned 1D projection for FFT features (better than mean over channels)
+        self.freq_proj = nn.Linear(in_dim, 1, bias=False)
+        self.freq_norm = nn.LayerNorm(2 * self.topk)
+
         self.mlp = nn.Sequential(
             nn.Linear(d_model + 2 * self.topk, 2 * d_model),
             nn.GELU(),
             nn.Linear(2 * d_model, d_model),
             nn.GELU(),
         )
+
+        # simple horizon conditioning (still very lightweight)
+        self.h_emb = nn.Embedding(self.horizon, d_model)
         self.out = nn.Linear(d_model, out_dim)
 
     def forward(
@@ -48,27 +57,33 @@ class FEDformer(TimeSeriesModelBase):
         B, L, D = x_past.shape
         H = self.horizon
 
-        h = self.in_proj(x_past)  # (B,L,d_model)
-        last = h[:, -1, :]        # (B,d_model)
+        h = self.in_proj(x_past)     # (B,L,d_model)
+        last = h[:, -1, :]           # (B,d_model)
 
-        # FFT on the first channel mean (cheap proxy)
-        s = x_past.mean(dim=-1)   # (B,L)
-        fft = torch.fft.rfft(s, dim=1)  # (B, L//2+1)
-        mag = torch.abs(fft)
-        idx = torch.topk(mag, k=min(self.topk, mag.shape[1]), dim=1).indices  # (B,topk)
+        # FFT on learned 1D projection (cheap multivariate proxy)
+        s = self.freq_proj(x_past).squeeze(-1)     # (B,L)
+        fft = torch.fft.rfft(s, dim=1)            # (B,F)
+        mag = torch.abs(fft)                       # (B,F)
 
-        # gather real/imag of topk bins
-        bins = torch.gather(fft, 1, idx)
+        # batch-consistent top-k bins (more stable than per-sample indices)
+        mag_mean = mag.mean(dim=0)                 # (F,)
+        idx0 = torch.topk(mag_mean, k=min(self.topk, mag.shape[1])).indices  # (topk,)
+        idx = idx0.unsqueeze(0).expand(B, -1)      # (B,topk)
+
+        bins = torch.gather(fft, 1, idx)           # (B,topk) complex
         feat_freq = torch.cat([bins.real, bins.imag], dim=1)  # (B,2*topk)
+        feat_freq = self.freq_norm(feat_freq)
 
         feat = torch.cat([last, feat_freq], dim=1)
-        feat = self.mlp(feat)
+        feat = self.mlp(feat)                      # (B,d_model)
 
-        dec = feat[:, None, :].repeat(1, H, 1)
-        y_hat = self.out(dec)
+        t = torch.arange(H, device=x_past.device)
+        dec = feat[:, None, :] + self.h_emb(t)[None, :, :]    # (B,H,d_model)
+        y_hat = self.out(dec)                      # (B,H,out_dim)
 
         losses: Dict[str, torch.Tensor] = {"total": torch.tensor(0.0, device=y_hat.device)}
         if return_loss and y_future is not None:
             losses["mse"] = self.mse(y_hat, y_future)
             losses["total"] = losses["mse"]
-        return TSOutput(y=y_hat, losses=losses, extras={"freq_idx": idx})
+
+        return TSOutput(y=y_hat, losses=losses, extras={"freq_idx": idx0})

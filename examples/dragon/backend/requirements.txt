@@ -1,7 +1,0 @@
-flask
-numpy
-torch
-trimesh
-scipy
-scikit-image
-matplotlib
