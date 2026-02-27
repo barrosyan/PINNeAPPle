@@ -9,15 +9,46 @@ from typing import Dict, Any, List
 
 import torch
 
-from benchmarks._latency import latency_summary
+# Allow running as `python benchmarks/data_io_bench.py` or `python -m benchmarks.data_io_bench`
+try:
+    from ._latency import latency_summary  # type: ignore
+except Exception:  # pragma: no cover
+    from benchmarks._latency import latency_summary  # type: ignore
 
-from pinneaple_data import PhysicalSample
-from pinneaple_data import UPDZarrStore
-from pinneaple_data import PrefetchZarrUPDIterable, PrefetchConfig
-from pinneaple_data import CachedUPDZarrStoreBytes, ZarrByteCacheConfig
+
+def _require_pinnea_data():
+    """Import pinneaple_data with a helpful error if optional deps are missing."""
+    try:
+        from pinneaple_data import (  # noqa: WPS433 (runtime import)
+            PhysicalSample,
+            UPDZarrStore,
+            PrefetchZarrUPDIterable,
+            PrefetchConfig,
+            CachedUPDZarrStoreBytes,
+            ZarrByteCacheConfig,
+        )
+        return PhysicalSample, UPDZarrStore, PrefetchZarrUPDIterable, PrefetchConfig, CachedUPDZarrStoreBytes, ZarrByteCacheConfig
+    except ModuleNotFoundError as e:
+        # Most common: running from source without installing deps (e.g., zarr)
+        missing = getattr(e, "name", None) or str(e)
+        raise SystemExit(
+            "\n".join(
+                [
+                    "[ERROR] Missing dependency while importing pinneaple_data.",
+                    f"Missing module: {missing}",
+                    "",
+                    "Fix:",
+                    "  1) Install project deps (recommended):",
+                    "     pip install -e .",
+                    "  2) Or install the missing package directly (common: zarr):",
+                    "     pip install zarr",
+                ]
+            )
+        ) from e
+
 
 try:
-    import psutil
+    import psutil  # type: ignore
 except Exception:
     psutil = None
 
@@ -36,6 +67,8 @@ def cuda_mem_mb() -> float:
 
 
 def make_dataset(zarr_root: str, n: int, shape_t: int, shape_x: int) -> None:
+    PhysicalSample, UPDZarrStore, *_ = _require_pinnea_data()
+
     if os.path.exists(zarr_root) and os.path.isdir(zarr_root):
         return
     os.makedirs(os.path.dirname(zarr_root), exist_ok=True)
@@ -59,6 +92,8 @@ def _dtype(dtype: str) -> torch.dtype:
 
 
 def bench_plain_read(zarr_root: str, steps: int, device: str, dtype: str, latency_max: int) -> Dict[str, Any]:
+    PhysicalSample, UPDZarrStore, *_ = _require_pinnea_data()
+
     store = UPDZarrStore(zarr_root, mode="r")
     n = store.count()
     dt = _dtype(dtype)
@@ -78,9 +113,7 @@ def bench_plain_read(zarr_root: str, steps: int, device: str, dtype: str, latenc
 
         if device == "cuda":
             u = u.pin_memory().to("cuda", non_blocking=True)
-            checksum += float(u.mean().item())
-        else:
-            checksum += float(u.mean().item())
+        checksum += float(u.mean().item())
 
         t2 = time.perf_counter()
         if len(lat) < latency_max:
@@ -103,7 +136,18 @@ def bench_plain_read(zarr_root: str, steps: int, device: str, dtype: str, latenc
     }
 
 
-def bench_cached_store_bytes(zarr_root: str, steps: int, device: str, dtype: str, max_mb: int, latency_max: int) -> Dict[str, Any]:
+def bench_cached_store_bytes(
+    zarr_root: str, steps: int, device: str, dtype: str, max_mb: int, latency_max: int
+) -> Dict[str, Any]:
+    (
+        PhysicalSample,
+        UPDZarrStore,
+        PrefetchZarrUPDIterable,
+        PrefetchConfig,
+        CachedUPDZarrStoreBytes,
+        ZarrByteCacheConfig,
+    ) = _require_pinnea_data()
+
     cache_cfg = ZarrByteCacheConfig(
         max_sample_bytes=max_mb * 1024 * 1024,
         max_field_bytes=max_mb * 1024 * 1024,
@@ -122,8 +166,8 @@ def bench_cached_store_bytes(zarr_root: str, steps: int, device: str, dtype: str
     checksum = 0.0
     count = 0
 
-    # two passes to show cache warmth
-    for pass_id in range(2):
+    # Two passes to show cache warmth.
+    for _pass_id in range(2):
         for i in range(min(steps, n)):
             t1 = time.perf_counter()
             s = store.read_sample(i, fields=["u"], coords=[], device="cpu", dtype=dt)
@@ -131,9 +175,7 @@ def bench_cached_store_bytes(zarr_root: str, steps: int, device: str, dtype: str
 
             if device == "cuda":
                 u = u.pin_memory().to("cuda", non_blocking=True)
-                checksum += float(u.mean().item())
-            else:
-                checksum += float(u.mean().item())
+            checksum += float(u.mean().item())
 
             t2 = time.perf_counter()
             if len(lat) < latency_max:
@@ -158,8 +200,19 @@ def bench_cached_store_bytes(zarr_root: str, steps: int, device: str, dtype: str
     }
 
 
-def bench_prefetch_iterable(zarr_root: str, steps: int, device: str, dtype: str, num_workers: int, pin: bool, latency_max: int) -> Dict[str, Any]:
+def bench_prefetch_iterable(
+    zarr_root: str, steps: int, device: str, dtype: str, num_workers: int, pin: bool, latency_max: int
+) -> Dict[str, Any]:
     from torch.utils.data import DataLoader
+
+    (
+        PhysicalSample,
+        UPDZarrStore,
+        PrefetchZarrUPDIterable,
+        PrefetchConfig,
+        CachedUPDZarrStoreBytes,
+        ZarrByteCacheConfig,
+    ) = _require_pinnea_data()
 
     dt = _dtype(dtype)
 

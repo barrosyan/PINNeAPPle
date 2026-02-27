@@ -9,15 +9,44 @@ from typing import Dict, Any, List
 import torch
 from torch.utils.data import DataLoader
 
-from benchmarks._latency import latency_summary
+# Allow running as `python benchmarks/shard_balance_bench.py` or `python -m benchmarks.shard_balance_bench`
+try:
+    from ._latency import latency_summary  # type: ignore
+except Exception:  # pragma: no cover
+    from benchmarks._latency import latency_summary  # type: ignore
 
-from pinneaple_data import PhysicalSample
-from pinneaple_data import UPDZarrShardedWriter, ShardSpec
-from pinneaple_data import ShardAwareZarrUPDIterable, ShardAwareConfig
-from pinneaple_data import ZarrByteCacheConfig
+
+def _require_pinnea_data():
+    """Import pinneaple_data with a helpful error if optional deps are missing."""
+    try:
+        from pinneaple_data import (  # noqa: WPS433 (runtime import)
+            PhysicalSample,
+            UPDZarrShardedWriter,
+            ShardSpec,
+            ShardAwareZarrUPDIterable,
+            ShardAwareConfig,
+            ZarrByteCacheConfig,
+        )
+        return PhysicalSample, UPDZarrShardedWriter, ShardSpec, ShardAwareZarrUPDIterable, ShardAwareConfig, ZarrByteCacheConfig
+    except ModuleNotFoundError as e:
+        missing = getattr(e, "name", None) or str(e)
+        raise SystemExit(
+            "\n".join(
+                [
+                    "[ERROR] Missing dependency while importing pinneaple_data.",
+                    f"Missing module: {missing}",
+                    "",
+                    "Fix:",
+                    "  pip install -e .",
+                    "(or install the missing package directly, e.g. `pip install zarr`)" ,
+                ]
+            )
+        ) from e
 
 
 def make_sharded(root: str, n: int, shards: int, T: int, X: int) -> None:
+    PhysicalSample, UPDZarrShardedWriter, ShardSpec, *_ = _require_pinnea_data()
+
     index_path = os.path.join(root, "index.json")
     if os.path.exists(index_path):
         return
@@ -49,6 +78,15 @@ def make_sharded(root: str, n: int, shards: int, T: int, X: int) -> None:
 
 
 def run_iter(root: str, steps: int, workers: int, device: str, latency_max: int) -> Dict[str, Any]:
+    (
+        PhysicalSample,
+        UPDZarrShardedWriter,
+        ShardSpec,
+        ShardAwareZarrUPDIterable,
+        ShardAwareConfig,
+        ZarrByteCacheConfig,
+    ) = _require_pinnea_data()
+
     cfg = ShardAwareConfig(
         pin_memory=True,
         target_device=("cuda" if device == "cuda" else "cpu"),
