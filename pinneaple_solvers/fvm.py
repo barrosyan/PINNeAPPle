@@ -5,8 +5,15 @@ from typing import Dict, Optional, Callable, Any
 import torch
 
 from .base import SolverBase, SolverOutput
+from .registry import SolverRegistry
 
 
+@SolverRegistry.register(
+    name="fvm",
+    family="pde",
+    description="Finite Volume Method (placeholder baseline).",
+    tags=["fvm", "pde"],
+)
 class FVMSolver(SolverBase):
     """
     FVM Solver (scaffold MVP).

@@ -1,0 +1,112 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: webapp/Dockerfile.api
+    environment:
+      DATABASE_URL: postgresql+psycopg://pinneaple:pinneaple@db:5432/pinneaple
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: pinneaple-artifacts
+      S3_REGION: us-east-1
+      PINNEAPLE_CODE_VERSION: dev
+      JOBS_LOCAL_DIR: /runs/webapp_jobs
+    depends_on: [db, redis, minio]
+    ports: ["8000:8000"]
+    volumes:
+      - webapp_runs:/runs/webapp_jobs
+    deploy:
+      replicas: 2
+
+  worker_cpu:
+    build:
+      context: ..
+      dockerfile: webapp/Dockerfile.worker
+    environment:
+      QUEUE_NAME: cpu
+      DATABASE_URL: postgresql+psycopg://pinneaple:pinneaple@db:5432/pinneaple
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: pinneaple-artifacts
+      S3_REGION: us-east-1
+      PINNEAPLE_CODE_VERSION: dev
+      JOBS_LOCAL_DIR: /runs/webapp_jobs
+    depends_on: [db, redis, minio]
+    volumes:
+      - webapp_runs:/runs/webapp_jobs
+    deploy:
+      replicas: 3
+
+  worker_gpu:
+    build:
+      context: ..
+      dockerfile: webapp/Dockerfile.worker
+    environment:
+      QUEUE_NAME: gpu
+      DATABASE_URL: postgresql+psycopg://pinneaple:pinneaple@db:5432/pinneaple
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: pinneaple-artifacts
+      S3_REGION: us-east-1
+      PINNEAPLE_CODE_VERSION: dev
+      JOBS_LOCAL_DIR: /runs/webapp_jobs
+      REQUIRE_GPU: "1"
+    depends_on: [db, redis, minio]
+    volumes:
+      - webapp_runs:/runs/webapp_jobs
+    deploy:
+      replicas: 1
+    # Enable on GPU machines:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: webapp/Dockerfile.frontend
+    depends_on: [api]
+    ports: ["8080:80"]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pinneaple
+      POSTGRES_PASSWORD: pinneaple
+      POSTGRES_DB: pinneaple
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports: ["5432:5432"]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports: ["9000:9000", "9001:9001"]
+    volumes:
+      - miniodata:/data
+
+volumes:
+  pgdata:
+  miniodata:
+  webapp_runs:

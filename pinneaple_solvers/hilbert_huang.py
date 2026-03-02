@@ -5,6 +5,7 @@ from typing import Dict, Optional, Tuple
 import torch
 
 from .base import SolverBase, SolverOutput
+from .registry import SolverRegistry
 
 
 def _find_extrema(x: torch.Tensor):
@@ -86,6 +87,12 @@ def _hilbert_analytic(x: torch.Tensor):
     return z
 
 
+@SolverRegistry.register(
+    name="hht",
+    family="hilbert_huang",
+    description="Hilbert-Huang Transform (EMD + Hilbert spectrum).",
+    tags=["time_series", "hht", "emd"],
+)
 class HilbertHuangSolver(SolverBase):
     """
     Hilbert–Huang Transform (HHT) MVP for 1D signals.

@@ -5,8 +5,15 @@ from typing import Dict, Optional, Callable, Any
 import torch
 
 from .base import SolverBase, SolverOutput
+from .registry import SolverRegistry
 
 
+@SolverRegistry.register(
+    name="fem",
+    family="pde",
+    description="Finite Element Method (placeholder baseline).",
+    tags=["fem", "pde"],
+)
 class FEMSolver(SolverBase):
     """
     FEM Solver (scaffold MVP).

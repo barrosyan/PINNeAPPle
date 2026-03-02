@@ -1,17 +1,17 @@
-bundle_schema_version: "1.1"
+bundle_schema_version: "1.0"
 
+# Arquivos obrigatórios do bundle
 required_files:
-  - "bundle/geometry.stl"
+  - "bundle/geometry.usd"
   - "bundle/conditions.json"
   - "bundle/manifest.json"
   - "derived/points_boundary.parquet"
   - "derived/points_collocation.parquet"
-  - "derived/sensors_points.parquet"
-  - "derived/line_points.parquet"
 
+# sensors.parquet é opcional (só necessário se quiser L2 supervisionado)
 sensors_parquet:
-  required_columns: ["x", "y", "z", "T", "scenario_id", "split"]
-  optional_columns: ["t", "geometry_id", "k"]
+  required_columns: ["x", "y", "u", "v", "scenario_id", "split"]
+  optional_columns: ["p", "t", "geometry_id", "nu"]
 
 splits:
   allowed: ["train", "val", "test"]
@@ -25,6 +25,8 @@ manifest_json:
   required_keys:
     - "problem_id"
     - "pde"
+    - "nu"
     - "domain"
     - "fields"
     - "weights"
+

@@ -8,7 +8,21 @@ import torch
 import numpy as np
 
 from pinneaple_geom.core.mesh import MeshData
-from pinneaple_data.physical_sample import PhysicalSample
+try:
+    # Optional: only needed when packaging into pinneaple_data structures
+    from pinneaple_data.physical_sample import PhysicalSample  # type: ignore
+except Exception:
+    PhysicalSample = None  # type: ignore
+
+
+def _require_meshio() -> None:
+    """Raise a clear error if meshio isn't installed."""
+    try:
+        import meshio  # noqa: F401
+    except Exception as e:
+        raise RuntimeError(
+            "meshio is required for reading/writing meshes. Install it via: pip install meshio"
+        ) from e
 
 
 def load_meshio(
@@ -90,7 +104,7 @@ def save_meshio(
     )
     meshio.write(str(path), m, file_format=file_format)
 
-def meshio_to_upd(path: str) -> PhysicalSample:
+def meshio_to_upd(path: str):
     """
     Load mesh + point data from any meshio-supported format (VTK, Exodus, etc.)
     """
@@ -119,6 +133,12 @@ def meshio_to_upd(path: str) -> PhysicalSample:
     # point_data → fields
     for k, v in (m.point_data or {}).items():
         fields[k] = torch.tensor(v, dtype=torch.float32)
+
+    if PhysicalSample is None:
+        raise RuntimeError(
+            "pinneaple_data is not available; cannot build PhysicalSample. "
+            "Install/enable pinneaple_data or use load_meshio/save_meshio instead."
+        )
 
     return PhysicalSample(
         fields=fields,

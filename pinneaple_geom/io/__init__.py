@@ -1,16 +1,32 @@
-from .cadquery_bridge import cadquery_solid_to_upd
-from .openfoam import openfoam_case_to_upd
-from .stl import load_stl, stl_to_upd
-from .meshio_bridge import load_meshio, save_meshio, meshio_to_upd
-from .trimesh_bridge import TrimeshBridge
+"""Geometry I/O helpers.
+
+Some adapters (CADQuery, OpenFOAM) are optional and may not be installed in all
+environments (e.g., minimal web backend containers). We therefore guard imports
+to keep the base package usable.
+"""
+
+from __future__ import annotations
+
+# STEP → mesh (gmsh)
+try:
+    from .step import step_to_mesh  # noqa: F401
+except Exception:
+    step_to_mesh = None  # type: ignore
+
+# CADQuery bridge (optional)
+try:
+    from .cadquery_bridge import build_parametric_part  # noqa: F401
+except Exception:
+    build_parametric_part = None  # type: ignore
+
+# OpenFOAM adapter (optional)
+try:
+    from .openfoam import export_openfoam_case  # noqa: F401
+except Exception:
+    export_openfoam_case = None  # type: ignore
 
 __all__ = [
-    "load_stl",
-    "load_meshio",
-    "save_meshio",
-    "TrimeshBridge",
-    "openfoam_case_to_upd",
-    "meshio_to_upd",
-    "stl_to_upd",
-    "cadquery_solid_to_upd",
+    "step_to_mesh",
+    "build_parametric_part",
+    "export_openfoam_case",
 ]

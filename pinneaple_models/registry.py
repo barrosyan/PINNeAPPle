@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Type, List, Any
+from typing import Dict, Type, List, Any, Optional
 
 from .base import BaseModel
+from .instantiate import instantiate
 
 
 @dataclass
@@ -14,6 +15,11 @@ class ModelSpec:
     cls: Type[BaseModel]
     description: str = ""
     tags: List[str] | None = None
+    # --- arena interoperability
+    input_kind: str = "pointwise_coords"  # pointwise_coords | grid | graph | sequence
+    supports_physics_loss: bool = False
+    expects: List[str] | None = None  # keys in batch
+    predicts: List[str] | None = None  # physical fields
 
 
 class ModelRegistry:
@@ -31,6 +37,10 @@ class ModelRegistry:
         family: str,
         description: str = "",
         tags: List[str] | None = None,
+        input_kind: str = "pointwise_coords",
+        supports_physics_loss: bool = False,
+        expects: Optional[List[str]] = None,
+        predicts: Optional[List[str]] = None,
     ):
         """
         Decorator to register a model class.
@@ -49,6 +59,10 @@ class ModelRegistry:
                 cls=model_cls,
                 description=description,
                 tags=tags or [],
+                input_kind=str(input_kind or "pointwise_coords"),
+                supports_physics_loss=bool(supports_physics_loss),
+                expects=list(expects) if expects is not None else None,
+                predicts=list(predicts) if predicts is not None else None,
             )
             return model_cls
         return decorator
@@ -76,4 +90,11 @@ class ModelRegistry:
     @classmethod
     def build(cls, name: str, **kwargs) -> BaseModel:
         spec = cls.spec(name)
-        return spec.cls(**kwargs)
+        model, _report = instantiate(spec.cls, kwargs)
+        return model
+
+    @classmethod
+    def build_with_report(cls, name: str, **kwargs):
+        """Build a model and also return an InstantiateReport (debug/arena logs)."""
+        spec = cls.spec(name)
+        return instantiate(spec.cls, kwargs)

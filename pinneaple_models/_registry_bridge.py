@@ -1,61 +1,33 @@
 from __future__ import annotations
-"""Bridge family-local registries into the global ModelRegistry."""
 
-from typing import Dict, Type, Any, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional, Type
+import torch.nn as nn
 
 from .registry import ModelRegistry
-from .base import BaseModel
 
 
 def register_family_registry(
-    local_registry: Dict[str, Type[Any]],
+    family_registry: Dict[str, Type[nn.Module]],
     *,
     family: str,
-    name_mapper: Optional[Callable[[str, Type[Any]], str]] = None,
-    description_getter: Optional[Callable[[Type[Any]], str]] = None,
-    tags_getter: Optional[Callable[[Type[Any]], list[str]]] = None,
-    skip_aliases: bool = True,
+    description_getter: Optional[Callable[[str, Type[nn.Module]], str]] = None,
+    tags_getter: Optional[Callable[[str, Type[nn.Module]], List[str]]] = None,
+    capabilities_getter: Optional[Callable[[str, Type[nn.Module]], Dict[str, Any]]] = None,
 ) -> None:
-    """
-    Bridge a family-local _REGISTRY into the global ModelRegistry.
+    """Registers a dictionary-like family registry into the global ModelRegistry."""
+    for name, cls in family_registry.items():
+        desc = description_getter(name, cls) if description_getter else ""
+        tags = tags_getter(name, cls) if tags_getter else [family]
 
-    local_registry: dict key->cls (your existing pattern)
-    family: global family name ("transformers", "pinns", ...)
-    name_mapper: maps (key, cls) -> global model name
-    skip_aliases: if True, avoids registering multiple keys pointing to the same class
-    """
-    name_mapper = name_mapper or (lambda key, cls: key)
-    description_getter = description_getter or (lambda cls: (getattr(cls, "__doc__", "") or "").strip())
-    tags_getter = tags_getter or (lambda cls: [])
-
-    seen_cls: set[int] = set()
-
-    for key, cls in local_registry.items():
-        if cls is None:
-            continue
-
-        if skip_aliases:
-            cid = id(cls)
-            if cid in seen_cls:
-                continue
-            seen_cls.add(cid)
-
-        # Ensure it behaves like a BaseModel (soft check; avoids runtime surprises)
-        # We don't enforce issubclass here because some families may use different base classes.
-        # But if you want strict behavior, uncomment this:
-        # if not issubclass(cls, BaseModel): continue
-
-        global_name = name_mapper(key, cls).strip()
-        if not global_name:
-            continue
-
-        try:
-            ModelRegistry.register(
-                name=global_name,
-                family=family,
-                description=description_getter(cls),
-                tags=tags_getter(cls),
-            )(cls)  # decorator returns cls
-        except KeyError:
-            # already registered (e.g. same name from another import path)
-            pass
+        caps = capabilities_getter(name, cls) if capabilities_getter else {}
+        ModelRegistry.register(
+            name=name,
+            family=family,
+            model_cls=cls,
+            description=desc,
+            tags=tags,
+            input_kind=str(caps.get("input_kind", "pointwise_coords")),
+            supports_physics_loss=bool(caps.get("supports_physics_loss", False)),
+            expects=list(caps.get("expects", [])),
+            predicts=list(caps.get("predicts", [])),
+        )

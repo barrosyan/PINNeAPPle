@@ -5,8 +5,15 @@ from typing import Dict, Optional, Tuple, List
 import torch
 
 from .base import SolverBase, SolverOutput
+from .registry import SolverRegistry
 
 
+@SolverRegistry.register(
+    name="fft",
+    family="time_frequency",
+    description="FFT spectral analysis (amplitude/power) for 1D signals.",
+    tags=["time_series", "fft", "time_frequency"],
+)
 class FFTSolver(SolverBase):
     """
     FFT Solver (PyTorch backend).

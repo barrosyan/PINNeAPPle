@@ -88,3 +88,60 @@ class CombinedLoss:
 
         losses["total"] = total
         return losses
+
+
+def build_loss(
+    *,
+    problem_spec: Optional[Any],
+    model_capabilities: Optional[Dict[str, Any]] = None,
+    weights: Optional[Dict[str, float]] = None,
+    supervised_kind: str = "mse",
+    physics_loss_fn: Optional[Any] = None,
+) -> CombinedLoss:
+    """Helper to build a CombinedLoss for Arena.
+
+    Parameters
+    ----------
+    problem_spec:
+        If provided and indicates PDE/BC/IC, physics loss can be enabled.
+        The Arena typically provides a ProblemSpec from pinneaple_environment.
+    model_capabilities:
+        Dict containing at least supports_physics_loss: bool.
+    weights:
+        Dict with keys like {'supervised': 1.0, 'physics': 1.0}.
+    supervised_kind:
+        'mse' or 'mae'.
+    physics_loss_fn:
+        Physics loss callable, usually created via pinneaple_pinn.compiler.compile_problem.
+
+    Returns
+    -------
+    CombinedLoss
+    """
+
+    weights = dict(weights or {})
+    caps = dict(model_capabilities or {})
+
+    w_sup = float(weights.get("supervised", weights.get("data", 1.0)))
+    w_phy = float(weights.get("physics", weights.get("pde", 1.0)))
+
+    sup = SupervisedLoss(kind=supervised_kind)
+
+    supports_phy = bool(caps.get("supports_physics_loss", False))
+
+    # Heuristic: if problem_spec has PDE/BC/IC sections and user provided physics_loss_fn.
+    has_physics = False
+    if problem_spec is not None:
+        for key in ("pde", "PDE", "equations"):
+            if getattr(problem_spec, key, None) is not None:
+                has_physics = True
+                break
+        # some specs store dict-like
+        if isinstance(problem_spec, dict) and any(k in problem_spec for k in ("pde", "equations", "bc", "ic")):
+            has_physics = True
+
+    physics_hook = None
+    if supports_phy and has_physics and physics_loss_fn is not None:
+        physics_hook = PhysicsLossHook(physics_loss_fn=physics_loss_fn)
+
+    return CombinedLoss(supervised=sup, physics=physics_hook, w_supervised=w_sup, w_physics=w_phy)

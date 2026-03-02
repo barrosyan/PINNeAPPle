@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential curl git && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY . /app
+
+RUN pip install --no-cache-dir -U pip && \
+    pip install --no-cache-dir fastapi uvicorn[standard] celery redis psycopg[binary] sqlalchemy boto3 pydantic-settings python-multipart matplotlib meshio gmsh numpy && \
+    pip install --no-cache-dir -e .
+
+ENV QUEUE_NAME=cpu
+CMD ["bash", "-lc", "python -m web_backend.app.worker"]

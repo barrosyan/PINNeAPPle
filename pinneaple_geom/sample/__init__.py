@@ -12,6 +12,11 @@ from .points import (
     sample_surface_points_weighted,
 )
 
+from .particles import (
+    sample_box_particles,
+    sample_circle_particles,
+)
+
 __all__ = [
     "sample_barycentric_uv",
     "sample_points_on_triangles",
@@ -20,4 +25,6 @@ __all__ = [
     "sample_latin_hypercube_box",
     "sample_surface_points",
     "sample_surface_points_weighted",
+    "sample_box_particles",
+    "sample_circle_particles",
 ]
