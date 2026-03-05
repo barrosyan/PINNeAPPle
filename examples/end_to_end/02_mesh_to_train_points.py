@@ -22,7 +22,7 @@ if not os.path.exists(stl_path):
 
 mesh = load_stl(stl_path, repair=True, compute_normals=True)
 mesh = repair_mesh(mesh)
-mesh = simplify_mesh(mesh, target_faces=5000)  # backend auto; use open3d se disponível
+mesh = simplify_mesh(mesh, target_faces=5000)
 
 # ----------------------------
 # 2) Sample surface points

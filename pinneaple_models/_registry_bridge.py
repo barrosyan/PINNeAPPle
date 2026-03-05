@@ -15,19 +15,25 @@ def register_family_registry(
     capabilities_getter: Optional[Callable[[str, Type[nn.Module]], Dict[str, Any]]] = None,
 ) -> None:
     """Registers a dictionary-like family registry into the global ModelRegistry."""
-    for name, cls in family_registry.items():
-        desc = description_getter(name, cls) if description_getter else ""
-        tags = tags_getter(name, cls) if tags_getter else [family]
+    seen_classes: set[Type[nn.Module]] = set()
 
-        caps = capabilities_getter(name, cls) if capabilities_getter else {}
+    for name, model_cls in family_registry.items():
+        # ✅ skip aliases (same class referenced by multiple keys)
+        if model_cls in seen_classes:
+            continue
+        seen_classes.add(model_cls)
+
+        desc = description_getter(name, model_cls) if description_getter else ""
+        tags = tags_getter(name, model_cls) if tags_getter else [family]
+        caps = capabilities_getter(name, model_cls) if capabilities_getter else {}
+
         ModelRegistry.register(
-            name=name,
+            name=name,  # primeiro nome visto vira o "canônico"
             family=family,
-            model_cls=cls,
             description=desc,
             tags=tags,
             input_kind=str(caps.get("input_kind", "pointwise_coords")),
             supports_physics_loss=bool(caps.get("supports_physics_loss", False)),
             expects=list(caps.get("expects", [])),
             predicts=list(caps.get("predicts", [])),
-        )
+        )(model_cls)

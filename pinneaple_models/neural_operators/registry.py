@@ -10,7 +10,7 @@ from .fno import FourierNeuralOperator
 from .gno import GalerkinNeuralOperator
 from .ms_deeponet import MultiScaleDeepONet
 from .pino import PhysicsInformedNeuralOperator
-from .uno import UniversalNeuralOperator
+from .uno import UniversalUNO
 
 
 _REGISTRY: Dict[str, Type[NeuralOperatorBase]] = {
@@ -26,8 +26,8 @@ _REGISTRY: Dict[str, Type[NeuralOperatorBase]] = {
     "pino": PhysicsInformedNeuralOperator,
     "physics_informed_neural_operator": PhysicsInformedNeuralOperator,
 
-    "uno": UniversalNeuralOperator,
-    "universal_operator_network": UniversalNeuralOperator,
+    "uno": UniversalUNO,
+    "universal_operator_network": UniversalUNO,
 }
 
 def register_into_global() -> None:

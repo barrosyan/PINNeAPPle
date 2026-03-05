@@ -1,3 +1,4 @@
+import inspect
 import os
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -9,7 +10,6 @@ from pinneaple_train.checkpoint import load_checkpoint
 
 from pinneaple_models.register_all import register_all
 from pinneaple_models.registry import ModelRegistry
-
 
 # ----------------------------
 # Helpers
@@ -58,24 +58,36 @@ def unwrap_pred(y_hat, *, batch=None):
 
     raise TypeError(f"Cannot unwrap prediction from type: {type(y_hat)}")
 
+def _with_default(d: dict, k: str, v):
+    if k in d:
+        return d
+    out = dict(d)
+    out[k] = v
+    return out
 
 def build_model(name: str, **kwargs):
     """
-    Try common signatures: output_dim, out_dim, target_dim, latent_dim...
+    Tries common aliases, but never overwrites user-provided kwargs.
     """
-    for attempt in (
+    attempts = [
         dict(kwargs),
-        {**kwargs, "output_dim": 2},
-        {**kwargs, "out_dim": 2},
-        {**kwargs, "target_dim": 2},
-        {**kwargs, "latent_dim": 2},
-    ):
+        _with_default(kwargs, "output_dim", 2),
+        _with_default(kwargs, "out_dim", 2),
+        _with_default(kwargs, "target_dim", 2),
+        _with_default(kwargs, "latent_dim", 2),
+        _with_default(kwargs, "input_dim", 8),
+        _with_default(kwargs, "in_dim", 8),
+    ]
+
+    last_err = None
+    for attempt in attempts:
         try:
             return ModelRegistry.build(name, **attempt)
-        except TypeError:
+        except TypeError as e:
+            last_err = e
             continue
-    return ModelRegistry.build(name, **kwargs)
 
+    raise last_err
 
 # ----------------------------
 # 1) Register models
@@ -90,6 +102,9 @@ model_name = names[0] if names else None
 if model_name is None:
     raise RuntimeError("No models registered. Ensure registries import and decorators execute.")
 
+spec = ModelRegistry.spec(model_name)
+print(spec.cls.__name__, inspect.signature(spec.cls.__init__))
+
 model = build_model(model_name, input_dim=8, latent_dim=8)
 
 # ----------------------------
@@ -100,7 +115,6 @@ y = torch.randn(1024, 8)
 
 train = DataLoader(TensorDataset(x[:800], y[:800]), batch_size=64, shuffle=True)
 val = DataLoader(TensorDataset(x[800:], y[800:]), batch_size=128)
-
 
 # ----------------------------
 # 3) Decide training mode (AE vs Regression)
@@ -129,7 +143,6 @@ with torch.no_grad():
             )
 
 print("Selected mode:", mode)
-
 
 # ----------------------------
 # 4) Loss + Trainer

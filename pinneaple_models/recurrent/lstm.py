@@ -1,115 +1,201 @@
 from __future__ import annotations
+"""LSTM and bidirectional LSTM models (baseline+)."""
 
-from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, Iterable
+from typing import Dict, Optional, Literal
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+
+from .base import RecurrentModelBase, RNNOutput
 
 
-@dataclass
-class FitHistory:
-    train: Dict[str, list]
-    val: Dict[str, list]
+PoolMode = Literal["last", "mean", "max"]
 
 
-class LSTMTrainer:
+class LSTMModel(RecurrentModelBase):
     """
-    Trainer simples para modelos do tipo RecurrentModelBase que retornam RNNOutput(y, losses,...).
+    LSTM forecaster (baseline+).
 
-    Espera que cada batch do dataloader seja:
-      - (x_past, y_future)  ou  {"x_past":..., "y_future":...}
+    Inputs:
+      x_past: (B, L, in_dim)
+    Output:
+      y_hat:  (B, H, out_dim)
+
+    Options:
+      - pool: "last" uses last hidden; "mean"/"max" pool over time using LSTM outputs.
+      - time_embedding: if enabled, concatenates an embedding of step t=0..H-1 to allow horizon-varying outputs.
     """
+
     def __init__(
         self,
-        model: nn.Module,
+        in_dim: int,
+        out_dim: int,
+        horizon: int,
+        hidden_dim: int = 128,
+        num_layers: int = 2,
+        dropout: float = 0.0,
         *,
-        lr: float = 1e-3,
-        weight_decay: float = 0.0,
-        grad_clip: Optional[float] = 1.0,
-        device: Optional[str] = None,
+        pool: PoolMode = "last",
+        time_embedding_dim: int = 0,
     ):
-        self.model = model
-        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
+        super().__init__()
+        self.horizon = int(horizon)
+        self.pool: PoolMode = pool
 
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr, weight_decay=weight_decay)
-        self.grad_clip = grad_clip
+        self.lstm = nn.LSTM(
+            input_size=in_dim,
+            hidden_size=hidden_dim,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=float(dropout) if num_layers > 1 else 0.0,
+            bidirectional=False,
+        )
 
-    def _unpack_batch(self, batch) -> Tuple[torch.Tensor, torch.Tensor]:
-        if isinstance(batch, (tuple, list)) and len(batch) == 2:
-            x_past, y_future = batch
-        elif isinstance(batch, dict):
-            x_past, y_future = batch["x_past"], batch["y_future"]
+        self.time_embedding_dim = int(time_embedding_dim)
+        if self.time_embedding_dim > 0:
+            self.t_embed = nn.Embedding(self.horizon, self.time_embedding_dim)
+            head_in = hidden_dim + self.time_embedding_dim
         else:
-            raise ValueError("Batch deve ser (x_past, y_future) ou dict com chaves x_past/y_future.")
-        return x_past.to(self.device), y_future.to(self.device)
+            self.t_embed = None
+            head_in = hidden_dim
 
-    @torch.no_grad()
-    def evaluate(self, loader: DataLoader) -> Dict[str, float]:
-        self.model.eval()
-        totals: Dict[str, float] = {}
-        n_batches = 0
+        self.head = nn.Linear(head_in, out_dim)
 
-        for batch in loader:
-            x_past, y_future = self._unpack_batch(batch)
-            out = self.model(x_past, y_future=y_future, return_loss=True)
-            for k, v in out.losses.items():
-                totals[k] = totals.get(k, 0.0) + float(v.detach().item())
-            n_batches += 1
+    def _pool_context(self, out: torch.Tensor, h: torch.Tensor, c: torch.Tensor) -> torch.Tensor:
+        # out: (B, L, hidden_dim)
+        # h, c: (num_layers, B, hidden_dim)
+        if self.pool == "last":
+            return h[-1]  # (B, hidden_dim)  (hidden state do último layer)
+        if self.pool == "mean":
+            return out.mean(dim=1)  # (B, hidden_dim)
+        if self.pool == "max":
+            return out.max(dim=1).values  # (B, hidden_dim)
+        raise ValueError(f"Unknown pool mode: {self.pool}")
 
-        if n_batches == 0:
-            return {"total": float("nan")}
-        return {k: v / n_batches for k, v in totals.items()}
-
-    def fit(
+    def forward(
         self,
-        train_loader: DataLoader,
+        x_past: torch.Tensor,
         *,
-        val_loader: Optional[DataLoader] = None,
-        epochs: int = 20,
-        log_every: int = 1,
-    ) -> FitHistory:
-        history = FitHistory(train={"total": [], "mse": []}, val={"total": [], "mse": []})
+        y_future: Optional[torch.Tensor] = None,
+        return_loss: bool = False,
+    ) -> RNNOutput:
+        B, L, _ = x_past.shape
+        H = self.horizon
 
-        for epoch in range(1, int(epochs) + 1):
-            self.model.train()
-            train_totals: Dict[str, float] = {}
-            n_batches = 0
+        out, (h, c) = self.lstm(x_past)  # out: (B,L,Hd); h/c: (layers,B,Hd)
+        ctx = self._pool_context(out, h, c)  # (B, hidden_dim)
 
-            for batch in train_loader:
-                x_past, y_future = self._unpack_batch(batch)
+        ctx_rep = ctx[:, None, :].repeat(1, H, 1)  # (B, H, hidden_dim)
 
-                self.optimizer.zero_grad(set_to_none=True)
-                out = self.model(x_past, y_future=y_future, return_loss=True)
+        if self.t_embed is not None:
+            t = torch.arange(H, device=x_past.device)  # (H,)
+            t_emb = self.t_embed(t)[None, :, :].repeat(B, 1, 1)  # (B, H, time_embedding_dim)
+            dec_in = torch.cat([ctx_rep, t_emb], dim=-1)  # (B, H, hidden_dim+time_emb)
+        else:
+            dec_in = ctx_rep
 
-                loss = out.losses["total"]
-                loss.backward()
+        y_hat = self.head(dec_in)  # (B, H, out_dim)
 
-                if self.grad_clip is not None:
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), float(self.grad_clip))
+        losses: Dict[str, torch.Tensor] = {"total": torch.tensor(0.0, device=y_hat.device)}
+        if return_loss and y_future is not None:
+            losses["mse"] = self.mse(y_hat, y_future)
+            losses["total"] = losses["mse"]
 
-                self.optimizer.step()
+        return RNNOutput(y=y_hat, losses=losses, extras={"ctx": ctx, "h": h, "c": c})
 
-                for k, v in out.losses.items():
-                    train_totals[k] = train_totals.get(k, 0.0) + float(v.detach().item())
-                n_batches += 1
 
-            train_metrics = {k: v / max(1, n_batches) for k, v in train_totals.items()}
-            history.train["total"].append(train_metrics.get("total", float("nan")))
-            history.train["mse"].append(train_metrics.get("mse", float("nan")))
+class BiLSTMModel(RecurrentModelBase):
+    """
+    Bidirectional LSTM forecaster (baseline+).
 
-            val_metrics = None
-            if val_loader is not None:
-                val_metrics = self.evaluate(val_loader)
-                history.val["total"].append(val_metrics.get("total", float("nan")))
-                history.val["mse"].append(val_metrics.get("mse", float("nan")))
+    Inputs:
+      x_past: (B, L, in_dim)
+    Output:
+      y_hat:  (B, H, out_dim)
 
-            if (epoch % log_every) == 0:
-                if val_metrics is None:
-                    print(f"Epoch {epoch:03d} | train: {train_metrics}")
-                else:
-                    print(f"Epoch {epoch:03d} | train: {train_metrics} | val: {val_metrics}")
+    Notes:
+      - For pool="last": concatenates last-layer forward+backward hidden (h), not c.
+      - For pool="mean"/"max": pools over time from bidirectional outputs.
+      - Optional time embedding for horizon-varying outputs.
+    """
 
-        return history
+    def __init__(
+        self,
+        in_dim: int,
+        out_dim: int,
+        horizon: int,
+        hidden_dim: int = 128,
+        num_layers: int = 2,
+        dropout: float = 0.0,
+        *,
+        pool: PoolMode = "last",
+        time_embedding_dim: int = 0,
+    ):
+        super().__init__()
+        self.horizon = int(horizon)
+        self.pool: PoolMode = pool
+
+        self.lstm = nn.LSTM(
+            input_size=in_dim,
+            hidden_size=hidden_dim,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=float(dropout) if num_layers > 1 else 0.0,
+            bidirectional=True,
+        )
+
+        self.time_embedding_dim = int(time_embedding_dim)
+        base_ctx_dim = 2 * hidden_dim
+        if self.time_embedding_dim > 0:
+            self.t_embed = nn.Embedding(self.horizon, self.time_embedding_dim)
+            head_in = base_ctx_dim + self.time_embedding_dim
+        else:
+            self.t_embed = None
+            head_in = base_ctx_dim
+
+        self.head = nn.Linear(head_in, out_dim)
+
+    def _pool_context(self, out: torch.Tensor, h: torch.Tensor, c: torch.Tensor) -> torch.Tensor:
+        # out: (B, L, 2*hidden_dim)
+        # h, c: (num_layers*2, B, hidden_dim)  (2 = fwd/bwd)
+        if self.pool == "last":
+            # último layer forward/backward (mesma lógica do BiGRU)
+            h_f = h[-2]  # (B, hidden_dim)
+            h_b = h[-1]  # (B, hidden_dim)
+            return torch.cat([h_f, h_b], dim=-1)  # (B, 2*hidden_dim)
+        if self.pool == "mean":
+            return out.mean(dim=1)  # (B, 2*hidden_dim)
+        if self.pool == "max":
+            return out.max(dim=1).values  # (B, 2*hidden_dim)
+        raise ValueError(f"Unknown pool mode: {self.pool}")
+
+    def forward(
+        self,
+        x_past: torch.Tensor,
+        *,
+        y_future: Optional[torch.Tensor] = None,
+        return_loss: bool = False,
+    ) -> RNNOutput:
+        B, L, _ = x_past.shape
+        H = self.horizon
+
+        out, (h, c) = self.lstm(x_past)  # out: (B,L,2Hd); h/c: (layers*2,B,Hd)
+        ctx = self._pool_context(out, h, c)  # (B, 2*hidden_dim)
+
+        ctx_rep = ctx[:, None, :].repeat(1, H, 1)  # (B, H, 2*hidden_dim)
+
+        if self.t_embed is not None:
+            t = torch.arange(H, device=x_past.device)  # (H,)
+            t_emb = self.t_embed(t)[None, :, :].repeat(B, 1, 1)  # (B, H, time_embedding_dim)
+            dec_in = torch.cat([ctx_rep, t_emb], dim=-1)  # (B, H, 2*hidden_dim+time_emb)
+        else:
+            dec_in = ctx_rep
+
+        y_hat = self.head(dec_in)  # (B, H, out_dim)
+
+        losses: Dict[str, torch.Tensor] = {"total": torch.tensor(0.0, device=y_hat.device)}
+        if return_loss and y_future is not None:
+            losses["mse"] = self.mse(y_hat, y_future)
+            losses["total"] = losses["mse"]
+
+        return RNNOutput(y=y_hat, losses=losses, extras={"ctx": ctx, "h": h, "c": c})

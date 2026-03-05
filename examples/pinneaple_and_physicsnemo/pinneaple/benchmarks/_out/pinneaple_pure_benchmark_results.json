@@ -1,0 +1,50 @@
+[
+  {
+    "name": "VanillaPINN",
+    "steps": 2000,
+    "lr": 0.001,
+    "train_time_s": 44.164775133132935,
+    "final_total": 0.0007827095105312765,
+    "final_pde": 7.54235516069457e-05,
+    "final_conditions": 6.86591665726155e-05,
+    "final_data": 2.0694275008281693e-05,
+    "test_mse_u": 0.0001490869908593595,
+    "test_mse_residual": 0.00012965212226845324
+  },
+  {
+    "name": "VPINN",
+    "steps": 2000,
+    "lr": 0.001,
+    "train_time_s": 43.5403208732605,
+    "final_total": 5.026936196372844e-05,
+    "final_pde": 5.016861905460246e-05,
+    "final_conditions": 2.679963140295172e-09,
+    "final_data": 7.394316270392665e-08,
+    "test_mse_u": 7.62357643679934e-08,
+    "test_mse_residual": 4.973754403181374e-05
+  },
+  {
+    "name": "PINNsFormer",
+    "steps": 2000,
+    "lr": 0.001,
+    "train_time_s": 892.39404129982,
+    "final_total": 0.0002447858569212258,
+    "final_pde": 9.481496817898005e-05,
+    "final_conditions": 8.080330644588685e-07,
+    "final_data": 0.00014189057401381433,
+    "test_mse_u": 0.006393932271748781,
+    "test_mse_residual": 0.014963753521442413
+  },
+  {
+    "name": "PIELM(wrap)",
+    "steps": 2000,
+    "lr": 0.001,
+    "train_time_s": 53.437671422958374,
+    "final_total": 0.028515391051769257,
+    "final_pde": 0.02253268100321293,
+    "final_conditions": 5.774148121417966e-06,
+    "final_data": 0.0059249671176075935,
+    "test_mse_u": 0.004979216493666172,
+    "test_mse_residual": 0.022381357848644257
+  }
+]

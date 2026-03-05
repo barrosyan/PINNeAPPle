@@ -1,0 +1,8 @@
+{
+  "attributes": {
+    "provenance_jsonl": "{\"w\": 0.8, \"d\": 1.0, \"h\": 0.2, \"source\": \"cadquery\"}\n{\"w\": 0.8, \"d\": 1.0, \"h\": 0.3, \"source\": \"cadquery\"}\n{\"w\": 1.0, \"d\": 1.0, \"h\": 0.2, \"source\": \"cadquery\"}\n{\"w\": 1.0, \"d\": 1.0, \"h\": 0.3, \"source\": \"cadquery\"}\n{\"w\": 1.2, \"d\": 1.0, \"h\": 0.2, \"source\": \"cadquery\"}\n{\"w\": 1.2, \"d\": 1.0, \"h\": 0.3, \"source\": \"cadquery\"}",
+    "manifest_json": "{\"name\": \"cad_variants\"}"
+  },
+  "zarr_format": 3,
+  "node_type": "group"
+}

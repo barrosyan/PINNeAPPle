@@ -10,8 +10,7 @@ from pinneaple_data.collate import collate_upd_supervised
 from pinneaple_train.trainer import Trainer, TrainConfig
 from pinneaple_train.losses import CombinedLoss, SupervisedLoss
 from pinneaple_train.metrics import default_metrics
-from pinneaple_train.preprocess import PreprocessPipeline, SolverFeatureStep
-from pinneaple_solvers.fft import FFTSolver
+from pinneaple_train.preprocess import PreprocessPipeline
 
 # ----------------------------
 # 1) Build a tiny UPD dataset and write to Zarr
@@ -39,13 +38,12 @@ if not os.path.isdir(zarr_path):
 # 2) Stream from Zarr with workers
 # ----------------------------
 ds = ZarrUPDIterable(zarr_path, fields=["x", "y"], coords=[])
-
 dl = DataLoader(
     ds,
     batch_size=16,
     num_workers=2,
     persistent_workers=True,
-    collate_fn=collate_upd_supervised,  # <-- FIX
+    collate_fn=collate_upd_supervised,
 )
 
 train_loader = dl
@@ -58,30 +56,56 @@ class M(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.net = torch.nn.Sequential(
-            torch.nn.Linear(8 + 1, 64),  # +1 FFT feature
+            torch.nn.LazyLinear(64),
             torch.nn.Tanh(),
             torch.nn.Linear(64, 2),
         )
 
     def forward(self, x):
-        # x: (B,T,D)
         return self.net(x)
 
 model = M()
 
 # ----------------------------
-# 4) Preprocess: add solver-derived FFT feature to x
+# 4) Preprocess: FFT feature that preserves T=64
 # ----------------------------
-fft_solver = FFTSolver()  # precisa retornar objeto com .result
+class FFTGlobalFeatureStep:
+    def __init__(self, reduce="mean", x_key="x"):
+        assert reduce in ("mean", "max")
+        self.reduce = reduce
+        self.x_key = x_key
+
+    def apply(self, batch: dict) -> dict:
+        x = batch[self.x_key]
+
+        had_no_batch = (x.dim() == 2)
+        if had_no_batch:
+            x = x.unsqueeze(0)  # (1,T,D)
+
+        X = torch.fft.rfft(x, dim=-2)  # (B, T//2+1, D)
+        mag = X.abs()
+
+        if self.reduce == "mean":
+            g = mag.mean(dim=-2)       # (B,D)
+        else:
+            g = mag.amax(dim=-2)       # (B,D)
+
+        T = x.shape[-2]
+        g_bt = g.unsqueeze(-2).expand(-1, T, -1)  # (B,T,D)
+
+        x_aug = torch.cat([x, g_bt], dim=-1)      # (B,T,2D)
+
+        if had_no_batch:
+            x_aug = x_aug.squeeze(0)
+
+        batch[self.x_key] = x_aug
+        return batch
+
+    def __call__(self, batch: dict) -> dict:
+        return self.apply(batch)
+
 preprocess = PreprocessPipeline(
-    steps=[
-        SolverFeatureStep(
-            solver=fft_solver,
-            mode="append",
-            select_var_dim=None,
-            reduce_fft_to="magnitude",
-        )
-    ]
+    steps=[FFTGlobalFeatureStep(reduce="mean")]
 )
 
 # ----------------------------

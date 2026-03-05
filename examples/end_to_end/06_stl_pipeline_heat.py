@@ -10,10 +10,9 @@ from pinneaple_geom.builders.stl_domain_batch_builder import STLDomainBatchBuild
 from pinneaple_models.pinns.vanilla import VanillaPINN
 from pinneaple_pinn.compiler import LossWeights, compile_problem
 
-
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stl", type=str, required=True, help="Path to STL file")
+    ap.add_argument("--stl", type=str, required=True, default="examples/end_to_end/assets/Dragon 2.5_stl.stl", help="Path to STL file")
     ap.add_argument("--device", type=str, default="cpu", help="cpu or cuda")
     ap.add_argument("--n_col", type=int, default=80_000)
     ap.add_argument("--n_bc", type=int, default=30_000)

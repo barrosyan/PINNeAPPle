@@ -1,0 +1,16 @@
+{
+  "epochs": 2,
+  "lr": 0.001,
+  "weight_decay": 0.0,
+  "grad_clip": 0.0,
+  "amp": false,
+  "device": "cpu",
+  "seed": 123,
+  "deterministic": false,
+  "log_dir": "examples/_out/end_to_end_05\\_runs",
+  "run_name": "registry_ae_rom_hybrid",
+  "save_best": true,
+  "ddp": false,
+  "ddp_backend": "nccl",
+  "ddp_find_unused_parameters": false
+}

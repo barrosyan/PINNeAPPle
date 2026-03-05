@@ -1,11 +1,3 @@
-"""
-CADQuery -> mesh -> sample points -> UPD -> Zarr -> train
-
-Requires:
-  - cadquery (OCC stack)
-  - trimesh
-"""
-
 import os
 import numpy as np
 import torch
@@ -17,7 +9,7 @@ from pinneaple_geom.sample.points import sample_surface_points
 from pinneaple_data.physical_sample import PhysicalSample
 from pinneaple_data.zarr_store import UPDZarrStore
 from pinneaple_data.zarr_iterable import ZarrUPDIterable
-from pinneaple_data.collate import collate_upd_supervised  # <-- FIX
+from pinneaple_data.collate import collate_upd_supervised
 
 from pinneaple_train.trainer import Trainer, TrainConfig
 from pinneaple_train.losses import CombinedLoss, SupervisedLoss
@@ -37,7 +29,6 @@ out_dir = "examples/_out/end_to_end_04"
 os.makedirs(out_dir, exist_ok=True)
 zarr_path = os.path.join(out_dir, "cad_variants.zarr")
 
-
 # ----------------------------
 # 1) Generate CAD variants
 # ----------------------------
@@ -49,7 +40,6 @@ variants = []
 for w in [0.8, 1.0, 1.2]:
     for h in [0.2, 0.3]:
         variants.append((w, 1.0, h))
-
 
 # ----------------------------
 # 2) Convert to MeshData + sample points -> build UPD samples
@@ -94,7 +84,6 @@ if not os.path.isdir(zarr_path):
 # 4) Stream back from Zarr + train
 # ----------------------------
 ds = ZarrUPDIterable(zarr_path, fields=["x", "y"], coords=[])
-
 dl = DataLoader(
     ds,
     batch_size=8,

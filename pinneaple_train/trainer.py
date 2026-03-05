@@ -219,7 +219,11 @@ class Trainer:
                     batch = self.preprocess.apply(batch)
                 batch = self._move_batch(batch, device)
 
-                x = batch.get("x") or batch.get("x_col")
+                x = batch.get("x", None)
+                if x is None:
+                    x = batch.get("x_col", None)
+                if x is None:
+                    raise ValueError("Batch must include 'x' or 'x_col'.")
                 if x is None:
                     raise ValueError("Batch must include 'x' or 'x_col'.")
 
@@ -271,9 +275,14 @@ class Trainer:
                         batch = self.preprocess.apply(batch)
                     batch = self._move_batch(batch, device)
 
-                    x = batch.get("x") or batch.get("x_col")
+                    x = batch.get("x", None)
+                    if x is None:
+                        x = batch.get("x_col", None)
                     if x is None:
                         raise ValueError("Batch must include 'x' or 'x_col'.")
+                    if x is None:
+                        raise ValueError("Batch must include 'x' or 'x_col'.")
+
                     y = batch.get("y")
 
                     y_hat_raw = self.model(x)

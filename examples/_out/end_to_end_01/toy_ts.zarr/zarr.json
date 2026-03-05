@@ -1,0 +1,13 @@
+{
+  "attributes": {
+    "format": "pinneaple.upd.zarr",
+    "version": "0.1",
+    "num_samples": 256,
+    "fields": [
+      "x",
+      "y"
+    ]
+  },
+  "zarr_format": 3,
+  "node_type": "group"
+}

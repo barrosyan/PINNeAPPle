@@ -1,0 +1,16 @@
+{
+  "epochs": 3,
+  "lr": 0.001,
+  "weight_decay": 0.0,
+  "grad_clip": 0.0,
+  "amp": false,
+  "device": "cpu",
+  "seed": 7,
+  "deterministic": false,
+  "log_dir": "examples/_out/end_to_end_03\\_runs",
+  "run_name": "pinn_ut_plus_u",
+  "save_best": true,
+  "ddp": false,
+  "ddp_backend": "nccl",
+  "ddp_find_unused_parameters": false
+}
