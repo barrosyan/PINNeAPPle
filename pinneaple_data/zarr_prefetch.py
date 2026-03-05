@@ -12,6 +12,27 @@ from torch.utils.data import IterableDataset, get_worker_info
 from .zarr_cached_store import CachedUPDZarrStore, ZarrCacheConfig
 from .device import pin_sample, to_device_sample
 
+def _compat_fields(sample: Any) -> Any:
+    """
+    Make a PhysicalSample compatible with legacy helpers that expect `.fields` / `.coords`.
+    Does NOT change your canonical API (state/provenance); only adds attributes dynamically.
+    """
+    # Only patch objects that look like your dataclass
+    if hasattr(sample, "state") and not hasattr(sample, "fields"):
+        try:
+            # fields alias
+            sample.fields = sample.state  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    if hasattr(sample, "extras") and not hasattr(sample, "coords"):
+        try:
+            # coords alias if stored anywhere; otherwise empty
+            sample.coords = (getattr(sample, "extras", {}) or {}).get("coords", {})  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    return sample
 
 @dataclass
 class PrefetchConfig:
@@ -109,7 +130,8 @@ class PrefetchZarrUPDIterable(IterableDataset):
         Any
             Sample from the store, optionally moved to target device.
         """
-        store = CachedUPDZarrStore(self.root, cache=self.cache, mode="r")
+        from .zarr_cached_store_bytes import CachedUPDZarrStoreBytes
+        store = CachedUPDZarrStoreBytes(self.root, cache=self.cache, mode="r")
         n = store.count()
         end = n if self.end is None else min(self.end, n)
 
@@ -145,6 +167,7 @@ class PrefetchZarrUPDIterable(IterableDataset):
                         sample_ctor=self.sample_ctor,
                         use_sample_cache=self.prefetch_cfg.use_sample_cache,
                     )
+                    s = _compat_fields(s)
                     if self.prefetch_cfg.pin_memory:
                         s = pin_sample(s)
                     q.put(s)
@@ -168,6 +191,7 @@ class PrefetchZarrUPDIterable(IterableDataset):
                 raise err_holder[0]
 
             if do_cuda:
+                item = _compat_fields(item)
                 item = to_device_sample(
                     item,
                     device="cuda",

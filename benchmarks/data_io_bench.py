@@ -19,15 +19,13 @@ except Exception:  # pragma: no cover
 def _require_pinnea_data():
     """Import pinneaple_data with a helpful error if optional deps are missing."""
     try:
-        from pinneaple_data import (  # noqa: WPS433 (runtime import)
-            PhysicalSample,
-            UPDZarrStore,
-            PrefetchZarrUPDIterable,
-            PrefetchConfig,
-            CachedUPDZarrStoreBytes,
-            ZarrByteCacheConfig,
-        )
+        from pinneaple_data.physical_sample import PhysicalSample
+        from pinneaple_data.zarr_store import UPDZarrStore
+        from pinneaple_data.zarr_prefetch import PrefetchConfig, PrefetchZarrUPDIterable
+        from pinneaple_data.zarr_cached_store_bytes import ZarrByteCacheConfig, CachedUPDZarrStoreBytes
+
         return PhysicalSample, UPDZarrStore, PrefetchZarrUPDIterable, PrefetchConfig, CachedUPDZarrStoreBytes, ZarrByteCacheConfig
+
     except ModuleNotFoundError as e:
         # Most common: running from source without installing deps (e.g., zarr)
         missing = getattr(e, "name", None) or str(e)
@@ -52,19 +50,16 @@ try:
 except Exception:
     psutil = None
 
-
 def sys_mem_mb() -> float:
     if psutil is None:
         return float("nan")
     p = psutil.Process(os.getpid())
     return p.memory_info().rss / (1024 * 1024)
 
-
 def cuda_mem_mb() -> float:
     if not torch.cuda.is_available():
         return 0.0
     return torch.cuda.max_memory_allocated() / (1024 * 1024)
-
 
 def make_dataset(zarr_root: str, n: int, shape_t: int, shape_x: int) -> None:
     PhysicalSample, UPDZarrStore, *_ = _require_pinnea_data()
@@ -78,11 +73,13 @@ def make_dataset(zarr_root: str, n: int, shape_t: int, shape_x: int) -> None:
         u = torch.randn(shape_t, shape_x)
         samples.append(
             PhysicalSample(
-                fields={"u": u},
-                coords={},
-                meta={"ids": {"sample_id": f"s{i:06d}"}},
+                state={"u": u},
+                domain={"type": "unknown"},
+                provenance={"sample_id": f"s{i:06d}"},
+                schema={"bench": "data_io_bench"},
             )
         )
+
     UPDZarrStore.write(zarr_root, samples, manifest={"bench": "data_io_bench", "count": n})
     print(f"[OK] Wrote Zarr dataset at {zarr_root} with {n} samples, u.shape=({shape_t},{shape_x})")
 
@@ -109,7 +106,7 @@ def bench_plain_read(zarr_root: str, steps: int, device: str, dtype: str, latenc
     for i in range(min(steps, n)):
         t1 = time.perf_counter()
         s = store.read_sample(i, fields=["u"], coords=[], device="cpu", dtype=dt)
-        u = s.fields["u"]
+        u = s.state["u"]
 
         if device == "cuda":
             u = u.pin_memory().to("cuda", non_blocking=True)
@@ -171,7 +168,7 @@ def bench_cached_store_bytes(
         for i in range(min(steps, n)):
             t1 = time.perf_counter()
             s = store.read_sample(i, fields=["u"], coords=[], device="cpu", dtype=dt)
-            u = s.fields["u"]
+            u = s.state["u"]
 
             if device == "cuda":
                 u = u.pin_memory().to("cuda", non_blocking=True)
@@ -251,7 +248,7 @@ def bench_prefetch_iterable(
     while count < steps:
         t1 = time.perf_counter()
         s = next(it)
-        u = s.fields["u"]
+        u = s.state["u"]
         checksum += float(u.mean().item())
         t2 = time.perf_counter()
         if len(lat) < latency_max:

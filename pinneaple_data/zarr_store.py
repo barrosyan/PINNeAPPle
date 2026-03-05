@@ -323,31 +323,21 @@ class UPDZarrStore:
             return list(self.g_fields.array_keys())
         return list(self.g_fields.keys())
 
-    def read_sample(
-        self,
-        idx: int,
-        *,
-        fields: Optional[Sequence[str]] = None,
-    ) -> PhysicalSample:
-        """
-        Read one sample from stacked field arrays.
-        """
-        idx = int(idx)
-        names = list(fields) if fields is not None else self.field_names()
-        state: Dict[str, Any] = {}
-        for k in names:
-            if k not in self.g_fields:
-                raise KeyError(f"Missing field '{k}' in store: {self.root}")
-            arr = self.g_fields[k]
-            x = np.asarray(arr[idx])
-            # return torch tensors if torch available
-            if torch is not None:
-                state[k] = torch.from_numpy(x)
-            else:
-                state[k] = x
+    # ----------------------------
+    # Backward-compat (bench/caches)
+    # ----------------------------
+    def count(self) -> int:
+        return self.num_samples()
 
-        provenance: Dict[str, Any] = {"idx": idx}
-        # Try to recover provenance line if available
+    def field_keys(self) -> List[str]:
+        return self.field_names()
+
+    def coord_keys(self) -> List[str]:
+        return []
+
+    def meta(self, idx: int) -> Dict[str, Any]:
+        idx = int(idx)
+        prov: Dict[str, Any] = {"idx": idx}
         try:
             meta = self.grp.get("meta", None)
             if meta is not None:
@@ -355,12 +345,55 @@ class UPDZarrStore:
                 if prov_jsonl:
                     lines = prov_jsonl.splitlines()
                     if 0 <= idx < len(lines):
-                        provenance.update(json.loads(lines[idx]))
+                        prov.update(json.loads(lines[idx]))
         except Exception:
             pass
+        return prov
+
+    def read_sample(
+        self,
+        idx: int,
+        *,
+        fields: Optional[Sequence[str]] = None,
+        coords: Optional[Sequence[str]] = None,
+        device: str | "torch.device" = "cpu",
+        dtype: Optional["torch.dtype"] = None,
+        sample_ctor=None,
+    ):
+        """
+        Compat signature:
+        - coords é ignorado no MVP (não há coords persistidas ainda)
+        - device/dtype aplicados aos tensores se torch disponível
+        - sample_ctor(fields_dict, coords_dict, meta_dict) opcional
+        """
+        idx = int(idx)
+        names = list(fields) if fields is not None else self.field_names()
+
+        out_fields: Dict[str, Any] = {}
+        for k in names:
+            if k not in self.g_fields:
+                raise KeyError(f"Missing field '{k}' in store: {self.root}")
+            arr = self.g_fields[k]
+            x = np.asarray(arr[idx])
+
+            if torch is not None:
+                t = torch.from_numpy(x)
+                if dtype is not None:
+                    t = t.to(dtype=dtype)
+                if str(device) != "cpu":
+                    t = t.to(device)
+                out_fields[k] = t
+            else:
+                out_fields[k] = x
+
+        out_coords: Dict[str, Any] = {}  # MVP
+        meta = self.meta(idx)
+
+        if sample_ctor is not None:
+            return sample_ctor(out_fields, out_coords, meta)
 
         return PhysicalSample(
-            state=state,
+            state=out_fields,
             domain={"type": "grid"},
-            provenance=provenance,
+            provenance=meta,
         )

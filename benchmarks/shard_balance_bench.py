@@ -19,7 +19,12 @@ except Exception:  # pragma: no cover
 def _require_pinnea_data():
     """Import pinneaple_data with a helpful error if optional deps are missing."""
     try:
-        from pinneaple_data import (  # noqa: WPS433 (runtime import)
+        from pinneaple_data.physical_sample import PhysicalSample
+        from pinneaple_data.zarr_shards import UPDZarrShardedWriter, ShardSpec
+        from pinneaple_data.zarr_shard_iterable import ShardAwareZarrUPDIterable, ShardAwareConfig
+        from pinneaple_data.zarr_cached_store_bytes import ZarrByteCacheConfig
+
+        return (
             PhysicalSample,
             UPDZarrShardedWriter,
             ShardSpec,
@@ -27,7 +32,6 @@ def _require_pinnea_data():
             ShardAwareConfig,
             ZarrByteCacheConfig,
         )
-        return PhysicalSample, UPDZarrShardedWriter, ShardSpec, ShardAwareZarrUPDIterable, ShardAwareConfig, ZarrByteCacheConfig
     except ModuleNotFoundError as e:
         missing = getattr(e, "name", None) or str(e)
         raise SystemExit(
@@ -38,7 +42,7 @@ def _require_pinnea_data():
                     "",
                     "Fix:",
                     "  pip install -e .",
-                    "(or install the missing package directly, e.g. `pip install zarr`)" ,
+                    "(or install the missing package directly, e.g. `pip install zarr`)",
                 ]
             )
         ) from e
@@ -54,27 +58,62 @@ def make_sharded(root: str, n: int, shards: int, T: int, X: int) -> None:
     os.makedirs(root, exist_ok=True)
 
     samples = []
-    per = max(1, n // shards)
+    per = max(1, n // max(1, shards))
+
     for i in range(n):
-        shard_id = min(shards - 1, i // per)
+        shard_id = min(max(1, shards) - 1, i // per)
         u = torch.randn(T, X)
+
+        # NEW PhysicalSample layout:
+        # - state: Dict[str, Any] or xr.Dataset
+        # - provenance: lineage/ids/time key, etc.
+        # - domain: indicates interpretation of state (grid/mesh/graph)
         samples.append(
             PhysicalSample(
-                fields={"u": u},
-                coords={},
-                meta={"time_key": f"2020-{shard_id+1:02d}", "ids": {"sample_id": f"s{i:06d}"}},
+                state={"u": u},
+                domain={"type": "grid"},
+                provenance={
+                    "time_key": f"2020-{shard_id+1:02d}",
+                    "sample_id": f"s{i:06d}",
+                },
             )
         )
 
     writer = UPDZarrShardedWriter(
         root,
         shard_spec=ShardSpec(
-            key_fn=lambda s: f"time={s.meta.get('time_key','unknown')}",
+            # NEW: shard key comes from provenance now (instead of meta)
+            key_fn=lambda s: f"time={getattr(s, 'provenance', {}).get('time_key', 'unknown')}",
             max_per_shard=per,
         ),
     )
     writer.write(samples)
     print(f"[OK] Wrote shards at {root} (n={n}, shards≈{shards}, per≈{per})")
+
+
+def _get_u_from_sample(sample: Any) -> torch.Tensor:
+    """
+    Robustly extract 'u' tensor from the yielded sample.
+
+    Your ShardAware pipeline yields a PhysicalSample by default (from CachedUPDZarrStoreBytes),
+    where tensors live in sample.state (dict) when state is not xr.Dataset.
+    """
+    # PhysicalSample path
+    if hasattr(sample, "state"):
+        st = sample.state
+        if isinstance(st, dict) and "u" in st:
+            return st["u"]
+        # If in the future you use xr.Dataset, you can handle it here too:
+        # if isinstance(st, xr.Dataset): return torch.as_tensor(st["u"].data)
+    # Fallback legacy dict-like
+    if isinstance(sample, dict):
+        # common legacy shapes
+        if "fields" in sample and isinstance(sample["fields"], dict) and "u" in sample["fields"]:
+            return sample["fields"]["u"]
+        if "state" in sample and isinstance(sample["state"], dict) and "u" in sample["state"]:
+            return sample["state"]["u"]
+
+    raise KeyError("Could not find tensor 'u' inside sample (expected sample.state['u']).")
 
 
 def run_iter(root: str, steps: int, workers: int, device: str, latency_max: int) -> Dict[str, Any]:
@@ -96,7 +135,7 @@ def run_iter(root: str, steps: int, workers: int, device: str, latency_max: int)
 
     ds = ShardAwareZarrUPDIterable(
         root,
-        fields=["u"],
+        fields=["u"],     # these become sample.state keys
         coords=[],
         cfg=cfg,
         cache=ZarrByteCacheConfig(
@@ -120,8 +159,10 @@ def run_iter(root: str, steps: int, workers: int, device: str, latency_max: int)
     while n < steps:
         t1 = time.perf_counter()
         s = next(it)
-        u = s.fields["u"]
+
+        u = _get_u_from_sample(s)
         checksum += float(u.mean().item())
+
         t2 = time.perf_counter()
         if len(lat) < latency_max:
             lat.append((t2 - t1) * 1000.0)
