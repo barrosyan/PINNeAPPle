@@ -60,6 +60,7 @@ def compile_problem(
 
     spatial_coord_names = [c for c in coords if c != "t"]
     spatial_dim = len(spatial_coord_names)
+    spatial_indices = [list(coords).index(c) for c in spatial_coord_names]
 
     def loss_fn(model: torch.nn.Module, y_hat: Any, batch: Dict[str, Any]) -> Dict[str, torch.Tensor]:
         device = next(model.parameters()).device
@@ -126,7 +127,7 @@ def compile_problem(
                 if q.ndim == 1:
                     q = q[:, None]
             Tt = time_derivative(T, xcol, t_index)  # type: ignore[arg-type]
-            res_list.append(Tt - alpha * laplacian(T, xcol) - q)
+            res_list.append(Tt - alpha * laplacian(T, xcol, spatial_indices) - q)
 
         elif pde_kind == "wave_equation":
             if not has_t:
@@ -144,7 +145,7 @@ def compile_problem(
                     f = f[:, None]
             ut = time_derivative(u, xcol, t_index)  # type: ignore[arg-type]
             utt = time_derivative(ut, xcol, t_index)  # type: ignore[arg-type]
-            res_list.append(utt - (c * c) * laplacian(u, xcol) - f)
+            res_list.append(utt - (c * c) * laplacian(u, xcol, spatial_indices) - f)
 
         elif pde_kind == "advection_diffusion":
             if not has_t:
@@ -163,7 +164,7 @@ def compile_problem(
             vel_t = torch.tensor(vel, device=device, dtype=c.dtype)[None, :]
             sp_idx = [coords.index(n) for n in spatial_coord_names]
             adv = torch.sum(gc[:, sp_idx] * vel_t, dim=1, keepdim=True)
-            res_list.append(c_t + adv - kappa * laplacian(c, xcol))
+            res_list.append(c_t + adv - kappa * laplacian(c, xcol, spatial_indices))
 
         elif pde_kind == "burgers":
             nu = float(p.get("nu", 0.01))
@@ -235,10 +236,10 @@ def compile_problem(
             if spatial_dim == 3:
                 pz = gp[:, sp_idx[2]:sp_idx[2] + 1]
 
-            lap_u = laplacian(u, xcol)
-            lap_v = laplacian(v, xcol)
+            lap_u = laplacian(u, xcol, spatial_indices)
+            lap_v = laplacian(v, xcol, spatial_indices)
             if spatial_dim == 3:
-                lap_w = laplacian(wv, xcol)
+                lap_w = laplacian(wv, xcol, spatial_indices)
 
             res_list.append(ut + conv_u + px - inv_Re * lap_u)
             res_list.append(vt + conv_v + py - inv_Re * lap_v)
