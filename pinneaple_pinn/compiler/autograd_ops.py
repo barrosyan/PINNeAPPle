@@ -45,10 +45,28 @@ def divergence(V: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
     return div
 
 
-def laplacian(y: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
+def laplacian(
+    y: torch.Tensor,
+    x: torch.Tensor,
+    coord_indices: list[int] | None = None,
+) -> torch.Tensor:
+    """Sum of unmixed second derivatives ∂²y/∂x_i².
+
+    Parameters
+    ----------
+    y : (N, 1) tensor – scalar field values.
+    x : (N, D) tensor – input coordinates (must have grad enabled).
+    coord_indices : optional list of column indices to include.
+        When *None* (default) all D columns are summed, giving the
+        full Laplacian.  Pass only the spatial indices to obtain the
+        **spatial** Laplacian (excluding the time coordinate).  For
+        example ``coord_indices=[1]`` for a 2-D input ``(t, x)``
+        computes ∂²y/∂x² only.
+    """
     g = grad(y, x)
+    indices = coord_indices if coord_indices is not None else list(range(x.shape[1]))
     out = torch.zeros((x.shape[0], 1), device=x.device, dtype=x.dtype)
-    for i in range(x.shape[1]):
+    for i in indices:
         gi = g[:, i:i + 1]
         gii = torch.autograd.grad(
             outputs=gi,
