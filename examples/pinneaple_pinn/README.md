@@ -17,6 +17,11 @@ python examples/pinneaple_pinn/01_symbolic_loss_basic.py
 - `03_compiler_burgers_1d.py`
   - Viscous Burgers (1D + time) with initial and boundary conditions
 
+- `06_compiler_wave_1d.py`
+  - 1D Wave equation (standing wave on a string) with Dirichlet BC
+  - Demonstrates the built-in `"wave_equation"` PDE kind (second-order in time)
+  - Includes initial-velocity penalty for the standing-wave solution
+
 ## Symbolic API (SymPy -> torch)
 
 - `04_factory_inverse_parameter_heat_1d.py`
