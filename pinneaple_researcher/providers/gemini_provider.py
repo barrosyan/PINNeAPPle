@@ -19,7 +19,7 @@ JSONLike = Union[str, Dict[str, Any]]
 class GeminiProviderConfig:
     api_base: str = "https://generativelanguage.googleapis.com"
     api_version: str = "v1beta"
-    model: str = "models/gemini-2.0-flash"
+    model: str = "models/gemini-2.5-flash"
 
     api_key: Optional[str] = None
     timeout_s: int = 120
