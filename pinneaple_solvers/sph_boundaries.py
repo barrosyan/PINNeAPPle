@@ -40,3 +40,48 @@ def wall_repulsion_force(pos: torch.Tensor, vel: torch.Tensor, boundary: BoxBoun
         mask = dist_hi < d0
         f[mask, d] -= k * (d0 - dist_hi[mask])
     return f
+
+
+def reflect_box(
+    pos: torch.Tensor,
+    vel: torch.Tensor,
+    lo: torch.Tensor,
+    hi: torch.Tensor,
+    *,
+    restitution: float = 0.0,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Hard boundary reflection for an axis-aligned box.
+
+    Parameters
+    ----------
+    pos : (N, D)
+    vel : (N, D)
+    lo  : (D,)
+    hi  : (D,)
+    restitution : float
+        0.0 = inelastic (stick), 1.0 = perfectly elastic
+
+    Returns
+    -------
+    pos_reflected, vel_reflected
+    """
+    pos = pos.clone()
+    vel = vel.clone()
+
+    N, D = pos.shape
+
+    for d in range(D):
+        # --- lower bound ---
+        mask_lo = pos[:, d] < lo[d]
+        if mask_lo.any():
+            pos[mask_lo, d] = lo[d]
+            vel[mask_lo, d] = -restitution * vel[mask_lo, d]
+
+        # --- upper bound ---
+        mask_hi = pos[:, d] > hi[d]
+        if mask_hi.any():
+            pos[mask_hi, d] = hi[d]
+            vel[mask_hi, d] = -restitution * vel[mask_hi, d]
+
+    return pos, vel
