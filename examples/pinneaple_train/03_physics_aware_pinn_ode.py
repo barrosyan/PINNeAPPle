@@ -82,36 +82,36 @@ class MLP(nn.Module):
 # -----------------------------
 # 3) Physics loss: y'' + y = 0 on collocation points
 # -----------------------------
-def ode_residual_loss(model: nn.Module, batch: Dict[str, Any]) -> Tuple[torch.Tensor, Dict[str, float]]:
-    x_col = batch["x_col"]
-    if x_col.ndim == 3:
-        x_col = x_col.squeeze(-1)
+def ode_residual_loss(model: nn.Module, batch: Dict[str, Any]):
+    with torch.enable_grad():
+        x_col = batch["x_col"]
+        if x_col.ndim == 3:
+            x_col = x_col.squeeze(-1)
 
-    x_col = x_col.clone().detach().requires_grad_(True)
-    y_col = model(x_col)
+        x_col = x_col.clone().detach().requires_grad_(True)
+        y_col = model(x_col)
 
-    # dy/dx
-    (dy_dx,) = torch.autograd.grad(
-        y_col,
-        x_col,
-        grad_outputs=torch.ones_like(y_col),
-        create_graph=True,
-        retain_graph=True,
-    )
-    # d2y/dx2
-    (d2y_dx2,) = torch.autograd.grad(
-        dy_dx,
-        x_col,
-        grad_outputs=torch.ones_like(dy_dx),
-        create_graph=True,
-        retain_graph=True,
-    )
+        (dy_dx,) = torch.autograd.grad(
+            y_col,
+            x_col,
+            grad_outputs=torch.ones_like(y_col),
+            create_graph=True,
+            retain_graph=True,
+        )
 
-    r = d2y_dx2 + y_col
-    loss = torch.mean(r**2)
+        (d2y_dx2,) = torch.autograd.grad(
+            dy_dx,
+            x_col,
+            grad_outputs=torch.ones_like(dy_dx),
+            create_graph=True,
+            retain_graph=True,
+        )
+
+        r = d2y_dx2 + y_col
+        loss = torch.mean(r**2)
+
     comps = {"residual_rmse": float(torch.sqrt(torch.mean(r.detach() ** 2)).item())}
     return loss, comps
-
 
 def main() -> None:
     os.makedirs("examples/_runs", exist_ok=True)
