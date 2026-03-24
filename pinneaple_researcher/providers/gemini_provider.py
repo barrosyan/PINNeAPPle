@@ -59,7 +59,7 @@ class GeminiProvider:
         self.cfg = GeminiProviderConfig(
             api_base=(api_base or os.environ.get("GEMINI_API_BASE", "https://generativelanguage.googleapis.com")).rstrip("/"),
             api_version=(api_version or os.environ.get("GEMINI_API_VERSION", "v1beta")).strip("/"),
-            model=(model or os.environ.get("GEMINI_MODEL", "models/gemini-2.0-flash")).strip(),
+            model=(model or os.environ.get("GEMINI_MODEL", "models/gemini-2.5-flash")).strip(),
             api_key=(api_key or os.environ.get("GEMINI_API_KEY") or "").strip() or None,
             timeout_s=int(timeout_s or os.environ.get("GEMINI_TIMEOUT_S", "120")),
             gateway_base_url=(gateway_base_url or env_gateway),
@@ -113,12 +113,12 @@ class GeminiProvider:
             raise RuntimeError(
                 "GeminiProvider direct mode requires GEMINI_API_KEY.\n"
                 "Set: export GEMINI_API_KEY='...'\n"
-                "Optionally: export GEMINI_MODEL='models/gemini-2.0-flash'"
+                "Optionally: export GEMINI_MODEL='models/gemini-2.5-flash'"
             )
 
         model = (extra or {}).get("model") or self.cfg.model
         if not isinstance(model, str) or not model.startswith("models/"):
-            raise RuntimeError("Invalid model. Expected 'models/<name>' (example: models/gemini-2.0-flash).")
+            raise RuntimeError("Invalid model. Expected 'models/<name>' (example: models/gemini-2.5-flash).")
 
         # Request: contents[].parts[].text :contentReference[oaicite:2]{index=2}
         body: Dict[str, Any] = {
