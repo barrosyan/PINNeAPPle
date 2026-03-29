@@ -4,23 +4,32 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pinneaple"
-version = "0.1.0"
-description = "Pinneaple: Physics AI platform toolkit (UPD/PhysicalSample, Geometry, Models, PINN Factory, Solvers, Training)."
+version = "0.4.0"
+description = "PINNeAPPle: Physics-Informed Neural Networks platform — PDE problem design, PINN/operator/GNN models, UQ, digital twins, meta-learning, active learning, validation, and REST serving."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [
   { name = "Yan Barros" }
 ]
-keywords = ["physics-ai", "pinn", "pde", "scientific-ml", "geometry", "neural-operators", "surrogate-models"]
+keywords = [
+  "physics-ai", "pinn", "pde", "scientific-ml", "geometry",
+  "neural-operators", "surrogate-models", "digital-twin",
+  "uncertainty-quantification", "meta-learning", "active-learning",
+  "solid-mechanics", "cfd", "elasticity",
+]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "License :: OSI Approved :: MIT License",
   "Topic :: Scientific/Engineering",
-  "Topic :: Scientific/Engineering :: Artificial Intelligence"
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Intended Audience :: Science/Research",
+  "Development Status :: 4 - Beta",
 ]
 
 dependencies = [
@@ -38,26 +47,34 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Geometry backends (optional)
+# Geometry backends
 geom = [
   "trimesh>=4.0.0",
   "meshio>=5.3.0",
+  "gmsh>=4.11",
 ]
 
-# Mesh simplification backends (optional; speed/quality)
+# Mesh simplification
 geom_simplify = [
   "fast-simplification>=0.1.0",
   "open3d>=0.18.0",
 ]
 
-# CAD support (optional)
+# CAD support
 cad = [
   "cadquery>=2.4.0",
 ]
 
-# Solvers
+# Solver backends (FDM / FEM / LBM)
 solvers = [
   "numba>=0.59",
+]
+
+# FEniCS / DOLFINx (axisymmetric FEM, drill pipe, etc.)
+fenics = [
+  "fenics-dolfinx>=0.7.0",
+  "mpi4py>=3.1",
+  "petsc4py>=3.20",
 ]
 
 # PINN factory (symbolics)
@@ -65,35 +82,69 @@ pinn = [
   "sympy>=1.12",
 ]
 
-# Synthetic data generation helpers (if you use sympy + geometry)
+# Uncertainty Quantification
+uq = [
+  "scipy>=1.10",
+]
+
+# REST API server
+serve = [
+  "fastapi>=0.111",
+  "uvicorn[standard]>=0.29",
+]
+
+# Model export
+export = [
+  "onnx>=1.16",
+  "onnxruntime>=1.18",
+]
+
+# Digital twin (MQTT / Kafka streams)
+digital_twin = [
+  "paho-mqtt>=2.0",
+]
+
+# Time-series / classical models
+timeseries = [
+  "statsmodels>=0.14",
+  "pmdarima>=2.0",
+]
+
+# Synthetic data and symbolics
 synth = [
   "sympy>=1.12",
   "trimesh>=4.0.0",
   "meshio>=5.3.0",
 ]
 
-# NASA / Earthdata examples (optional)
+# NASA / Earthdata examples
 earthdata = [
   "requests>=2.31",
   "earthaccess>=0.10.0",
 ]
 
+# Research / paper fetching
 research = [
   "requests>=2.31",
   "pdfminer.six>=20231228",
 ]
 
-# Everything (convenience)
+# Everything (convenience install)
 all = [
   "trimesh>=4.0.0",
   "meshio>=5.3.0",
+  "gmsh>=4.11",
   "fast-simplification>=0.1.0",
-  "open3d>=0.18.0",
   "cadquery>=2.4.0",
   "numba>=0.59",
   "sympy>=1.12",
+  "fastapi>=0.111",
+  "uvicorn[standard]>=0.29",
+  "onnx>=1.16",
+  "onnxruntime>=1.18",
+  "paho-mqtt>=2.0",
+  "statsmodels>=0.14",
   "requests>=2.31",
-  "earthaccess>=0.10.0",
 ]
 
 # Dev tools
@@ -104,12 +155,15 @@ dev = [
   "mypy>=1.8",
   "build>=1.2",
   "twine>=5.0",
+  "ipykernel>=6.0",
+  "jupyter>=1.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/barrosyan/PINNeAPPle"
 Repository = "https://github.com/barrosyan/PINNeAPPle"
 Issues = "https://github.com/barrosyan/PINNeAPPle/issues"
+Changelog = "https://github.com/barrosyan/PINNeAPPle/blob/main/CHANGELOG.md"
 
 [project.scripts]
 pdb = "pinneaple_pdb.cli:main"
@@ -119,16 +173,26 @@ pinneaple = "pinneaple_pdb.cli:main"
 packages = [
   "pinneaple_arena",
   "pinneaple_data",
+  "pinneaple_digital_twin",
+  "pinneaple_environment",
+  "pinneaple_export",
   "pinneaple_geom",
+  "pinneaple_inference",
+  "pinneaple_integrations",
+  "pinneaple_meta",
   "pinneaple_models",
   "pinneaple_pdb",
   "pinneaple_pinn",
   "pinneaple_problemdesign",
+  "pinneaple_registry",
   "pinneaple_researcher",
+  "pinneaple_serve",
   "pinneaple_solvers",
   "pinneaple_timeseries",
   "pinneaple_train",
-  "pinneaple_environment",
+  "pinneaple_transfer",
+  "pinneaple_uq",
+  "pinneaple_validate",
 ]
 
 [tool.ruff]
