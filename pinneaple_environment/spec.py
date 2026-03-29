@@ -45,3 +45,5 @@ class ProblemSpec:
     scales: ScaleSpec = field(default_factory=ScaleSpec)
     field_ranges: Dict[str, Tuple[float, float]] = field(default_factory=dict)
     references: Tuple[str, ...] = field(default_factory=tuple)
+    domain_bounds: Dict[str, Tuple[float, float]] = field(default_factory=dict)
+    solver_spec: Dict[str, Any] = field(default_factory=dict)

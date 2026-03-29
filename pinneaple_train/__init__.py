@@ -7,6 +7,32 @@ from .callbacks import EarlyStopping, ModelCheckpoint
 from .trainer import Trainer, TrainConfig
 from .datamodule import DataModule, ItemAdapter, FnAdapter, AdaptedSequenceDataset
 from .audit import RunLogger, set_seed, set_deterministic
+from .metrics_cfg import build_metrics_from_cfg
+from .weight_scheduler import (
+    WeightScheduler,
+    WeightSchedulerConfig,
+    SelfAdaptiveWeights,
+    GradNormBalancer,
+    LossRatioBalancer,
+    NTKWeightBalancer,
+)
+from .parallel import (
+    best_device,
+    count_gpus,
+    gpu_info,
+    maybe_compile,
+    AMPContext,
+    wrap_data_parallel,
+    unwrap_model,
+    CUDAPrefetcher,
+    GradAccumConfig,
+    GradAccumTrainer,
+    SweepConfig,
+    run_parallel_sweep,
+    batched_inference,
+    enable_gradient_checkpointing,
+    ThroughputMonitor,
+)
 
 __all__ = [
     "SplitSpec",
@@ -33,4 +59,28 @@ __all__ = [
     "RunLogger",
     "set_seed",
     "set_deterministic",
+    "build_metrics_from_cfg",
+    # Weight scheduling
+    "WeightScheduler",
+    "WeightSchedulerConfig",
+    "SelfAdaptiveWeights",
+    "GradNormBalancer",
+    "LossRatioBalancer",
+    "NTKWeightBalancer",
+    # Parallel / GPU
+    "best_device",
+    "count_gpus",
+    "gpu_info",
+    "maybe_compile",
+    "AMPContext",
+    "wrap_data_parallel",
+    "unwrap_model",
+    "CUDAPrefetcher",
+    "GradAccumConfig",
+    "GradAccumTrainer",
+    "SweepConfig",
+    "run_parallel_sweep",
+    "batched_inference",
+    "enable_gradient_checkpointing",
+    "ThroughputMonitor",
 ]

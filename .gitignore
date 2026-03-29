@@ -10,3 +10,9 @@ __pycache__/
 
 # Others
 bench_out
+
+.claude
+bin
+numpy
+numpy-2.4.3.dist-info
+numpy.libs

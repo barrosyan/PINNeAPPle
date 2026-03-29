@@ -1,0 +1,24 @@
+{
+  "inlet": {
+    "type": "dirichlet",
+    "u": 1.0,
+    "v": 0.0
+  },
+  "outlet": {
+    "type": "neumann",
+    "p": 0.0
+  },
+  "walls": {
+    "type": "no_slip",
+    "u": 0.0,
+    "v": 0.0
+  },
+  "obstacle": {
+    "type": "no_slip",
+    "u": 0.0,
+    "v": 0.0
+  },
+  "_meta": {
+    "generated_unix": 1772743194.4473178
+  }
+}

@@ -3,5 +3,5 @@ task_id: flow_obstacle_2d
 #   bundle/manifest.json
 #   bundle/conditions.json
 #   derived/points_*.parquet
-bundle_root: data/bundles/flow_obstacle_2d/v0
+bundle_root: data/artifacts/examples/quickstart_native
 require_sensors: false

@@ -1,0 +1,21 @@
+{
+  "problem_id": "flow_obstacle_2d",
+  "pde": "incompressible_navier_stokes_2d",
+  "nu": 0.001,
+  "domain": {
+    "type": "rectangle",
+    "xlim": [0.0, 1.0],
+    "ylim": [0.0, 1.0],
+    "obstacle": {
+      "type": "circle",
+      "center": [0.2, 0.5],
+      "radius": 0.05
+    }
+  },
+  "fields": ["u", "v", "p"],
+  "weights": {
+    "pde": 1.0,
+    "bc": 1.0,
+    "div": 1.0
+  }
+}

@@ -1,0 +1,90 @@
+# Arena experiment: 1D Burgers equation PINN comparison
+# Run with:
+#   python examples/pinneaple_arena/02_arena_from_yaml.py
+#   or:
+#   python -m pinneaple_arena.runner.run_arena_yaml --config examples/pinneaple_arena/configs/experiment_burgers_1d.yaml
+
+experiment:
+  name: burgers_1d_pinn_comparison
+  description: "Compare MLP sizes on viscous Burgers 1D (u_t + u*u_x = nu*u_xx)"
+
+problem:
+  id: burgers_1d         # registered preset in pinneaple_environment
+  params:
+    nu: 0.01             # viscosity — overrides preset default
+  data_source: solver    # 'solver' | 'bundle' | 'real'
+  solver_cfg: {}         # optional overrides for the FDM reference solver
+
+# Shared arena sampling settings
+arena:
+  n_collocation: 4096
+  n_boundary: 1024
+  n_ic: 1024
+  n_data: 512            # reference solution data points (requires solver run)
+  seed: 42
+
+models:
+  - id: mlp_small
+    model:
+      hidden: [32, 32, 32]
+      activation: tanh
+    train:
+      epochs: 500
+      lr: 0.001
+      device: cpu
+      seed: 42
+    physics_weights:
+      pde: 1.0
+      bc: 10.0
+      ic: 10.0
+
+  - id: mlp_medium
+    model:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    train:
+      epochs: 500
+      lr: 0.001
+      device: cpu
+      seed: 42
+    physics_weights:
+      pde: 1.0
+      bc: 10.0
+      ic: 10.0
+
+  - id: mlp_large
+    model:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    train:
+      epochs: 500
+      lr: 0.001
+      device: cpu
+      seed: 42
+    physics_weights:
+      pde: 1.0
+      bc: 10.0
+      ic: 10.0
+
+# Metrics to compute on reference data points
+metrics:
+  - mse
+  - rmse
+  - rel_l2
+  - r2
+  - max_error
+
+# Inference grid resolution for visualizations
+inference:
+  resolution: [100, 100]
+
+# Visualization specs
+visualizations:
+  - type: solution_field
+    fields: [u]
+  - type: loss_curve
+  - type: model_comparison
+    fields: [u]
+
+# Where to save results
+artifacts_dir: data/artifacts/experiments

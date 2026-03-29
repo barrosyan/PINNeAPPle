@@ -1,0 +1,51 @@
+# Arena experiment: 2D incompressible Navier-Stokes PINN
+# This uses the flow_obstacle_2d bundle format.
+
+experiment:
+  name: ns_2d_pinn
+  description: "2D incompressible Navier-Stokes PINN on channel flow"
+
+problem:
+  id: ns_incompressible_2d   # preset from pinneaple_environment
+  params:
+    Re: 100.0
+    Umax: 1.0
+  data_source: solver
+  solver_cfg: {}
+
+arena:
+  n_collocation: 8192
+  n_boundary: 2048
+  n_ic: 0
+  n_data: 0
+  seed: 0
+
+models:
+  - id: ns_pinn_baseline
+    model:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+      out_dim: 3     # u, v, p
+    train:
+      epochs: 300
+      lr: 0.001
+      device: cpu
+      seed: 0
+    physics_weights:
+      pde: 1.0
+      bc: 20.0
+
+metrics:
+  - mse
+  - rmse
+  - rel_l2
+
+inference:
+  resolution: [64, 64]
+
+visualizations:
+  - type: solution_field
+    fields: [u, v, p]
+  - type: loss_curve
+
+artifacts_dir: data/artifacts/experiments

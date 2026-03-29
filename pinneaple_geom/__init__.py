@@ -43,6 +43,35 @@ __all__ = [
     "load_geometry_asset",
     "STLDomainBatchBuilder",
     "STLDomainBatchConfig",
+    # SDF shapes
+    "SDF",
+    "sdf2d_circle", "sdf2d_rectangle", "sdf2d_ellipse", "sdf2d_annulus",
+    "sdf2d_capsule", "sdf2d_triangle", "sdf2d_convex_polygon",
+    "sdf3d_sphere", "sdf3d_box", "sdf3d_cylinder", "sdf3d_torus", "sdf3d_capsule",
+    "sdf_union", "sdf_intersection", "sdf_difference",
+    "sdf_smooth_union", "sdf_smooth_intersection", "sdf_smooth_difference",
+    "sdf_translate", "sdf_scale", "sdf_rotate_2d", "sdf_onion", "sdf_repeat_2d",
+    "circle", "rectangle", "ellipse", "annulus", "capsule2d",
+    "sphere3d", "box3d", "cylinder3d", "torus3d",
+    # Physics domains
+    "PhysicsDomain2D",
+    "BoundaryRegion",
+    "ChannelDomain2D",
+    "ChannelWithObstacleDomain2D",
+    "LidDrivenCavityDomain2D",
+    "LShapeDomain2D",
+    "AnnularDomain2D",
+    "MultiObstacleDomain2D",
+    "TJunctionDomain2D",
+    "SDFDomain2D",
+    "get_domain",
+    "list_domains",
+    # 2D mesher
+    "Mesh2D",
+    "mesh_rectangle_structured",
+    "mesh_sdf_2d",
+    "mesh_polygon_2d",
+    "mesh_quality_report",
 ]
 
 
@@ -55,3 +84,41 @@ from .ops.pointcloud import PointCloud, mesh_to_pointcloud, sdf2d_to_pointcloud
 
 # Optimization
 from .optimize.loop import ParamSpace, GeometryOptimizer
+
+# New: rich SDF library
+from .gen.sdf_shapes import (
+    SDF,
+    sdf2d_circle, sdf2d_rectangle, sdf2d_ellipse, sdf2d_annulus,
+    sdf2d_capsule, sdf2d_triangle, sdf2d_convex_polygon,
+    sdf3d_sphere, sdf3d_box, sdf3d_cylinder, sdf3d_torus, sdf3d_capsule,
+    sdf_union, sdf_intersection, sdf_difference,
+    sdf_smooth_union, sdf_smooth_intersection, sdf_smooth_difference,
+    sdf_translate, sdf_scale, sdf_rotate_2d, sdf_onion, sdf_repeat_2d,
+    circle, rectangle, ellipse, annulus, capsule2d,
+    sphere3d, box3d, cylinder3d, torus3d,
+)
+
+# New: physics domains
+from .gen.domains import (
+    PhysicsDomain2D,
+    BoundaryRegion,
+    ChannelDomain2D,
+    ChannelWithObstacleDomain2D,
+    LidDrivenCavityDomain2D,
+    LShapeDomain2D,
+    AnnularDomain2D,
+    MultiObstacleDomain2D,
+    TJunctionDomain2D,
+    SDFDomain2D,
+    get_domain,
+    list_domains,
+)
+
+# New: 2D mesher
+from .mesh import (
+    Mesh2D,
+    mesh_rectangle_structured,
+    mesh_sdf_2d,
+    mesh_polygon_2d,
+    mesh_quality_report,
+)

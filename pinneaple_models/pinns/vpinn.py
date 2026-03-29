@@ -1,110 +1,12 @@
 from __future__ import annotations
 """Variational PINN with weak form and finite element discretization."""
 
-from dataclasses import dataclass
 from typing import Any, Dict, Optional, Callable, List, Tuple, Union
 
 import torch
 import torch.nn as nn
 
-
-@dataclass
-class PINNOutput:
-    y: torch.Tensor
-    losses: Dict[str, torch.Tensor]
-    extras: Dict[str, Any]
-
-
-class PINNBase(nn.Module):
-    """
-    Base class for PINN-family models in the catalog.
-
-    Contract:
-      - forward(...) -> PINNOutput
-      - physics_loss(...) optional hook:
-          can be driven by pinneaple_pinn.factory loss_fn or other physics term.
-    """
-    def __init__(self):
-        super().__init__()
-
-    def predict(self, *inputs: torch.Tensor, **kwargs) -> torch.Tensor:
-        out = self.forward(*inputs, **kwargs)
-        return out.y
-
-    def _ref_tensor(self, **kwargs) -> Optional[torch.Tensor]:
-        for v in kwargs.values():
-            if torch.is_tensor(v):
-                return v
-        for _, b in self.named_buffers(recurse=True):
-            if torch.is_tensor(b):
-                return b
-        for p in self.parameters(recurse=True):
-            return p
-        return None
-
-    def _zero_scalar(self, ref: Optional[torch.Tensor]) -> torch.Tensor:
-        if ref is None:
-            return torch.zeros((), device="cpu")
-        return torch.zeros((), device=ref.device, dtype=ref.dtype)
-
-    def _to_scalar_tensor(self, v: Any, ref: torch.Tensor) -> torch.Tensor:
-        """
-        Converte v para escalar tensor no device/dtype de ref.
-        Se v for tensor não-escalar, reduz por sum().
-        """
-        if torch.is_tensor(v):
-            t = v.to(device=ref.device, dtype=ref.dtype)
-        else:
-            t = torch.tensor(float(v), device=ref.device, dtype=ref.dtype)
-        if t.ndim != 0:
-            t = t.sum()
-        return t
-
-    def physics_loss(
-        self,
-        *,
-        physics_fn: Optional[Callable[..., Any]] = None,
-        physics_data: Optional[Dict[str, Any]] = None,
-        **kwargs,
-    ) -> Dict[str, torch.Tensor]:
-        """
-        Default: no physics.
-        If you provide physics_fn, we call it and expect:
-          - (total_loss, components_dict) OR
-          - dict[str, tensor/number]
-
-        """
-        ref = self._ref_tensor(**kwargs)
-        z = self._zero_scalar(ref)
-
-        if physics_fn is None or physics_data is None:
-            return {"physics": z}
-
-        res = physics_fn(self, physics_data, **kwargs)
-
-        # (total, comps)
-        if isinstance(res, tuple) and len(res) == 2:
-            total, comps = res
-            total_t = self._to_scalar_tensor(total, z)
-            out: Dict[str, torch.Tensor] = {"physics": total_t}
-            if isinstance(comps, dict):
-                for k, v in comps.items():
-                    out[f"physics/{k}"] = self._to_scalar_tensor(v, total_t)
-            return out
-
-        # dict[str, tensor/number]
-        if isinstance(res, dict):
-            out = {k: self._to_scalar_tensor(v, z) for k, v in res.items()}
-            if "physics" not in out:
-                total = None
-                for k in ("total", "loss", "pde", "weak"):
-                    if k in out:
-                        total = out[k]
-                        break
-                out["physics"] = total if total is not None else z
-            return out
-
-        return {"physics": z}
+from .base import PINNBase, PINNOutput  # single source of truth
 
 
 def _act(name: str) -> nn.Module:

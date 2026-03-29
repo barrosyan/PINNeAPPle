@@ -1,0 +1,729 @@
+# ============================================================
+# pinneaple Use Case Pipeline — Fully-Annotated YAML Template
+# ============================================================
+#
+# HOW TO USE THIS FILE
+# --------------------
+# 1. Copy this file to your use case directory:
+#      examples/use_cases/YOUR_CASE/configs/YOUR_CASE.yaml
+# 2. Replace every UPPER_CASE placeholder with a real value.
+# 3. Delete or comment out sections/options you do not need.
+# 4. Run with:
+#      python -m pinneaple_arena.runner.run_pipeline --config path/to/config.yaml
+#    or:
+#      python examples/pinneaple_arena/09_full_pipeline_yaml.py --config path/to/config.yaml
+#
+# All keys are optional unless marked (REQUIRED).
+# ============================================================
+
+
+# ------------------------------------------------------------
+# TOP-LEVEL PIPELINE SETTINGS
+# ------------------------------------------------------------
+pipeline:
+  name: YOUR_PIPELINE_NAME          # (REQUIRED) unique run identifier, used in artifact paths
+  out_dir: data/artifacts/YOUR_PIPELINE_NAME  # (REQUIRED) root output directory
+  log_level: INFO                   # DEBUG | INFO | WARNING | ERROR
+
+  # Resume a previous run from the last completed stage (useful for long sweeps)
+  resume: false                     # true | false
+
+  # Seed for the full pipeline (individual stages can override)
+  seed: 42
+
+
+# ------------------------------------------------------------
+# PROBLEM DEFINITION
+# ------------------------------------------------------------
+problem:
+  # (REQUIRED) Preset ID registered in pinneaple_environment.
+  # Run `from pinneaple_environment import list_presets; print(list_presets())`
+  # to see all available presets.
+  #
+  # Common presets:
+  #   burgers_1d           — viscous Burgers equation (1D, time-dependent)
+  #   heat_1d              — 1D heat equation (parabolic)
+  #   heat_2d              — 2D steady-state heat (Poisson)
+  #   wave_1d              — 1D wave equation (hyperbolic)
+  #   poisson_2d           — 2D Poisson equation
+  #   ns_incompressible_2d — 2D incompressible Navier-Stokes
+  #   advection_diffusion_2d — 2D advection-diffusion
+  #   drill_pipe_torsion   — 3D structural: drill pipe wear (FEniCS)
+  #   cpu_heatsink_thermal — 2D thermal: CPU cooling
+  #   rocket_nozzle_cfd    — 2D CFD: nozzle flow (OpenFOAM)
+  #   aircraft_wing_structural — 3D structural: wing (FEniCS)
+  id: PRESET_ID
+
+  # Parameter overrides — these merge with (and override) the preset defaults.
+  # Keys depend on the preset; inspect spec.pde.params after loading.
+  params:
+    PARAM_1: VALUE_1              # e.g.  nu: 0.01   (viscosity for Burgers/NS)
+    PARAM_2: VALUE_2              # e.g.  Re: 100.0  (Reynolds number for NS)
+    # PARAM_3: VALUE_3            # e.g.  E: 210.0e9 (Young's modulus for structural)
+    # PARAM_4: VALUE_4            # e.g.  nu_s: 0.3  (Poisson's ratio)
+
+  # Where reference/training data comes from.
+  # 'solver' — run the configured solver backend (see [solver] section below)
+  # 'bundle' — load pre-computed data from a bundle directory (see [bundle] section)
+  # 'real'   — load from external file (CSV, Parquet, HDF5); configure in [data_source]
+  data_source: solver             # solver | bundle | real
+
+
+# ------------------------------------------------------------
+# GEOMETRY
+# ------------------------------------------------------------
+geometry:
+  # Geometry type — determines how the domain is discretized for reference solver
+  # and for collocation point sampling.
+  #
+  # interval    — 1D interval [x0, xf]
+  # rectangle   — 2D axis-aligned rectangle
+  # box         — 3D axis-aligned box
+  # mesh_file   — external mesh (gmsh .msh, dolfinx .xdmf, OpenFOAM)
+  type: rectangle                 # interval | rectangle | box | mesh_file
+
+  params:
+    # 1D interval
+    xlim: [X_MIN, X_MAX]         # e.g. [-1.0, 1.0]
+
+    # 2D rectangle (add these for type: rectangle)
+    ylim: [Y_MIN, Y_MAX]         # e.g. [0.0, 1.0]
+
+    # 3D box (add these for type: box)
+    # zlim: [Z_MIN, Z_MAX]
+
+    # Mesh resolution (for structured grid reference data)
+    n_points: N_GRID_PTS         # e.g. 256  (1D) or use nx/ny below
+
+    # nx: NX                     # e.g. 128  (x-direction grid points)
+    # ny: NY                     # e.g. 128  (y-direction grid points)
+    # nz: NZ                     # e.g. 64   (z-direction grid points, 3D only)
+
+  # External mesh file (for type: mesh_file)
+  # mesh_file: path/to/geometry.msh    # gmsh .msh file
+  # mesh_format: gmsh                  # gmsh | xdmf | openfoam
+
+
+# ------------------------------------------------------------
+# PHYSICAL SOLVER (REFERENCE DATA GENERATION)
+# ------------------------------------------------------------
+solver:
+  # Which solver backend to use.
+  #
+  # builtin    — pinneaple's own finite-difference solvers (FTCS, BTCS, Crank-Nicolson)
+  #              Best for: 1D/2D parabolic/hyperbolic PDEs, quick prototyping
+  # openfoam   — OpenFOAM CFD solver (3D CFD, turbulence, multiphase)
+  #              Best for: Navier-Stokes, compressible flow, heat+fluid coupling
+  # fenics     — FEniCS/dolfinx FEM solver (structural, heat, coupled physics)
+  #              Best for: elasticity, structural mechanics, complex BCs, 3D
+  backend: builtin                # builtin | openfoam | fenics
+
+  # --- Built-in FDM solver params (backend: builtin) ---
+  params:
+    method: ftcs                  # ftcs (explicit) | btcs (implicit) | crank_nicolson
+    nx: NX                        # spatial grid points, e.g. 256
+    nt: NT                        # time steps, e.g. 500
+    dt: DT                        # time step size, e.g. 0.002
+    # CFL condition: dt <= dx^2 / (2*nu) for FTCS stability
+
+  # --- OpenFOAM params (backend: openfoam) ---
+  # params:
+  #   solver: OPENFOAM_SOLVER     # simpleFoam | pisoFoam | rhoSimpleFoam | buoyantSimpleFoam
+  #   n_cores: N_CORES            # number of parallel MPI processes, e.g. 4
+  #   n_iter: N_ITER              # number of solver iterations, e.g. 1000
+  #   openfoam_bin: null          # path to OpenFOAM binary dir (null = auto-detect from $PATH)
+  #   mesh_cfg:
+  #     type: blockMesh           # blockMesh | snappyHexMesh
+  #     nx: NX                    # mesh cells in x
+  #     ny: NY                    # mesh cells in y
+  #     nz: 1                     # mesh cells in z (1 = 2D extruded)
+  #   field_names:                # which OpenFOAM fields to extract
+  #     - U
+  #     - p
+  #     # - T                     # add for heat transfer
+  #     # - k                     # add for turbulence (k-epsilon/omega)
+
+  # --- FEniCS/dolfinx params (backend: fenics) ---
+  # params:
+  #   mesh_nx: MESH_NX            # mesh cells in x, e.g. 40
+  #   mesh_ny: MESH_NY            # mesh cells in y, e.g. 40  (omit for 1D)
+  #   mesh_nz: MESH_NZ            # mesh cells in z, e.g. 20  (3D only)
+  #   element_degree: ELEM_DEG    # polynomial degree, e.g. 2 (quadratic Lagrange)
+  #   solver_backend: dolfinx     # dolfinx (preferred) | legacy
+  #   petsc_options:              # optional PETSc solver settings
+  #     ksp_type: cg
+  #     pc_type: hypre
+
+
+# ------------------------------------------------------------
+# DATASET GENERATION
+# (applies to all backends; controls how training points are sampled)
+# ------------------------------------------------------------
+dataset:
+  # Number of collocation (interior) points where the PDE residual is enforced.
+  # Guidelines:
+  #   1D ODE:       500  - 2,000
+  #   2D PDE:     4,000  - 16,000
+  #   3D PDE:    20,000  - 100,000
+  n_collocation: N_COLLOCATION
+
+  # Number of boundary condition enforcement points.
+  # Guidelines: ~10-20% of n_collocation for smooth problems.
+  n_boundary: N_BOUNDARY
+
+  # Initial condition points (for time-dependent problems only).
+  # Set to 0 for steady-state problems.
+  n_ic: N_IC
+
+  # Reference data points (from solver output or real measurements).
+  # Set to 0 for pure PINN (no reference data).
+  n_data: N_DATA
+
+  # Sampling strategy for collocation and boundary points.
+  # uniform  — evenly spaced grid (fast, may miss corners in high-D)
+  # lhs      — Latin Hypercube Sampling (recommended, better coverage)
+  # sobol    — Sobol quasi-random sequence (best coverage, requires scipy)
+  strategy: lhs                   # uniform | lhs | sobol
+
+  # Fraction of data used for training (remainder is validation).
+  train_frac: 0.85
+
+  # Random seed for reproducible point sampling.
+  seed: 42
+
+  # Parameter sweep (for DeepONet/FNO operator learning).
+  # When specified, the solver runs once per combination and the dataset
+  # is assembled from all runs. Omit this block for single-instance PINNs.
+  # param_sweep:
+  #   PARAM_1: [VALUE_A, VALUE_B, VALUE_C]    # e.g. nu: [0.005, 0.01, 0.02]
+  #   PARAM_2: [VALUE_X, VALUE_Y, VALUE_Z]    # e.g. Re: [50, 100, 200, 400]
+  #   strategy: grid              # grid (full Cartesian product) | lhs (random sample)
+  #   n_samples: N_SWEEP_SAMPLES  # used only when strategy: lhs
+
+  # Data normalization (applied before training, inverse-applied for inference).
+  normalization:
+    inputs: standard              # standard (z-score) | minmax | none
+    outputs: standard             # standard (z-score) | minmax | none
+
+  # Persistent dataset storage (set save_path to skip regeneration on reruns).
+  # save_path: data/YOUR_CASE/dataset.parquet
+  # load_if_exists: true
+
+
+# ------------------------------------------------------------
+# BUNDLE (alternative data_source: bundle)
+# ------------------------------------------------------------
+# Use this block instead of [solver] when loading pre-computed bundle data.
+# Bundles are directories produced by previous pipeline runs or the solver.
+#
+# bundle:
+#   bundle_root: data/artifacts/YOUR_PREVIOUS_RUN   # directory with bundle/manifest.json
+#   require_sensors: false         # true = raise if sensor data not present
+
+
+# ------------------------------------------------------------
+# MODELS TO TRAIN
+# (list of one or more models; they are trained and evaluated in parallel or sequentially)
+# ------------------------------------------------------------
+models:
+
+  # ------ Model 1: Minimal PINN (quick sanity check) ------
+  - id: pinn_quick
+    # Model type — registry key. Available options:
+    #
+    #   PINNs:
+    #     VanillaPINN       — standard MLP with physics loss
+    #     InversePINN       — VanillaPINN + trainable PDE parameters
+    #     PIELM             — Physics-Informed ELM (one-shot, fixed hidden layer)
+    #     PINNLSTM          — PINN with LSTM trunk (long time sequences)
+    #     PINNsFormer       — PINN with Transformer trunk (attention)
+    #     VPINN             — Variational PINN (weak-form residual)
+    #     XPINN             — eXtended PINN (domain decomposition)
+    #     XTFC              — eXtreme Theory of Functional Connections (exact BCs)
+    #
+    #   Neural Operators:
+    #     DeepONet          — Deep Operator Network (branch/trunk architecture)
+    #     MultiScaleDeepONet — multi-scale DeepONet
+    #     FourierNeuralOperator (FNO) — FNO for grid-structured parametric PDEs
+    #     PhysicsInformedNeuralOperator (PINO) — FNO + physics residual loss
+    #     GalerkinNeuralOperator (GNO) — GNO for irregular meshes
+    #     UniversalUNO      — Universal Neural Operator (UNO)
+    #
+    #   Autoencoders / ROM:
+    #     DenseAE, VAE, KoopmanPIAE, AEROMHybrid
+    #     POD, DMD, HAVOK, OPInf
+    #
+    #   Continuous dynamics:
+    #     NeuralODE, NeuralSDE, NeuralCDE, HamiltonianNN, SymplecticODE
+    #
+    #   Recurrent:
+    #     GRU, Seq2Seq
+    #
+    #   Graph:
+    #     GNN, GNN_ODE, EquivariantGNN, SpatiotemporalGNN
+    #
+    type: VanillaPINN
+
+    # Architecture parameters — depend on model type.
+    params:
+      # VanillaPINN / InversePINN / VPINN / XPINN:
+      hidden: [32, 32, 32]        # list of hidden layer widths
+      activation: tanh            # tanh | silu | gelu | sin | swish | relu
+      # in_dim: N_INPUT_DIMS      # inferred from problem if omitted
+      # out_dim: N_OUTPUT_FIELDS  # inferred from problem if omitted
+
+      # XtFC additional params:
+      # rf_dim: 512               # random feature dimension
+      # freeze_random: true       # true = ELM mode (one-shot solve)
+      # use_tfc: true             # true if tfc library installed
+
+      # DeepONet additional params:
+      # branch_dim: N_SENSORS     # number of sensor/input function samples
+      # trunk_dim: N_SPATIAL_DIMS # spatial coordinate dimension
+      # modes: 64                 # inner product (latent) dimension
+
+      # FNO additional params:
+      # in_channels: N_IN         # number of input channels
+      # out_channels: N_OUT       # number of output channels
+      # modes1: 16                # Fourier modes in x
+      # modes2: 16                # Fourier modes in y (2D FNO)
+      # width: 64                 # channel width
+      # n_layers: 4               # number of FNO layers
+
+      # InversePINN: unknown PDE parameters (trained jointly with network)
+      # unknown_params:
+      #   nu: 0.001               # initial guess
+      #   k: 1.0                  # initial guess
+
+    train:
+      epochs: 1000                # number of training epochs
+      lr: 0.001                   # initial learning rate (Adam default: 1e-3)
+      device: cpu                 # cpu | cuda | cuda:0 | cuda:1 | mps (Apple Silicon)
+      seed: 42                    # random seed for weight initialization
+
+      # Gradient clipping — prevents exploding gradients; 1.0 is a safe default
+      grad_clip: 1.0              # float or null to disable
+
+      # Learning rate scheduler
+      scheduler: exponential      # exponential | cosine | step | plateau | onecycle | none
+      lr_decay: 0.9995            # for exponential: lr = lr * lr_decay each epoch
+      # scheduler_params:         # additional scheduler kwargs
+      #   step_size: 1000         # for StepLR: decay every N epochs
+      #   gamma: 0.5              # for StepLR/ExponentialLR: decay factor
+      #   T_max: 2000             # for CosineAnnealingLR: period
+
+      # Mixed precision (automatic) — only effective on CUDA GPU
+      amp: false                  # true | false  (set true for GPU training)
+
+      # torch.compile() — 10-30% speedup on PyTorch >= 2.0 + GPU; requires CUDA
+      compile: false              # true | false
+
+      # Gradient accumulation — simulate larger batch size without more VRAM
+      grad_accum_steps: 1         # e.g. 4 = accumulate gradients over 4 mini-batches
+
+      # Batch size (for data-driven models; pure PINNs use all collocation points)
+      batch_size: 1024            # e.g. 512 | 1024 | 4096
+
+      # Early stopping — halt if val loss does not improve
+      early_stopping:
+        enabled: false
+        patience: 200             # epochs without improvement before stopping
+        min_delta: 1.0e-6         # minimum improvement to count
+
+      # Optimizer — Adam is the default; L-BFGS is useful for final fine-tuning
+      optimizer: adam             # adam | adamw | sgd | lbfgs | radam
+      # lbfgs is slow per-step but can reach very low loss for smooth problems:
+      # optimizer: lbfgs
+      # lbfgs_max_iter: 50
+
+    # Physics loss weight configuration.
+    # These weights balance the different components of the total loss:
+    #   total = pde_weight * L_pde + bc_weight * L_bc + ic_weight * L_ic + data_weight * L_data
+    #
+    # Tuning guidelines:
+    #   - Start with pde=1.0, bc=10.0, ic=10.0
+    #   - Increase bc/ic weights if boundary/IC conditions are not satisfied
+    #   - Increase data weight if you have high-quality reference data
+    #   - Use adaptive weights (see below) for automatic balancing
+    physics_weights:
+      pde: 1.0                    # PDE residual at collocation points
+      bc: 10.0                    # boundary condition enforcement
+      ic: 10.0                    # initial condition enforcement (0.0 = steady-state)
+      data: 1.0                   # data-fitting loss (0.0 = pure PINN)
+
+    # Adaptive loss weighting (NTK-inspired, rebalances each N epochs)
+    # adaptive_weights:
+    #   enabled: false
+    #   update_interval: 100      # epochs between rebalancing steps
+    #   method: ntk               # ntk | softadapt | gradnorm
+
+  # ------ Model 2: Larger PINN (production quality) ------
+  - id: pinn_production
+    type: VanillaPINN
+    params:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    train:
+      epochs: 5000
+      lr: 0.001
+      device: cuda                # switch to cpu if no GPU available
+      seed: 0
+      grad_clip: 1.0
+      amp: true                   # enable mixed precision on GPU
+      compile: false
+      scheduler: cosine
+      batch_size: 4096
+      early_stopping:
+        enabled: true
+        patience: 500
+    physics_weights:
+      pde: 1.0
+      bc: 10.0
+      ic: 10.0
+      data: 2.0
+
+  # ------ Model 3: DeepONet (operator learning) ------
+  # - id: deeponet_operator
+  #   type: DeepONet
+  #   params:
+  #     branch_dim: N_SENSORS
+  #     trunk_dim: N_SPATIAL_DIMS
+  #     out_dim: N_OUTPUT_FIELDS
+  #     hidden: 128
+  #     modes: 64
+  #   train:
+  #     epochs: 2000
+  #     lr: 0.001
+  #     device: cuda
+  #     seed: 42
+  #     grad_clip: 1.0
+  #     amp: true
+  #     grad_accum_steps: 2
+  #   physics_weights:
+  #     data: 1.0                 # DeepONet is typically data-driven; set pde>0 for PINO
+  #     pde: 0.0
+
+  # ------ Model 4: FNO (Fourier Neural Operator) ------
+  # - id: fno_operator
+  #   type: FourierNeuralOperator
+  #   params:
+  #     in_channels: N_INPUT_CHANNELS
+  #     out_channels: N_OUTPUT_CHANNELS
+  #     modes1: 16
+  #     modes2: 16
+  #     width: 64
+  #     n_layers: 4
+  #   train:
+  #     epochs: 1000
+  #     lr: 0.001
+  #     device: cuda
+  #     seed: 42
+  #     amp: true
+  #   physics_weights:
+  #     data: 1.0
+  #     pde: 0.0
+
+  # ------ Model 5: XtFC (exact BC enforcement, 1D) ------
+  # - id: xtfc_exact_bc
+  #   type: XTFC
+  #   params:
+  #     in_dim: 1
+  #     out_dim: 1
+  #     rf_dim: 512
+  #     activation: tanh
+  #     freeze_random: true
+  #     use_tfc: true
+  #     tfc_n: 100
+  #     tfc_deg: 20
+  #     tfc_nC: 2
+  #     tfc_x0: [X_MIN]
+  #     tfc_xf: [X_MAX]
+  #   train:
+  #     epochs: 2000
+  #     lr: 0.001
+  #     device: cpu
+  #     seed: 42
+  #   physics_weights:
+  #     pde: 1.0
+  #     bc: 0.0                   # XtFC enforces BCs exactly — no soft BC loss needed
+
+  # ------ Model 6: InversePINN (identify unknown PDE params) ------
+  # - id: inverse_pinn
+  #   type: InversePINN
+  #   params:
+  #     hidden: [64, 64, 64]
+  #     activation: tanh
+  #     unknown_params:
+  #       nu: 0.001               # initial guess for viscosity
+  #   train:
+  #     epochs: 3000
+  #     lr: 0.001
+  #     device: cpu
+  #     seed: 42
+  #   physics_weights:
+  #     pde: 1.0
+  #     bc: 10.0
+  #     data: 100.0               # high data weight for inverse problems
+
+
+# ------------------------------------------------------------
+# METRICS
+# (computed on validation/test set after training)
+# ------------------------------------------------------------
+metrics:
+  # Available metrics (all relative to the output field values):
+  - mse                           # mean squared error
+  - rmse                          # root mean squared error
+  - rel_l2                        # relative L2 norm error = ||pred-true||_2 / ||true||_2
+  - r2                            # R² coefficient of determination
+  - max_error                     # maximum absolute pointwise error
+  # - mae                         # mean absolute error
+  # - mape                        # mean absolute percentage error (careful with near-zero values)
+
+  # Per-field metrics (useful for multi-output models like Navier-Stokes)
+  # per_field: true               # report each output field separately
+
+
+# ------------------------------------------------------------
+# INFERENCE SETTINGS
+# (evaluation grid used for solution field visualization)
+# ------------------------------------------------------------
+inference:
+  # Coordinate names — must match spec.coord_names
+  coord_names: [COORD_1, COORD_2]   # e.g. [x, t] or [x, y] or [x, y, t]
+
+  # Evaluation ranges (defaults to domain_bounds from problem spec)
+  COORD_1_range: [COORD_1_MIN, COORD_1_MAX]   # e.g. x_range: [-1.0, 1.0]
+  COORD_2_range: [COORD_2_MIN, COORD_2_MAX]   # e.g. t_range: [0.0, 1.0]
+
+  # Grid resolution for evaluation (finer = better plots, more memory)
+  n_COORD_1: N_EVAL_1                         # e.g. nx: 200
+  n_COORD_2: N_EVAL_2                         # e.g. nt: 200
+
+  # Batch size for inference pass (reduce if GPU runs out of memory)
+  batch_size: 8192
+
+  # For 3D: produce slices rather than volumetric grid
+  # slices:
+  #   - axis: z
+  #     value: SLICE_Z_VALUE    # e.g. 0.5
+  #   - axis: z
+  #     value: ANOTHER_Z_VALUE
+
+
+# ------------------------------------------------------------
+# REPORT & VISUALIZATION
+# ------------------------------------------------------------
+report:
+  # Output format for the run summary
+  format: html                    # json | html | both
+
+  # Whether to save the trained model checkpoint(s) to out_dir
+  save_model: true
+
+  # Whether to save the full training history (loss per epoch) to CSV
+  save_history: true
+
+  # Plots to generate (list of plot spec objects)
+  plots:
+
+    # 2D heatmap of a scalar field (x vs t, or x vs y)
+    - type: solution_field
+      field: FIELD_NAME           # e.g. u  or  temperature  or  von_mises
+      # colormap: viridis         # any matplotlib colormap name
+      # vmin: null                # null = auto-scale
+      # vmax: null
+
+    # Training loss history (semilogy per loss component)
+    - type: loss_curve
+      # components: [total, pde, bc, ic, data]  # which components to plot
+
+    # Side-by-side comparison of all trained models
+    - type: model_comparison
+      field: FIELD_NAME
+      # metric: rel_l2            # metric to annotate each panel
+
+    # |prediction - reference| error map
+    - type: error_map
+      field: FIELD_NAME
+      # log_scale: true           # useful for orders-of-magnitude differences
+
+    # 1D profile plots (for 1D problems or 2D slices)
+    # - type: profile_1d
+    #   field: FIELD_NAME
+    #   coord: x
+    #   fixed: {t: 0.5}          # hold t=0.5, plot u vs x
+
+    # Multi-field solution (e.g. Navier-Stokes: u, v, p side by side)
+    # - type: multifield
+    #   fields: [u, v, p]
+
+    # Scatter of predicted vs. true values (regression diagnostics)
+    # - type: parity_plot
+    #   field: FIELD_NAME
+
+    # Learning curve: val loss vs. number of training samples (data efficiency)
+    # - type: learning_curve
+    #   field: FIELD_NAME
+
+    # Leaderboard table: models ranked by metric
+    - type: leaderboard
+      metric: rel_l2              # mse | rmse | rel_l2 | r2 | max_error
+
+
+# ------------------------------------------------------------
+# DIGITAL TWIN (OPTIONAL)
+# Remove this entire section if you do not need real-time monitoring.
+# ------------------------------------------------------------
+digital_twin:
+  enabled: false                  # set true to activate twin monitoring
+
+  # Which trained model to wrap (must match an id in [models])
+  model_id: pinn_production
+
+  # Field names that the twin monitors
+  field_names:
+    - FIELD_NAME_1                # e.g. temperature
+    # - FIELD_NAME_2              # e.g. pressure
+
+  # Coordinate names used as twin state axes
+  coord_names:
+    - COORD_1                     # e.g. x
+    - COORD_2                     # e.g. y
+
+  # How often the twin state is updated (seconds)
+  update_interval: 1.0
+
+  # Anomaly detection configuration
+  anomaly_detection:
+    enabled: true
+
+    # Threshold detector: fire alert when field > threshold
+    threshold:
+      FIELD_NAME_1: ALERT_VALUE_1   # e.g. temperature: 1200.0  (K)
+      # FIELD_NAME_2: ALERT_VALUE_2
+
+    # Z-score detector: fire when value deviates > n_sigma from rolling mean
+    # zscore:
+    #   window: 100               # rolling window length (number of observations)
+    #   n_sigma: 3.0              # sigma threshold
+
+  # Data assimilation filter (updates model state from incoming sensor readings)
+  # data_assimilation:
+  #   method: enkf                # enkf (Ensemble Kalman Filter) | none
+  #   n_ensemble: 50              # number of ensemble members
+  #   obs_noise_std: 0.01         # observation noise standard deviation
+
+  # Sensor streams (MockStream for simulation; replace with real API adapters)
+  streams:
+    - name: SENSOR_NAME_1
+      fields: [FIELD_NAME_1]
+      type: mock                  # mock | mqtt | rest | modbus | opc_ua
+      tick_interval: 0.5          # seconds between synthetic observations
+      coords:
+        COORD_1: SENSOR_1_COORD_1_VALUE   # sensor location in domain, e.g. x: 0.5
+        COORD_2: SENSOR_1_COORD_2_VALUE   # e.g. y: 0.25
+      # For mock streams only: specify the signal shape
+      nominal_value: NOMINAL_VALUE        # steady-state value
+      noise_amplitude: NOISE_AMPLITUDE    # additive Gaussian noise std
+      # signal: sinusoidal               # constant | sinusoidal | random_walk
+      # frequency: 0.5                   # Hz, for sinusoidal signal
+
+    # - name: SENSOR_NAME_2
+    #   fields: [FIELD_NAME_2]
+    #   type: mock
+    #   tick_interval: 1.0
+    #   coords:
+    #     COORD_1: SENSOR_2_COORD_1_VALUE
+    #     COORD_2: SENSOR_2_COORD_2_VALUE
+    #   nominal_value: NOMINAL_VALUE_2
+    #   noise_amplitude: NOISE_AMPLITUDE_2
+
+  # How long to run the monitoring loop (seconds); null = run forever
+  run_duration: 30.0              # seconds; null for continuous operation
+
+  # Export monitoring history to this path after run_duration
+  history_output: data/YOUR_PIPELINE_NAME/twin_history.parquet
+
+
+# ------------------------------------------------------------
+# HYPERPARAMETER SWEEP (OPTIONAL)
+# When enabled, the pipeline ignores the [models] list above and
+# instead runs a sweep over the parameter grid, creating one run
+# per combination.  Results are aggregated into a leaderboard.
+# ------------------------------------------------------------
+# sweep:
+#   enabled: false
+#   method: grid                  # grid | random | bayesian
+#   n_trials: 20                  # for random/bayesian only
+#   max_parallel: 4               # number of parallel workers
+#   parameters:
+#     # Sweep over hidden layer sizes and activations
+#     hidden:
+#       values:
+#         - [32, 32, 32]
+#         - [64, 64, 64, 64]
+#         - [128, 128, 128, 128]
+#     activation:
+#       values: [tanh, silu, gelu]
+#     lr:
+#       values: [0.001, 0.0005, 0.0001]
+#     # Or use a range for random/Bayesian sweeps:
+#     # lr:
+#     #   min: 1.0e-4
+#     #   max: 1.0e-2
+#     #   log: true               # log-uniform sampling
+#   best_metric: rel_l2
+#   best_direction: minimize      # minimize | maximize
+
+
+# ------------------------------------------------------------
+# ADVANCED: CUSTOM CALLBACKS (OPTIONAL)
+# Python dotted paths to callable objects that receive trainer state.
+# Use for custom logging, early stopping strategies, model checkpointing.
+# ------------------------------------------------------------
+# callbacks:
+#   - pinneaple_train.callbacks.WandBLogger
+#   - pinneaple_train.callbacks.MLFlowLogger
+#   - my_use_case.callbacks.CustomPlotter
+
+
+# ============================================================
+# QUICK REFERENCE: PRESET — SOLVER — MODEL COMPATIBILITY
+# ============================================================
+#
+# 1D ODE (any_1d_ode_preset):
+#   solver.backend: builtin
+#   model.type: VanillaPINN | XTFC | PIELM | InversePINN
+#   dataset.n_collocation: 500-2000
+#   dataset.n_ic: 0  (if BVP) or 1 (if IVP with t0 condition)
+#
+# 2D PDE, steady-state (heat_2d / poisson_2d):
+#   solver.backend: builtin | fenics
+#   model.type: VanillaPINN | VPINN
+#   dataset.n_collocation: 4000-16000
+#   dataset.n_ic: 0
+#
+# 2D PDE, time-dependent (burgers_1d / advection_diffusion_2d):
+#   solver.backend: builtin
+#   model.type: VanillaPINN | PINNLSTM
+#   dataset.n_collocation: 8000-32000
+#   dataset.n_ic: 1000-4000
+#
+# 2D CFD (ns_incompressible_2d):
+#   solver.backend: builtin | openfoam
+#   model.type: VanillaPINN  (outputs: u, v, p — set out_dim: 3)
+#   dataset.n_collocation: 8000-32000
+#   dataset.n_boundary: 2000-8000
+#
+# 3D structural (drill_pipe_torsion / aircraft_wing_structural):
+#   solver.backend: fenics
+#   model.type: VanillaPINN | DeepONet
+#   dataset.n_collocation: 50000+  (use GPU training)
+#
+# Parametric PDE (operator learning):
+#   dataset.param_sweep: <required>
+#   model.type: DeepONet | FourierNeuralOperator | PINO
+#   dataset.n_collocation: 0  (data-driven, no physics collocation)
+#   dataset.n_data: all solver output points
+# ============================================================

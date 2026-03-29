@@ -84,6 +84,8 @@ def ns_incompressible_2d_default(Re: float = 100.0, Umax: float = 1.0) -> Proble
         sample_defaults={"n_col": 250_000, "n_bc": 70_000},
         field_ranges={"u": (-2, 2), "v": (-2, 2), "p": (-2, 2)},
         references=("Incompressible NS 2D template (channel-like).",),
+        domain_bounds={"x": (0.0, 1.0), "y": (0.0, 1.0), "t": (0.0, 1.0)},
+        solver_spec={"name": "fdm", "method": "ns_projection_2d", "params": {"nx": 64, "ny": 64, "Re": 100.0, "dt": 0.001, "t_end": 0.5}},
     )
 
 
@@ -135,4 +137,6 @@ def ns_incompressible_3d_default(Re: float = 100.0, Umax: float = 1.0) -> Proble
         sample_defaults={"n_col": 350_000, "n_bc": 100_000},
         field_ranges={"u": (-2, 2), "v": (-2, 2), "w": (-2, 2), "p": (-2, 2)},
         references=("Incompressible NS 3D template (duct-like).",),
+        domain_bounds={"x": (0.0, 1.0), "y": (0.0, 1.0), "z": (0.0, 1.0), "t": (0.0, 1.0)},
+        solver_spec={"name": "fdm", "method": "ns_projection_3d", "params": {"nx": 32, "ny": 32, "nz": 32, "Re": 100.0, "dt": 0.001, "t_end": 0.5}},
     )

@@ -1,0 +1,126 @@
+# ============================================================
+# pinneaple end-to-end pipeline config
+# Burgers 1D — full geometry → solver → train → predict → report
+# ============================================================
+
+pipeline:
+  name: burgers_1d_full_pipeline
+  out_dir: data/artifacts/pipelines/burgers_full
+  log_level: INFO
+
+# ---- Problem definition ----
+problem:
+  id: burgers_1d
+  params:
+    nu: 0.01
+
+# ---- Geometry ----
+geometry:
+  type: interval                # 1D interval [x0, xf]
+  params:
+    xlim: [-1.0, 1.0]
+    n_points: 256
+
+# ---- Physical solver (reference data) ----
+solver:
+  backend: builtin              # builtin | openfoam | fenics
+  params:
+    method: ftcs                # finite differences (FTCS explicit)
+    nx: 256
+    nt: 500
+    dt: 0.002
+
+# ---- Dataset generation ----
+dataset:
+  n_collocation: 8000
+  n_boundary: 500
+  n_ic: 1000
+  n_data: 200                   # sensor/reference data points
+  strategy: lhs                 # uniform | lhs | sobol
+  train_frac: 0.85
+  seed: 42
+
+# ---- Models to train ----
+models:
+
+  - id: pinn_small
+    type: VanillaPINN
+    params:
+      hidden: [32, 32, 32]
+      activation: tanh
+    train:
+      epochs: 1000
+      lr: 0.001
+      device: cpu
+      seed: 42
+      grad_clip: 1.0
+    physics_weights:
+      pde: 1.0
+      bc: 10.0
+      ic: 10.0
+      data: 1.0
+
+  - id: pinn_medium
+    type: VanillaPINN
+    params:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    train:
+      epochs: 2000
+      lr: 0.001
+      device: cpu
+      seed: 42
+      grad_clip: 1.0
+      compile: false            # set true for PyTorch 2.x + GPU
+      amp: false                # set true for CUDA
+      grad_accum_steps: 1
+    physics_weights:
+      pde: 1.0
+      bc: 10.0
+      ic: 10.0
+      data: 2.0
+
+  - id: pinn_silu
+    type: VanillaPINN
+    params:
+      hidden: [64, 64, 64]
+      activation: silu
+    train:
+      epochs: 1500
+      lr: 0.0005
+      device: cpu
+      seed: 99
+      grad_clip: 1.0
+    physics_weights:
+      pde: 1.0
+      bc: 10.0
+      ic: 10.0
+
+# ---- Metrics ----
+metrics:
+  - mse
+  - rmse
+  - rel_l2
+  - r2
+  - max_error
+
+# ---- Inference settings ----
+inference:
+  coord_names: [x, t]
+  x_range: [-1.0, 1.0]
+  t_range: [0.0, 1.0]
+  nx: 200
+  nt: 200
+
+# ---- Report / visualization ----
+report:
+  format: json                  # json | html | both
+  save_model: true
+  plots:
+    - type: solution_field      # 2D heatmap of u(x,t)
+      field: u
+    - type: loss_curve          # training loss history
+    - type: model_comparison    # side-by-side predictions
+      field: u
+    - type: error_map           # |pred - reference|
+      field: u

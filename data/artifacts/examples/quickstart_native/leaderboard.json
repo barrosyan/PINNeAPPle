@@ -1,0 +1,12 @@
+[
+  {
+    "run_id": "flow_obstacle_2d-native_fast_demo-a0231261cea1",
+    "run_name": "native_fast_demo",
+    "task_id": "flow_obstacle_2d",
+    "backend": "pinneaple_native",
+    "test_pde_rms": 0.10964279621839523,
+    "test_div_rms": 0.1300620585680008,
+    "bc_mse": 0.01883585937321186,
+    "test_l2_uv": 0.4635182321071625
+  }
+]
