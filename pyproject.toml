@@ -171,6 +171,7 @@ pinneaple = "pinneaple_pdb.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = [
+  "pinneaple",
   "pinneaple_arena",
   "pinneaple_data",
   "pinneaple_digital_twin",
@@ -193,6 +194,9 @@ packages = [
   "pinneaple_transfer",
   "pinneaple_uq",
   "pinneaple_validate",
+]
+include = [
+  "data/bundles/**/*",
 ]
 
 [tool.ruff]
