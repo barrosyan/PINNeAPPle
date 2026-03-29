@@ -1,0 +1,3 @@
+task_id: poisson_2d
+bundle_root: C:/Users/laisc/OneDrive/Documents/pinneaple/artifacts/examples/toy_poisson_bundle/bundle_poisson2d
+require_sensors: false

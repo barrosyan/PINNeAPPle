@@ -430,6 +430,192 @@ def drill_pipe_nc50_box_default(
     )
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 4 — Drill pipe NC50 BOX+PIN under combined loading (pressure + axial + torque)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@register_preset("drill_pipe_nc50_rotating")
+def drill_pipe_nc50_rotating_default(
+    body: str = "BOX",          # "BOX" or "PIN"
+    E: float = 2.1e11,          # Pa — AISI 4145H steel
+    nu: float = 0.3,
+    p_inner: float = 20e6,      # Pa — internal drilling mud pressure
+    F_axial: float = 500e3,     # N  — hook load / WOB (compression positive)
+    T_torque: float = 40e3,     # N·m — make-up + rotary torque
+    rpm: float = 90.0,          # RPM (quasi-static — inertia neglected for now)
+) -> ProblemSpec:
+    """
+    Drill pipe NC50 threaded connection under combined loading.
+
+    Fields  : u_r, u_z, u_θ  (radial, axial, hoop/torsional displacements)
+    PDE     : axisymmetric linear elasticity (u_r, u_z) + torsion (u_θ)
+
+    In linear elasticity the torsion problem decouples from the meridional
+    problem. The torsional Navier equation is:
+
+        ∂²u_θ/∂r² + (1/r)∂u_θ/∂r − u_θ/r² + ∂²u_θ/∂z² = 0
+
+    Torsional stresses (contribute to full Von Mises):
+
+        τ_rθ = μ (∂u_θ/∂r − u_θ/r)
+        τ_θz = μ  ∂u_θ/∂z
+
+    Full 6-component Von Mises:
+
+        σ_vm = √(½ [(σ_rr−σ_zz)²+(σ_zz−σ_θθ)²+(σ_θθ−σ_rr)²
+                    + 6(τ_rz²+τ_rθ²+τ_θz²)])
+
+    Boundary conditions:
+        u_z(r, z=0)  = 0          — fixed nose (thread start)
+        u_θ(r, z=0)  = 0          — no rotation at fixed end
+        σ_zz(r, z=L) = F/A_cross  — axial traction at top shoulder
+        u_θ(r, z=L)  = θ_max · r  — prescribed make-up + rotary twist
+
+    Loading
+    -------
+        rpm = 0   → static make-up only (pure torque T_torque)
+        rpm > 0   → quasi-static rotation (T_torque includes rotary drag)
+        p_inner   → bore pressure (σ_rr = −p at r = r_bore)
+        F_axial   → axial tension/compression
+    """
+    body = str(body).upper()
+    if body == "BOX":
+        r_bore, r_outer, z_max = 50.0, 84.15, 140.0
+    else:   # PIN
+        r_bore, r_outer, z_max = 48.0, 62.0, 140.0
+    z_min = 0.0
+
+    lam, mu = _lame(float(E), float(nu))
+    G = float(E) / (2 * (1 + float(nu)))
+
+    # Cross-section area (annulus)
+    A_cross = np.pi * (r_outer**2 - r_bore**2) * 1e-6  # m² (radii in mm)
+    sigma_axial = float(F_axial) / max(A_cross, 1e-10)  # Pa
+
+    # Characteristic twist angle at z=z_max  (θ_max in radians)
+    # Using thin-ring approximation: θ ≈ T·L / (G·J)  where J = π(b⁴−a⁴)/2
+    J = np.pi * ((r_outer * 1e-3) ** 4 - (r_bore * 1e-3) ** 4) / 2.0  # m⁴
+    theta_max = float(T_torque) * (z_max * 1e-3) / max(G * J, 1e-30)  # rad
+    # Prescribed hoop displacement at top: u_θ(r, z=L) = θ_max · r  [mm]
+    uth_char = theta_max * r_outer  # mm — characteristic u_θ at outer edge
+
+    u_char = max(
+        abs(sigma_axial) / float(E) * z_max,
+        abs(float(p_inner)) / float(E) * (r_outer - r_bore),
+        abs(uth_char),
+        1e-6,
+    )
+
+    pde = PDETermSpec(
+        kind="axisymmetric_linear_elasticity_torsion",
+        fields=("u_r", "u_z", "u_θ"),
+        coords=("r", "z"),
+        params={
+            "E": float(E), "nu": float(nu),
+            "lambda": lam, "mu": mu, "G": G,
+            "p_inner": float(p_inner),
+            "F_axial": float(F_axial),
+            "T_torque": float(T_torque),
+            "rpm": float(rpm),
+        },
+        meta={
+            "connection": "NC50",
+            "body": body,
+            "formulation": "axisymmetric_rz + decoupled_torsion",
+            "torsion_eqn": "d²u_θ/dr² + (1/r)du_θ/dr - u_θ/r² + d²u_θ/dz² = 0",
+            "pitch_mm": 6.35,
+            "taper": 1 / 16,
+            "standard": "API Spec 7 / API RP 7G-2",
+            "theta_max_rad": float(theta_max),
+        },
+    )
+
+    _p  = float(p_inner)
+    _sa = float(sigma_axial)
+    _th = float(theta_max)
+
+    conditions = [
+        # Fixed nose: u_z = 0 at z = 0
+        DirichletBC(
+            name="fixed_nose_uz",
+            fields=("u_z",),
+            selector_type="callable",
+            selector=lambda X, ctx, _z=z_min: np.abs(X[:, 1] - _z) < 1e-6,
+            value_fn=lambda X, ctx: np.zeros((X.shape[0], 1), dtype=np.float32),
+            weight=50.0,
+        ),
+        # No rotation at fixed end: u_θ = 0 at z = 0
+        DirichletBC(
+            name="fixed_nose_uth",
+            fields=("u_θ",),
+            selector_type="callable",
+            selector=lambda X, ctx, _z=z_min: np.abs(X[:, 1] - _z) < 1e-6,
+            value_fn=lambda X, ctx: np.zeros((X.shape[0], 1), dtype=np.float32),
+            weight=50.0,
+        ),
+        # Axial traction at top shoulder: σ_zz = F/A
+        NeumannBC(
+            name="axial_traction_top",
+            fields=("u_z",),
+            selector_type="callable",
+            selector=lambda X, ctx, _z=z_max: np.abs(X[:, 1] - _z) < 1e-6,
+            value_fn=lambda X, ctx, _s=_sa: np.full((X.shape[0], 1), _s, dtype=np.float32),
+            weight=10.0,
+        ),
+        # Internal bore pressure: σ_rr = −p at r = r_bore
+        NeumannBC(
+            name="bore_pressure",
+            fields=("u_r",),
+            selector_type="callable",
+            selector=lambda X, ctx, _r=r_bore: np.abs(X[:, 0] - _r) < 1e-6,
+            value_fn=lambda X, ctx, _p2=_p: np.full((X.shape[0], 1), -_p2, dtype=np.float32),
+            weight=10.0,
+        ),
+        # Prescribed twist at top: u_θ(r, z=L) = θ_max · r
+        DirichletBC(
+            name="prescribed_twist_top",
+            fields=("u_θ",),
+            selector_type="callable",
+            selector=lambda X, ctx, _z=z_max: np.abs(X[:, 1] - _z) < 1e-6,
+            value_fn=lambda X, ctx, _t=_th: (_t * X[:, 0:1]).astype(np.float32),
+            weight=50.0,
+        ),
+    ]
+
+    return ProblemSpec(
+        name=f"drill_pipe_nc50_rotating_{body.lower()}",
+        dim=2,
+        coords=("r", "z"),
+        fields=("u_r", "u_z", "u_θ"),
+        pde=pde,
+        conditions=tuple(conditions),
+        sample_defaults={"n_col": 10000, "n_bc": 2500},
+        scales=ScaleSpec(L=r_outer, U=u_char),
+        field_ranges={
+            "u_r": (-u_char, u_char),
+            "u_z": (-u_char, u_char),
+            "u_θ": (-uth_char * 1.2, uth_char * 1.2),
+        },
+        references=(
+            "API Spec 7 — NC50 rotary shouldered connection.",
+            "API RP 7G-2 — Drill stem design and operating limits.",
+            "Timoshenko & Goodier, Theory of Elasticity, ch. 11 (torsion).",
+        ),
+        domain_bounds={"r": (r_bore, r_outer), "z": (z_min, z_max)},
+        solver_spec={
+            "name": "fenics",
+            "method": "axisymmetric_linear_elasticity_torsion",
+            "params": {
+                "E": float(E), "nu": float(nu),
+                "p_inner": float(p_inner),
+                "F_axial": float(F_axial),
+                "T_torque": float(T_torque),
+                "mesh_file": "mesh_nc50.msh",
+            },
+        },
+    )
+
+
 @register_preset("drill_pipe_nc50_pin")
 def drill_pipe_nc50_pin_default(
     thread_height: float = 0.8,

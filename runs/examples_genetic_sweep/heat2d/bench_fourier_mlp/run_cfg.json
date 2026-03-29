@@ -1,0 +1,80 @@
+{
+  "arena": {
+    "data_source": "solver",
+    "geometry_cfg": {
+      "bounds_max": [
+        1.0,
+        1.0
+      ],
+      "bounds_min": [
+        0.0,
+        0.0
+      ],
+      "intersect_box": true,
+      "kind": "union_circles_sdf",
+      "n_circles": 4,
+      "r_max": 0.26,
+      "r_min": 0.1,
+      "seed": 7
+    },
+    "loss_weights": {
+      "physics": 1.0,
+      "supervised": 1.0
+    },
+    "problem_spec_cfg": {
+      "alpha": 0.02,
+      "coords": [
+        "x",
+        "y",
+        "t"
+      ],
+      "fields": [
+        "u"
+      ],
+      "name": "heat2d_genetic_sdf",
+      "w_bc": 1.0,
+      "w_ic": 1.0
+    },
+    "solver_cfg": {
+      "H": 160,
+      "W": 160,
+      "alpha": 0.02,
+      "boundary_resolution": 320,
+      "dt": 0.00075,
+      "equation": "heat2d",
+      "n_boundary": 4096,
+      "n_collocation": 8192,
+      "n_data": 8192,
+      "n_ic": 4096,
+      "seed": 123,
+      "solver": "fdm",
+      "steps": 240
+    },
+    "supervised_kind": "mse"
+  },
+  "backend": {
+    "name": "pinneaple_models"
+  },
+  "model": {
+    "kwargs": {
+      "depth": 4,
+      "in_dim": 3,
+      "num_f": 96,
+      "out_dim": 1,
+      "scale": 12.0,
+      "width": 160
+    },
+    "name": "bench_fourier_mlp"
+  },
+  "train": {
+    "amp": false,
+    "batch_size": 1024,
+    "ddp": false,
+    "log_every": 100,
+    "max_steps": 2500,
+    "optimizer": {
+      "lr": 0.002,
+      "name": "adam"
+    }
+  }
+}

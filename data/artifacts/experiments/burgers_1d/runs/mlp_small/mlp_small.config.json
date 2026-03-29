@@ -1,0 +1,16 @@
+{
+  "epochs": 500,
+  "lr": 0.001,
+  "weight_decay": 0.0,
+  "grad_clip": 0.0,
+  "amp": false,
+  "device": "cpu",
+  "seed": 42,
+  "deterministic": false,
+  "log_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\data\\artifacts\\experiments\\burgers_1d\\runs\\mlp_small",
+  "run_name": "mlp_small",
+  "save_best": true,
+  "ddp": false,
+  "ddp_backend": "nccl",
+  "ddp_find_unused_parameters": false
+}

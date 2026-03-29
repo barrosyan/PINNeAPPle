@@ -1,0 +1,13 @@
+{
+  "run_id": "flow_obstacle_2d-native_fast_demo-5f9f913a189f",
+  "run_name": "native_fast_demo",
+  "task_id": "flow_obstacle_2d",
+  "backend": "pinneaple_native",
+  "bundle_root": "data/artifacts/examples/quickstart_native",
+  "timestamp_unix": 1774814339.1625335,
+  "run_cfg_path": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\examples\\pinneaple_arena\\configs\\run_native_fast.yaml",
+  "task_cfg_path": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\examples\\pinneaple_arena\\configs\\task_flow_obstacle_2d.yaml",
+  "bundle_schema_version": "1.0",
+  "git_sha": "ed8124bcd85e",
+  "python": "3.13.5"
+}
