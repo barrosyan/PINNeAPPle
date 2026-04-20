@@ -116,7 +116,7 @@ try:
         run_parallel_sweep, SweepConfig,
         ThroughputMonitor,
         WeightScheduler, WeightSchedulerConfig,
-        SelfAdaptiveWeights, GradNormBalancer, LossRatioBalancer,
+        SelfAdaptiveWeights, GradNormBalancer, LossRatioBalancer, NTKWeightBalancer,
     )
 except Exception:  # pragma: no cover
     pass
@@ -311,7 +311,7 @@ __all__ = [
     "maybe_compile", "batched_inference", "run_parallel_sweep", "SweepConfig",
     "ThroughputMonitor",
     "WeightScheduler", "WeightSchedulerConfig",
-    "SelfAdaptiveWeights", "GradNormBalancer", "LossRatioBalancer",
+    "SelfAdaptiveWeights", "GradNormBalancer", "LossRatioBalancer", "NTKWeightBalancer",
     # Digital twin
     "DigitalTwin", "DigitalTwinConfig", "build_digital_twin",
     # Inference

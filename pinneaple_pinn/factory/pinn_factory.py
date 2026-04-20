@@ -92,9 +92,9 @@ class PINNProblemSpec:
     loss_weights: weights for loss buckets: {"pde":1.0,"conditions":1.0,"data":1.0}
     """
     pde_residuals: List[str]
-    conditions: List[Dict[str, Any]]
     independent_vars: List[str]
     dependent_vars: List[str]
+    conditions: List[Dict[str, Any]] = field(default_factory=list)
     inverse_params: List[str] = field(default_factory=list)
     loss_weights: Dict[str, float] = field(default_factory=dict)
     verbose: bool = False

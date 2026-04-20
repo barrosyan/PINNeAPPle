@@ -205,7 +205,7 @@ class ProblemBuilder:
 
     def domain(self, **bounds: Tuple[float, float]) -> "ProblemBuilder":
         """
-        Set coordinate domain bounds.
+        Set coordinate domain bounds via keyword arguments.
 
         Example::
 
@@ -213,6 +213,19 @@ class ProblemBuilder:
         """
         self._domain_bounds = {k: (float(v[0]), float(v[1])) for k, v in bounds.items()}
         self._coords = list(bounds.keys())
+        return self
+
+    def domain_bounds(self, bounds: Dict[str, Tuple[float, float]]) -> "ProblemBuilder":
+        """
+        Set coordinate domain bounds via a dict (paper-style API).
+
+        Example::
+
+            .domain_bounds({"x": (0, 1), "y": (0, 1)})
+        """
+        self._domain_bounds = {k: (float(v[0]), float(v[1])) for k, v in bounds.items()}
+        if not self._coords:
+            self._coords = list(bounds.keys())
         return self
 
     def coords(self, *names: str) -> "ProblemBuilder":
@@ -240,7 +253,14 @@ class ProblemBuilder:
 
     # ── PDE ──────────────────────────────────────────────────────────────────
 
-    def pde(self, kind: str, **params: Any) -> "ProblemBuilder":
+    def pde(
+        self,
+        kind: str,
+        *,
+        fields: Optional[Sequence[str]] = None,
+        coords: Optional[Sequence[str]] = None,
+        **params: Any,
+    ) -> "ProblemBuilder":
         """
         Set PDE type and parameters.
 
@@ -248,13 +268,38 @@ class ProblemBuilder:
         (e.g. ``"burgers"``, ``"heat_1d"``, ``"laplace"``,
         ``"navier_stokes_incompressible"``).
 
+        The optional ``fields`` and ``coords`` keyword arguments allow setting
+        field and coordinate names inline (as in the paper)::
+
+            .pde("poisson", fields=("u",), coords=("x", "y"))
+
         Example::
 
             .pde("burgers", nu=0.01)
+            .pde("poisson", fields=("u",), coords=("x", "y"))
             .pde("navier_stokes_incompressible", Re=100.0)
         """
         self._pde_kind = kind
         self._pde_params = dict(params)
+        if fields is not None:
+            self._fields = list(fields)
+        if coords is not None:
+            self._coords = list(coords)
+            # fill domain bounds with unit intervals if not already set
+            for c in self._coords:
+                if c not in self._domain_bounds:
+                    self._domain_bounds[c] = (0.0, 1.0)
+        return self
+
+    def param(self, name: str, value: Any) -> "ProblemBuilder":
+        """
+        Add a single named PDE parameter.
+
+        Equivalent to passing it as a keyword argument to ``.pde()``::
+
+            .param("f", 1.0)  # same as .pde("poisson", f=1.0)
+        """
+        self._pde_params[name] = value
         return self
 
     def pde_meta(self, **meta: Any) -> "ProblemBuilder":
@@ -388,6 +433,27 @@ class ProblemBuilder:
     def add_condition(self, cond: ConditionSpec) -> "ProblemBuilder":
         """Add a raw ConditionSpec directly."""
         self._conditions.append(cond)
+        return self
+
+    def boundary_condition(
+        self,
+        name: str,
+        condition: ConditionSpec,
+    ) -> "ProblemBuilder":
+        """
+        Add a named boundary condition (paper-style API).
+
+        Accepts a ConditionSpec produced by DirichletBC, NeumannBC, etc.
+        The ``name`` overrides the condition's internal name.
+
+        Example::
+
+            from pinneaple_environment import DirichletBC
+            .boundary_condition("wall", DirichletBC({"u": 0.0}))
+        """
+        import dataclasses
+        named = dataclasses.replace(condition, name=name)
+        self._conditions.append(named)
         return self
 
     # ── Sampling ──────────────────────────────────────────────────────────────
