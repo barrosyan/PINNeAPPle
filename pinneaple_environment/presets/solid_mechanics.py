@@ -2,9 +2,9 @@
 
 Covers problems that arise in structural / mechanical engineering:
   - Axisymmetric linear elasticity (hollow cylinders, pressure vessels,
-    drill pipe connections, shafts, valve seats, …)
+    threaded couplings, shafts, valve seats, …)
   - Thick-walled cylinder under pressure (Lamé — analytical solution available)
-  - Parametric threaded connection (e.g. NC50 pin-box drill pipe)
+  - Parametric threaded connection (e.g. TC50 pin-box coupling)
   - 2D plane strain for cross-sections under plane loading
 
 Convention
@@ -87,7 +87,7 @@ def axisymmetric_linear_elasticity_2d_default(
 
     Applications
     ------------
-    Drill pipe connections, pressure vessels, gun barrels, rotating shafts,
+    Threaded couplings, pressure vessels, gun barrels, rotating shafts,
     valve seats, bearing races, bolted flanges.
     """
     coords: CoordNames = ("r", "z")
@@ -327,11 +327,11 @@ def lame_analytical(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 3 — Drill pipe threaded connection (NC50 / API)
+# 3 — Threaded coupling (TC50)
 # ══════════════════════════════════════════════════════════════════════════════
 
-@register_preset("drill_pipe_nc50_box")
-def drill_pipe_nc50_box_default(
+@register_preset("threaded_coupling_tc50_box")
+def threaded_coupling_tc50_box_default(
     clearance: float = 0.1,        # mm — thread clearance
     thread_height: float = 0.8,    # mm
     offset: float = 1.0,           # mm — axial make-up offset
@@ -340,7 +340,7 @@ def drill_pipe_nc50_box_default(
     traction_top: float = 1e8,     # Pa — axial traction at top shoulder
 ) -> ProblemSpec:
     """
-    2D axisymmetric FEM preset for NC50 drill pipe BOX connection.
+    2D axisymmetric FEM preset for TC50 threaded coupling BOX body.
 
     Geometry (bounding box, actual profile is complex):
       r ∈ [r_bore, r_outer] = [50.0, 84.15] mm
@@ -352,7 +352,7 @@ def drill_pipe_nc50_box_default(
 
     Boundary conditions:
       u_z = 0 at z = 0       — fixed nose (thread start)
-      σ_zz = traction_top    — axial make-up load at top shoulder
+      σ_zz = traction_top    — axial assembly load at top shoulder
       σ_rr free on profile   — thread contact forces (via FEM data)
 
     Loading the FEM solution
@@ -374,13 +374,13 @@ def drill_pipe_nc50_box_default(
         coords=("r", "z"),
         params={"E": float(E), "nu": float(nu), "lambda": lam, "mu": mu},
         meta={
-            "connection": "NC50",
+            "connection": "TC50",
             "body": "BOX",
             "clearance": float(clearance),
             "thread_height": float(thread_height),
             "pitch_mm": 6.35,
             "taper": 1/16,
-            "standard": "API Spec 7",
+            "standard": "V-0.038R thread form",
         },
     )
 
@@ -405,7 +405,7 @@ def drill_pipe_nc50_box_default(
     ]
 
     return ProblemSpec(
-        name="drill_pipe_nc50_box",
+        name="threaded_coupling_tc50_box",
         dim=2,
         coords=("r", "z"),
         fields=("u_r", "u_z"),
@@ -415,8 +415,8 @@ def drill_pipe_nc50_box_default(
         scales=ScaleSpec(L=r_outer, U=u_char),
         field_ranges={"u_r": (-u_char, u_char), "u_z": (-u_char, u_char)},
         references=(
-            "API Spec 7 — NC50 rotary shouldered connection geometry.",
-            "API RP 7G-2 — Recommended practice for drill stem design.",
+            "TC50 rotary threaded coupling — BOX body geometry.",
+            "Timoshenko & Goodier, Theory of Elasticity.",
         ),
         domain_bounds={"r": (r_bore, r_outer), "z": (z_min, z_max)},
         solver_spec={
@@ -431,21 +431,21 @@ def drill_pipe_nc50_box_default(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 4 — Drill pipe NC50 BOX+PIN under combined loading (pressure + axial + torque)
+# 4 — TC50 BOX+PIN under combined loading (pressure + axial + torque)
 # ══════════════════════════════════════════════════════════════════════════════
 
-@register_preset("drill_pipe_nc50_rotating")
-def drill_pipe_nc50_rotating_default(
+@register_preset("threaded_coupling_tc50_rotating")
+def threaded_coupling_tc50_rotating_default(
     body: str = "BOX",          # "BOX" or "PIN"
     E: float = 2.1e11,          # Pa — AISI 4145H steel
     nu: float = 0.3,
-    p_inner: float = 20e6,      # Pa — internal drilling mud pressure
-    F_axial: float = 500e3,     # N  — hook load / WOB (compression positive)
-    T_torque: float = 40e3,     # N·m — make-up + rotary torque
+    p_inner: float = 20e6,      # Pa — internal fluid pressure
+    F_axial: float = 500e3,     # N  — axial load (compression positive)
+    T_torque: float = 40e3,     # N·m — assembly + rotary torque
     rpm: float = 90.0,          # RPM (quasi-static — inertia neglected for now)
 ) -> ProblemSpec:
     """
-    Drill pipe NC50 threaded connection under combined loading.
+    TC50 threaded coupling under combined loading.
 
     Fields  : u_r, u_z, u_θ  (radial, axial, hoop/torsional displacements)
     PDE     : axisymmetric linear elasticity (u_r, u_z) + torsion (u_θ)
@@ -519,13 +519,13 @@ def drill_pipe_nc50_rotating_default(
             "rpm": float(rpm),
         },
         meta={
-            "connection": "NC50",
+            "connection": "TC50",
             "body": body,
             "formulation": "axisymmetric_rz + decoupled_torsion",
             "torsion_eqn": "d²u_θ/dr² + (1/r)du_θ/dr - u_θ/r² + d²u_θ/dz² = 0",
             "pitch_mm": 6.35,
             "taper": 1 / 16,
-            "standard": "API Spec 7 / API RP 7G-2",
+            "standard": "V-0.038R thread form",
             "theta_max_rad": float(theta_max),
         },
     )
@@ -583,7 +583,7 @@ def drill_pipe_nc50_rotating_default(
     ]
 
     return ProblemSpec(
-        name=f"drill_pipe_nc50_rotating_{body.lower()}",
+        name=f"threaded_coupling_tc50_rotating_{body.lower()}",
         dim=2,
         coords=("r", "z"),
         fields=("u_r", "u_z", "u_θ"),
@@ -597,8 +597,7 @@ def drill_pipe_nc50_rotating_default(
             "u_θ": (-uth_char * 1.2, uth_char * 1.2),
         },
         references=(
-            "API Spec 7 — NC50 rotary shouldered connection.",
-            "API RP 7G-2 — Drill stem design and operating limits.",
+            "TC50 rotary threaded coupling — combined loading.",
             "Timoshenko & Goodier, Theory of Elasticity, ch. 11 (torsion).",
         ),
         domain_bounds={"r": (r_bore, r_outer), "z": (z_min, z_max)},
@@ -610,20 +609,20 @@ def drill_pipe_nc50_rotating_default(
                 "p_inner": float(p_inner),
                 "F_axial": float(F_axial),
                 "T_torque": float(T_torque),
-                "mesh_file": "mesh_nc50.msh",
+                "mesh_file": "mesh_tc50.msh",
             },
         },
     )
 
 
-@register_preset("drill_pipe_nc50_pin")
-def drill_pipe_nc50_pin_default(
+@register_preset("threaded_coupling_tc50_pin")
+def threaded_coupling_tc50_pin_default(
     thread_height: float = 0.8,
     E: float = 2.1e11,
     nu: float = 0.3,
     traction_top: float = 1e8,
 ) -> ProblemSpec:
-    """NC50 drill pipe PIN body — same physics as BOX, different geometry bounds."""
+    """TC50 threaded coupling PIN body — same physics as BOX, different geometry bounds."""
     pin_bore_r = 48.0   # mm — ID bore radius
     r_outer    = 62.0   # mm — approximate outer radius at shoulder
     z_max      = 140.0
@@ -635,7 +634,7 @@ def drill_pipe_nc50_pin_default(
         fields=("u_r", "u_z"),
         coords=("r", "z"),
         params={"E": float(E), "nu": float(nu), "lambda": lam, "mu": mu},
-        meta={"connection": "NC50", "body": "PIN",
+        meta={"connection": "TC50", "body": "PIN",
               "thread_height": float(thread_height)},
     )
 
@@ -660,13 +659,13 @@ def drill_pipe_nc50_pin_default(
     ]
 
     return ProblemSpec(
-        name="drill_pipe_nc50_pin",
+        name="threaded_coupling_tc50_pin",
         dim=2, coords=("r", "z"), fields=("u_r", "u_z"),
         pde=pde, conditions=tuple(conditions),
         sample_defaults={"n_col": 8000, "n_bc": 2000},
         scales=ScaleSpec(L=r_outer, U=u_char),
         field_ranges={"u_r": (-u_char, u_char), "u_z": (-u_char, u_char)},
-        references=("API Spec 7 — NC50 PIN body.",),
+        references=("TC50 threaded coupling — PIN body.",),
         domain_bounds={"r": (pin_bore_r, r_outer), "z": (0.0, z_max)},
         solver_spec={"name": "fenics", "method": "axisymmetric_linear_elasticity",
                      "params": {"E": float(E), "nu": float(nu)}},

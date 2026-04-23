@@ -14,13 +14,13 @@ Fluxo genérico para qualquer problema de elasticidade:
 Casos de uso incluídos
 ----------------------
   A. Cilindro espesso sob pressão interna (Lamé — solução analítica disponível)
-  B. Drill pipe NC50 BOX com dados FEM externos (solution.npy)
+  B. Acoplamento roscado TC50 BOX com dados FEM externos (solution.npy)
   C. Qualquer preset de elasticidade axissimétrica via get_preset()
 
-Para o drill pipe, substitua o caminho para solution.npy pelo seu dataset:
+Para o preset de acoplamento, substitua o caminho para solution.npy pelo seu dataset:
   pipeline = SolidMechanicsPipeline.from_fem_solution(
-      "synthetic_nc50/dataset/case_000/solution.npy",
-      preset="drill_pipe_nc50_box",
+      "synthetic_tc50/dataset/case_000/solution.npy",
+      preset="threaded_coupling_tc50_box",
   )
   result = pipeline.train(epochs=5000)
   pipeline.evaluate(result)
@@ -66,7 +66,7 @@ class AxiSymElasticityPINN(nn.Module):
     A normalização de entrada/saída é feita internamente — o modelo recebe
     coordenadas físicas (mm) e devolve deslocamentos físicos (mm).
 
-    Melhorias em relação ao modelo original do drill pipe:
+    Melhorias em relação ao modelo original do acoplamento:
       - Skip connections para gradiente mais estável
       - Normalização interna (não depende de constantes externas)
       - Saída bounded via tanh (evita explosão fora do domínio)
@@ -284,8 +284,8 @@ class SolidMechanicsPipeline:
     Via FEM solution.npy (dados externos do FEM)::
 
         pipeline = SolidMechanicsPipeline.from_fem_solution(
-            "synthetic_nc50/dataset/case_000/solution.npy",
-            preset="drill_pipe_nc50_box",
+            "synthetic_tc50/dataset/case_000/solution.npy",
+            preset="threaded_coupling_tc50_box",
         )
 
     Via ProblemBuilder::
@@ -885,12 +885,12 @@ def demo_thick_walled_cylinder():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Caso B — Drill pipe NC50 com dados FEM externos
+# Caso B — Acoplamento TC50 com dados FEM externos
 # ══════════════════════════════════════════════════════════════════════════════
 
-def demo_drill_pipe_nc50(dataset_dir: str = "synthetic_nc50/dataset"):
+def demo_threaded_coupling_tc50(dataset_dir: str = "synthetic_tc50/dataset"):
     print("\n" + "═" * 60)
-    print("  CASO B — Drill Pipe NC50 BOX")
+    print("  CASO B — Acoplamento TC50 BOX")
     print("  Pipeline com dados FEM externos (solution.npy)")
     print("═" * 60)
 
@@ -915,13 +915,13 @@ def demo_drill_pipe_nc50(dataset_dir: str = "synthetic_nc50/dataset"):
         # Pipeline com dados FEM
         pipeline = SolidMechanicsPipeline.from_fem_solution(
             sol_path,
-            preset="drill_pipe_nc50_box",
+            preset="threaded_coupling_tc50_box",
             preset_params={"clearance": 0.1, "thread_height": 0.8},
         )
     else:
         # Pipeline só com física (sem FEM)
         pipeline = SolidMechanicsPipeline.from_preset(
-            "drill_pipe_nc50_box",
+            "threaded_coupling_tc50_box",
             clearance=0.1, thread_height=0.8,
         )
 
@@ -939,7 +939,7 @@ def demo_drill_pipe_nc50(dataset_dir: str = "synthetic_nc50/dataset"):
     )
 
     pipeline.evaluate(result)
-    pipeline.visualize(result, OUTPUT_DIR / "case_B_drill_pipe_nc50.png")
+    pipeline.visualize(result, OUTPUT_DIR / "case_B_threaded_coupling_tc50.png")
     print(f"\n{result.summary()}")
     return result
 
@@ -1017,17 +1017,17 @@ def main():
     # Caso A: Cilindro espesso (valida com Lamé)
     result_a = demo_thick_walled_cylinder()
 
-    # Caso B: Drill pipe NC50 (usa FEM se disponível)
-    # result_b = demo_drill_pipe_nc50("synthetic_nc50/dataset")
+    # Caso B: Acoplamento TC50 (usa FEM se disponível)
+    # result_b = demo_threaded_coupling_tc50("synthetic_tc50/dataset")
 
     # Caso C: ProblemBuilder customizado
     result_c = demo_custom_problem()
 
     print("\n" + "=" * 60)
-    print("  MAPEAMENTO DO PIPELINE (drill_pipe → PINNeAPPle)")
+    print("  MAPEAMENTO DO PIPELINE (acoplamento → PINNeAPPle)")
     print("=" * 60)
     print("""
-  ANTES (drill pipe standalone)          AGORA (PINNeAPPle)
+  ANTES (acoplamento standalone)          AGORA (PINNeAPPle)
   ─────────────────────────────          ────────────────────────────────
   generate_mesh.py                  →    geom: domínio r,z + solver_spec
   run_simulations.py (FEniCS)       →    SolidMechanicsPipeline.from_fem_solution()

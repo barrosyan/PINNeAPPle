@@ -1,6 +1,6 @@
 """
-Pipeline completo — Drill Pipe NC50 em Rotação com PINNeAPPle
-=============================================================
+Pipeline completo — Acoplamento TC50 em Rotação com PINNeAPPle
+==============================================================
 
 Instalação
 ----------
@@ -11,8 +11,8 @@ Instalação
 
 Problema físico
 ---------------
-Conexão roscada NC50 (BOX + PIN) sob carregamento combinado típico de
-operação de perfuração rotativa:
+Acoplamento roscado TC50 (BOX + PIN) sob carregamento combinado típico de
+operação rotativa:
 
     ① Pressão interna (fluido de perfuração)   p_i  = 20 MPa
     ② Tração axial (hook load / WOB)           F    = 500 kN
@@ -38,7 +38,7 @@ Fluxo do pipeline
 -----------------
   [1] Preset registrado  → ProblemSpec  (physics + BCs codificados)
   [2] Dados sintéticos   → gera solution.npy simulando FEM
-  [3] Treino PINN        → RotatingDrillPipePINN  (3 saídas: u_r, u_z, u_θ)
+  [3] Treino PINN        → RotatingCouplingPINN   (3 saídas: u_r, u_z, u_θ)
   [4] Avaliação          → L2 relativo vs. FEM sintético
   [5] Visualização       → figura 2×3 (campos + Von Mises + histórico)
   [6] Export             → TorchScript .pt  (pronto para C++ / edge deploy)
@@ -70,9 +70,9 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # PINN — 3 saídas: u_r, u_z, u_θ
 # ══════════════════════════════════════════════════════════════════════════════
 
-class RotatingDrillPipePINN(nn.Module):
+class RotatingCouplingPINN(nn.Module):
     """
-    PINN de 3 campos para drill pipe NC50 em rotação.
+    PINN de 3 campos para acoplamento TC50 em rotação.
 
     Entrada : (r, z)      — coordenadas físicas em mm
     Saída   : (u_r, u_z, u_θ) — deslocamentos em mm
@@ -393,7 +393,7 @@ def generate_synthetic_fem_data(
     )).astype(np.float32)
 
     if output_path is None:
-        output_path = OUTPUT_DIR / "synthetic_nc50_solution.npy"
+        output_path = OUTPUT_DIR / "synthetic_tc50_solution.npy"
 
     np.save(str(output_path), {"coords": coords, "disp": disp, "stress_vm": vm})
     print(f"  [FEM sintético] {n_points} pontos → {output_path.name}")
@@ -409,7 +409,7 @@ def generate_synthetic_fem_data(
 # ══════════════════════════════════════════════════════════════════════════════
 
 @dataclass
-class DrillPipeResult:
+class CouplingResult:
     spec: object
     model: nn.Module
     history: List[Dict[str, float]]
@@ -419,7 +419,7 @@ class DrillPipeResult:
     def summary(self) -> str:
         lines = [
             "=" * 60,
-            f"Drill Pipe NC50 Rotating — {self.spec.name}",
+            f"Rotating Coupling TC50 — {self.spec.name}",
             "=" * 60,
             f"  Epochs    : {len(self.history)}",
             f"  Tempo     : {self.elapsed_s:.1f} s",
@@ -436,23 +436,23 @@ class DrillPipeResult:
 # Pipeline principal
 # ══════════════════════════════════════════════════════════════════════════════
 
-class RotatingDrillPipePipeline:
+class RotatingCouplingPipeline:
     """
-    Pipeline PINN completo para drill pipe NC50 em rotação.
+    Pipeline PINN completo para acoplamento TC50 em rotação.
 
     Uso rápido
     ----------
     # A partir do preset (sem dados FEM):
-    pipeline = RotatingDrillPipePipeline.from_preset(
-        "drill_pipe_nc50_rotating", body="BOX",
+    pipeline = RotatingCouplingPipeline.from_preset(
+        "threaded_coupling_tc50_rotating", body="BOX",
         p_inner=20e6, F_axial=500e3, T_torque=40e3, rpm=90,
     )
     result = pipeline.train(epochs=3000)
 
     # Com dados FEM (solution.npy com 3 colunas de deslocamento):
-    pipeline = RotatingDrillPipePipeline.from_fem_solution(
+    pipeline = RotatingCouplingPipeline.from_fem_solution(
         "solution.npy",
-        preset="drill_pipe_nc50_rotating",
+        preset="threaded_coupling_tc50_rotating",
         preset_params={"body": "BOX", "p_inner": 20e6, ...},
     )
     result = pipeline.train(epochs=3000)
@@ -470,7 +470,7 @@ class RotatingDrillPipePipeline:
     # ── Construtores ──────────────────────────────────────────────────────────
 
     @classmethod
-    def from_preset(cls, preset_id: str, **params) -> "RotatingDrillPipePipeline":
+    def from_preset(cls, preset_id: str, **params) -> "RotatingCouplingPipeline":
         """Cria pipeline a partir de preset registrado, sem dados FEM."""
         spec = get_preset(preset_id, **params)
         return cls(spec)
@@ -479,9 +479,9 @@ class RotatingDrillPipePipeline:
     def from_fem_solution(
         cls,
         solution_npy: str | Path,
-        preset: str = "drill_pipe_nc50_rotating",
+        preset: str = "threaded_coupling_tc50_rotating",
         preset_params: Optional[Dict] = None,
-    ) -> "RotatingDrillPipePipeline":
+    ) -> "RotatingCouplingPipeline":
         """
         Carrega dados FEM e cria pipeline.
 
@@ -554,7 +554,7 @@ class RotatingDrillPipePipeline:
         device: str = "auto",
         seed: int = 42,
         verbose: bool = True,
-    ) -> DrillPipeResult:
+    ) -> CouplingResult:
         """
         Treina o PINN nos dois sistemas de PDE (meridional + torsional).
 
@@ -581,7 +581,7 @@ class RotatingDrillPipePipeline:
         theta_max = float(self.spec.pde.meta.get("theta_max_rad", 1e-3))
         u_th_char = theta_max * r_bounds[1]
 
-        model = RotatingDrillPipePINN(
+        model = RotatingCouplingPINN(
             r_bounds=r_bounds,
             z_bounds=z_bounds,
             u_rz_scale=max(u_char * 0.5, 1e-6),
@@ -606,7 +606,7 @@ class RotatingDrillPipePipeline:
         n_params = sum(p.numel() for p in model.parameters())
         if verbose:
             print(f"\n{'=' * 60}")
-            print(f"  RotatingDrillPipePINN — {self.spec.name}")
+            print(f"  RotatingCouplingPINN — {self.spec.name}")
             print(f"  Parâmetros : {n_params:,}   |   device: {dev}")
             print(f"  Col: {n_col}  BC: {n_bc}  FEM: {_n_d if has_fem else 0}")
             print(f"  Pesos  meri={w_meri}  tors={w_tors}  bc={w_bc}  data={w_data}")
@@ -681,7 +681,7 @@ class RotatingDrillPipePipeline:
         if verbose:
             print(f"\n  Treino concluído em {elapsed:.1f}s")
 
-        return DrillPipeResult(
+        return CouplingResult(
             spec=self.spec, model=model, history=history, elapsed_s=elapsed
         )
 
@@ -719,7 +719,7 @@ class RotatingDrillPipePipeline:
 
     # ── Avaliação ─────────────────────────────────────────────────────────────
 
-    def evaluate(self, result: DrillPipeResult) -> Dict[str, float]:
+    def evaluate(self, result: CouplingResult) -> Dict[str, float]:
         """
         Calcula métricas vs. dados FEM (se disponíveis).
 
@@ -767,7 +767,7 @@ class RotatingDrillPipePipeline:
 
     def visualize(
         self,
-        result: DrillPipeResult,
+        result: CouplingResult,
         output_path: Optional[Path] = None,
         n_grid: int = 80,
     ) -> Path:
@@ -806,7 +806,7 @@ class RotatingDrillPipePipeline:
 
         fig, axes = plt.subplots(2, 3, figsize=(16, 10))
         fig.suptitle(
-            f"Drill Pipe NC50 — {self.spec.name}\n"
+            f"Rotating Coupling TC50 — {self.spec.name}\n"
             f"p_i={self.spec.pde.params.get('p_inner', 0) / 1e6:.0f} MPa  "
             f"F={self.spec.pde.params.get('F_axial', 0) / 1e3:.0f} kN  "
             f"T={self.spec.pde.params.get('T_torque', 0) / 1e3:.0f} kN·m  "
@@ -865,7 +865,7 @@ class RotatingDrillPipePipeline:
         plt.tight_layout()
 
         if output_path is None:
-            output_path = OUTPUT_DIR / f"drill_pipe_rotating_{self.spec.name}.png"
+            output_path = OUTPUT_DIR / f"rotating_coupling_{self.spec.name}.png"
 
         fig.savefig(str(output_path), dpi=150, bbox_inches="tight")
         plt.close(fig)
@@ -876,7 +876,7 @@ class RotatingDrillPipePipeline:
 
     def export(
         self,
-        result: DrillPipeResult,
+        result: CouplingResult,
         output_dir: Optional[Path] = None,
     ) -> Dict[str, Path]:
         """
@@ -938,18 +938,18 @@ def run_demo(epochs: int = 2000, device: str = "auto"):
 
     Para produção, substitua generate_synthetic_fem_data() pelo seu
     pipeline FEniCS/ABAQUS real e passe o solution.npy para
-    RotatingDrillPipePipeline.from_fem_solution().
+    RotatingCouplingPipeline.from_fem_solution().
     """
     print("\n" + "=" * 60)
-    print("  DRILL PIPE NC50 — PIPELINE COMPLETO (PINNeAPPle)")
+    print("  ACOPLAMENTO TC50 — PIPELINE COMPLETO (PINNeAPPle)")
     print("=" * 60)
 
     # ── [1] Preset ────────────────────────────────────────────────────────────
-    print("\n[1] Carregando preset 'drill_pipe_nc50_rotating'...")
+    print("\n[1] Carregando preset 'threaded_coupling_tc50_rotating'...")  # noqa
     spec = get_preset(
-        "drill_pipe_nc50_rotating",
+        "threaded_coupling_tc50_rotating",
         body="BOX",
-        p_inner=20e6,       # 20 MPa — fluido de perfuração
+        p_inner=20e6,       # 20 MPa — fluido interno
         F_axial=500e3,      # 500 kN — hook load
         T_torque=40e3,      # 40 kN·m — torque de make-up + rotação
         rpm=90.0,           # 90 RPM
@@ -966,9 +966,9 @@ def run_demo(epochs: int = 2000, device: str = "auto"):
 
     # ── [3] Pipeline + treino ─────────────────────────────────────────────────
     print("\n[3] Criando pipeline com dados FEM...")
-    pipeline = RotatingDrillPipePipeline.from_fem_solution(
+    pipeline = RotatingCouplingPipeline.from_fem_solution(
         fem_path,
-        preset="drill_pipe_nc50_rotating",
+        preset="threaded_coupling_tc50_rotating",
         preset_params={
             "body": "BOX",
             "p_inner": 20e6,
@@ -1014,7 +1014,7 @@ def run_demo(epochs: int = 2000, device: str = "auto"):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Drill Pipe NC50 Rotating — PINNeAPPle")
+    parser = argparse.ArgumentParser(description="Rotating Coupling TC50 — PINNeAPPle")
     parser.add_argument("--epochs",  type=int,   default=2000,  help="Épocas de treino")
     parser.add_argument("--device",  type=str,   default="auto", help="cpu/cuda/auto")
     parser.add_argument("--fem",     type=str,   default=None,   help="Caminho p/ solution.npy real")
@@ -1028,9 +1028,9 @@ if __name__ == "__main__":
     if args.fem:
         # Modo produção: usa FEM real
         print(f"\nModo produção — FEM: {args.fem}")
-        pipeline = RotatingDrillPipePipeline.from_fem_solution(
+        pipeline = RotatingCouplingPipeline.from_fem_solution(
             args.fem,
-            preset="drill_pipe_nc50_rotating",
+            preset="threaded_coupling_tc50_rotating",
             preset_params={
                 "body":     args.body,
                 "p_inner":  args.p_inner,

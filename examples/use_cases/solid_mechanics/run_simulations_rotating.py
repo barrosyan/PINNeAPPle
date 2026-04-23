@@ -3,7 +3,7 @@ run_simulations_rotating.py — FEM axissimétrico com torção (PINNeAPPle)
 ========================================================================
 
 Estende o `run_simulations.py` original para resolver o problema completo
-do drill pipe em rotação: pressão interna + tração axial + torque.
+do acoplamento rotativo: pressão interna + tração axial + torque.
 
 Formulação FEM (dolfinx)
 ------------------------
@@ -37,7 +37,7 @@ Instalação
     # conda install -c conda-forge fenics-dolfinx
 
   O script roda no WSL com:
-    cd ~/drill_pipe
+    cd ~/coupling_sim
     python run_simulations_rotating.py
 
 Uso
@@ -79,7 +79,7 @@ from dolfinx.fem.petsc import LinearProblem
 from pinneaple_environment import get_preset
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Parâmetros físicos padrão (NC50, AISI 4145H)
+# Parâmetros físicos padrão (AISI 4145H steel)
 # ══════════════════════════════════════════════════════════════════════════════
 
 _E      = 2.1e11    # Pa
@@ -451,7 +451,7 @@ def simulate_case(
         raise FileNotFoundError(f"Mesh não encontrado: {msh_file}")
 
     # Parâmetros geométricos pelo preset
-    spec = get_preset("drill_pipe_nc50_rotating", body=body,
+    spec = get_preset("threaded_coupling_tc50_rotating", body=body,
                        E=E, nu=nu, p_inner=p_inner, F_axial=F_axial, T_torque=T_torque)
     r_bore  = spec.domain_bounds["r"][0]
     r_outer = spec.domain_bounds["r"][1]
@@ -566,7 +566,7 @@ def run(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="FEM axissimétrico com torção — NC50 Drill Pipe (PINNeAPPle)"
+        description="FEM axissimétrico com torção — TC50 Rotary Coupling (PINNeAPPle)"
     )
     parser.add_argument("--dataset-dir", default=DATASET_DIR,
                         help="Pasta do dataset (padrão: dataset/)")

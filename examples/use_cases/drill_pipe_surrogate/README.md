@@ -1,11 +1,11 @@
-# Drill Pipe Wear Surrogate Model with pinneaple + FEniCS
+# Rotary Coupling Wear Surrogate Model with pinneaple + FEniCS
 
-This use case shows how to build a surrogate model for drill pipe wear analysis
+This use case shows how to build a surrogate model for rotary coupling wear analysis
 using pinneaple and FEniCS as the reference solver.
 
 Two scenarios are covered:
 1. **Both pin and box rotating** — torsional wear on both mating surfaces
-2. **Pin rotating only, box fixed** — asymmetric wear (more realistic for make-up connections)
+2. **Pin rotating only, box fixed** — asymmetric wear (more realistic for assembly connections)
 
 The output is a trained surrogate that predicts von Mises stress fields and
 highlights high-wear regions, with visualizations showing wear intensity maps.
@@ -14,10 +14,10 @@ highlights high-wear regions, with visualizations showing wear intensity maps.
 
 ## Problem description
 
-A drill pipe connection (pin + box) under combined:
+A threaded coupling (pin + box) under combined:
 - **Axial load** F_z (tension/compression)
 - **Torque** T (torsion from rotation)
-- **Bending moment** M (from wellbore curvature)
+- **Bending moment** M (from external loading)
 - **Contact pressure** at thread flanks (Hertzian contact)
 
 The **von Mises stress** σ_vm = √(σ_xx² - σ_xx σ_yy + σ_yy² + 3 σ_xy²) is used
@@ -42,7 +42,7 @@ Wear visualization (pinneaple_inference)
   → von Mises map + wear zone highlighting
         ↓
 Digital twin (pinneaple_digital_twin)
-  → live monitoring of downhole loads
+  → live monitoring of in-service loads
 ```
 
 ---
@@ -61,17 +61,17 @@ pip install pyvista             # 3D visualization
 
 ## Step 1 — Define the problem preset
 
-pinneaple ships a `drill_pipe_torsion` preset. Extend it for the two scenarios:
+pinneaple ships a `rotary_coupling_torsion` preset. Extend it for the two scenarios:
 
 ```python
 from pinneaple_environment import get_preset
 
 # Scenario A: both pin and box rotating (symmetric torsion)
 spec_both = get_preset(
-    "drill_pipe_torsion",
+    "rotary_coupling_torsion",
     E=210e9,
     nu=0.3,
-    r_inner=0.038,          # m — drill pipe inner radius
+    r_inner=0.038,          # m — coupling inner radius
     r_outer=0.044,          # m — outer radius
     torque=15000.0,         # N·m — applied torque
     axial_force=500e3,      # N — axial tension
@@ -80,7 +80,7 @@ spec_both = get_preset(
 
 # Scenario B: pin rotates only (box fixed)
 spec_pin = get_preset(
-    "drill_pipe_torsion",
+    "rotary_coupling_torsion",
     E=210e9,
     nu=0.3,
     r_inner=0.038,
@@ -119,7 +119,7 @@ dataset_pin  = []
 for T in torques:
     for F in axial_forces:
         # Scenario A
-        spec = get_preset("drill_pipe_torsion",
+        spec = get_preset("rotary_coupling_torsion",
                           torque=T, axial_force=F, r_inner=0.038, r_outer=0.044)
         result_a: SolverOutput = bridge.forward(spec)
         dataset_both.append({
@@ -129,7 +129,7 @@ for T in torques:
         })
 
         # Scenario B (pin only)
-        spec_b = get_preset("drill_pipe_torsion",
+        spec_b = get_preset("rotary_coupling_torsion",
                             torque=T, axial_force=F, r_inner=0.038, r_outer=0.044)
         spec_b.conditions["box_face"] = DirichletBC({"ux": 0.0, "uy": 0.0, "uz": 0.0})
         result_b: SolverOutput = bridge.forward(spec_b)
@@ -274,7 +274,7 @@ with torch.no_grad():
 vm_pred = scaler_y.inverse_transform(vm_pred_norm).reshape(RR.shape)
 
 # Wear index ≈ σ_vm / σ_yield  (dimensionless; >0.8 = high risk)
-sigma_yield = 550e6   # Pa — drill pipe grade S-135
+sigma_yield = 550e6   # Pa — high-strength alloy steel
 wear_index  = vm_pred / sigma_yield
 
 # ---- Plots ----
@@ -317,13 +317,13 @@ axes[2].set_ylabel("r (mm)")
 axes[2].set_title("High-Risk Wear Zones (σ_vm > 0.8 σ_y)\nRed = critical")
 
 plt.tight_layout()
-plt.savefig("drill_pipe_wear_map.png", dpi=200)
-print("Saved: drill_pipe_wear_map.png")
+plt.savefig("coupling_wear_map.png", dpi=200)
+print("Saved: coupling_wear_map.png")
 ```
 
 Expected output:
 
-![Drill pipe wear map showing three panels: von Mises stress field, wear index heatmap with contours, and high-risk zone highlighting](drill_pipe_wear_example.png)
+![Coupling wear map showing three panels: von Mises stress field, wear index heatmap with contours, and high-risk zone highlighting](coupling_wear_example.png)
 
 ---
 
@@ -334,7 +334,6 @@ fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 titles = ["Both pin + box rotating", "Pin rotating only (box fixed)"]
 
 for ax, data, title in zip(axes, [dataset_both, dataset_pin], titles):
-    # Find worst-case load (max σ_vm across all load cases)
     vm_max_per_case = [np.nanmax(d["von_mises"]) for d in data if d["von_mises"] is not None]
     torques_flat = [d["torque"] for d in data if d["von_mises"] is not None]
     forces_flat  = [d["axial_force"] for d in data if d["von_mises"] is not None]
@@ -352,7 +351,7 @@ for ax, data, title in zip(axes, [dataset_both, dataset_pin], titles):
     ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig("drill_pipe_scenario_comparison.png", dpi=200)
+plt.savefig("coupling_scenario_comparison.png", dpi=200)
 ```
 
 ---
@@ -375,9 +374,9 @@ dt.anomaly_monitor.add_detector(
     ThresholdDetector({"von_mises": 0.8 * sigma_yield})
 )
 
-# Real sensor streams (surface torque/WOB measurements)
-def surface_torque_sensor(t: float) -> dict:
-    """Simulates downhole torque from surface measurement (with tool-face correction)."""
+# Real sensor streams (surface torque/force measurements)
+def torque_sensor(t: float) -> dict:
+    """Simulates in-service torque from surface measurement."""
     T_nominal = 15000.0
     T_noise   = 500.0 * np.sin(0.5 * t) + 200 * np.random.randn()
     return {"torque": T_nominal + T_noise}
@@ -385,7 +384,7 @@ def surface_torque_sensor(t: float) -> dict:
 dt.add_stream(MockStream(
     "surface_torque",
     ["torque"],
-    surface_torque_sensor,
+    torque_sensor,
     tick_interval=0.5,
     coords={"r": 0.041, "z": 0.06},
 ))
@@ -407,7 +406,7 @@ The following components are **already in pinneaple** and work out-of-the-box:
 
 | Component | Module | Status |
 |-----------|--------|--------|
-| `drill_pipe_torsion` preset | `pinneaple_environment.presets.structural` | ✅ Ready |
+| `rotary_coupling_torsion` preset | `pinneaple_environment.presets.structural` | ✅ Ready |
 | FEniCS bridge | `pinneaple_solvers.FEnicsBridge` | ✅ Ready |
 | DeepONet / VanillaPINN | `pinneaple_models` | ✅ Ready |
 | Trainer + AMP + compile | `pinneaple_train` | ✅ Ready |
@@ -429,14 +428,14 @@ The following steps require **your domain-specific implementation**:
 ## File structure for this use case
 
 ```
-my_drill_pipe_study/
+my_coupling_study/
 ├── README.md                        ← this file
 ├── 01_run_fenics_sweep.py           ← parameter sweep with FEniCS
 ├── 02_train_surrogate.py            ← surrogate training
 ├── 03_wear_visualization.py         ← wear maps
 ├── 04_digital_twin_monitoring.py    ← real-time monitoring
 ├── configs/
-│   └── drill_pipe_config.yaml       ← full pipeline YAML
+│   └── coupling_config.yaml         ← full pipeline YAML
 └── data/
     ├── fenics_solutions/            ← FEniCS output .xdmf files
     ├── dataset.parquet              ← training dataset
@@ -448,13 +447,13 @@ my_drill_pipe_study/
 ## YAML config for automated pipeline
 
 ```yaml
-# configs/drill_pipe_config.yaml
+# configs/coupling_config.yaml
 pipeline:
-  name: drill_pipe_wear_surrogate
+  name: rotary_coupling_wear_surrogate
   out_dir: data/results
 
 problem:
-  id: drill_pipe_torsion
+  id: rotary_coupling_torsion
   params:
     E: 210.0e9
     nu: 0.3
@@ -480,7 +479,7 @@ dataset:
     axial_force: [100000, 300000, 500000, 700000]
 
 models:
-  - id: pinn_drill_pipe
+  - id: pinn_coupling
     type: VanillaPINN
     params:
       hidden: [128, 128, 128, 128]
@@ -507,9 +506,7 @@ report:
 
 Run with:
 ```bash
-python -m pinneaple_arena.runner.run_pipeline --config configs/drill_pipe_config.yaml
-# or:
-python examples/pinneaple_arena/09_full_pipeline_yaml.py --config configs/drill_pipe_config.yaml
+python -m pinneaple_arena.runner.run_pipeline --config configs/coupling_config.yaml
 ```
 
 ---
@@ -517,6 +514,6 @@ python examples/pinneaple_arena/09_full_pipeline_yaml.py --config configs/drill_
 ## References
 
 - Archard, J.F. (1953). "Contact and Rubbing of Flat Surfaces." Journal of Applied Physics.
-- Bourgoyne et al. (1991). *Applied Drilling Engineering*. SPE Textbook Series.
+- Timoshenko & Goodier (1970). *Theory of Elasticity*, 3rd ed. McGraw-Hill.
 - Leake & Mortari (2020). "Deep Theory of Functional Connections." arXiv:2005.01219
 - pinneaple docs: `QUICKSTART.md`

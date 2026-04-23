@@ -15,7 +15,7 @@
 
 ## O problema: famílias paramétricas de PDEs
 
-Na indústria (drill pipe, turbinas, reatores), o mesmo tipo de PDE é resolvido repetidamente com parâmetros diferentes:
+Na indústria (acoplamentos rotativos, turbinas, reatores), o mesmo tipo de PDE é resolvido repetidamente com parâmetros diferentes:
 - Burgers com viscosidade `nu ∈ {0.001, 0.005, 0.01, 0.05, 0.1}`
 - Navier-Stokes com Reynolds `Re ∈ {100, 500, 1000, 5000}`
 - Condução com condutividade `k ∈ {1, 10, 100}` W/m·K

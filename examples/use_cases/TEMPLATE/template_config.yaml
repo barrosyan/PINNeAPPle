@@ -48,7 +48,7 @@ problem:
   #   poisson_2d           — 2D Poisson equation
   #   ns_incompressible_2d — 2D incompressible Navier-Stokes
   #   advection_diffusion_2d — 2D advection-diffusion
-  #   drill_pipe_torsion   — 3D structural: drill pipe wear (FEniCS)
+  #   rotary_coupling_torsion — 3D structural: rotary coupling wear (FEniCS)
   #   cpu_heatsink_thermal — 2D thermal: CPU cooling
   #   rocket_nozzle_cfd    — 2D CFD: nozzle flow (OpenFOAM)
   #   aircraft_wing_structural — 3D structural: wing (FEniCS)

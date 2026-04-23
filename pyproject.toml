@@ -70,7 +70,7 @@ solvers = [
   "numba>=0.59",
 ]
 
-# FEniCS / DOLFINx (axisymmetric FEM, drill pipe, etc.)
+# FEniCS / DOLFINx (axisymmetric FEM, rotary couplings, etc.)
 fenics = [
   "fenics-dolfinx>=0.7.0",
   "mpi4py>=3.1",
@@ -147,6 +147,18 @@ all = [
   "requests>=2.31",
 ]
 
+# Visualisation (CFD-style plots, animations)
+viz = [
+  "matplotlib>=3.8",
+  "scipy>=1.10",
+]
+
+# Interactive 3-D (optional, not required for basic viz)
+viz_interactive = [
+  "plotly>=5.18",
+  "kaleido>=0.2",
+]
+
 # Dev tools
 dev = [
   "ruff>=0.5",
@@ -195,6 +207,7 @@ packages = [
   "pinneaple_transfer",
   "pinneaple_uq",
   "pinneaple_validate",
+  "pinneaple_viz",
 ]
 include = [
   "data/bundles/**/*",

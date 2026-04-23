@@ -95,6 +95,8 @@ def register_all() -> None:
     from . import isph as _isph  # noqa: F401
     from . import dfsph as _dfsph  # noqa: F401
 
+    from . import meshfree as _meshfree  # noqa: F401
+
 
 @dataclass
 class SolverCatalog:

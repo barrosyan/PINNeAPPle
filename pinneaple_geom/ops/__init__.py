@@ -7,6 +7,14 @@ from .features import (
     compute_face_areas,
     compute_curvature_proxy,
 )
+from .voxelize import (
+    VoxelGrid,
+    voxelize_domain,
+    voxelize_sdf,
+    voxelize_pointcloud,
+    voxelgrid_to_collocation,
+    sample_voxelgrid,
+)
 
 __all__ = [
     "repair_mesh",
@@ -16,4 +24,10 @@ __all__ = [
     "compute_vertex_normals",
     "compute_face_areas",
     "compute_curvature_proxy",
+    "VoxelGrid",
+    "voxelize_domain",
+    "voxelize_sdf",
+    "voxelize_pointcloud",
+    "voxelgrid_to_collocation",
+    "sample_voxelgrid",
 ]

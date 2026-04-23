@@ -1,15 +1,15 @@
-"""Threaded connection geometry for drill pipe PINN simulations.
+"""Threaded connection geometry for rotary coupling PINN simulations.
 
-Generates 2D axisymmetric (r, z) meshes of API rotary shouldered connections
+Generates 2D axisymmetric (r, z) meshes of rotary threaded connections
 using gmsh. The mesh is compatible with FEniCS/dolfinx and the
 SolidMechanicsPipeline.
 
 Supported connections
 ---------------------
-  NC50  — 5½" drill collar, 4 TPI, taper 1:16, API Spec 7
-  NC46  — 4½" drill pipe, 4 TPI, taper 1:16
-  NC38  — 3½" drill pipe, 4 TPI, taper 1:16
-  Custom — any API V-thread via ThreadProfile
+  TC50  — large-diameter coupling, 4 TPI, taper 1:16
+  TC46  — medium-diameter coupling, 4 TPI, taper 1:16
+  TC38  — standard coupling, 4 TPI, taper 1:16
+  Custom — any V-thread via ThreadProfile
 
 Thread profile (API V-0.038R)
 ------------------------------
@@ -24,10 +24,10 @@ inner/outer cylindrical surfaces of the connection.
 
 Usage
 -----
-    from pinneaple_geom.gen.threaded_connection import NC50Geometry
+    from pinneaple_geom.gen.threaded_connection import TC50Geometry
 
-    geom = NC50Geometry(body="BOX")
-    mesh_path = geom.generate_mesh(output="mesh_nc50_box.msh", lc=0.5)
+    geom = TC50Geometry(body="BOX")
+    mesh_path = geom.generate_mesh(output="mesh_tc50_box.msh", lc=0.5)
     # → Mesh2D / .msh file ready for FEniCS or point sampling
 """
 from __future__ import annotations
@@ -74,7 +74,7 @@ API_V038R = ThreadProfile("API V-0.038R", tpi=4.0, taper=1.0 / 32.0)
 @dataclass
 class ConnectionSpec:
     """Full geometry specification for one body (BOX or PIN) of an NC connection."""
-    name: str                    # e.g. "NC50_BOX"
+    name: str                    # e.g. "TC50_BOX"
     r_bore: float                # mm — bore radius (inner surface)
     r_outer: float               # mm — outer radius
     z_thread_start: float        # mm — z where thread begins
@@ -97,49 +97,49 @@ class ConnectionSpec:
 
 
 # Standard NC connections
-_NC_SPECS: Dict[str, Dict[str, ConnectionSpec]] = {
-    "NC50": {
+_TC_SPECS: Dict[str, Dict[str, ConnectionSpec]] = {
+    "TC50": {
         "BOX": ConnectionSpec(
-            name="NC50_BOX",
+            name="TC50_BOX",
             r_bore=50.0, r_outer=84.15,
             z_thread_start=10.0, z_thread_end=115.0,
             z_shoulder_top=140.0,
             thread=API_V038R, body="BOX",
         ),
         "PIN": ConnectionSpec(
-            name="NC50_PIN",
+            name="TC50_PIN",
             r_bore=48.0, r_outer=62.0,
             z_thread_start=10.0, z_thread_end=115.0,
             z_shoulder_top=140.0,
             thread=API_V038R, body="PIN",
         ),
     },
-    "NC46": {
+    "TC46": {
         "BOX": ConnectionSpec(
-            name="NC46_BOX",
+            name="TC46_BOX",
             r_bore=44.0, r_outer=76.2,
             z_thread_start=8.0, z_thread_end=100.0,
             z_shoulder_top=125.0,
             thread=API_V038R, body="BOX",
         ),
         "PIN": ConnectionSpec(
-            name="NC46_PIN",
+            name="TC46_PIN",
             r_bore=42.0, r_outer=55.0,
             z_thread_start=8.0, z_thread_end=100.0,
             z_shoulder_top=125.0,
             thread=API_V038R, body="PIN",
         ),
     },
-    "NC38": {
+    "TC38": {
         "BOX": ConnectionSpec(
-            name="NC38_BOX",
+            name="TC38_BOX",
             r_bore=36.0, r_outer=63.5,
             z_thread_start=6.0, z_thread_end=85.0,
             z_shoulder_top=105.0,
             thread=API_V038R, body="BOX",
         ),
         "PIN": ConnectionSpec(
-            name="NC38_PIN",
+            name="TC38_PIN",
             r_bore=34.0, r_outer=46.0,
             z_thread_start=6.0, z_thread_end=85.0,
             z_shoulder_top=105.0,
@@ -391,27 +391,27 @@ class ThreadedConnectionMesher:
 # Convenience classes per connection type
 # ══════════════════════════════════════════════════════════════════════════════
 
-class NC50Geometry(ThreadedConnectionMesher):
-    """NC50 rotary shouldered connection geometry (API Spec 7)."""
+class TC50Geometry(ThreadedConnectionMesher):
+    """TC50 threaded coupling geometry (large-diameter)."""
     def __init__(self, body: str = "BOX", lc: float = 0.8, lc_thread: Optional[float] = None):
         body = body.upper()
         if body not in ("BOX", "PIN"):
             raise ValueError("body deve ser 'BOX' ou 'PIN'")
-        super().__init__(_NC_SPECS["NC50"][body], lc=lc, lc_thread=lc_thread)
+        super().__init__(_TC_SPECS["TC50"][body], lc=lc, lc_thread=lc_thread)
 
 
-class NC46Geometry(ThreadedConnectionMesher):
-    """NC46 rotary shouldered connection geometry."""
+class TC46Geometry(ThreadedConnectionMesher):
+    """TC46 threaded coupling geometry (medium-diameter)."""
     def __init__(self, body: str = "BOX", lc: float = 0.8, lc_thread: Optional[float] = None):
         body = body.upper()
-        super().__init__(_NC_SPECS["NC46"][body], lc=lc, lc_thread=lc_thread)
+        super().__init__(_TC_SPECS["TC46"][body], lc=lc, lc_thread=lc_thread)
 
 
-class NC38Geometry(ThreadedConnectionMesher):
-    """NC38 rotary shouldered connection geometry."""
+class TC38Geometry(ThreadedConnectionMesher):
+    """TC38 threaded coupling geometry (standard)."""
     def __init__(self, body: str = "BOX", lc: float = 0.8, lc_thread: Optional[float] = None):
         body = body.upper()
-        super().__init__(_NC_SPECS["NC38"][body], lc=lc, lc_thread=lc_thread)
+        super().__init__(_TC_SPECS["TC38"][body], lc=lc, lc_thread=lc_thread)
 
 
 def get_connection_geometry(
@@ -424,18 +424,18 @@ def get_connection_geometry(
 
     Parameters
     ----------
-    connection : "NC50", "NC46", "NC38"
+    connection : "TC50", "TC46", "TC38"
     body : "BOX" ou "PIN"
     lc : characteristic mesh size in mm
 
     Example
     -------
-    geom = get_connection_geometry("NC50", "BOX")
-    mesh_path = geom.generate("mesh_nc50_box.msh")
+    geom = get_connection_geometry("TC50", "BOX")
+    mesh_path = geom.generate("mesh_tc50_box.msh")
     pts = geom.sample_points(n=10000)
     """
     connection = connection.upper()
     body       = body.upper()
-    if connection not in _NC_SPECS:
-        raise KeyError(f"Conexão '{connection}' não suportada. Disponíveis: {list(_NC_SPECS)}")
-    return ThreadedConnectionMesher(_NC_SPECS[connection][body], lc=lc)
+    if connection not in _TC_SPECS:
+        raise KeyError(f"Conexão '{connection}' não suportada. Disponíveis: {list(_TC_SPECS)}")
+    return ThreadedConnectionMesher(_TC_SPECS[connection][body], lc=lc)

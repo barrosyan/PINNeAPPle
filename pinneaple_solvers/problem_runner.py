@@ -330,29 +330,106 @@ def _run_reference_solver(
 ) -> Optional[Dict[str, np.ndarray]]:
     """Run the problem's associated solver and return a reference field dict.
 
-    Returns dict with keys: "coords" (dict of coord arrays) and field arrays,
-    or None if solver not available.
+    Routing priority:
+      1. solver_spec["name"] in {"fdm", "fem", "fvm"} → agnostic solver
+      2. Legacy method-string dispatch for backwards compatibility
+      3. None if no solver configured
     """
     spec_dict = dict(getattr(problem_spec, "solver_spec", {}))
     if solver_cfg_override:
         spec_dict = {**spec_dict, **solver_cfg_override}
 
-    solver_name = spec_dict.get("name", "")
+    solver_name = spec_dict.get("name", "").lower().strip()
     method = spec_dict.get("method", "")
     params = dict(spec_dict.get("params", {}))
-
-    if not solver_name:
-        return None
-
     pde_kind = problem_spec.pde.kind.lower()
 
-    # Dispatch to built-in reference solvers
+    # ── 1. Agnostic numerical solvers ──────────────────────────────────────
+    nx = int(params.get("nx", 64))
+    ny = int(params.get("ny", 64))
+    nt = int(params.get("nt", 200))
+
+    if solver_name == "fdm":
+        try:
+            import torch
+            from .fdm import FDMSolver
+            solver = FDMSolver.from_problem_spec(problem_spec, nx=nx, ny=ny, nt=nt)
+            out = solver.solve_from_spec(problem_spec)
+            return _solver_output_to_ref(out, problem_spec)
+        except Exception:
+            pass
+
+    if solver_name == "fem":
+        try:
+            import torch
+            from .fem import FEMSolver
+            solver = FEMSolver.from_problem_spec(problem_spec, nx=nx, ny=ny)
+            out = solver.solve_from_spec(problem_spec)
+            return _solver_output_to_ref(out, problem_spec)
+        except Exception:
+            pass
+
+    if solver_name == "fvm":
+        try:
+            import torch
+            from .fvm import FVMSolver
+            solver = FVMSolver.from_problem_spec(problem_spec, nx=nx, ny=ny, nt=nt)
+            out = solver.solve_from_spec(problem_spec)
+            return _solver_output_to_ref(out, problem_spec)
+        except Exception:
+            pass
+
+    # ── 2. Legacy method-string dispatch ───────────────────────────────────
+    if not solver_name and not method:
+        return None
+
     if "burgers" in pde_kind and method == "burgers_1d":
         return _solve_burgers_1d(problem_spec, params, rng)
     if ("laplace" in pde_kind or "poisson" in pde_kind) and "poisson" in method:
         return _solve_poisson_2d(problem_spec, params, rng)
 
     return None
+
+
+def _solver_output_to_ref(
+    output: Any,
+    problem_spec: Any,
+) -> Optional[Dict[str, np.ndarray]]:
+    """Convert a SolverOutput to the reference dict format expected by _sample_reference."""
+    try:
+        import torch
+        res = output.result
+        extras = output.extras
+        domain_bounds = dict(getattr(problem_spec, "domain_bounds", {}))
+        fields = tuple(problem_spec.fields)
+
+        def _np(t):
+            if isinstance(t, torch.Tensor):
+                return t.detach().cpu().numpy().astype(np.float32)
+            return np.asarray(t, dtype=np.float32)
+
+        # Build coordinate arrays
+        coords: Dict[str, np.ndarray] = {}
+        if "xc" in extras and "yc" in extras:
+            coords["x"] = _np(extras["xc"][:, 0])
+            coords["y"] = _np(extras["yc"][0, :])
+        else:
+            for axis, (lo, hi) in domain_bounds.items():
+                if axis == "t":
+                    continue
+                coords[axis] = np.linspace(lo, hi, res.shape[0] if res.ndim >= 1 else 64, dtype=np.float32)
+
+        ref: Dict[str, Any] = {"coords": coords}
+        res_np = _np(res)
+        # Map the (potentially trajectory) result to the first field
+        if res_np.ndim == 3:
+            # FVM trajectory (nt+1, nx, ny) → use last frame
+            res_np = res_np[-1]
+        field_name = fields[0] if fields else "u"
+        ref[field_name] = res_np
+        return ref
+    except Exception:
+        return None
 
 
 def _solve_burgers_1d(

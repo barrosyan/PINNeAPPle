@@ -1,12 +1,12 @@
 """
-generate_geometry.py — NC50 Drill Pipe Geometry (PINNeAPPle)
-============================================================
+generate_geometry.py — TC50 Coupling Geometry (PINNeAPPle)
+==========================================================
 
 Gera geometrias 3D (STL) e meshes 2D axissimétricas (.msh) para o
-problema do drill pipe NC50 em rotação, com suporte a datasets paramétricos.
+problema do acoplamento TC50 em rotação, com suporte a datasets paramétricos.
 
 Adaptação do pipeline original de CadQuery + gmsh ao framework PINNeAPPle:
-  - Usa os parâmetros do preset `drill_pipe_nc50_rotating` como fonte de verdade
+  - Usa os parâmetros do preset `threaded_coupling_tc50_rotating` como fonte de verdade
   - Os parâmetros de variação (clearance, thread_height, offset) geram o dataset
   - O mesh 2D (r, z) é o que o FEM e o PINN usam de fato
 
@@ -50,8 +50,8 @@ from typing import List, Optional, Tuple
 from pinneaple_environment import get_preset
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Parâmetros NC50 base
-# (devem coincidir com o preset drill_pipe_nc50_rotating)
+# Parâmetros TC50 base
+# (devem coincidir com o preset threaded_coupling_tc50_rotating)
 # ══════════════════════════════════════════════════════════════════════════════
 
 LENGTH_THREAD   = 120.0    # mm
@@ -406,7 +406,7 @@ def run(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Gera geometrias NC50 para o pipeline PINNeAPPle"
+        description="Gera geometrias TC50 para o pipeline PINNeAPPle"
     )
     parser.add_argument("--dataset-dir",    default="dataset", help="Pasta de saída")
     parser.add_argument("--clearance",      type=float, default=None,

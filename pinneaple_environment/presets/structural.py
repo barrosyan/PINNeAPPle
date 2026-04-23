@@ -4,7 +4,7 @@ Covers:
 - 2D plane stress / plane strain (linear elasticity)
 - Von Mises stress formulation (derives von Mises from displacement fields)
 - 3D linear elasticity (brackets, frames)
-- Drill pipe under combined torsion + axial load
+- Rotary coupling under combined torsion + axial load
 - Thermoelasticity 2D/3D
 
 Convention for elasticity:
@@ -247,8 +247,8 @@ def linear_elasticity_3d(
     )
 
 
-@register_preset("drill_pipe_torsion")
-def drill_pipe_torsion_default(
+@register_preset("rotary_coupling_torsion")
+def rotary_coupling_torsion_default(
     E: float = 210e9,
     nu: float = 0.3,
     r_inner: float = 0.05,
@@ -257,7 +257,7 @@ def drill_pipe_torsion_default(
     axial_force: float = 500000.0,
     length: float = 1.0,
 ) -> ProblemSpec:
-    """Drill pipe under combined torsion and axial tension.
+    """Rotary coupling under combined torsion and axial tension.
 
     Geometry: hollow cylinder (pipe) of inner radius r_inner, outer radius r_outer,
     length `length`. Fixed at z=0, torque T and axial force F applied at z=length.
@@ -287,7 +287,7 @@ def drill_pipe_torsion_default(
         coords=coords,
         params={"E": float(E), "nu": float(nu), "lambda": lam, "mu": mu},
         meta={
-            "industry": "drill_pipe",
+            "industry": "rotary_coupling",
             "r_inner": float(r_inner),
             "r_outer": float(r_outer),
             "torque": float(torque),
@@ -338,7 +338,7 @@ def drill_pipe_torsion_default(
     )
 
     return ProblemSpec(
-        name="drill_pipe_torsion_default",
+        name="rotary_coupling_torsion_default",
         dim=3,
         coords=coords,
         fields=fields,
@@ -348,7 +348,7 @@ def drill_pipe_torsion_default(
         scales=ScaleSpec(L=float(length), U=tau_max, alpha=1.0),
         field_ranges={"ux": (-0.001, 0.001), "uy": (-0.001, 0.001), "uz": (-0.005, 0.005)},
         references=(
-            "Drill pipe torsion + axial load. See SPE 24606 (1992) for fatigue context.",
+            "Rotary coupling under combined torsion and axial load.",
             "Analytical solution: Timoshenko & Goodier Torsion of Circular Shafts.",
         ),
         domain_bounds={"x": (-r_outer, r_outer), "y": (-r_outer, r_outer), "z": (0.0, length)},
