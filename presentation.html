@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PINNeAPPle — Presentation</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2330;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #f78166;
+    --accent4: #d2a8ff;
+    --accent5: #ffa657;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --code-bg: #0d1117;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── SLIDE CONTAINER ── */
+  .deck { width: 100vw; height: 100vh; position: relative; }
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 52px 72px 60px;
+    overflow: hidden;
+  }
+  .slide.active { display: flex; }
+
+  /* ── HEADER BAR ── */
+  .slide-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 32px;
+  }
+  .slide-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.4px;
+    text-transform: uppercase; color: var(--accent);
+    background: rgba(88,166,255,.12);
+    border: 1px solid rgba(88,166,255,.3);
+    border-radius: 4px; padding: 3px 8px;
+    white-space: nowrap;
+  }
+  .slide-tag.green { color: var(--accent2); background: rgba(63,185,80,.1); border-color: rgba(63,185,80,.3); }
+  .slide-tag.purple { color: var(--accent4); background: rgba(210,168,255,.1); border-color: rgba(210,168,255,.3); }
+  .slide-tag.orange { color: var(--accent5); background: rgba(255,166,87,.1); border-color: rgba(255,166,87,.3); }
+  .slide-tag.red { color: var(--accent3); background: rgba(247,129,102,.1); border-color: rgba(247,129,102,.3); }
+  .divider-line {
+    flex: 1; height: 1px; background: var(--border);
+  }
+  .slide-num {
+    font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+
+  /* ── TITLES ── */
+  h1 { font-size: 48px; font-weight: 800; line-height: 1.15; letter-spacing: -1px; }
+  h1 .brand { color: var(--accent); }
+  h2 { font-size: 30px; font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
+  h3 { font-size: 16px; font-weight: 600; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; letter-spacing: .8px; }
+  .subtitle { font-size: 18px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+  .authors { font-size: 15px; color: var(--accent4); margin-top: 20px; }
+  .badge-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .badge {
+    font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 600;
+    background: rgba(88,166,255,.12); color: var(--accent);
+    border: 1px solid rgba(88,166,255,.25);
+  }
+
+  /* ── BODY LAYOUT ── */
+  .body { flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 18px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px;
+  }
+  .card h4 { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+  .card p, .card li { font-size: 14px; color: var(--muted); line-height: 1.65; }
+  .card ul { list-style: none; padding: 0; }
+  .card ul li::before { content: "→ "; color: var(--accent2); }
+
+  /* ── HIGHLIGHT CARD ── */
+  .hcard {
+    background: linear-gradient(135deg, rgba(88,166,255,.08) 0%, rgba(210,168,255,.06) 100%);
+    border: 1px solid rgba(88,166,255,.25);
+    border-radius: 10px; padding: 20px 24px;
+  }
+  .hcard h4 { font-size: 14px; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+
+  /* ── BULLET LISTS ── */
+  ul.bullets { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  ul.bullets li {
+    font-size: 15px; line-height: 1.6; color: var(--text);
+    padding-left: 22px; position: relative;
+  }
+  ul.bullets li::before {
+    content: "▸"; position: absolute; left: 0;
+    color: var(--accent); font-size: 12px; top: 3px;
+  }
+  ul.bullets li strong { color: var(--accent2); }
+  ul.bullets.muted li { color: var(--muted); font-size: 14px; }
+
+  /* ── CODE BLOCKS ── */
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 18px;
+    font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 12.5px; line-height: 1.7; overflow-x: auto; color: #cdd9e5;
+  }
+  .kw { color: #ff7b72; }    /* keywords */
+  .fn { color: #d2a8ff; }    /* functions */
+  .st { color: #a5d6ff; }    /* strings */
+  .cm { color: #8b949e; }    /* comments */
+  .nu { color: #79c0ff; }    /* numbers */
+  .op { color: #ff7b72; }    /* operators */
+
+  /* ── TABLES ── */
+  table {
+    width: 100%; border-collapse: collapse; font-size: 13.5px;
+  }
+  th {
+    background: var(--surface2); color: var(--accent);
+    text-align: left; padding: 9px 14px; font-weight: 700;
+    font-size: 12px; text-transform: uppercase; letter-spacing: .6px;
+    border-bottom: 2px solid var(--border);
+  }
+  td {
+    padding: 8px 14px; border-bottom: 1px solid var(--border);
+    color: var(--text); vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  td.check-yes { color: var(--accent2); text-align: center; font-weight: 700; font-size: 15px; }
+  td.check-partial { color: var(--accent5); text-align: center; font-weight: 700; font-size: 15px; }
+  td.check-no { color: var(--muted); text-align: center; font-size: 15px; }
+
+  /* ── STAT BOXES ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .stat-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 16px; text-align: center;
+  }
+  .stat-box .num {
+    font-size: 36px; font-weight: 800; color: var(--accent);
+    letter-spacing: -1px; display: block;
+  }
+  .stat-box .label { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow {
+    display: flex; flex-direction: column; gap: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .flow-row {
+    padding: 14px 22px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .flow-row:last-child { border-bottom: none; }
+  .flow-row .layer-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(88,166,255,.15); color: var(--accent);
+    font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .flow-row .layer-label { font-weight: 700; font-size: 14px; color: var(--text); width: 210px; flex-shrink: 0; }
+  .flow-row .layer-pkgs { font-size: 12.5px; color: var(--muted); }
+  .flow-row .layer-pkgs code {
+    background: rgba(88,166,255,.08); color: var(--accent);
+    border-radius: 4px; padding: 1px 6px; font-size: 11.5px;
+    margin-right: 5px; white-space: nowrap;
+    font-family: "JetBrains Mono", monospace;
+  }
+
+  /* ── FOOTER / NAVIGATION ── */
+  .nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 48px; background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; z-index: 100;
+  }
+  .nav-left { font-size: 13px; color: var(--muted); }
+  .nav-left span { color: var(--accent); font-weight: 600; }
+  .nav-btns { display: flex; gap: 8px; }
+  .nav-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px;
+    padding: 6px 16px; font-size: 13px; cursor: pointer;
+    transition: background .15s;
+  }
+  .nav-btn:hover { background: rgba(88,166,255,.15); border-color: var(--accent); color: var(--accent); }
+  .nav-btn:disabled { opacity: .35; cursor: default; }
+  .progress {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent4));
+    transition: width .25s ease; z-index: 200;
+  }
+
+  /* ── SPECIAL ELEMENTS ── */
+  .inline-code {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px; background: rgba(110,118,129,.15);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; color: var(--accent4);
+  }
+  .formula {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 20px;
+    font-family: "Georgia", serif; font-size: 16px;
+    color: var(--accent4); text-align: center; letter-spacing: .5px;
+  }
+  .arch-box {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px; background: var(--code-bg);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 20px; line-height: 1.8; color: #cdd9e5;
+    white-space: pre;
+  }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 12px; font-weight: 600; margin: 2px;
+  }
+  .pill-blue { background: rgba(88,166,255,.12); color: var(--accent); border: 1px solid rgba(88,166,255,.25); }
+  .pill-green { background: rgba(63,185,80,.1); color: var(--accent2); border: 1px solid rgba(63,185,80,.25); }
+  .pill-purple { background: rgba(210,168,255,.1); color: var(--accent4); border: 1px solid rgba(210,168,255,.25); }
+  .section-title {
+    font-size: 12px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+  }
+  .arrow-flow {
+    display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+  }
+  .arrow-flow .step {
+    font-size: 15px; color: var(--text);
+    padding: 8px 16px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; width: 100%;
+  }
+  .arrow-flow .arrow { color: var(--accent); font-size: 18px; padding-left: 24px; }
+  .result-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(63,185,80,.1); border: 1px solid rgba(63,185,80,.3);
+    color: var(--accent2); border-radius: 6px; padding: 6px 14px;
+    font-size: 14px; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 1 — Title
+══════════════════════════════════════════════ -->
+<div class="slide active" id="s1">
+  <div class="slide-header">
+    <span class="slide-tag">Introduction</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">01 / 20</span>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <h1><span class="brand">PINNeAPPle</span></h1>
+    <p class="subtitle" style="font-size:22px;max-width:740px;">
+      A Comprehensive Python Framework for<br>
+      Physics-Informed Machine Learning at Scale
+    </p>
+    <p class="authors">Yan Barros · Enrico Schiassi · Lorenzo Grassi</p>
+    <div class="badge-row">
+      <span class="badge">v0.4</span>
+      <span class="badge">Open Source</span>
+      <span class="badge">MIT License</span>
+    </div>
+    <div class="stat-grid" style="margin-top:48px;max-width:700px;">
+      <div class="stat-box"><span class="num">25</span><div class="label">Python Packages</div></div>
+      <div class="stat-box"><span class="num">76</span><div class="label">Model Architectures</div></div>
+      <div class="stat-box"><span class="num">40+</span><div class="label">Problem Presets</div></div>
+      <div class="stat-box"><span class="num">15+</span><div class="label">PDE Types</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 2 — The Problem
+══════════════════════════════════════════════ -->
+<div class="slide" id="s2">
+  <div class="slide-header">
+    <span class="slide-tag red">Motivation</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">02 / 20</span>
+  </div>
+  <h2>Software Fragmentation in PIML</h2>
+  <p class="subtitle" style="margin-bottom:24px;">Current tools force researchers to re-engineer the same infrastructure for every problem.</p>
+  <div class="two-col" style="flex:1;">
+    <div>
+      <p class="section-title">Pain Points</p>
+      <ul class="bullets" style="gap:12px;">
+        <li>Re-implement loss functions with autodiff <strong>from scratch</strong> for every new problem</li>
+        <li>Manually manage <strong>collocation sampling</strong> strategies</li>
+        <li>Balance competing loss components — one of the biggest <strong>hyperparameter bottlenecks</strong></li>
+        <li>Re-engineer <strong>inference & deployment</strong> infrastructure for each application</li>
+        <li>No single tool covers the full lifecycle: from <strong>problem specification to a live digital twin</strong></li>
+      </ul>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <p class="section-title">Existing Tools — Coverage Gaps</p>
+      <div class="card">
+        <h4>DeepXDE</h4>
+        <p>PINN training — no standalone neural operators, no deployment</p>
+      </div>
+      <div class="card">
+        <h4>SciANN</h4>
+        <p>Keras PINN interface — no data management</p>
+      </div>
+      <div class="card">
+        <h4>PhysicsNEMO</h4>
+        <p>GPU/CFD — heavy infrastructure required, no UQ or meta-learning</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 3 — Overview
+══════════════════════════════════════════════ -->
+<div class="slide" id="s3">
+  <div class="slide-header">
+    <span class="slide-tag green">Overview</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">03 / 20</span>
+  </div>
+  <h2>PINNeAPPle v0.4 — What is it?</h2>
+  <p class="subtitle" style="margin-bottom:24px;">A unified open-source Python framework covering the <strong style="color:var(--accent)">complete</strong> Physics-Informed Machine Learning lifecycle.</p>
+  <div class="two-col" style="flex:1;align-items:start;">
+    <div class="arrow-flow" style="justify-content:center;">
+      <div class="step">📐 Symbolic problem specification</div>
+      <div class="arrow">↓</div>
+      <div class="step">🗂️ Geometry construction and data preparation</div>
+      <div class="arrow">↓</div>
+      <div class="step">⚙️ Physics-constrained training</div>
+      <div class="arrow">↓</div>
+      <div class="step">✅ Physical consistency validation</div>
+      <div class="arrow">↓</div>
+      <div class="step">🚀 Real-time digital twin deployment</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <p class="section-title">By the Numbers</p>
+      <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="stat-box"><span class="num">25</span><div class="label">Python Packages independently importable</div></div>
+        <div class="stat-box"><span class="num">76</span><div class="label">Models across 13 families</div></div>
+        <div class="stat-box"><span class="num">40+</span><div class="label">Problem presets ready to use</div></div>
+        <div class="stat-box"><span class="num">15+</span><div class="label">PDE types in loss compiler</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 4 — Design Principles
+══════════════════════════════════════════════ -->
+<div class="slide" id="s4">
+  <div class="slide-header">
+    <span class="slide-tag purple">Design</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">04 / 20</span>
+  </div>
+  <h2>4 Design Principles</h2>
+  <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px;">
+    <div class="hcard">
+      <h4>① Problem-First Design</h4>
+      <p style="font-size:14px;color:var(--muted);line-height:1.65;">
+        <span class="inline-code">ProblemSpec</span> is the <em>lingua franca</em> — connects every module to the same symbolic problem definition. One object, consumed identically everywhere.
+      </p>
+    </div>
+    <div class="hcard">
+      <h4>② Full-Lifecycle Coverage</h4>
+      <p style="font-size:14px;color:var(--muted);line-height:1.65;">
+        From geometry and data generation, through GPU-accelerated training, to UQ, digital twins, and REST API serving — no gaps in the workflow.
+      </p>
+    </div>
+    <div class="hcard">
+      <h4>③ Architectural Breadth</h4>
+      <p style="font-size:14px;color:var(--muted);line-height:1.65;">
+        76 implementations across 13 model families — registered and swappable — enabling <strong style="color:var(--accent2)">fair comparison</strong> on identical problems with zero infrastructure changes.
+      </p>
+    </div>
+    <div class="hcard">
+      <h4>④ Production Readiness</h4>
+      <p style="font-size:14px;color:var(--muted);line-height:1.65;">
+        AMP mixed-precision, DistributedDataParallel, TorchScript/ONNX export, Zarr streaming data loaders, live digital twin runtime — built in from day one.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 5 — Architecture
+══════════════════════════════════════════════ -->
+<div class="slide" id="s5">
+  <div class="slide-header">
+    <span class="slide-tag">Architecture</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">05 / 20</span>
+  </div>
+  <h2>Five-Layer Architecture</h2>
+  <div style="flex:1;display:flex;flex-direction:column;gap:16px;margin-top:12px;">
+    <div class="flow">
+      <div class="flow-row">
+        <div class="layer-num">1</div>
+        <div class="layer-label">Problem Definition</div>
+        <div class="layer-pkgs"><code>pinneaple_environment</code><code>pinneaple_problemdesign</code></div>
+      </div>
+      <div class="flow-row">
+        <div class="layer-num">2</div>
+        <div class="layer-label">Data Preparation</div>
+        <div class="layer-pkgs"><code>pinneaple_data</code><code>pinneaple_geom</code><code>pinneaple_solvers</code></div>
+      </div>
+      <div class="flow-row">
+        <div class="layer-num">3</div>
+        <div class="layer-label">Model &amp; Loss</div>
+        <div class="layer-pkgs"><code>pinneaple_models</code><span style="color:var(--muted);font-size:12px;">(76 models)</span>&nbsp;<code>pinneaple_pinn</code></div>
+      </div>
+      <div class="flow-row">
+        <div class="layer-num">4</div>
+        <div class="layer-label">Training</div>
+        <div class="layer-pkgs"><code>pinneaple_train</code><code>pinneaple_transfer</code><code>pinneaple_meta</code></div>
+      </div>
+      <div class="flow-row">
+        <div class="layer-num">5</div>
+        <div class="layer-label">Post-Training &amp; Deploy</div>
+        <div class="layer-pkgs"><code>pinneaple_inference</code><code>pinneaple_uq</code><code>pinneaple_validate</code><code>pinneaple_digital_twin</code><code>pinneaple_serve</code><code>pinneaple_export</code><code>pinneaple_arena</code></div>
+      </div>
+    </div>
+    <div class="hcard" style="flex-shrink:0;">
+      <p style="font-size:14px;color:var(--muted);">
+        Three core types flow through every layer: &nbsp;
+        <span class="pill pill-blue">ProblemSpec</span> →
+        <span class="pill pill-green">PhysicalSample (UPD)</span> →
+        <span class="pill pill-purple">nn.Module</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 6 — ProblemSpec
+══════════════════════════════════════════════ -->
+<div class="slide" id="s6">
+  <div class="slide-header">
+    <span class="slide-tag purple">Core API</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">06 / 20</span>
+  </div>
+  <h2>ProblemSpec: The Central Abstraction</h2>
+  <p class="subtitle" style="margin-bottom:18px;">Captures everything needed to define a well-posed PDE problem in a single serializable object.</p>
+  <div class="two-col" style="flex:1;align-items:start;">
+    <div>
+<pre><span class="kw">from</span> pinneaple_environment <span class="kw">import</span> (
+    get_preset, ProblemBuilder, DirichletBC
+)
+
+<span class="cm"># Pathway 1: single-line preset</span>
+spec = <span class="fn">get_preset</span>(<span class="st">"burgers_1d"</span>, nu=<span class="nu">0.01</span>)
+
+<span class="cm"># Pathway 2: fluent builder</span>
+spec = (
+    <span class="fn">ProblemBuilder</span>(<span class="st">"poisson_2d"</span>)
+    .<span class="fn">pde</span>(<span class="st">"poisson"</span>, fields=(<span class="st">"u"</span>,), coords=(<span class="st">"x"</span>, <span class="st">"y"</span>))
+    .<span class="fn">param</span>(<span class="st">"f"</span>, <span class="nu">1.0</span>)
+    .<span class="fn">domain_bounds</span>({<span class="st">"x"</span>: (<span class="nu">0</span>,<span class="nu">1</span>), <span class="st">"y"</span>: (<span class="nu">0</span>,<span class="nu">1</span>)})
+    .<span class="fn">boundary_condition</span>(<span class="st">"wall"</span>, <span class="fn">DirichletBC</span>({<span class="st">"u"</span>: <span class="nu">0.0</span>}))
+    .<span class="fn">build</span>()
+)</pre>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <p class="section-title">Consumed Identically By</p>
+      <ul class="bullets">
+        <li>Collocation sampler</li>
+        <li>Physics loss compiler</li>
+        <li>Validation module</li>
+        <li>Arena benchmark runner</li>
+      </ul>
+      <div class="hcard" style="margin-top:8px;">
+        <h4>Key Benefit</h4>
+        <p style="font-size:14px;color:var(--muted);line-height:1.6;">
+          Eliminates <strong style="color:var(--accent3)">transcription errors</strong> when re-specifying physics across tools. Define once, use everywhere.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 7 — Problem Presets
+══════════════════════════════════════════════ -->
+<div class="slide" id="s7">
+  <div class="slide-header">
+    <span class="slide-tag green">Presets</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">07 / 20</span>
+  </div>
+  <h2>40+ Problem Presets Library</h2>
+  <p class="subtitle" style="margin-bottom:18px;">Validated, ready-to-use presets spanning multiple domains.</p>
+  <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <table>
+        <thead><tr><th>Domain</th><th>Examples</th></tr></thead>
+        <tbody>
+          <tr><td>CFD</td><td>Navier-Stokes 2D/3D incompressible, Darcy flow, Burgers</td></tr>
+          <tr><td>Heat &amp; Mass Transfer</td><td>Steady and transient 1D–3D, reaction-diffusion</td></tr>
+          <tr><td>Structural Mechanics</td><td>Plane stress, von Mises, drill-pipe torsion, thermoelasticity</td></tr>
+          <tr><td>Wave Phenomena</td><td>Helmholtz, Klein-Gordon</td></tr>
+          <tr><td>Applied Domains</td><td>Black-Scholes (finance), SIR (epidemiology), drug diffusion in tissue</td></tr>
+        </tbody>
+      </table>
+    </div>
+<pre><span class="cm"># Three lines, three domains</span>
+spec = <span class="fn">get_preset</span>(<span class="st">"navier_stokes_2d"</span>, Re=<span class="nu">100.0</span>)
+spec = <span class="fn">get_preset</span>(<span class="st">"drill_pipe_torsion"</span>, torque=<span class="nu">15000.0</span>)
+spec = <span class="fn">get_preset</span>(<span class="st">"black_scholes"</span>, sigma=<span class="nu">0.2</span>, r=<span class="nu">0.05</span>)</pre>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 8 — UPD / Data Pipeline
+══════════════════════════════════════════════ -->
+<div class="slide" id="s8">
+  <div class="slide-header">
+    <span class="slide-tag orange">Data</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">08 / 20</span>
+  </div>
+  <h2>Data Pipeline: Unified Physical Data (UPD)</h2>
+  <p class="subtitle" style="margin-bottom:16px;">A standardized carrier for physical state across all modules.</p>
+  <div class="two-col" style="flex:1;align-items:start;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <table>
+        <thead><tr><th>Field</th><th>Content</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline-code">state</code></td><td>xarray.Dataset or dict mapping field names → tensors</td></tr>
+          <tr><td><code class="inline-code">geometry</code></td><td>GeometryAsset — links sample to its CAD/mesh provenance</td></tr>
+          <tr><td><code class="inline-code">schema</code></td><td>Physical units, governing equation identifiers, coordinate system</td></tr>
+          <tr><td><code class="inline-code">domain</code></td><td>Type (grid, mesh, graph) and per-coordinate bounds</td></tr>
+          <tr><td><code class="inline-code">provenance</code></td><td>Source ID, time span, tile index — full data lineage</td></tr>
+          <tr><td><code class="inline-code">extras</code></td><td>Normals, curvature, SDF values, solver-derived features</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p class="section-title">Zarr Persistence &amp; Streaming</p>
+<pre><span class="fn">UPDZarrStore</span>.<span class="fn">write</span>(<span class="st">"dataset.zarr"</span>, samples)
+<span class="cm"># sharded, atomic write</span>
+
+ds = <span class="fn">ZarrUPDIterable</span>(
+    <span class="st">"dataset.zarr"</span>,
+    fields=[<span class="st">"x"</span>, <span class="st">"y"</span>],
+    coords=[]
+)
+dl = <span class="fn">DataLoader</span>(ds, batch_size=<span class="nu">16</span>, num_workers=<span class="nu">4</span>)</pre>
+      <div class="result-badge" style="margin-top:14px;">
+        → Enables training on datasets that exceed GPU or host memory
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 9 — Collocation Sampling
+══════════════════════════════════════════════ -->
+<div class="slide" id="s9">
+  <div class="slide-header">
+    <span class="slide-tag">Sampling</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">09 / 20</span>
+  </div>
+  <h2>Collocation Sampling</h2>
+  <p class="subtitle" style="margin-bottom:18px;">Four strategies under a single unified interface.</p>
+  <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <table>
+        <thead><tr><th>Strategy</th><th>Best For</th><th>Key Property</th></tr></thead>
+        <tbody>
+          <tr><td>Uniform random</td><td>Quick prototyping, low dimension</td><td>O(N)</td></tr>
+          <tr><td>Latin Hypercube (LHS)</td><td>d ≤ 10 — dramatically improves space-filling</td><td>O(N·d)</td></tr>
+          <tr><td>Sobol sequences</td><td>4 ≤ d ≤ 20 — near-optimal low-discrepancy</td><td>O(N·log N)</td></tr>
+          <tr><td>Adaptive (residual-guided)</td><td>Concentrates new points in high-residual regions</td><td>Online loop</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p class="section-title" style="margin-bottom:8px;">Standardized Output Batch</p>
+<pre>{x_col, x_bc, y_bc, x_ic, y_ic, x_data, y_data}
+<span class="cm">-- consumed directly by the physics loss compiler with no reformatting</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 10 — Loss Compilation
+══════════════════════════════════════════════ -->
+<div class="slide" id="s10">
+  <div class="slide-header">
+    <span class="slide-tag purple">Loss</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">10 / 20</span>
+  </div>
+  <h2>Physics Loss Compilation</h2>
+  <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
+    <div class="formula" style="font-size:15px;text-align:left;padding:14px 20px;">
+      ℒ = w<sub>col</sub>·ℒ<sub>col</sub> &nbsp;+&nbsp; w<sub>bc</sub>·ℒ<sub>bc</sub> &nbsp;+&nbsp; w<sub>ic</sub>·ℒ<sub>ic</sub> &nbsp;+&nbsp; w<sub>data</sub>·ℒ<sub>data</sub>
+    </div>
+    <div class="two-col" style="flex:1;align-items:start;">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <p class="section-title">15+ Built-in PDE Kinds</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span class="pill pill-blue">Laplace</span><span class="pill pill-blue">Poisson</span><span class="pill pill-blue">Helmholtz</span><span class="pill pill-blue">Heat</span><span class="pill pill-blue">Wave</span><span class="pill pill-blue">Advection-Diffusion</span><span class="pill pill-blue">Burgers</span><span class="pill pill-blue">Navier-Stokes 2D/3D</span><span class="pill pill-blue">Linear Elasticity</span><span class="pill pill-blue">Darcy Flow</span>
+        </div>
+        <p class="section-title" style="margin-top:6px;">5 Exact Autodiff Primitives</p>
+<pre style="font-size:12px;"><span class="fn">grad</span>(y, x)             <span class="cm"># ∂y/∂xᵢ</span>
+<span class="fn">jacobian</span>(y, x)         <span class="cm"># full Jacobian</span>
+<span class="fn">laplacian</span>(y, x)        <span class="cm"># ∇²y</span>
+<span class="fn">divergence</span>(y, x)       <span class="cm"># ∇·y</span>
+<span class="fn">time_derivative</span>(y, t)  <span class="cm"># ∂y/∂t</span></pre>
+      </div>
+      <div>
+        <p class="section-title">PINNFactory — SymPy Interface</p>
+<pre style="font-size:12px;">spec = <span class="fn">PINNProblemSpec</span>(
+    pde_residuals=[
+        <span class="st">"Derivative(u(t), t) + u(t)"</span>
+    ],
+    independent_vars=[<span class="st">"t"</span>],
+    dependent_vars=[<span class="st">"u"</span>],
+    loss_weights={<span class="st">"pde"</span>: <span class="nu">1.0</span>},
+)
+loss_fn = <span class="fn">PINNFactory</span>(spec).<span class="fn">generate_loss_function</span>()</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 11 — Model Library
+══════════════════════════════════════════════ -->
+<div class="slide" id="s11">
+  <div class="slide-header">
+    <span class="slide-tag green">Models</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">11 / 20</span>
+  </div>
+  <h2>Model Library: 13 Families, 76 Models</h2>
+  <div class="two-col" style="flex:1;align-items:start;gap:16px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <table>
+        <thead><tr><th>Family</th><th style="text-align:center;">#</th><th>Key Implementations</th></tr></thead>
+        <tbody>
+          <tr><td>PINNs</td><td style="text-align:center;color:var(--accent);font-weight:700;">8</td><td>VanillaPINN, XPINN, VPINN, InversePINN, PIELM, PINNLSTM, PINNsFormer, XTFC</td></tr>
+          <tr><td>Neural Operators</td><td style="text-align:center;color:var(--accent);font-weight:700;">6</td><td>FNO, DeepONet, MultiScaleDeepONet, GNO, PINO, UNO</td></tr>
+          <tr><td>Graph NNs</td><td style="text-align:center;color:var(--accent);font-weight:700;">5</td><td>GNN, EquivariantGNN, GraphNeuralODE, SpatiotemporalGNN, GraphCast</td></tr>
+          <tr><td>Transformers</td><td style="text-align:center;color:var(--accent);font-weight:700;">6</td><td>Informer, TFT, Autoformer, FEDformer, TimesNet</td></tr>
+          <tr><td>Autoencoders</td><td style="text-align:center;color:var(--accent);font-weight:700;">6</td><td>VAE, KAE, PhysicsInformedKoopmanAE, AEROMHybrid</td></tr>
+          <tr><td>Continuous-time</td><td style="text-align:center;color:var(--accent);font-weight:700;">11</td><td>NeuralODE, NeuralCDE, NeuralSDE, HamiltonianNN, SymplecticODENet</td></tr>
+          <tr><td>Recurrent</td><td style="text-align:center;color:var(--accent);font-weight:700;">5</td><td>LSTM, BiLSTM, GRU, BiGRU, Seq2SeqRNN</td></tr>
+          <tr><td>Reduced-Order</td><td style="text-align:center;color:var(--accent);font-weight:700;">6</td><td>POD, DMD, HAVOK, OperatorInference, ROMHybrid</td></tr>
+          <tr><td>Reservoir/Kernel</td><td style="text-align:center;color:var(--accent);font-weight:700;">6</td><td>ELM, RBF, ESN, KoopmanOperator</td></tr>
+          <tr><td>Benchmarks</td><td style="text-align:center;color:var(--accent);font-weight:700;">5</td><td>MLP, FourierMLP, SIREN, ResMLP, Linear</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <p class="section-title">Registry API</p>
+<pre><span class="cm"># discover</span>
+pp.<span class="fn">list_models</span>()
+pp.<span class="fn">list_models</span>(<span class="st">"pinns"</span>)
+
+<span class="cm"># instantiate</span>
+model = pp.<span class="fn">build_model</span>(
+    <span class="st">"fno"</span>,
+    in_channels=<span class="nu">3</span>,
+    modes=<span class="nu">16</span>,
+    width=<span class="nu">64</span>
+)</pre>
+      <div class="result-badge">
+        Registered &amp; swappable — fair comparison on identical problems
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 12 — Training Infrastructure
+══════════════════════════════════════════════ -->
+<div class="slide" id="s12">
+  <div class="slide-header">
+    <span class="slide-tag orange">Training</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">12 / 20</span>
+  </div>
+  <h2>Training Infrastructure</h2>
+  <div class="two-col" style="flex:1;align-items:start;gap:20px;">
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <p class="section-title">4 Automatic Loss Weight Schedulers</p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <table>
+          <thead><tr><th>Method</th><th>Principle</th></tr></thead>
+          <tbody>
+            <tr><td>GradNormBalancer</td><td>w<sub>i</sub> ∝ |∇<sub>θ</sub>L<sub>i</sub>|⁻ᵅ — equalizes gradient magnitudes</td></tr>
+            <tr><td>NTKWeightBalancer</td><td>Weights ∝ tr(K<sub>i</sub>)⁻¹ — theoretically grounded</td></tr>
+            <tr><td>SelfAdaptiveWeights</td><td>Per-point softmax temp params, trained jointly with network</td></tr>
+            <tr><td>LossRatioBalancer</td><td>Multiplicative adjustment to maintain target ratios</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <p class="section-title">GPU Acceleration Features</p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <table>
+          <thead><tr><th>Feature</th><th>Measured Benefit</th></tr></thead>
+          <tbody>
+            <tr><td>AMP (FP16/BF16)</td><td>~40% memory reduction · 1.5–2× throughput</td></tr>
+            <tr><td>Gradient checkpointing</td><td>~50% peak memory reduction</td></tr>
+            <tr><td>torch.compile</td><td>1.2–2× end-to-end speedup</td></tr>
+            <tr><td>DDP</td><td>Multi-GPU with a single wrapper call</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h4>Full Reproducibility</h4>
+        <p>Seed · SHA-256 dataset hash · git commit · hardware fingerprint — recorded with every checkpoint.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 13 — Uncertainty Quantification
+══════════════════════════════════════════════ -->
+<div class="slide" id="s13">
+  <div class="slide-header">
+    <span class="slide-tag purple">UQ</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">13 / 20</span>
+  </div>
+  <h2>Uncertainty Quantification</h2>
+  <p class="subtitle" style="margin-bottom:18px;">3 UQ families — single unified API.</p>
+  <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+<pre>result = <span class="fn">uq_predict</span>(model, x, method=<span class="st">"mc_dropout"</span>, n_samples=<span class="nu">200</span>)
+<span class="cm"># result → UQResult{mean, std, ci_lower, ci_upper}</span>
+lower, upper = result.<span class="fn">confidence_interval</span>(alpha=<span class="nu">0.05</span>)</pre>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <table>
+        <thead><tr><th>Method</th><th>Key Property</th></tr></thead>
+        <tbody>
+          <tr><td>MC Dropout</td><td>N stochastic forward passes — approximates epistemic uncertainty</td></tr>
+          <tr><td>Ensemble UQ</td><td>k independently trained models — inter-model disagreement as uncertainty</td></tr>
+          <tr><td>Conformal Prediction</td><td>Finite-sample marginal coverage guarantee at level 1−α — <strong>no distributional assumptions</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="hcard">
+      <h4>Calibration Metrics Reported</h4>
+      <p style="font-size:14px;color:var(--muted);">
+        <span class="pill pill-blue">ECE</span>
+        <span class="pill pill-blue">PICP</span>
+        <span class="pill pill-blue">Interval Sharpness</span>
+        <span class="pill pill-blue">Gaussian NLL</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 14 — Meta-Learning
+══════════════════════════════════════════════ -->
+<div class="slide" id="s14">
+  <div class="slide-header">
+    <span class="slide-tag green">Meta-Learning</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">14 / 20</span>
+  </div>
+  <h2>Meta-Learning for PDE Families</h2>
+  <p class="subtitle" style="margin-bottom:16px;">Goal: rapid adaptation to an unseen member of a PDE family (e.g., Burgers at a new viscosity ν).</p>
+  <div class="two-col" style="flex:1;align-items:start;">
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="card">
+        <h4>MAML (Model-Agnostic Meta-Learning)</h4>
+        <div class="formula" style="font-size:13px;margin-top:10px;text-align:left;">
+          θ'<sub>i</sub> = θ − α·∇<sub>θ</sub>ℒ<sub>τᵢ</sub>(θ)<br><br>
+          outer: min<sub>θ</sub> Σ<sub>i</sub> ℒ<sub>τᵢ</sub>(θ'<sub>i</sub>)
+        </div>
+      </div>
+      <div class="card">
+        <h4>Reptile</h4>
+        <p>First-order variant — no second-order derivatives. Substantially lower memory than full MAML.</p>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <p class="section-title">Adapt a New Config in Seconds</p>
+<pre><span class="cm"># After meta-training on a family:</span>
+<span class="fn">meta_adapt</span>(task, n_steps=<span class="nu">20</span>)</pre>
+      <div class="hcard">
+        <h4>PDETaskSampler</h4>
+        <p style="font-size:14px;color:var(--muted);line-height:1.65;">
+          Generates tasks by sampling physical parameters from <span class="inline-code">param_ranges</span> and compiling the loss via <span class="inline-code">compile_problem</span> — no manual task construction needed.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 15 — Digital Twin
+══════════════════════════════════════════════ -->
+<div class="slide" id="s15">
+  <div class="slide-header">
+    <span class="slide-tag red">Digital Twin</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">15 / 20</span>
+  </div>
+  <h2>Real-Time Digital Twin</h2>
+  <div class="two-col" style="flex:1;align-items:start;">
+    <div>
+<pre style="font-size:12px;">dt = pp.<span class="fn">build_digital_twin</span>(
+    model,
+    field_names=[<span class="st">"u"</span>, <span class="st">"v"</span>, <span class="st">"p"</span>],
+    config=<span class="fn">DigitalTwinConfig</span>(
+        filter=<span class="st">"enkf"</span>,
+        anomaly_detection=<span class="st">"mahalanobis"</span>),
+)
+dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
+    <span class="st">"inlet"</span>, [<span class="st">"u"</span>],
+    <span class="kw">lambda</span> t: {<span class="st">"u"</span>: <span class="nu">1.0</span> + <span class="nu">0.1</span>*np.<span class="fn">sin</span>(t)},
+    coords={<span class="st">"x"</span>: <span class="nu">0.0</span>, <span class="st">"y"</span>: <span class="nu">0.5</span>}))
+
+<span class="kw">with</span> dt:  <span class="cm"># thread mgmt + graceful shutdown</span>
+    time.<span class="fn">sleep</span>(<span class="nu">60</span>)</pre>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <table>
+          <thead><tr><th>Component</th><th>Options</th></tr></thead>
+          <tbody>
+            <tr><td>Sensor streams</td><td>Mock · MQTT · Kafka · HTTPPoll · FileWatch</td></tr>
+            <tr><td>Assimilation filters</td><td>EKF · EnKF</td></tr>
+            <tr><td>Anomaly detectors</td><td>Threshold · ZScore · Mahalanobis (parallel)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="stat-box">
+          <span class="num" style="font-size:26px;">&lt; 1 ms</span>
+          <div class="label">Single-point inference on GPU</div>
+        </div>
+        <div class="stat-box">
+          <span class="num" style="font-size:26px;">~5 ms</span>
+          <div class="label">Per update with EKF assimilation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 16 — Deployment & Export
+══════════════════════════════════════════════ -->
+<div class="slide" id="s16">
+  <div class="slide-header">
+    <span class="slide-tag orange">Deployment</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">16 / 20</span>
+  </div>
+  <h2>Deployment &amp; Export</h2>
+  <div class="two-col" style="flex:1;align-items:start;">
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <p class="section-title">REST Inference Server</p>
+<pre style="font-size:12px;"><span class="kw">from</span> pinneaple_serve <span class="kw">import</span> serve
+
+<span class="fn">serve</span>(model,
+      field_names=[<span class="st">"u"</span>,<span class="st">"v"</span>,<span class="st">"p"</span>],
+      coord_names=[<span class="st">"x"</span>,<span class="st">"y"</span>],
+      port=<span class="nu">8000</span>)
+
+<span class="cm"># POST /predict</span>
+<span class="cm"># {"coords": {"x":[0.5], "y":[0.5]}}</span>
+<span class="cm"># ← {"fields": {"u":[1.2], "v":[0.0], "p":[0.3]}}</span></pre>
+      <div class="card">
+        <h4>Endpoints</h4>
+        <p style="font-family:monospace;font-size:12px;line-height:2;">
+          GET /health &nbsp;· GET /info<br>
+          POST /predict &nbsp;· POST /predict_batch<br>
+          POST /update &nbsp;· GET /history &nbsp;· POST /reset_history
+        </p>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <p class="section-title">Cross-Platform Model Export</p>
+<pre style="font-size:12px;"><span class="cm"># PyTorch C++ runtime (embedded/edge)</span>
+<span class="fn">export_torchscript</span>(
+    model, <span class="st">"model.pt"</span>, example_input
+)
+
+<span class="cm"># TensorRT / OpenVINO / ONNX Runtime</span>
+<span class="fn">export_onnx</span>(
+    model, <span class="st">"model.onnx"</span>,
+    example_input, opset_version=<span class="nu">17</span>
+)</pre>
+      <div class="hcard">
+        <h4>Dynamic Axes</h4>
+        <p style="font-size:14px;color:var(--muted);">Detected automatically from the example input — no manual shape specification needed.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 17 — Experimental Results
+══════════════════════════════════════════════ -->
+<div class="slide" id="s17">
+  <div class="slide-header">
+    <span class="slide-tag green">Results</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">17 / 20</span>
+  </div>
+  <h2>Experimental Results</h2>
+  <div class="two-col" style="flex:1;align-items:start;gap:20px;">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card">
+        <h4>Exp 1 — Physics-Informed ODE</h4>
+        <p style="margin-bottom:10px;">du/dt + u = 0 &nbsp;·&nbsp; exact: u(t) = e⁻ᵗ &nbsp;·&nbsp; 2-layer MLP, 64 hidden, tanh, 3,969 params</p>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <table>
+          <thead><tr><th>Epoch</th><th>Val Loss</th><th>MSE</th><th>R²</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>0.6287</td><td>0.529</td><td>−782</td></tr>
+            <tr><td>2</td><td>0.0988</td><td>0.083</td><td>−122</td></tr>
+            <tr><td>4</td><td>2.6×10⁻⁴</td><td>4.4×10⁻⁵</td><td>0.9999</td></tr>
+            <tr><td>6</td><td>2.8×10⁻⁵</td><td>1.0×10⁻⁶</td><td style="color:var(--accent2);font-weight:700;">0.9999998</td></tr>
+            <tr><td>14</td><td>5.7×10⁻⁶</td><td>8.8×10⁻⁷</td><td>0.9999983</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="result-badge">→ Six orders of magnitude drop in 15 epochs</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card">
+        <h4>Exp 2 — Zarr-Streamed Time Series</h4>
+        <p>256 PhysicalSamples · time series 64×8 · 4 DataLoader workers</p>
+        <div style="margin-top:10px;display:flex;gap:10px;">
+          <div class="stat-box" style="flex:1;padding:12px 10px;">
+            <span class="num" style="font-size:24px;">5.6 s</span>
+            <div class="label">First epoch (Zarr metadata scan)</div>
+          </div>
+          <div class="stat-box" style="flex:1;padding:12px 10px;">
+            <span class="num" style="font-size:24px;">2.1 s</span>
+            <div class="label">Subsequent epochs</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Exp 3 — CAD Point Cloud</h4>
+        <p>4,096 points via curvature-importance sampling · Conv1D · 2 epochs · CPU</p>
+        <div style="margin-top:10px;display:flex;gap:10px;">
+          <div class="stat-box" style="flex:1;padding:12px 10px;">
+            <span class="num" style="font-size:24px;">0.576</span>
+            <div class="label">val RMSE</div>
+          </div>
+          <div class="stat-box" style="flex:1;padding:12px 10px;">
+            <span class="num" style="font-size:24px;">1.85 s</span>
+            <div class="label">Per epoch</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 18 — PINN Benchmark
+══════════════════════════════════════════════ -->
+<div class="slide" id="s18">
+  <div class="slide-header">
+    <span class="slide-tag orange">Benchmarks</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">18 / 20</span>
+  </div>
+  <h2>PINN Benchmark Results</h2>
+  <p class="subtitle" style="margin-bottom:20px;">Burgers 1D &nbsp;·&nbsp; 2,000 steps &nbsp;·&nbsp; CPU &nbsp;·&nbsp; Adam lr=10⁻³</p>
+  <div style="flex:1;display:flex;flex-direction:column;gap:20px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <table>
+        <thead><tr><th>Model</th><th>Time (s)</th><th>Test MSE (u field)</th><th>PDE Residual MSE</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>VanillaPINN</td>
+            <td>66.9</td>
+            <td>6.42×10⁻⁷</td>
+            <td>1.55×10⁻⁵</td>
+          </tr>
+          <tr style="background:rgba(63,185,80,.06);">
+            <td><strong style="color:var(--accent2);">VPINN</strong></td>
+            <td><strong style="color:var(--accent2);">46.5</strong></td>
+            <td><strong style="color:var(--accent2);">2.88×10⁻⁷</strong></td>
+            <td>1.95×10⁻⁵</td>
+          </tr>
+          <tr>
+            <td>PIELM</td>
+            <td>68.4</td>
+            <td>6.21×10⁻³</td>
+            <td>2.37×10⁻²</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="result-badge" style="font-size:15px;">
+      VPINN is 30% faster and more accurate on the u-field than VanillaPINN
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 19 — Comparison
+══════════════════════════════════════════════ -->
+<div class="slide" id="s19">
+  <div class="slide-header">
+    <span class="slide-tag purple">Comparison</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">19 / 20</span>
+  </div>
+  <h2>Comparison with Related Work</h2>
+  <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th style="text-align:center;color:var(--accent);">PINNeAPPle</th>
+          <th style="text-align:center;">DeepXDE</th>
+          <th style="text-align:center;">SciANN</th>
+          <th style="text-align:center;">PhysNeMo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>PINN training</td><td class="check-yes">✓</td><td class="check-yes">✓</td><td class="check-yes">✓</td><td class="check-yes">✓</td></tr>
+        <tr><td>Neural operators</td><td class="check-yes">✓</td><td class="check-partial">○</td><td class="check-no">—</td><td class="check-yes">✓</td></tr>
+        <tr><td>Uncertainty quantification</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-partial">○</td></tr>
+        <tr><td>Digital twin runtime</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+        <tr><td>Meta-learning</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+        <tr><td>Active learning</td><td class="check-yes">✓</td><td class="check-partial">○</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+        <tr><td>Zarr streaming</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+        <tr><td>REST serving</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-yes">✓</td></tr>
+        <tr><td>ONNX export</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-yes">✓</td></tr>
+        <tr><td>Physics validation</td><td class="check-yes">✓</td><td class="check-partial">○</td><td class="check-partial">○</td><td class="check-partial">○</td></tr>
+        <tr><td>CAD / geometry</td><td class="check-yes">✓</td><td class="check-partial">○</td><td class="check-no">—</td><td class="check-yes">✓</td></tr>
+        <tr><td>Unified ProblemSpec</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-top:10px;">✓ full &nbsp;·&nbsp; ○ partial &nbsp;·&nbsp; — absent</p>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 20 — Conclusion
+══════════════════════════════════════════════ -->
+<div class="slide" id="s20">
+  <div class="slide-header">
+    <span class="slide-tag green">Conclusion</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">20 / 20</span>
+  </div>
+  <h2>Conclusion</h2>
+  <div class="two-col" style="flex:1;align-items:start;gap:20px;">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <p class="section-title">5 Key Differentiators</p>
+      <ul class="bullets">
+        <li><strong>Unified ProblemSpec</strong> — one object consumed identically by every module</li>
+        <li><strong>Zarr-backed streaming</strong> — training on out-of-memory datasets without format conversion</li>
+        <li><strong>Live digital twin runtime</strong> — multi-protocol sensor fusion, Kalman assimilation, anomaly detection</li>
+        <li><strong>PDE-family meta-learning</strong> — MAML and Reptile for parametric PDE families</li>
+        <li><strong>Distribution-free conformal UQ</strong> — coverage guarantees without distributional assumptions</li>
+      </ul>
+      <div class="hcard" style="margin-top:8px;">
+        <h4>Roadmap</h4>
+        <ul class="bullets muted" style="gap:6px;">
+          <li>JAX and MLX backend support</li>
+          <li>Automated multi-backend Arena with public leaderboard</li>
+          <li>HPC/cloud integration (SLURM, Ray)</li>
+          <li>Industrial deployment compliance certification</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <p class="section-title">Current State — v0.4</p>
+      <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="stat-box"><span class="num">25</span><div class="label">packages</div></div>
+        <div class="stat-box"><span class="num">76</span><div class="label">models</div></div>
+        <div class="stat-box"><span class="num">0.9999998</span><div class="label" style="font-size:10px;">R² in 15 epochs (PINN ODE)</div></div>
+        <div class="stat-box"><span class="num">&lt;1 ms</span><div class="label">inference latency (GPU)</div></div>
+      </div>
+      <div class="card" style="margin-top:4px;">
+        <h4 style="margin-bottom:8px;">Get Started</h4>
+        <p style="font-family:monospace;font-size:13px;line-height:2.2;color:var(--text);">
+          📦 <span style="color:var(--accent2);">pip install pinneaple</span><br>
+          🔗 github.com/barrosyan/PINNeAPPle
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ── NAVIGATION ── -->
+<nav class="nav">
+  <div class="nav-left">
+    <span id="nav-title">PINNeAPPle</span>
+    &nbsp;·&nbsp; Slide <span id="nav-cur">1</span> of <span id="nav-tot">20</span>
+  </div>
+  <div class="nav-btns">
+    <button class="nav-btn" id="btn-prev" onclick="move(-1)">← Prev</button>
+    <button class="nav-btn" id="btn-next" onclick="move(1)">Next →</button>
+  </div>
+</nav>
+
+<script>
+  const TOTAL = 20;
+  let cur = 1;
+
+  function show(n) {
+    document.querySelector('.slide.active')?.classList.remove('active');
+    document.getElementById('s' + n).classList.add('active');
+    cur = n;
+    document.getElementById('nav-cur').textContent = n;
+    document.getElementById('btn-prev').disabled = n === 1;
+    document.getElementById('btn-next').disabled = n === TOTAL;
+    document.getElementById('progress').style.width = ((n / TOTAL) * 100) + '%';
+  }
+
+  function move(d) { const n = cur + d; if (n >= 1 && n <= TOTAL) show(n); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); move(1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); move(-1); }
+    if (e.key === 'Home') show(1);
+    if (e.key === 'End')  show(TOTAL);
+  });
+
+  // touch / swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend',   e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 50) move(dx < 0 ? 1 : -1);
+  });
+
+  show(1);
+</script>
+</body>
+</html>
