@@ -1,0 +1,11 @@
+streamlit>=1.35.0
+plotly>=5.18.0
+anthropic>=0.25.0
+pandas>=2.0
+numpy>=1.24
+scipy>=1.10
+torch>=2.2
+matplotlib>=3.8
+scikit-learn>=1.3
+scikit-image>=0.21
+optuna>=3.4

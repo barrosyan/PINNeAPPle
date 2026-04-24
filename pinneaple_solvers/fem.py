@@ -68,7 +68,7 @@ def _elem_stiffness_scalar(xy: torch.Tensor, coeff: float = 1.0) -> torch.Tensor
     Q1 element stiffness K_e (4,4) for -coeff * Δu = f.
     xy: (4,2) node coordinates.
     """
-    Ke = torch.zeros(4, 4)
+    Ke = torch.zeros(4, 4, device=xy.device)
     qp = _QP.to(xy.device)
     for q in range(4):
         xi, eta = qp[q, 0].item(), qp[q, 1].item()
@@ -86,7 +86,7 @@ def _elem_stiffness_scalar(xy: torch.Tensor, coeff: float = 1.0) -> torch.Tensor
 
 def _elem_mass(xy: torch.Tensor) -> torch.Tensor:
     """Q1 element mass M_e (4,4)."""
-    Me = torch.zeros(4, 4)
+    Me = torch.zeros(4, 4, device=xy.device)
     qp = _QP.to(xy.device)
     for q in range(4):
         xi, eta = qp[q, 0].item(), qp[q, 1].item()

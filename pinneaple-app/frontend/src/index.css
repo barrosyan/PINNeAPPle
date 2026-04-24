@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    @apply bg-bg text-text min-h-screen;
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track  { @apply bg-surface; }
+  ::-webkit-scrollbar-thumb  { @apply bg-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-muted; }
+
+  * { @apply border-border; }
+}
+
+@layer components {
+  .card { @apply bg-surface border border-border rounded-xl shadow-card; }
+  .card-inner { @apply bg-surface2 border border-border rounded-lg; }
+  .input-base {
+    @apply w-full bg-surface2 border border-border rounded-lg px-3 py-2
+           text-text placeholder-muted text-sm
+           focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary
+           transition-colors;
+  }
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg
+           bg-primary hover:bg-primary-dark text-white font-medium text-sm
+           transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg
+           bg-surface2 hover:bg-surface3 text-text border border-border font-medium text-sm
+           transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg
+           text-muted hover:text-text hover:bg-surface2 text-sm
+           transition-colors;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+  .section-title {
+    @apply text-lg font-semibold text-text mb-4;
+  }
+  .label { @apply block text-xs font-medium text-muted mb-1 uppercase tracking-wide; }
+}
+
+/* Plotly chart dark background override */
+.js-plotly-plot .plotly .bg { fill: transparent !important; }
+.plotly-notifier { display: none !important; }
