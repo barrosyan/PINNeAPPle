@@ -76,6 +76,35 @@ class TSFeatureEngineer:
         features: Dict[str, np.ndarray] = {}
         features.update(make_lags(y, self.lags))
         features.update(rolling_stats(y, self.rolling_windows, stats=self.rolling_stats_set))
+        features.update(rate_of_change(y))
         if t is not None and self.fourier_periods:
             features.update(fourier_features(t, self.fourier_periods, K=self.fourier_K))
         return features
+
+
+def rate_of_change(y: np.ndarray, orders: Sequence[int] = (1, 2)) -> Dict[str, np.ndarray]:
+    """First and higher-order differences (velocity, acceleration)."""
+    y = np.asarray(y, dtype=float).reshape(-1)
+    out: Dict[str, np.ndarray] = {}
+    for order in orders:
+        arr = np.full_like(y, np.nan)
+        diff = np.diff(y, n=order)
+        arr[order:] = diff
+        out[f"diff_{order}"] = arr
+    return out
+
+
+def window_features(y: np.ndarray, input_len: int, horizon: int) -> tuple:
+    """
+    Build sliding-window (X, y_target) arrays for supervised ML.
+    Returns:
+        X      : (n_windows, input_len)
+        y_out  : (n_windows, horizon)
+    """
+    y = np.asarray(y, dtype=float).reshape(-1)
+    n = len(y) - input_len - horizon + 1
+    if n <= 0:
+        raise ValueError(f"Series too short: len={len(y)}, need >{input_len + horizon}")
+    X = np.stack([y[i: i + input_len] for i in range(n)])
+    Y = np.stack([y[i + input_len: i + input_len + horizon] for i in range(n)])
+    return X, Y
