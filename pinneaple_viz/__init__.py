@@ -60,6 +60,19 @@ from .animation import (
     make_gif,
 )
 
+from .vortex import (
+    compute_vorticity_2d,
+    compute_q_criterion_2d,
+    compute_q_criterion_3d,
+    compute_lambda2_3d,
+    plot_vorticity,
+    plot_q_criterion_2d,
+    plot_q_criterion_3d,
+    plot_vortex_identification,
+    plot_lbm_flow,
+    plot_flow_panel,
+)
+
 __all__ = [
     # Style
     "use_cfd_style", "get_cmap", "make_figure", "CMAPS", "DEFAULT_CMAP",
@@ -77,4 +90,9 @@ __all__ = [
     "plot_voxel_slice", "plot_voxel_3d", "plot_voxel_histogram",
     # Animation
     "animate_scalar_field", "animate_streamlines", "make_gif",
+    # Vortex / Q-criterion
+    "compute_vorticity_2d", "compute_q_criterion_2d",
+    "compute_q_criterion_3d", "compute_lambda2_3d",
+    "plot_vorticity", "plot_q_criterion_2d", "plot_q_criterion_3d",
+    "plot_vortex_identification", "plot_lbm_flow", "plot_flow_panel",
 ]
