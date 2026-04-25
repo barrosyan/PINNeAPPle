@@ -39,7 +39,7 @@ import numpy as np
 from .conditions import ConditionSpec, DirichletBC, InitialCondition, NeumannBC, DataConstraint
 from .scales import ScaleSpec
 from .spec import PDETermSpec, ProblemSpec
-from .typing import CoordNames, FieldNames
+from .environment_typing import CoordNames, FieldNames
 
 # ── value helpers ──────────────────────────────────────────────────────────────
 

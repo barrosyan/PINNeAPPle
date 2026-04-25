@@ -50,14 +50,14 @@ def main() -> None:
     # - outlet: p=0
     # In practice you'd likely use more realistic profiles.
     inlet = DirichletBC(
-        name="inlet",
+        name_or_values="inlet",
         fields=("u", "v", "p"),
         selector_type="tag",
         selector={"tag": "inlet"},
         value_fn=lambda X, ctx: np.tile(np.array([1.0, 0.0, 0.0], dtype=np.float32), (X.shape[0], 1)),
     )
     outlet = DirichletBC(
-        name="outlet",
+        name_or_values="outlet",
         fields=("p",),
         selector_type="tag",
         selector={"tag": "outlet"},

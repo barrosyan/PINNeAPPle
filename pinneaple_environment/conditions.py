@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional, Tuple, Union, Literal
+from typing import Any, Callable, Dict, Optional, Union, Literal
 
 import numpy as np
 
-from .typing import FieldNames
+from .environment_typing import FieldNames
 
 SelectorType = Literal["all", "tag", "callable"]
 
