@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAppStore } from "@/store";
 
 const api = axios.create({
   baseURL: "/api",
@@ -8,9 +9,7 @@ const api = axios.create({
 
 // ── Request: attach JWT access token ─────────────────────────────────────────
 api.interceptors.request.use((config) => {
-  // Lazy import to avoid circular deps — store is a singleton
-  const { useAppStore } = require("@/store");
-  const token: string | null = useAppStore.getState().accessToken;
+  const token = useAppStore.getState().accessToken;
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -30,8 +29,7 @@ api.interceptors.response.use(
     const original = err.config as typeof err.config & { _retry?: boolean };
 
     if (err.response?.status === 401 && !original._retry) {
-      const { useAppStore } = require("@/store");
-      const refresh: string | null = useAppStore.getState().refreshToken;
+      const refresh = useAppStore.getState().refreshToken;
 
       if (!refresh) {
         useAppStore.getState().authLogout();
@@ -47,8 +45,8 @@ api.interceptors.response.use(
         });
       }
 
-      original._retry   = true;
-      isRefreshing       = true;
+      original._retry = true;
+      isRefreshing    = true;
 
       try {
         const { data } = await axios.post("/api/auth/token/refresh/", { refresh });
