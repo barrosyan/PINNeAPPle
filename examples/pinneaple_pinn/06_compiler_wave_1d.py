@@ -147,8 +147,8 @@ def main() -> None:
             params={"c": C_WAVE},
         ),
         conditions=(
-            InitialCondition(name="u0", fields=("u",), value_fn=u0_np, weight=1.0),
-            DirichletBC(name="bc", fields=("u",), value_fn=bc_np, weight=1.0),
+            InitialCondition(name_or_values="u0", fields=("u",), value_fn=u0_np, weight=1.0),
+            DirichletBC(name_or_values="bc", fields=("u",), value_fn=bc_np, weight=1.0),
         ),
     )
 

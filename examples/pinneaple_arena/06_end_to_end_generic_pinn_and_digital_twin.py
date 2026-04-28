@@ -200,7 +200,7 @@ def make_heat_problem(alpha: float = 0.1) -> ProblemSpec:
     pde = PDETermSpec(kind="heat_equation", fields=("T",), coords=("x", "y", "t"), params={"alpha": float(alpha)})
 
     bc = DirichletBC(
-        name="dirichlet_T0",
+        name_or_values="dirichlet_T0",
         fields=("T",),
         selector_type="all",
         value_fn=lambda X, ctx: np.zeros((X.shape[0], 1), dtype=np.float32),
@@ -208,7 +208,7 @@ def make_heat_problem(alpha: float = 0.1) -> ProblemSpec:
     )
 
     ic = InitialCondition(
-        name="ic_sine",
+        name_or_values="ic_sine",
         fields=("T",),
         selector_type="all",
         value_fn=lambda X, ctx: manufactured_heat_solution(X, alpha=ctx["alpha"]),
@@ -216,7 +216,7 @@ def make_heat_problem(alpha: float = 0.1) -> ProblemSpec:
     )
 
     data = DataConstraint(
-        name="data_sparse",
+        name_or_values="data_sparse",
         fields=("T",),
         selector_type="all",
         value_fn=lambda X, ctx: manufactured_heat_solution(X, alpha=ctx["alpha"]),

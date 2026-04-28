@@ -20,7 +20,7 @@ import numpy as np
 from ..spec import PDETermSpec, ProblemSpec
 from ..conditions import DirichletBC, NeumannBC
 from ..scales import ScaleSpec
-from ..typing import CoordNames
+from ..environment_typing import CoordNames
 from .registry import register_preset
 
 
@@ -63,7 +63,7 @@ def plane_stress_2d_default(
     )
 
     fixed = DirichletBC(
-        name="fixed",
+        name_or_values="fixed",
         fields=("ux", "uy"),
         selector_type="tag",
         selector={"tag": "fixed"},
@@ -72,7 +72,7 @@ def plane_stress_2d_default(
     )
 
     traction_y = NeumannBC(
-        name="traction_load",
+        name_or_values="traction_load",
         fields=("uy",),
         selector_type="tag",
         selector={"tag": "load"},
@@ -119,7 +119,7 @@ def plane_strain_2d_default(
     )
 
     fixed = DirichletBC(
-        name="fixed",
+        name_or_values="fixed",
         fields=("ux", "uy"),
         selector_type="tag",
         selector={"tag": "fixed"},
@@ -171,7 +171,7 @@ def von_mises_2d_default(
     )
 
     fixed = DirichletBC(
-        name="fixed",
+        name_or_values="fixed",
         fields=("ux", "uy"),
         selector_type="tag",
         selector={"tag": "fixed"},
@@ -214,7 +214,7 @@ def linear_elasticity_3d(
     )
 
     fixed = DirichletBC(
-        name="fixed",
+        name_or_values="fixed",
         fields=("ux", "uy", "uz"),
         selector_type="tag",
         selector={"tag": "fixed"},
@@ -223,7 +223,7 @@ def linear_elasticity_3d(
     )
 
     traction = NeumannBC(
-        name="traction",
+        name_or_values="traction",
         fields=("ux", "uy", "uz"),
         selector_type="tag",
         selector={"tag": "load"},
@@ -300,7 +300,7 @@ def rotary_coupling_torsion_default(
 
     # Fixed at z=0 face: ux=uy=uz=0
     fixed = DirichletBC(
-        name="fixed_end",
+        name_or_values="fixed_end",
         fields=("ux", "uy", "uz"),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 2], 0.0, atol=1e-3),
@@ -320,7 +320,7 @@ def rotary_coupling_torsion_default(
         return np.stack([tx, ty, tz], axis=1).astype(np.float32)
 
     traction_end = NeumannBC(
-        name="torsion_traction",
+        name_or_values="torsion_traction",
         fields=("ux", "uy", "uz"),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 2], float(length), atol=1e-3),
@@ -329,7 +329,7 @@ def rotary_coupling_torsion_default(
     )
 
     inner_wall = DirichletBC(
-        name="inner_wall_free",
+        name_or_values="inner_wall_free",
         fields=("ux", "uy"),
         selector_type="callable",
         selector=lambda X, ctx: np.abs(np.sqrt(X[:, 0]**2 + X[:, 1]**2) - float(r_inner)) < 1e-3,
@@ -391,7 +391,7 @@ def thermoelasticity_2d_default(
     )
 
     fixed = DirichletBC(
-        name="fixed",
+        name_or_values="fixed",
         fields=("ux", "uy"),
         selector_type="tag",
         selector={"tag": "fixed"},
@@ -400,7 +400,7 @@ def thermoelasticity_2d_default(
     )
 
     T_hot = DirichletBC(
-        name="T_hot",
+        name_or_values="T_hot",
         fields=("T",),
         selector_type="tag",
         selector={"tag": "inlet"},
@@ -409,7 +409,7 @@ def thermoelasticity_2d_default(
     )
 
     T_cold = DirichletBC(
-        name="T_cold",
+        name_or_values="T_cold",
         fields=("T",),
         selector_type="tag",
         selector={"tag": "outlet"},

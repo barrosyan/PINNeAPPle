@@ -40,7 +40,7 @@ import numpy as np
 from ..conditions import DirichletBC, NeumannBC, DataConstraint, ConditionSpec
 from ..scales import ScaleSpec
 from ..spec import PDETermSpec, ProblemSpec
-from ..typing import CoordNames
+from ..environment_typing import CoordNames
 from .registry import register_preset
 
 

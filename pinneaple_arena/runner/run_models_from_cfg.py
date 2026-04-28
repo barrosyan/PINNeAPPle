@@ -72,10 +72,10 @@ def _build_problem_spec_from_cfg(cfg: Dict[str, Any] | None):
     pde = PDETermSpec(kind="heat_equation", fields=fields, coords=coords, params={"alpha": alpha})
 
     # BC: Dirichlet u=0
-    bc = DirichletBC(name="bc_dirichlet", fields=fields, value_fn=None, weight=float(cfg.get("w_bc", 1.0)))
+    bc = DirichletBC(name_or_values="bc_dirichlet", fields=fields, value_fn=None, weight=float(cfg.get("w_bc", 1.0)))
 
     # IC: provided by dataset_builder via y_ic; in compiler, initial condition uses x_ic/y_ic
-    ic = InitialCondition(name="ic", fields=fields, value_fn=None, weight=float(cfg.get("w_ic", 1.0)))
+    ic = InitialCondition(name_or_values="ic", fields=fields, value_fn=None, weight=float(cfg.get("w_ic", 1.0)))
 
     return ProblemSpec(
         name=name,
