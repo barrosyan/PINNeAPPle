@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Tuple
 
-from .typing import CoordNames, FieldNames
+from .environment_typing import CoordNames, FieldNames
 from .conditions import ConditionSpec
 from .scales import ScaleSpec
 

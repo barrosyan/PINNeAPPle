@@ -4,7 +4,7 @@ import numpy as np
 
 from ..spec import PDETermSpec, ProblemSpec
 from ..conditions import DirichletBC, NeumannBC
-from ..typing import CoordNames
+from ..environment_typing import CoordNames
 
 
 def _unit_interval(x: np.ndarray, a: float, b: float) -> np.ndarray:
@@ -47,7 +47,7 @@ def ns_incompressible_2d_default(Re: float = 100.0, Umax: float = 1.0) -> Proble
     )
 
     walls = DirichletBC(
-        name="walls",
+        name_or_values="walls",
         fields=("u", "v"),
         selector_type="tag",
         selector={"tag": "walls"},
@@ -56,7 +56,7 @@ def ns_incompressible_2d_default(Re: float = 100.0, Umax: float = 1.0) -> Proble
     )
 
     inlet = DirichletBC(
-        name="inlet",
+        name_or_values="inlet",
         fields=("u", "v"),
         selector_type="tag",
         selector={"tag": "inlet"},
@@ -66,7 +66,7 @@ def ns_incompressible_2d_default(Re: float = 100.0, Umax: float = 1.0) -> Proble
 
     # outlet: dp/dn = 0 (more stable than hard pressure for many cases)
     outlet = NeumannBC(
-        name="outlet_dp_dn",
+        name_or_values="outlet_dp_dn",
         fields=("p",),
         selector_type="tag",
         selector={"tag": "outlet"},
@@ -101,7 +101,7 @@ def ns_incompressible_3d_default(Re: float = 100.0, Umax: float = 1.0) -> Proble
     )
 
     walls = DirichletBC(
-        name="walls",
+        name_or_values="walls",
         fields=("u", "v", "w"),
         selector_type="tag",
         selector={"tag": "walls"},
@@ -110,7 +110,7 @@ def ns_incompressible_3d_default(Re: float = 100.0, Umax: float = 1.0) -> Proble
     )
 
     inlet = DirichletBC(
-        name="inlet",
+        name_or_values="inlet",
         fields=("u", "v", "w"),
         selector_type="tag",
         selector={"tag": "inlet"},
@@ -119,7 +119,7 @@ def ns_incompressible_3d_default(Re: float = 100.0, Umax: float = 1.0) -> Proble
     )
 
     outlet = NeumannBC(
-        name="outlet_dp_dn",
+        name_or_values="outlet_dp_dn",
         fields=("p",),
         selector_type="tag",
         selector={"tag": "outlet"},

@@ -4,7 +4,7 @@ import numpy as np
 
 from ..spec import PDETermSpec, ProblemSpec
 from ..conditions import DirichletBC, InitialCondition
-from ..typing import CoordNames
+from ..environment_typing import CoordNames
 from .registry import register_preset
 
 
@@ -14,7 +14,7 @@ def laplace_2d_default() -> ProblemSpec:
     fields = ("u",)
     pde = PDETermSpec(kind="laplace", fields=fields, coords=coords, params={})
     bc = DirichletBC(
-        name="u_boundary",
+        name_or_values="u_boundary",
         fields=("u",),
         selector_type="tag",
         selector={"tag": "boundary"},
@@ -42,7 +42,7 @@ def poisson_2d_default() -> ProblemSpec:
     fields = ("u",)
     pde = PDETermSpec(kind="poisson", fields=fields, coords=coords, params={}, meta={"note": "Provide ctx['source_fn'] for f(x,y)."})
     bc = DirichletBC(
-        name="u_boundary",
+        name_or_values="u_boundary",
         fields=("u",),
         selector_type="tag",
         selector={"tag": "boundary"},
@@ -71,7 +71,7 @@ def burgers_1d_default(nu: float = 0.01) -> ProblemSpec:
     pde = PDETermSpec(kind="burgers", fields=fields, coords=coords, params={"nu": float(nu)})
 
     ic = InitialCondition(
-        name="u_init",
+        name_or_values="u_init",
         fields=("u",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 1], 0.0),
@@ -80,7 +80,7 @@ def burgers_1d_default(nu: float = 0.01) -> ProblemSpec:
     )
 
     bc_left = DirichletBC(
-        name="bc_left",
+        name_or_values="bc_left",
         fields=("u",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], -1.0),
@@ -89,7 +89,7 @@ def burgers_1d_default(nu: float = 0.01) -> ProblemSpec:
     )
 
     bc_right = DirichletBC(
-        name="bc_right",
+        name_or_values="bc_right",
         fields=("u",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], 1.0),
