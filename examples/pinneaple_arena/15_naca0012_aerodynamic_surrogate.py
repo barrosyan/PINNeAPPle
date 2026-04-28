@@ -1,371 +1,390 @@
 """NACA 0012 aerodynamic surrogate — Joukowski mapping + PINN.
 
-Reference solution: Joukowski conformal mapping (exact potential flow, 2D
-inviscid, incompressible). A VanillaPINN then learns to reproduce u, v, Cp.
+Reference solution: Joukowski conformal mapping (exact potential flow).
+PINN learns u, v, Cp over the full 2D domain.
 
-Outputs saved to  examples/pinneaple_arena/_out/naca0012/
+Three output figures:
+  naca0012_flow.png        — velocity field + streamlines / Cp field
+  naca0012_pinn.png        — true vs PINN u-field + % relative error
+  naca0012_surface_cp.png  — Cp distribution on airfoil surface
 """
 from __future__ import annotations
 
 import os
-import sys
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from matplotlib.patches import Polygon as MplPoly
-from matplotlib.collections import PatchCollection
+from matplotlib.path import Path as MplPath
 import torch
 import torch.nn as nn
 
-plt.style.use("dark_background")
-CMAP_VEL  = "plasma"
-CMAP_PRES = "RdBu_r"
-ACCENT    = "#58a6ff"
-GREEN     = "#3fb950"
-ORANGE    = "#ffa657"
+plt.rcParams.update({
+    "font.size": 12,
+    "axes.labelsize": 12,
+    "axes.titlesize": 13,
+    "xtick.labelsize": 10,
+    "ytick.labelsize": 10,
+})
+
+BG   = "#0d1117"
+SURF = "#161b22"
+SURF2= "#1c2330"
+BORD = "#30363d"
+MUTED= "#8b949e"
+TEXT = "#e6edf3"
+ACCENT = "#58a6ff"
+GREEN  = "#3fb950"
+ORANGE = "#ffa657"
+PURPLE = "#d2a8ff"
 
 OUT = os.path.join(os.path.dirname(__file__), "_out", "naca0012")
 os.makedirs(OUT, exist_ok=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 1.  Joukowski airfoil geometry + exact potential-flow solution
-# ─────────────────────────────────────────────────────────────────────────────
-
-def joukowski_transform(zeta: np.ndarray, c: float = 1.0) -> np.ndarray:
-    return zeta + c**2 / zeta
-
-def joukowski_airfoil(alpha_deg: float = 5.0, n_pts: int = 400):
-    alpha = np.deg2rad(alpha_deg)
-    # Circle in ζ-plane that maps to a symmetric airfoil
-    R = 1.02          # slightly > 1 so trailing-edge curvature is finite
-    eps = 0.03        # vertical offset for camber / thickness
-    center = complex(-eps, eps * np.sin(alpha))
-    R_circ = abs(1.0 - center) + 0.01   # ensure it passes near z=1
-
-    theta = np.linspace(0, 2 * np.pi, n_pts, endpoint=False)
-    zeta_circle = center + R_circ * np.exp(1j * theta)
-    z_airfoil   = joukowski_transform(zeta_circle)
-    return z_airfoil, center, R_circ
-
-def potential_flow_velocity(zeta: np.ndarray, center: complex, R: float,
-                             U_inf: float = 1.0, alpha_deg: float = 5.0,
-                             c_j: float = 1.0):
-    """
-    Velocity field in the physical (z) plane via complex potential:
-      f(ζ) = U(e^{-iα}ζ + e^{iα}R²/ζ) - iΓ/(2π) ln ζ
-    Kutta condition: Γ = 4π U R sin(α + β)  where β is a small correction
-    """
-    alpha = np.deg2rad(alpha_deg)
-    Gamma = 4 * np.pi * U_inf * R * np.sin(alpha)
-
-    # Shift ζ relative to circle centre
-    zeta_s = zeta - center
-
-    # df/dζ — derivative of complex potential w.r.t. ζ
-    df_dzeta = U_inf * (np.exp(-1j * alpha) - np.exp(1j * alpha) * R**2 / zeta_s**2) \
-               - 1j * Gamma / (2 * np.pi * zeta_s)
-
-    # dz/dζ — Joukowski derivative
-    dz_dzeta = 1.0 - c_j**2 / zeta_s**2
-
-    # Conjugate velocity in z-plane
-    w_z = df_dzeta / dz_dzeta  # df/dz = (df/dζ)/(dz/dζ)
-
-    u =  np.real(w_z)
-    v = -np.imag(w_z)
-    return u, v
-
-def make_flow_grid(n: int = 80, xlim=(-2.5, 2.5), ylim=(-2.0, 2.0)):
-    x = np.linspace(*xlim, n)
-    y = np.linspace(*ylim, n)
-    XX, YY = np.meshgrid(x, y)
-    return XX, YY
-
-def is_inside_airfoil(z_grid: np.ndarray, z_foil: np.ndarray) -> np.ndarray:
-    """Mask points roughly inside the airfoil contour (ray-casting)."""
-    from matplotlib.path import Path
-    path = Path(np.column_stack([z_foil.real, z_foil.imag]))
-    pts  = np.column_stack([z_grid.real.ravel(), z_grid.imag.ravel()])
-    return path.contains_points(pts).reshape(z_grid.shape)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 2.  Reference data generation
+# 1. Joukowski geometry & exact potential flow
 # ─────────────────────────────────────────────────────────────────────────────
 
 ALPHA  = 5.0
 U_INF  = 1.0
 C_J    = 1.0
-N_GRID = 80
 
-z_foil_full, center, R_circ = joukowski_airfoil(ALPHA)
-z_foil = z_foil_full   # full perimeter
+def joukowski(zeta, c=C_J):
+    return zeta + c**2 / zeta
 
-XX, YY = make_flow_grid(N_GRID)
+def make_airfoil(n=600):
+    eps   = 0.04
+    alpha = np.deg2rad(ALPHA)
+    ctr   = complex(-eps, eps)
+    R     = abs(1.0 - ctr) + 0.008
+    theta = np.linspace(0, 2 * np.pi, n, endpoint=False)
+    zeta  = ctr + R * np.exp(1j * theta)
+    return joukowski(zeta), ctr, R
+
+def z_to_zeta(z):
+    disc = np.sqrt(z**2 - 4 * C_J**2 + 0j)
+    z1, z2 = (z + disc) / 2, (z - disc) / 2
+    return np.where(np.abs(z1) >= np.abs(z2), z1, z2)
+
+def potential_flow(zeta, ctr, R):
+    alpha = np.deg2rad(ALPHA)
+    Gamma = 4 * np.pi * U_INF * R * np.sin(alpha)
+    s     = zeta - ctr
+    df    = U_INF * (np.exp(-1j * alpha) - np.exp(1j * alpha) * R**2 / s**2) \
+            - 1j * Gamma / (2 * np.pi * s)
+    dz    = 1.0 - C_J**2 / s**2
+    w     = df / dz
+    return np.real(w), -np.imag(w)
+
+z_foil, ctr, R_circ = make_airfoil()
+
+# Evaluation grid
+N = 100
+XX, YY = np.meshgrid(np.linspace(-2.5, 2.5, N), np.linspace(-2.0, 2.0, N))
 ZZ = XX + 1j * YY
-
-# Need ζ from z: simple approximate inversion via Newton (z = ζ + 1/ζ → ζ² - zζ + 1 = 0)
-def z_to_zeta(z_pts, center):
-    # ζ = (z ± sqrt(z²-4))/2  — choose branch far from origin
-    disc = np.sqrt(z_pts**2 - 4 * C_J**2 + 0j)
-    zeta1 = (z_pts + disc) / 2
-    zeta2 = (z_pts - disc) / 2
-    # pick the one outside the unit circle
-    return np.where(np.abs(zeta1) >= np.abs(zeta2), zeta1, zeta2)
-
-ZETA_GRID = z_to_zeta(ZZ, center)
-U_REF, V_REF = potential_flow_velocity(ZETA_GRID, center, R_circ, U_INF, ALPHA, C_J)
+ZETA = z_to_zeta(ZZ)
+U_REF, V_REF = potential_flow(ZETA, ctr, R_circ)
 SPEED = np.sqrt(U_REF**2 + V_REF**2)
 CP_REF = 1.0 - SPEED**2 / U_INF**2
 
-# Mask interior
-inside = is_inside_airfoil(ZZ, z_foil)
-U_REF[inside] = 0.0
-V_REF[inside] = 0.0
+foil_path = MplPath(np.column_stack([z_foil.real, z_foil.imag]))
+inside = foil_path.contains_points(
+    np.column_stack([ZZ.real.ravel(), ZZ.imag.ravel()])
+).reshape(N, N)
+
+U_REF[inside] = np.nan
+V_REF[inside] = np.nan
 CP_REF[inside] = np.nan
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 3.  FIGURE 1 — Geometry + Reference flow
+# 2. FIGURE A — Velocity field + Cp field
 # ─────────────────────────────────────────────────────────────────────────────
 
-fig, axes = plt.subplots(1, 2, figsize=(13, 5), facecolor="#0d1117")
-fig.suptitle("NACA 0012 — Joukowski Potential Flow Reference",
-             color=ACCENT, fontsize=14, fontweight="bold", y=1.01)
-
-ax0, ax1 = axes
-for ax in axes:
-    ax.set_facecolor("#0d1117")
+def dark_ax(ax, facecolor=BG):
+    ax.set_facecolor(facecolor)
     for sp in ax.spines.values():
-        sp.set_edgecolor("#30363d")
-    ax.tick_params(colors="#8b949e", labelsize=8)
+        sp.set_color(BORD)
+    ax.tick_params(colors=MUTED)
+    ax.xaxis.label.set_color(TEXT)
+    ax.yaxis.label.set_color(TEXT)
+    ax.title.set_color(TEXT)
 
-# — Velocity magnitude contour
-speed_plot = np.where(inside, np.nan, np.sqrt(U_REF**2 + V_REF**2))
-cf0 = ax0.contourf(XX, YY, speed_plot, levels=50, cmap=CMAP_VEL)
+fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(16, 7), facecolor=BG)
+
+# — Velocity magnitude
+spd = np.where(inside, np.nan, SPEED)
+vmax_spd = np.nanpercentile(spd, 97)
+cf0 = ax0.contourf(XX, YY, spd, levels=60, cmap="plasma", vmin=0, vmax=vmax_spd)
 ax0.streamplot(XX, YY,
-               np.where(inside, 0.0, U_REF),
-               np.where(inside, 0.0, V_REF),
-               color="#ffffff", linewidth=0.5, density=1.2, arrowsize=0.8,
-               arrowstyle="-")
-ax0.fill(z_foil.real, z_foil.imag, color="#161b22", zorder=5)
-ax0.plot(z_foil.real, z_foil.imag, color=ACCENT, linewidth=1.2, zorder=6)
-cb0 = fig.colorbar(cf0, ax=ax0, pad=0.02, fraction=0.046)
-cb0.ax.tick_params(colors="#8b949e", labelsize=7)
-cb0.set_label("|V| / U∞", color="#8b949e", fontsize=9)
-ax0.set_title("Velocity magnitude + streamlines", color="#e6edf3", fontsize=10)
+               np.where(inside, 0.0, np.nan_to_num(U_REF, nan=0)),
+               np.where(inside, 0.0, np.nan_to_num(V_REF, nan=0)),
+               color="white", linewidth=0.8, density=1.4,
+               arrowsize=1.0, arrowstyle="-|>",
+               integration_direction="forward")
+ax0.fill(z_foil.real, z_foil.imag, color=SURF, zorder=5, linewidth=0)
+ax0.plot(z_foil.real, z_foil.imag, color=ACCENT, linewidth=1.4, zorder=6)
+cb0 = fig.colorbar(cf0, ax=ax0, pad=0.015, fraction=0.04, shrink=0.85)
+cb0.set_label("|V| / U∞", color=MUTED, fontsize=11)
+cb0.ax.tick_params(colors=MUTED, labelsize=9)
+ax0.set_title("Velocity magnitude + streamlines", fontsize=14, fontweight="bold", pad=10)
+ax0.set_xlabel("x / c"); ax0.set_ylabel("y / c")
 ax0.set_aspect("equal"); ax0.set_xlim(-2.5, 2.5); ax0.set_ylim(-2.0, 2.0)
-ax0.set_xlabel("x / c", color="#8b949e", fontsize=9)
-ax0.set_ylabel("y / c", color="#8b949e", fontsize=9)
-ax0.axhline(0, color="#30363d", lw=0.5, zorder=0)
-ax0.axvline(0, color="#30363d", lw=0.5, zorder=0)
+# Annotate key regions
+ax0.annotate("Accelerated\nflow", xy=(0.3, 0.35), color=GREEN, fontsize=9, ha="center")
+ax0.annotate("Stagnation\npoint", xy=(-1.05, 0.04), color=ORANGE,
+             fontsize=9, xytext=(-1.9, 0.5),
+             arrowprops=dict(arrowstyle="->", color=ORANGE, lw=0.9))
+ax0.annotate("Wake", xy=(1.5, 0.0), color=PURPLE, fontsize=9, ha="center")
+dark_ax(ax0)
 
-# — Cp contour
-cp_clipped = np.clip(CP_REF, -4, 1.5)
-cf1 = ax1.contourf(XX, YY, cp_clipped, levels=50, cmap=CMAP_PRES,
-                   norm=mcolors.TwoSlopeNorm(vcenter=0, vmin=-4, vmax=1.5))
-ax1.fill(z_foil.real, z_foil.imag, color="#161b22", zorder=5)
-ax1.plot(z_foil.real, z_foil.imag, color=ORANGE, linewidth=1.2, zorder=6)
-cb1 = fig.colorbar(cf1, ax=ax1, pad=0.02, fraction=0.046)
-cb1.ax.tick_params(colors="#8b949e", labelsize=7)
-cb1.set_label("Cp", color="#8b949e", fontsize=9)
-ax1.set_title("Pressure coefficient Cp", color="#e6edf3", fontsize=10)
+# — Cp field
+cp_plot = np.clip(np.where(inside, np.nan, CP_REF), -3, 1.5)
+cf1 = ax1.contourf(XX, YY, cp_plot, levels=60, cmap="RdBu_r",
+                   norm=mcolors.TwoSlopeNorm(vcenter=0, vmin=-3, vmax=1.5))
+ax1.fill(z_foil.real, z_foil.imag, color=SURF, zorder=5, linewidth=0)
+ax1.plot(z_foil.real, z_foil.imag, color=ORANGE, linewidth=1.4, zorder=6)
+cb1 = fig.colorbar(cf1, ax=ax1, pad=0.015, fraction=0.04, shrink=0.85)
+cb1.set_label("Cp", color=MUTED, fontsize=11)
+cb1.ax.tick_params(colors=MUTED, labelsize=9)
+ax1.set_title("Pressure coefficient Cp  (α = 5°)", fontsize=14, fontweight="bold", pad=10)
+ax1.set_xlabel("x / c"); ax1.set_ylabel("y / c")
 ax1.set_aspect("equal"); ax1.set_xlim(-2.5, 2.5); ax1.set_ylim(-2.0, 2.0)
-ax1.set_xlabel("x / c", color="#8b949e", fontsize=9)
-ax1.set_ylabel("y / c", color="#8b949e", fontsize=9)
-ax1.axhline(0, color="#30363d", lw=0.5, zorder=0)
-ax1.axvline(0, color="#30363d", lw=0.5, zorder=0)
+ax1.annotate("Suction\npeak", xy=(-0.8, 0.12), color=TEXT, fontsize=9,
+             xytext=(-1.8, 0.8),
+             arrowprops=dict(arrowstyle="->", color=TEXT, lw=0.9))
+dark_ax(ax1)
 
-plt.tight_layout(pad=0.8)
-fig.savefig(os.path.join(OUT, "naca0012_reference_flow.png"), dpi=140,
-            bbox_inches="tight", facecolor="#0d1117")
+fig.suptitle("NACA 0012 — Joukowski Potential Flow  (inviscid, incompressible)",
+             color=ACCENT, fontsize=15, fontweight="bold", y=1.01)
+plt.tight_layout(pad=1.5)
+fig.savefig(os.path.join(OUT, "naca0012_flow.png"), dpi=160,
+            bbox_inches="tight", facecolor=BG)
 plt.close(fig)
-print("Saved: naca0012_reference_flow.png")
+print("Saved naca0012_flow.png")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 4.  PINN surrogate — learns (x,y) → (u, v, Cp)
+# 3. PINN surrogate — (x, y) → (u, v, Cp)
 # ─────────────────────────────────────────────────────────────────────────────
 
-class VanillaPINN(nn.Module):
-    def __init__(self, hidden: int = 128, depth: int = 5):
+class PINN(nn.Module):
+    def __init__(self, h=128, d=6):
         super().__init__()
-        layers = [nn.Linear(2, hidden), nn.Tanh()]
-        for _ in range(depth - 1):
-            layers += [nn.Linear(hidden, hidden), nn.Tanh()]
-        layers.append(nn.Linear(hidden, 3))  # u, v, Cp
+        layers = [nn.Linear(2, h), nn.Tanh()]
+        for _ in range(d - 1):
+            layers += [nn.Linear(h, h), nn.Tanh()]
+        layers.append(nn.Linear(h, 3))
         self.net = nn.Sequential(*layers)
+    def forward(self, x):
+        return self.net(x)
 
-    def forward(self, xy: torch.Tensor) -> torch.Tensor:
-        return self.net(xy)
+# Training data (exterior points only)
+mask = ~inside
+xy = np.column_stack([XX[mask].astype(np.float32),
+                      YY[mask].astype(np.float32)])
+uv = np.column_stack([U_REF[mask].astype(np.float32),
+                      V_REF[mask].astype(np.float32),
+                      CP_REF[mask].astype(np.float32)])
 
-def build_training_data():
-    mask = ~inside
-    x_flat = XX[mask].ravel().astype(np.float32)
-    y_flat = YY[mask].ravel().astype(np.float32)
-    u_flat = U_REF[mask].ravel().astype(np.float32)
-    v_flat = V_REF[mask].ravel().astype(np.float32)
-    cp_flat_raw = CP_REF[mask]
-    # replace NaN in cp with 0
-    cp_flat = np.where(np.isfinite(cp_flat_raw), cp_flat_raw, 0.0).astype(np.float32)
+# remove NaN rows (boundaries of singularity)
+valid = np.isfinite(uv).all(axis=1)
+xy, uv = xy[valid], uv[valid]
 
-    xy = torch.from_numpy(np.column_stack([x_flat, y_flat]))
-    uvcp = torch.from_numpy(np.column_stack([u_flat, v_flat, cp_flat]))
-    return xy, uvcp
+xy_t = torch.from_numpy(xy)
+uv_t = torch.from_numpy(uv)
+xy_mu, xy_s = xy_t.mean(0), xy_t.std(0) + 1e-8
+uv_mu, uv_s = uv_t.mean(0), uv_t.std(0) + 1e-8
+xy_n = (xy_t - xy_mu) / xy_s
+uv_n = (uv_t - uv_mu) / uv_s
 
 DEVICE = "cpu"
-xy_train, uvcp_train = build_training_data()
-xy_train  = xy_train.to(DEVICE)
-uvcp_train = uvcp_train.to(DEVICE)
-
-# Normalize inputs / targets
-xy_mean, xy_std = xy_train.mean(0), xy_train.std(0) + 1e-8
-t_mean, t_std   = uvcp_train.mean(0), uvcp_train.std(0) + 1e-8
-
-xy_n   = (xy_train  - xy_mean) / xy_std
-uvcp_n = (uvcp_train - t_mean) / t_std
-
-model = VanillaPINN(hidden=128, depth=5).to(DEVICE)
+model = PINN(128, 6).to(DEVICE)
 opt   = torch.optim.Adam(model.parameters(), lr=1e-3)
-sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=3000, eta_min=1e-4)
+sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=4000, eta_min=5e-5)
+BATCH = 1024
+hist  = []
 
-EPOCHS   = 3000
-BATCH    = 512
-hist     = []
-
-for ep in range(1, EPOCHS + 1):
-    idx = torch.randperm(xy_n.shape[0])[:BATCH]
-    xb, yb = xy_n[idx], uvcp_n[idx]
+print("Training PINN…")
+for ep in range(4000):
+    idx  = torch.randperm(xy_n.shape[0])[:BATCH]
+    xb, yb = xy_n[idx], uv_n[idx]
     opt.zero_grad()
-    pred = model(xb)
-    loss = nn.functional.mse_loss(pred, yb)
+    loss = nn.functional.mse_loss(model(xb), yb)
     loss.backward()
     nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-    opt.step()
-    sched.step()
+    opt.step(); sched.step()
     hist.append(float(loss))
 
-print(f"Final training loss: {hist[-1]:.4e}")
+print(f"  Final loss: {hist[-1]:.4e}")
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 5.  FIGURE 2 — Training loss curve
-# ─────────────────────────────────────────────────────────────────────────────
-
-fig, ax = plt.subplots(figsize=(7, 4), facecolor="#0d1117")
-ax.set_facecolor("#161b22")
-for sp in ax.spines.values():
-    sp.set_edgecolor("#30363d")
-ax.tick_params(colors="#8b949e", labelsize=9)
-ax.semilogy(hist, color=ACCENT, linewidth=1.5, label="MSE (normalised targets)")
-ax.set_xlabel("Epoch", color="#e6edf3", fontsize=11)
-ax.set_ylabel("MSE loss", color="#e6edf3", fontsize=11)
-ax.set_title("NACA 0012 PINN — Training convergence", color=ACCENT, fontsize=12, fontweight="bold")
-ax.legend(fontsize=10, framealpha=0.2)
-ax.grid(True, color="#30363d", linewidth=0.5, alpha=0.7)
-plt.tight_layout()
-fig.savefig(os.path.join(OUT, "naca0012_training_loss.png"), dpi=140,
-            bbox_inches="tight", facecolor="#0d1117")
-plt.close(fig)
-print("Saved: naca0012_training_loss.png")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 6.  FIGURE 3 — True vs Predicted fields
-# ─────────────────────────────────────────────────────────────────────────────
-
+# Evaluate
 model.eval()
 with torch.no_grad():
-    xy_all = torch.from_numpy(
+    all_xy = torch.from_numpy(
         np.column_stack([XX.ravel().astype(np.float32),
                          YY.ravel().astype(np.float32)])
-    ).to(DEVICE)
-    xy_all_n = (xy_all - xy_mean) / xy_std
-    pred_n   = model(xy_all_n).cpu().numpy()
+    )
+    pred_n = model((all_xy - xy_mu) / xy_s).numpy()
 
-pred_phys = pred_n * t_std.numpy() + t_mean.numpy()
-U_pred = pred_phys[:, 0].reshape(XX.shape)
-V_pred = pred_phys[:, 1].reshape(XX.shape)
-CP_pred = pred_phys[:, 2].reshape(XX.shape)
-
+pred   = pred_n * uv_s.numpy() + uv_mu.numpy()
+U_pred = pred[:, 0].reshape(N, N)
+V_pred = pred[:, 1].reshape(N, N)
+CP_pred = pred[:, 2].reshape(N, N)
 U_pred[inside] = np.nan
-V_pred[inside] = np.nan
 CP_pred[inside] = np.nan
-U_err  = np.abs(U_pred - np.where(inside, np.nan, U_REF))
-CP_err = np.abs(CP_pred - np.where(inside, np.nan, np.where(np.isfinite(CP_REF), CP_REF, 0.0)))
 
-fig, axes = plt.subplots(2, 3, figsize=(15, 9), facecolor="#0d1117")
-fig.suptitle("NACA 0012 PINN — True vs Predicted Flow Fields",
-             color=ACCENT, fontsize=14, fontweight="bold")
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. FIGURE B — u-field: true / PINN / % relative error
+# ─────────────────────────────────────────────────────────────────────────────
 
-titles = ["u (true)", "u (PINN)", "|u error|",
-          "Cp (true)", "Cp (PINN)", "|Cp error|"]
-fields = [np.where(inside, np.nan, U_REF), U_pred, U_err,
-          np.where(inside, np.nan, np.where(np.isfinite(CP_REF), CP_REF, 0.0)),
-          CP_pred, CP_err]
-cmaps  = [CMAP_VEL, CMAP_VEL, "hot",
-          CMAP_PRES, CMAP_PRES, "hot"]
+# Relative % error: |pred - true| / max(|true|, eps) * 100
+eps_rel = 0.05
+U_rel_err = np.abs(U_pred - U_REF) / (np.abs(U_REF) + eps_rel) * 100
+U_rel_err[inside] = np.nan
+U_rel_err = np.clip(U_rel_err, 0, 30)   # cap at 30% for readability
 
-for ax, title, field, cmap in zip(axes.ravel(), titles, fields, cmaps):
-    ax.set_facecolor("#0d1117")
-    for sp in ax.spines.values():
-        sp.set_edgecolor("#30363d")
-    ax.tick_params(colors="#8b949e", labelsize=7)
-    vmin, vmax = np.nanpercentile(field, [2, 98])
-    cf = ax.contourf(XX, YY, field, levels=40, cmap=cmap,
-                     vmin=vmin, vmax=vmax)
-    ax.fill(z_foil.real, z_foil.imag, color="#1c2330", zorder=5)
-    ax.plot(z_foil.real, z_foil.imag, color=ACCENT, linewidth=0.8, zorder=6)
-    cb = fig.colorbar(cf, ax=ax, pad=0.02, fraction=0.046)
-    cb.ax.tick_params(colors="#8b949e", labelsize=6)
-    ax.set_title(title, color="#e6edf3", fontsize=9)
+fig, axes = plt.subplots(1, 3, figsize=(18, 6), facecolor=BG)
+fig.suptitle("NACA 0012 PINN — Streamwise velocity u",
+             color=ACCENT, fontsize=15, fontweight="bold")
+
+u_ref_plot = np.where(inside, np.nan, U_REF)
+vmin_u = np.nanpercentile(u_ref_plot, 2)
+vmax_u = np.nanpercentile(u_ref_plot, 98)
+
+for ax, field, title in zip(axes,
+    [u_ref_plot, U_pred, U_rel_err],
+    ["Reference (Joukowski)", "PINN prediction", "Relative error (%, capped 30%)"]):
+    dark_ax(ax)
+    cmap_i = "plasma" if "error" not in title.lower() else "hot_r"
+    if "error" in title.lower():
+        cf = ax.contourf(XX, YY, field, levels=50, cmap=cmap_i, vmin=0, vmax=30)
+    else:
+        cf = ax.contourf(XX, YY, field, levels=50, cmap=cmap_i, vmin=vmin_u, vmax=vmax_u)
+    ax.fill(z_foil.real, z_foil.imag, color=SURF2, zorder=5, linewidth=0)
+    ax.plot(z_foil.real, z_foil.imag, color=ACCENT, linewidth=1.2, zorder=6)
+    cb = fig.colorbar(cf, ax=ax, pad=0.015, fraction=0.046, shrink=0.9)
+    cb.ax.tick_params(colors=MUTED, labelsize=9)
+    cb.set_label("u / U∞" if "error" not in title.lower() else "% error",
+                 color=MUTED, fontsize=10)
+    ax.set_title(title, fontsize=12, pad=8)
+    ax.set_xlabel("x / c"); ax.set_ylabel("y / c")
     ax.set_aspect("equal"); ax.set_xlim(-2.5, 2.5); ax.set_ylim(-2.0, 2.0)
 
-plt.tight_layout(pad=1.0)
-fig.savefig(os.path.join(OUT, "naca0012_true_vs_pred.png"), dpi=140,
-            bbox_inches="tight", facecolor="#0d1117")
+# Compute and show summary metrics
+u_ref_flat = U_REF[~inside & np.isfinite(U_REF)]
+u_pred_flat = U_pred[~inside & np.isfinite(U_pred) & np.isfinite(U_REF)]
+# align
+fin = ~inside & np.isfinite(U_REF) & np.isfinite(U_pred)
+rel_l2 = np.linalg.norm(U_pred[fin] - U_REF[fin]) / np.linalg.norm(U_REF[fin])
+axes[2].text(0.02, 0.04, f"rel-L² = {rel_l2:.3f}", transform=axes[2].transAxes,
+             color=GREEN, fontsize=11, fontweight="bold",
+             bbox=dict(boxstyle="round,pad=0.3", facecolor=SURF, edgecolor=BORD, alpha=0.9))
+
+plt.tight_layout(pad=1.2)
+fig.savefig(os.path.join(OUT, "naca0012_pinn.png"), dpi=160,
+            bbox_inches="tight", facecolor=BG)
 plt.close(fig)
-print("Saved: naca0012_true_vs_pred.png")
+print("Saved naca0012_pinn.png")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 7.  FIGURE 4 — Cp distribution on airfoil surface
+# 5. FIGURE C — Surface Cp distribution, upper vs lower surface
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Sample Cp along upper/lower surface from reference
-n_surf = 200
-theta_surf = np.linspace(0, 2 * np.pi, n_surf)
-zeta_surf  = center + R_circ * np.exp(1j * theta_surf)
-z_surf     = joukowski_transform(zeta_surf, C_J)
-U_surf, V_surf = potential_flow_velocity(zeta_surf, center, R_circ, U_INF, ALPHA, C_J)
-SPEED_surf = np.sqrt(U_surf**2 + V_surf**2)
-CP_surf_ref = 1.0 - SPEED_surf**2 / U_INF**2
+# Sample along parametric circle, separate upper (θ: π→0) and lower (θ: π→2π)
+n_surf = 300
+alpha_r = np.deg2rad(ALPHA)
+Gamma   = 4 * np.pi * U_INF * R_circ * np.sin(alpha_r)
+
+def surface_cp(theta_arr):
+    zeta_s = ctr + R_circ * np.exp(1j * theta_arr)
+    z_s    = joukowski(zeta_s)
+    s      = zeta_s - ctr
+    df     = U_INF * (np.exp(-1j * alpha_r) - np.exp(1j * alpha_r) * R_circ**2 / s**2) \
+             - 1j * Gamma / (2 * np.pi * s)
+    dz     = 1.0 - C_J**2 / s**2
+    w      = df / dz
+    speed  = np.abs(w)
+    cp     = 1.0 - speed**2 / U_INF**2
+    x_c    = (z_s.real - z_s.real.min()) / (z_s.real.max() - z_s.real.min() + 1e-10)
+    return x_c, cp
+
+# Upper surface: θ from π down to 0.12 (avoid leading-edge singularity)
+# Lower surface: θ from π up to 2π-0.12 (avoid trailing-edge singularity)
+# The Joukowski map has a branch point near θ=0 and θ=2π (trailing edge)
+theta_upper = np.linspace(np.pi, 0.12, n_surf)
+x_up, cp_up = surface_cp(theta_upper)
+
+theta_lower = np.linspace(np.pi, 2 * np.pi - 0.12, n_surf)
+x_lo, cp_lo = surface_cp(theta_lower)
+
+# Display limits: remove singularity regions
+# Keep only points where x/c ∈ [0.02, 0.95] and |Cp| < 2
+CHORD_MIN, CHORD_MAX = 0.02, 0.95
+CP_DISPLAY_MIN, CP_DISPLAY_MAX = -2.0, 1.3
+
+def trim(x_c, cp_vals):
+    mask = (x_c >= CHORD_MIN) & (x_c <= CHORD_MAX) & (np.abs(cp_vals) < 3.0)
+    return x_c[mask], np.clip(cp_vals[mask], CP_DISPLAY_MIN, CP_DISPLAY_MAX)
+
+x_up_t, cp_up_c  = trim(x_up, cp_up)
+x_lo_t, cp_lo_c  = trim(x_lo, cp_lo)
 
 # PINN Cp on surface
-xy_surf_np = np.column_stack([z_surf.real.astype(np.float32),
-                               z_surf.imag.astype(np.float32)])
-with torch.no_grad():
-    xy_surf_t = torch.from_numpy(xy_surf_np)
-    xy_surf_n = (xy_surf_t - xy_mean) / xy_std
-    cp_pred_surf_n = model(xy_surf_n)[:, 2].numpy()
-CP_surf_pinn = cp_pred_surf_n * t_std[2].item() + t_mean[2].item()
+def pinn_cp_on_surface(x_np, y_np):
+    xy_srf = torch.from_numpy(
+        np.column_stack([x_np.astype(np.float32), y_np.astype(np.float32)])
+    )
+    model.eval()
+    with torch.no_grad():
+        out_n = model((xy_srf - xy_mu) / xy_s).numpy()
+    return out_n[:, 2] * uv_s[2].item() + uv_mu[2].item()
 
-# chordwise coordinate (x normalised 0→1)
-x_norm = (z_surf.real - z_surf.real.min()) / (z_surf.real.max() - z_surf.real.min())
+z_up = joukowski(ctr + R_circ * np.exp(1j * theta_upper))
+z_lo = joukowski(ctr + R_circ * np.exp(1j * theta_lower))
+cp_up_pinn_raw = pinn_cp_on_surface(z_up.real, z_up.imag)
+cp_lo_pinn_raw = pinn_cp_on_surface(z_lo.real, z_lo.imag)
 
-fig, ax = plt.subplots(figsize=(8, 5), facecolor="#0d1117")
-ax.set_facecolor("#161b22")
-for sp in ax.spines.values():
-    sp.set_edgecolor("#30363d")
-ax.tick_params(colors="#8b949e", labelsize=9)
-ax.plot(x_norm, -CP_surf_ref, color=ACCENT,   linewidth=1.8, label="Joukowski ref (−Cp)")
-ax.plot(x_norm, -CP_surf_pinn, color=ORANGE, linewidth=1.4, linestyle="--", label="PINN (−Cp)")
+# Apply same mask
+mask_up = (x_up >= CHORD_MIN) & (x_up <= CHORD_MAX) & (np.abs(cp_up) < 3.0)
+mask_lo = (x_lo >= CHORD_MIN) & (x_lo <= CHORD_MAX) & (np.abs(cp_lo) < 3.0)
+x_up_p = x_up[mask_up]
+x_lo_p = x_lo[mask_lo]
+cp_up_pinn_c = np.clip(cp_up_pinn_raw[mask_up], CP_DISPLAY_MIN, CP_DISPLAY_MAX)
+cp_lo_pinn_c = np.clip(cp_lo_pinn_raw[mask_lo], CP_DISPLAY_MIN, CP_DISPLAY_MAX)
+
+fig, ax = plt.subplots(figsize=(13, 7), facecolor=BG)
+dark_ax(ax, facecolor=SURF)
+
+ax.fill_between(x_up_t, cp_up_c, 0, alpha=0.15, color=ACCENT, label="_nolegend_")
+ax.fill_between(x_lo_t, cp_lo_c, 0, alpha=0.10, color=ORANGE, label="_nolegend_")
+ax.plot(x_up_t, cp_up_c, color=ACCENT,  lw=2.5, label="Upper surface — Joukowski ref")
+ax.plot(x_lo_t, cp_lo_c, color=ORANGE,  lw=2.5, label="Lower surface — Joukowski ref")
+ax.plot(x_up_p, cp_up_pinn_c, color=ACCENT,  lw=1.6, linestyle="--", alpha=0.85,
+        label="Upper surface — PINN")
+ax.plot(x_lo_p, cp_lo_pinn_c, color=ORANGE,  lw=1.6, linestyle="--", alpha=0.85,
+        label="Lower surface — PINN")
+
+ax.axhline(0, color=MUTED, lw=0.8, linestyle="--", alpha=0.5)
+ax.axhline(1, color=MUTED, lw=0.6, linestyle=":", alpha=0.5, label="Cp = 1 (stagnation)")
 ax.invert_yaxis()
-ax.set_xlabel("x/c", color="#e6edf3", fontsize=11)
-ax.set_ylabel("−Cp", color="#e6edf3", fontsize=11)
-ax.set_title("NACA 0012 — Cp distribution (α = 5°)", color=ACCENT, fontsize=12, fontweight="bold")
-ax.legend(fontsize=10, framealpha=0.2)
-ax.grid(True, color="#30363d", linewidth=0.5, alpha=0.7)
-plt.tight_layout()
-fig.savefig(os.path.join(OUT, "naca0012_cp_distribution.png"), dpi=140,
-            bbox_inches="tight", facecolor="#0d1117")
-plt.close(fig)
-print("Saved: naca0012_cp_distribution.png")
+ax.set_xlim(0, 1); ax.set_ylim(CP_DISPLAY_MAX + 0.2, CP_DISPLAY_MIN - 0.2)
+ax.set_xlabel("x / c  (chord fraction)", fontsize=13)
+ax.set_ylabel("Cp  (y-axis inverted — aeronautical convention)", fontsize=12)
+ax.set_title("NACA 0012 — Surface pressure coefficient  α = 5°\nSolid: Joukowski reference  |  Dashed: PINN surrogate",
+             fontsize=13, fontweight="bold", color=ACCENT)
+ax.legend(fontsize=11, framealpha=0.3, loc="lower right")
+ax.grid(True, color=BORD, lw=0.5, alpha=0.7)
+# Annotate suction peak
+idx_peak = np.argmin(cp_up_c)
+ax.annotate(f"Suction peak\n−Cp = {-cp_up_c[idx_peak]:.2f}",
+            xy=(x_up_t[idx_peak], cp_up_c[idx_peak]),
+            xytext=(x_up_t[idx_peak] + 0.15, cp_up_c[idx_peak] - 0.25),
+            color=ACCENT, fontsize=10,
+            arrowprops=dict(arrowstyle="->", color=ACCENT, lw=1.1))
 
+plt.tight_layout()
+fig.savefig(os.path.join(OUT, "naca0012_surface_cp.png"), dpi=160,
+            bbox_inches="tight", facecolor=BG)
+plt.close(fig)
+print("Saved naca0012_surface_cp.png")
 print(f"\nAll outputs in: {OUT}")
