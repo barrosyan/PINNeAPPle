@@ -14,6 +14,7 @@ import Inference      from "@/pages/Inference";
 import Visualization  from "@/pages/Visualization";
 import Benchmarks     from "@/pages/Benchmarks";
 import Profile        from "@/pages/Profile";
+import SyntheticData  from "@/pages/SyntheticData";
 
 /** Redirect logged-in users away from /login and /register */
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="inference"     element={<Inference />} />
             <Route path="visualization" element={<Visualization />} />
             <Route path="benchmarks"    element={<Benchmarks />} />
+            <Route path="synthesis"     element={<SyntheticData />} />
             <Route path="profile"       element={<Profile />} />
           </Route>
         </Route>

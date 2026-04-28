@@ -47,3 +47,5 @@ class ProblemSpec:
     references: Tuple[str, ...] = field(default_factory=tuple)
     domain_bounds: Dict[str, Tuple[float, float]] = field(default_factory=dict)
     solver_spec: Dict[str, Any] = field(default_factory=dict)
+    meta: Dict[str, Any] = field(default_factory=dict)
+    problem_id: str = ""  # alias for name used by quickstart / arena

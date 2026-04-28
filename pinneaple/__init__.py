@@ -60,6 +60,8 @@ See examples/pinneaple_arena/ for ready-to-run scripts:
   08_hyperparameter_sweep_parallel.py — Parallel HP sweep
   09_full_pipeline_yaml.py          — End-to-end YAML pipeline
   10_datacenter_digital_twin.py     — Industrial digital twin
+  12_physics_benchmark_suite.py     — Multi-architecture PINN Arena benchmark
+  13_transfer_meta_benchmark.py     — Transfer & meta-learning benchmark
 """
 
 from __future__ import annotations
@@ -74,6 +76,17 @@ __author__  = "pinneaple contributors"
 # Problem presets
 try:
     from pinneaple_environment import get_preset, list_presets, register_preset
+except Exception:  # pragma: no cover
+    pass
+
+# PDE family knowledge base
+try:
+    from pinneaple_capabilities import (
+        list_pde_families,
+        get_pde_family,
+        identify_pde,
+        suggest_problem_spec,
+    )
 except Exception:  # pragma: no cover
     pass
 
@@ -111,6 +124,8 @@ except Exception:  # pragma: no cover
 try:
     from pinneaple_train import (
         Trainer, TrainConfig,
+        TwoPhaseTrainer, TwoPhaseConfig, TwoPhaseHistory,
+        UnnormModel,
         best_device, count_gpus, gpu_info,
         maybe_compile, batched_inference,
         run_parallel_sweep, SweepConfig,
@@ -154,7 +169,70 @@ except Exception:  # pragma: no cover
 
 # Export
 try:
-    from pinneaple_export import export_torchscript, export_onnx
+    from pinneaple_export import export_torchscript, export_onnx, export_csv, export_npz
+except Exception:  # pragma: no cover
+    pass
+
+# Design optimization
+try:
+    from pinneaple_design_opt import (
+        DesignOptLoop, DesignOptConfig, DesignOptResult,
+        PhysicsSurrogate, SurrogateConfig,
+        DragObjective, ThermalEfficiencyObjective, StructuralObjective,
+        WeightMinimizationObjective, CompositeObjective,
+        BoxConstraint, MassConservationConstraint, ConstraintSet,
+        DesignOptimizerConfig,
+        ParetoFront, compute_pareto_front,
+        PINNRefinement,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# Inverse problems
+try:
+    from pinneaple_inverse import (
+        # Noise models
+        GaussianMisfit, HuberMisfit, CauchyMisfit, StudentTMisfit, HeteroscedasticMisfit,
+        # Regularization
+        TikhonovRegularizer, SparsityRegularizer, TotalVariationRegularizer,
+        CompositeRegularizer, LCurveSelector,
+        # Observation operators
+        PointObsOperator, LinearObsOperator, IntegralObsOperator, ComposedObsOperator,
+        # Sensitivity
+        LocalSensitivity, IdentifiabilityAnalyzer, GlobalSensitivity,
+        # EKI
+        EKIConfig, EnsembleKalmanInversion, IteratedEKI,
+        # Solver
+        InverseSolverConfig, InverseProblemSolver,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+
+# Benchmark suite
+try:
+    from pinneaple_arena import (
+        PINNArenaBenchmark, BenchmarkConfig, BenchmarkResult,
+        BenchmarkTaskBase, ModelSpec, DEFAULT_MODELS,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# Transfer learning benchmark
+try:
+    from pinneaple_arena import (
+        TransferBenchmarkPipeline, TransferBenchmarkConfig,
+        TransferBenchmarkResult, TransferScenario,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# Meta-learning benchmark
+try:
+    from pinneaple_arena import (
+        MetaBenchmarkPipeline, MetaBenchmarkConfig,
+        MetaBenchmarkResult, MetaBenchmarkFamily,
+    )
 except Exception:  # pragma: no cover
     pass
 
@@ -247,6 +325,7 @@ def info():
         "pinneaple_validate": "Physical validation",
         "pinneaple_serve":    "REST inference server",
         "pinneaple_export":   "Model export (ONNX/TorchScript)",
+        "pinneaple_quantum":  "Hybrid classical–quantum ML (PQM)",
     }
     import importlib
     print()
@@ -271,7 +350,9 @@ import sys as _sys
 
 _SUBMODULES = {
     # core
-    "env":       "pinneaple_environment",
+    "env":        "pinneaple_environment",
+    "inverse":    "pinneaple_inverse",
+    "design_opt": "pinneaple_design_opt",
     "models":    "pinneaple_models",
     "train":     "pinneaple_train",
     "solvers":   "pinneaple_solvers",
@@ -288,6 +369,8 @@ _SUBMODULES = {
     "validate":  "pinneaple_validate",
     "serve":     "pinneaple_serve",
     "export":    "pinneaple_export",
+    # quantum
+    "quantum":   "pinneaple_quantum",
 }
 
 
@@ -304,6 +387,8 @@ __all__ = [
     "__version__",
     # Problem
     "get_preset", "list_presets", "register_preset",
+    # PDE knowledge base
+    "list_pde_families", "get_pde_family", "identify_pde", "suggest_problem_spec",
     # Models
     "list_models", "build_model",
     # Training
@@ -312,6 +397,7 @@ __all__ = [
     "ThroughputMonitor",
     "WeightScheduler", "WeightSchedulerConfig",
     "SelfAdaptiveWeights", "GradNormBalancer", "LossRatioBalancer", "NTKWeightBalancer",
+    "TwoPhaseTrainer", "TwoPhaseConfig", "TwoPhaseHistory", "UnnormModel",
     # Digital twin
     "DigitalTwin", "DigitalTwinConfig", "build_digital_twin",
     # Inference
@@ -328,12 +414,39 @@ __all__ = [
     # Validation
     "PhysicsValidator", "validate_model",
     # Export
-    "export_torchscript", "export_onnx",
+    "export_torchscript", "export_onnx", "export_csv", "export_npz",
+    # Inverse problems
+    "GaussianMisfit", "HuberMisfit", "CauchyMisfit", "StudentTMisfit", "HeteroscedasticMisfit",
+    "TikhonovRegularizer", "SparsityRegularizer", "TotalVariationRegularizer",
+    "CompositeRegularizer", "LCurveSelector",
+    "PointObsOperator", "LinearObsOperator", "IntegralObsOperator", "ComposedObsOperator",
+    "LocalSensitivity", "IdentifiabilityAnalyzer", "GlobalSensitivity",
+    "EKIConfig", "EnsembleKalmanInversion", "IteratedEKI",
+    "InverseSolverConfig", "InverseProblemSolver",
     # Helpers
     "quickstart", "info",
+    # Design optimization
+    "DesignOptLoop", "DesignOptConfig", "DesignOptResult",
+    "PhysicsSurrogate", "SurrogateConfig",
+    "DragObjective", "ThermalEfficiencyObjective", "StructuralObjective",
+    "WeightMinimizationObjective", "CompositeObjective",
+    "BoxConstraint", "MassConservationConstraint", "ConstraintSet",
+    "DesignOptimizerConfig", "ParetoFront", "compute_pareto_front",
+    "PINNRefinement",
+    # Benchmark suite
+    "PINNArenaBenchmark", "BenchmarkConfig", "BenchmarkResult",
+    "BenchmarkTaskBase", "ModelSpec", "DEFAULT_MODELS",
+    # Transfer learning benchmark
+    "TransferBenchmarkPipeline", "TransferBenchmarkConfig",
+    "TransferBenchmarkResult", "TransferScenario",
+    # Meta-learning benchmark
+    "MetaBenchmarkPipeline", "MetaBenchmarkConfig",
+    "MetaBenchmarkResult", "MetaBenchmarkFamily",
     # Lazy submodule aliases (core)
     "env", "models", "train", "solvers", "data", "geom",
-    "inference", "pinn", "dt", "arena",
+    "inference", "pinn", "dt", "arena", "design_opt",
     # Lazy submodule aliases (advanced)
     "uq", "transfer", "meta", "validate", "serve", "export",
+    # Quantum
+    "quantum",
 ]

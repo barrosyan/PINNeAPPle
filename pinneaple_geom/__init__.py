@@ -36,6 +36,10 @@ except Exception:  # optional dependency chain
     STLDomainBatchConfig = None  # type: ignore
 
 __all__ = [
+    # 3D Collocation
+    "MeshCollocator",
+    "MeshCollocatorConfig",
+    "CollocationBatch3D",
     "GeometrySpec",
     "GeometryAsset",
     "MeshData",
@@ -66,6 +70,13 @@ __all__ = [
     "SDFDomain2D",
     "get_domain",
     "list_domains",
+    # 3D physics domains
+    "PhysicsDomain3D",
+    "LidDrivenCavityDomain3D",
+    "ChannelDomain3D",
+    "PipeFlowDomain3D",
+    "get_domain_3d",
+    "list_domains_3d",
     # 2D mesher
     "Mesh2D",
     "mesh_rectangle_structured",
@@ -74,6 +85,9 @@ __all__ = [
     "mesh_quality_report",
 ]
 
+
+# 3D Collocation
+from .mesh_collocator import MeshCollocator, MeshCollocatorConfig, CollocationBatch3D
 
 # IO
 from .io.step import step_to_mesh, StepImportConfig
@@ -98,7 +112,7 @@ from .gen.sdf_shapes import (
     sphere3d, box3d, cylinder3d, torus3d,
 )
 
-# New: physics domains
+# New: physics domains (2D)
 from .gen.domains import (
     PhysicsDomain2D,
     BoundaryRegion,
@@ -112,6 +126,16 @@ from .gen.domains import (
     SDFDomain2D,
     get_domain,
     list_domains,
+)
+
+# New: physics domains (3D)
+from .gen.domains3d import (
+    PhysicsDomain3D,
+    LidDrivenCavityDomain3D,
+    ChannelDomain3D,
+    PipeFlowDomain3D,
+    get_domain_3d,
+    list_domains_3d,
 )
 
 # New: 2D mesher

@@ -19,6 +19,38 @@ from .registry import (
     list_backends,
 )
 
+# Benchmark suite
+from .benchmark import (
+    PINNArenaBenchmark,
+    BenchmarkConfig,
+    BenchmarkResult,
+    BenchmarkTaskBase,
+    ModelSpec,
+    DEFAULT_MODELS,
+)
+
+# Transfer learning benchmark
+try:
+    from .transfer_benchmark import (
+        TransferBenchmarkPipeline,
+        TransferBenchmarkConfig,
+        TransferBenchmarkResult,
+        TransferScenario,
+    )
+except Exception:
+    pass
+
+# Meta-learning benchmark
+try:
+    from .meta_benchmark import (
+        MetaBenchmarkPipeline,
+        MetaBenchmarkConfig,
+        MetaBenchmarkResult,
+        MetaBenchmarkFamily,
+    )
+except Exception:
+    pass
+
 __all__ = [
     "Arena",
     "ArenaResult",
@@ -38,4 +70,21 @@ __all__ = [
     "list_backends",
     "run_arena_experiment",
     "run_full_pipeline",
+    # Benchmark
+    "PINNArenaBenchmark",
+    "BenchmarkConfig",
+    "BenchmarkResult",
+    "BenchmarkTaskBase",
+    "ModelSpec",
+    "DEFAULT_MODELS",
+    # Transfer learning benchmark
+    "TransferBenchmarkPipeline",
+    "TransferBenchmarkConfig",
+    "TransferBenchmarkResult",
+    "TransferScenario",
+    # Meta-learning benchmark
+    "MetaBenchmarkPipeline",
+    "MetaBenchmarkConfig",
+    "MetaBenchmarkResult",
+    "MetaBenchmarkFamily",
 ]

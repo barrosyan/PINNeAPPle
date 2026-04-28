@@ -102,10 +102,11 @@ class AMPContext:
     Context manager for automatic mixed precision training.
 
     Supports CUDA AMP (fp16/bf16) and falls back to no-op on CPU/MPS.
+    Uses the non-deprecated ``torch.amp`` API (PyTorch 2.x).
 
     Usage
     -----
-    >>> ctx = AMPContext(device="cuda", dtype=torch.float16)
+    >>> ctx = AMPContext(device="cuda", dtype=torch.bfloat16)
     >>> with ctx.autocast():
     ...     y = model(x)
     >>> ctx.scaler.scale(loss).backward()
@@ -116,19 +117,25 @@ class AMPContext:
     def __init__(
         self,
         device: str = "cuda",
-        dtype: torch.dtype = torch.float16,
+        dtype: torch.dtype = torch.bfloat16,
         enabled: bool = True,
     ) -> None:
-        self.device = str(device)
+        self.device_str = str(device)
+        self.device_type = "cuda" if self.device_str.startswith("cuda") else "cpu"
         self.dtype = dtype
-        self.enabled = bool(enabled) and self.device.startswith("cuda")
-        self.scaler = torch.cuda.amp.GradScaler(enabled=self.enabled)
+        self.enabled = bool(enabled) and self.device_type == "cuda"
+        # Use updated API; fall back for older PyTorch
+        try:
+            self.scaler = torch.amp.GradScaler(self.device_type, enabled=self.enabled)
+        except TypeError:
+            self.scaler = torch.cuda.amp.GradScaler(enabled=self.enabled)  # type: ignore[attr-defined]
 
     def autocast(self):
         """Return an autocast context manager."""
-        return torch.cuda.amp.autocast(
-            enabled=self.enabled,
+        return torch.amp.autocast(
+            device_type=self.device_type,
             dtype=self.dtype,
+            enabled=self.enabled,
         )
 
 
@@ -445,9 +452,10 @@ def enable_gradient_checkpointing(model: nn.Module) -> nn.Module:
 
 class ThroughputMonitor:
     """
-    Lightweight training throughput monitor.
+    Training throughput and GPU health monitor.
 
-    Tracks samples/sec and GPU memory usage per epoch.
+    Tracks samples/sec, GPU memory (allocated, reserved, peak), GPU
+    utilisation (if ``pynvml`` is available), and per-epoch timings.
 
     Usage
     -----
@@ -456,13 +464,38 @@ class ThroughputMonitor:
     >>> # training loop...
     >>> mon.end_epoch(n_samples=4096)
     >>> print(mon.summary())
+    >>> mon.print_epoch_table()
     """
 
-    def __init__(self) -> None:
+    def __init__(self, device_index: int = 0) -> None:
         self._t0: float = 0.0
         self._epochs: List[Dict[str, Any]] = []
+        self._device_index = device_index
+        self._nvml_handle = None
+        self._init_nvml()
+
+    def _init_nvml(self) -> None:
+        try:
+            import pynvml  # type: ignore
+            pynvml.nvmlInit()
+            self._nvml_handle = pynvml.nvmlDeviceGetHandleByIndex(self._device_index)
+        except Exception:
+            pass
+
+    def _gpu_util(self) -> Optional[int]:
+        """Return GPU utilisation % via pynvml, or None."""
+        if self._nvml_handle is None:
+            return None
+        try:
+            import pynvml  # type: ignore
+            rates = pynvml.nvmlDeviceGetUtilizationRates(self._nvml_handle)
+            return int(rates.gpu)
+        except Exception:
+            return None
 
     def start_epoch(self) -> None:
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
         self._t0 = time.perf_counter()
 
     def end_epoch(self, n_samples: int) -> Dict[str, Any]:
@@ -470,12 +503,16 @@ class ThroughputMonitor:
         samples_sec = n_samples / max(dt, 1e-9)
         info: Dict[str, Any] = {
             "epoch": len(self._epochs) + 1,
-            "elapsed_s": dt,
-            "samples_sec": samples_sec,
+            "elapsed_s": round(dt, 3),
+            "samples_sec": round(samples_sec, 1),
         }
         if torch.cuda.is_available():
-            info["gpu_mem_alloc_GB"] = torch.cuda.memory_allocated() / 1024 ** 3
-            info["gpu_mem_reserved_GB"] = torch.cuda.memory_reserved() / 1024 ** 3
+            info["gpu_mem_alloc_GB"]    = round(torch.cuda.memory_allocated()  / 1024 ** 3, 3)
+            info["gpu_mem_reserved_GB"] = round(torch.cuda.memory_reserved()   / 1024 ** 3, 3)
+            info["gpu_mem_peak_GB"]     = round(torch.cuda.max_memory_allocated() / 1024 ** 3, 3)
+        util = self._gpu_util()
+        if util is not None:
+            info["gpu_util_pct"] = util
         self._epochs.append(info)
         return info
 
@@ -483,8 +520,26 @@ class ThroughputMonitor:
         if not self._epochs:
             return {}
         avg_sps = sum(e["samples_sec"] for e in self._epochs) / len(self._epochs)
+        peak_mem = max((e.get("gpu_mem_peak_GB", 0) for e in self._epochs), default=0.0)
         return {
             "n_epochs": len(self._epochs),
-            "avg_samples_sec": avg_sps,
-            "total_elapsed_s": sum(e["elapsed_s"] for e in self._epochs),
+            "avg_samples_sec": round(avg_sps, 1),
+            "total_elapsed_s": round(sum(e["elapsed_s"] for e in self._epochs), 2),
+            "peak_gpu_mem_GB": peak_mem,
         }
+
+    def print_epoch_table(self) -> None:
+        """Print a compact per-epoch table to stdout."""
+        if not self._epochs:
+            print("[ThroughputMonitor] No epochs recorded.")
+            return
+        header = f"{'Epoch':>6}  {'Elapsed(s)':>10}  {'Samp/s':>8}  {'MemAlloc(GB)':>13}  {'Peak(GB)':>9}"
+        print(header)
+        print("-" * len(header))
+        for e in self._epochs:
+            print(
+                f"{e['epoch']:>6}  {e['elapsed_s']:>10.3f}  "
+                f"{e['samples_sec']:>8.1f}  "
+                f"{e.get('gpu_mem_alloc_GB', 0.0):>13.3f}  "
+                f"{e.get('gpu_mem_peak_GB', 0.0):>9.3f}"
+            )

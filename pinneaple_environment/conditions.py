@@ -102,7 +102,7 @@ def _value_fn_from_dict(values: Dict[str, float]) -> Callable[[np.ndarray, Dict[
 
 
 def DirichletBC(
-    name_or_values: Union[str, Dict[str, float]],
+    name: Union[str, Dict[str, float]],
     fields: Optional[FieldNames] = None,
     selector_type: SelectorType = "all",
     selector: Optional[Union[Dict[str, Any], Callable[[np.ndarray, Dict[str, Any]], np.ndarray]]] = None,
@@ -120,8 +120,8 @@ def DirichletBC(
 
         DirichletBC("wall", ("u",), "all", None, value_fn, 10.0)
     """
-    if isinstance(name_or_values, dict):
-        values = name_or_values
+    if isinstance(name, dict):
+        values = name
         _fields: FieldNames = tuple(values.keys())
         return ConditionSpec(
             name="dirichlet_bc",
@@ -133,7 +133,7 @@ def DirichletBC(
             weight=weight,
         )
     return ConditionSpec(
-        name=name_or_values,
+        name=name,
         kind="dirichlet",
         fields=fields or (),
         selector_type=selector_type,
@@ -144,7 +144,7 @@ def DirichletBC(
 
 
 def NeumannBC(
-    name_or_values: Union[str, Dict[str, float]],
+    name: Union[str, Dict[str, float]],
     fields: Optional[FieldNames] = None,
     selector_type: SelectorType = "all",
     selector: Optional[Union[Dict[str, Any], Callable[[np.ndarray, Dict[str, Any]], np.ndarray]]] = None,
@@ -157,8 +157,8 @@ def NeumannBC(
 
         NeumannBC({"u": 1.0})
     """
-    if isinstance(name_or_values, dict):
-        values = name_or_values
+    if isinstance(name, dict):
+        values = name
         _fields: FieldNames = tuple(values.keys())
         return ConditionSpec(
             name="neumann_bc",
@@ -170,7 +170,7 @@ def NeumannBC(
             weight=weight,
         )
     return ConditionSpec(
-        name=name_or_values,
+        name=name,
         kind="neumann",
         fields=fields or (),
         selector_type=selector_type,
@@ -181,7 +181,7 @@ def NeumannBC(
 
 
 def RobinBC(
-    name_or_values: Union[str, Dict[str, float]],
+    name: Union[str, Dict[str, float]],
     fields: Optional[FieldNames] = None,
     selector_type: SelectorType = "all",
     selector: Optional[Union[Dict[str, Any], Callable[[np.ndarray, Dict[str, Any]], np.ndarray]]] = None,
@@ -189,8 +189,8 @@ def RobinBC(
     weight: float = 1.0,
 ) -> ConditionSpec:
     """Construct a Robin boundary condition."""
-    if isinstance(name_or_values, dict):
-        values = name_or_values
+    if isinstance(name, dict):
+        values = name
         _fields: FieldNames = tuple(values.keys())
         return ConditionSpec(
             name="robin_bc",
@@ -202,7 +202,7 @@ def RobinBC(
             weight=weight,
         )
     return ConditionSpec(
-        name=name_or_values,
+        name=name,
         kind="robin",
         fields=fields or (),
         selector_type=selector_type,
@@ -213,7 +213,7 @@ def RobinBC(
 
 
 def InitialCondition(
-    name_or_values: Union[str, Dict[str, float]],
+    name: Union[str, Dict[str, float]],
     fields: Optional[FieldNames] = None,
     selector_type: SelectorType = "all",
     selector: Optional[Union[Dict[str, Any], Callable[[np.ndarray, Dict[str, Any]], np.ndarray]]] = None,
@@ -226,8 +226,8 @@ def InitialCondition(
 
         InitialCondition({"u": 1.0})
     """
-    if isinstance(name_or_values, dict):
-        values = name_or_values
+    if isinstance(name, dict):
+        values = name
         _fields: FieldNames = tuple(values.keys())
         return ConditionSpec(
             name="initial_condition",
@@ -239,7 +239,7 @@ def InitialCondition(
             weight=weight,
         )
     return ConditionSpec(
-        name=name_or_values,
+        name=name,
         kind="initial",
         fields=fields or (),
         selector_type=selector_type,
@@ -250,7 +250,7 @@ def InitialCondition(
 
 
 def DataConstraint(
-    name_or_values: Union[str, Dict[str, float]],
+    name: Union[str, Dict[str, float]],
     fields: Optional[FieldNames] = None,
     selector_type: SelectorType = "all",
     selector: Optional[Union[Dict[str, Any], Callable[[np.ndarray, Dict[str, Any]], np.ndarray]]] = None,
@@ -258,8 +258,8 @@ def DataConstraint(
     weight: float = 1.0,
 ) -> ConditionSpec:
     """Construct a data constraint (supervised loss at specific points)."""
-    if isinstance(name_or_values, dict):
-        values = name_or_values
+    if isinstance(name, dict):
+        values = name
         _fields: FieldNames = tuple(values.keys())
         return ConditionSpec(
             name="data_constraint",
@@ -271,7 +271,7 @@ def DataConstraint(
             weight=weight,
         )
     return ConditionSpec(
-        name=name_or_values,
+        name=name,
         kind="data",
         fields=fields or (),
         selector_type=selector_type,

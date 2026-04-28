@@ -247,6 +247,7 @@ def info():
         "pinneaple_validate": "Physical validation",
         "pinneaple_serve":    "REST inference server",
         "pinneaple_export":   "Model export (ONNX/TorchScript)",
+        "pinneaple_quantum":  "Hybrid classical–quantum ML (PQM)",
     }
     import importlib
     print()
@@ -288,6 +289,8 @@ _SUBMODULES = {
     "validate":  "pinneaple_validate",
     "serve":     "pinneaple_serve",
     "export":    "pinneaple_export",
+    # quantum
+    "quantum":   "pinneaple_quantum",
 }
 
 
@@ -336,4 +339,6 @@ __all__ = [
     "inference", "pinn", "dt", "arena",
     # Lazy submodule aliases (advanced)
     "uq", "transfer", "meta", "validate", "serve", "export",
+    # Quantum
+    "quantum",
 ]

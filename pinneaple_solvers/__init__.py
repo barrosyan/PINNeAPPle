@@ -1,6 +1,14 @@
 from .base import SolverBase, SolverOutput
 from .registry import SolverRegistry, SolverSpec, register_all, SolverCatalog
 from .problem_runner import generate_pinn_dataset
+from .fdm3d import (
+    SolverOutput3D,
+    HeatConfig3D, HeatConduction3D,
+    NavierStokesConfig3D, NavierStokes3D,
+    ElasticWaveConfig3D, ElasticWave3D,
+    LidDrivenCavityConfig3D, LidDrivenCavitySolver3D,
+    ChannelFlowConfig3D, ChannelFlowSolver3D,
+)
 
 # Optional bridges (graceful import — not installed in all environments)
 try:
@@ -36,6 +44,18 @@ __all__ = [
     "generate_pinn_dataset",
     "openfoam_available",
     "fenics_available",
+    # 3D FDM
+    "SolverOutput3D",
+    "HeatConfig3D",
+    "HeatConduction3D",
+    "NavierStokesConfig3D",
+    "NavierStokes3D",
+    "ElasticWaveConfig3D",
+    "ElasticWave3D",
+    "LidDrivenCavityConfig3D",
+    "LidDrivenCavitySolver3D",
+    "ChannelFlowConfig3D",
+    "ChannelFlowSolver3D",
 ]
 
 if _OPENFOAM_AVAILABLE:

@@ -13,6 +13,16 @@ from .visualize import (
     plot_model_comparison_1d,
     plot_model_comparison_2d,
     render_visualizations,
+    # 3D / internal flow
+    plot_velocity_slice,
+    plot_velocity_magnitude_slice,
+    plot_streamlines_2d,
+    plot_centerline_velocity,
+    plot_vorticity_slice,
+    plot_internal_flow_summary,
+    # Design optimization
+    plot_design_opt_convergence,
+    plot_pareto_front_2d,
 )
 
 __all__ = [
@@ -28,4 +38,14 @@ __all__ = [
     "plot_model_comparison_1d",
     "plot_model_comparison_2d",
     "render_visualizations",
+    # 3D / internal flow
+    "plot_velocity_slice",
+    "plot_velocity_magnitude_slice",
+    "plot_streamlines_2d",
+    "plot_centerline_velocity",
+    "plot_vorticity_slice",
+    "plot_internal_flow_summary",
+    # Design optimization
+    "plot_design_opt_convergence",
+    "plot_pareto_front_2d",
 ]

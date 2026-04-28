@@ -14,8 +14,6 @@ References
 - TFC library: https://github.com/leakec/tfc
 """
 
-from __future__ import annotations
-
 import warnings
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union

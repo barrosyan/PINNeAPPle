@@ -15,6 +15,7 @@ from api.views.benchmarks import (BenchmarkListView, BenchmarkRunView,
                                    BenchmarkResultsView)
 from api.views.files      import (FileUploadView, FileListView,
                                    FileDetailView, FileDataView)
+from api.views.synthesis  import SynthCatalogueView, SynthGenerateView
 
 router = DefaultRouter()
 router.register(r"projects", ProjectViewSet, basename="project")
@@ -57,4 +58,8 @@ urlpatterns = [
     path("files/upload/",               FileUploadView.as_view()),
     path("files/<uuid:file_id>/",       FileDetailView.as_view()),
     path("files/<uuid:file_id>/data/",  FileDataView.as_view()),
+
+    # ── Synthetic data generation ──────────────────────────────────────────────
+    path("synthesis/catalogue/",        SynthCatalogueView.as_view()),
+    path("synthesis/generate/",         SynthGenerateView.as_view()),
 ]

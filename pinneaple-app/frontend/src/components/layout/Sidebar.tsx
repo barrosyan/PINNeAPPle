@@ -4,19 +4,20 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, FlaskConical, Database, Cpu, Zap,
   Target, Eye, Trophy, ChevronLeft, ChevronRight,
-  User, LogOut,
+  User, LogOut, Sparkles,
 } from "lucide-react";
 import clsx from "clsx";
 
 const NAV = [
-  { to: "/dashboard",     icon: LayoutDashboard, label: "Dashboard"      },
-  { to: "/problem",       icon: FlaskConical,    label: "Problem Setup"  },
+  { to: "/dashboard",     icon: LayoutDashboard, label: "Dashboard"       },
+  { to: "/problem",       icon: FlaskConical,    label: "Problem Setup"   },
   { to: "/data",          icon: Database,        label: "Data & Geometry" },
-  { to: "/models",        icon: Cpu,             label: "Models"         },
-  { to: "/training",      icon: Zap,             label: "Training"       },
-  { to: "/inference",     icon: Target,          label: "Inference"      },
-  { to: "/visualization", icon: Eye,             label: "Visualization"  },
-  { to: "/benchmarks",    icon: Trophy,          label: "Benchmarks"     },
+  { to: "/models",        icon: Cpu,             label: "Models"          },
+  { to: "/training",      icon: Zap,             label: "Training"        },
+  { to: "/inference",     icon: Target,          label: "Inference"       },
+  { to: "/visualization", icon: Eye,             label: "Visualization"   },
+  { to: "/benchmarks",    icon: Trophy,          label: "Benchmarks"      },
+  { to: "/synthesis",     icon: Sparkles,        label: "Synth Data"      },
 ];
 
 export default function Sidebar() {
