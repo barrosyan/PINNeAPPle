@@ -237,6 +237,131 @@
     padding: 1px 6px; margin-left: 6px; vertical-align: middle;
     letter-spacing: .5px; text-transform: uppercase;
   }
+
+  /* ── Slide entrance animation ── */
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .slide.active { animation: slideIn .28s cubic-bezier(.22,.68,0,1.2); }
+
+  /* ── Card hover lift ── */
+  .card, .hcard {
+    transition: border-color .2s, box-shadow .2s, transform .2s;
+  }
+  .card:hover {
+    border-color: rgba(88,166,255,.35);
+    box-shadow: 0 4px 24px rgba(88,166,255,.08);
+    transform: translateY(-2px);
+  }
+
+  /* ── Stat box glow ── */
+  .stat-box {
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .stat-box:hover {
+    border-color: rgba(88,166,255,.4);
+    box-shadow: 0 0 20px rgba(88,166,255,.1);
+  }
+  .stat-box .num {
+    font-size: 36px; font-weight: 800; color: var(--accent);
+    letter-spacing: -1px; display: block;
+    text-shadow: 0 0 24px rgba(88,166,255,.35);
+  }
+
+  /* ── Image panel ── */
+  .img-panel {
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .img-panel img {
+    width: 100%; height: 100%;
+    object-fit: contain; display: block;
+  }
+
+  /* ── Inline bar chart ── */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { font-size: 12px; color: var(--muted); width: 96px; flex-shrink: 0; text-align: right; }
+  .bar-track {
+    flex: 1; height: 22px;
+    background: rgba(255,255,255,.04); border-radius: 5px;
+    overflow: hidden; border: 1px solid var(--border);
+  }
+  .bar-fill {
+    height: 100%; border-radius: 4px;
+    display: flex; align-items: center; padding-left: 8px;
+    font-size: 11px; font-weight: 700; color: rgba(0,0,0,.7);
+  }
+  .bar-fill.blue   { background: linear-gradient(90deg,#388bfd,#58a6ff); }
+  .bar-fill.green  { background: linear-gradient(90deg,#2ea043,#3fb950); }
+  .bar-fill.orange { background: linear-gradient(90deg,#bd561d,#ffa657); }
+  .bar-fill.purple { background: linear-gradient(90deg,#8957e5,#d2a8ff); }
+  .bar-val { font-size: 12px; color: var(--text); width: 70px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+  /* ── Metric highlight ── */
+  .metric-row {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .metric-chip {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 16px;
+    text-align: center; flex: 1; min-width: 90px;
+  }
+  .metric-chip .mc-val {
+    font-size: 20px; font-weight: 800; color: var(--accent);
+    display: block; letter-spacing: -.5px;
+  }
+  .metric-chip .mc-val.green { color: var(--accent2); }
+  .metric-chip .mc-val.orange { color: var(--accent5); }
+  .metric-chip .mc-val.purple { color: var(--accent4); }
+  .metric-chip .mc-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── Gradient header ── */
+  .grad-title {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent4) 60%, var(--accent2) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Timeline / step flow ── */
+  .step-flow { display: flex; gap: 0; align-items: stretch; }
+  .step-block {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 0; padding: 14px 12px; text-align: center;
+    position: relative; border-right: none;
+  }
+  .step-block:first-child { border-radius: 8px 0 0 8px; }
+  .step-block:last-child  { border-radius: 0 8px 8px 0; border-right: 1px solid var(--border); }
+  .step-block::after {
+    content: "→";
+    position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+    color: var(--accent); font-size: 14px; font-weight: 700; z-index: 1;
+    background: var(--bg); padding: 0 2px;
+  }
+  .step-block:last-child::after { display: none; }
+  .step-block .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(88,166,255,.15); color: var(--accent);
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 6px;
+  }
+  .step-block .step-title { font-size: 12px; font-weight: 700; color: var(--text); }
+  .step-block .step-sub   { font-size: 10px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+
+  /* ── Progress bar glow ── */
+  .progress {
+    box-shadow: 0 0 8px rgba(88,166,255,.6);
+  }
+
+  /* ── Table row highlight ── */
+  tr.winner td { background: rgba(63,185,80,.07) !important; }
+  tr.winner td:first-child {
+    border-left: 3px solid var(--accent2);
+  }
 </style>
 </head>
 <body>
@@ -251,25 +376,35 @@
   <div class="slide-header">
     <span class="slide-tag">Introduction</span>
     <div class="divider-line"></div>
-    <span class="slide-num">01 / 28</span>
+    <span class="slide-num">01 / 31</span>
   </div>
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
-    <h1><span class="brand">PINNeAPPle</span></h1>
-    <p class="subtitle" style="font-size:22px;max-width:740px;">
-      A Comprehensive Python Framework for<br>
-      Physics-Informed Machine Learning at Scale
-    </p>
-    <p class="authors">Yan Barros</p>
-    <div class="badge-row">
-      <span class="badge">v0.4</span>
-      <span class="badge">Open Source</span>
-      <span class="badge">MIT License</span>
+    <div style="margin-bottom:6px;">
+      <span class="slide-tag" style="font-size:13px;padding:4px 12px;letter-spacing:2px;">v0.4 · Open Source · MIT</span>
     </div>
-    <div class="stat-grid" style="margin-top:48px;max-width:800px;">
-      <div class="stat-box"><span class="num">26</span><div class="label">Python Packages</div></div>
-      <div class="stat-box"><span class="num">76</span><div class="label">Model Architectures</div></div>
-      <div class="stat-box"><span class="num">40+</span><div class="label">Problem Presets</div></div>
-      <div class="stat-box"><span class="num">15+</span><div class="label">PDE Types</div></div>
+    <h1 style="font-size:56px;"><span class="grad-title">PINNeAPPle</span></h1>
+    <p class="subtitle" style="font-size:20px;max-width:760px;margin-top:12px;">
+      A Comprehensive Python Framework for<br>
+      <strong style="color:var(--text);">Physics-Informed Machine Learning</strong> at Research &amp; Industrial Scale
+    </p>
+    <p class="authors" style="margin-top:14px;">Yan Barros &nbsp;·&nbsp; <span style="color:var(--muted);">github.com/barrosyan/PINNeAPPle</span></p>
+    <div class="stat-grid" style="margin-top:44px;max-width:860px;">
+      <div class="stat-box">
+        <span class="num">28</span>
+        <div class="label">Python Packages</div>
+      </div>
+      <div class="stat-box">
+        <span class="num">77+</span>
+        <div class="label">Model Architectures</div>
+      </div>
+      <div class="stat-box">
+        <span class="num">40+</span>
+        <div class="label">Problem Presets</div>
+      </div>
+      <div class="stat-box">
+        <span class="num">5</span>
+        <div class="label">Solver Families<br><span style="font-size:10px;color:var(--muted);">FDM · FEM · FVM · RBF · MLS</span></div>
+      </div>
     </div>
   </div>
 </div>
@@ -281,7 +416,7 @@
   <div class="slide-header">
     <span class="slide-tag red">Motivation</span>
     <div class="divider-line"></div>
-    <span class="slide-num">02 / 28</span>
+    <span class="slide-num">02 / 31</span>
   </div>
   <h2>Software Fragmentation in PIML</h2>
   <p class="subtitle" style="margin-bottom:24px;">Current tools force researchers to re-engineer the same infrastructure for every problem.</p>
@@ -321,7 +456,7 @@
   <div class="slide-header">
     <span class="slide-tag green">Overview</span>
     <div class="divider-line"></div>
-    <span class="slide-num">03 / 28</span>
+    <span class="slide-num">03 / 31</span>
   </div>
   <h2>PINNeAPPle v0.4 — What is it?</h2>
   <p class="subtitle" style="margin-bottom:24px;">A unified open-source Python framework covering the <strong style="color:var(--accent)">complete</strong> Physics-Informed Machine Learning lifecycle.</p>
@@ -358,7 +493,7 @@
   <div class="slide-header">
     <span class="slide-tag purple">Design</span>
     <div class="divider-line"></div>
-    <span class="slide-num">04 / 28</span>
+    <span class="slide-num">04 / 31</span>
   </div>
   <h2>4 Design Principles</h2>
   <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px;">
@@ -396,7 +531,7 @@
   <div class="slide-header">
     <span class="slide-tag">Architecture</span>
     <div class="divider-line"></div>
-    <span class="slide-num">05 / 28</span>
+    <span class="slide-num">05 / 31</span>
   </div>
   <h2>Six-Layer Architecture</h2>
   <div style="flex:1;display:flex;flex-direction:column;gap:12px;margin-top:8px;">
@@ -451,7 +586,7 @@
   <div class="slide-header">
     <span class="slide-tag purple">Core API</span>
     <div class="divider-line"></div>
-    <span class="slide-num">06 / 28</span>
+    <span class="slide-num">06 / 31</span>
   </div>
   <h2>ProblemSpec: The Central Abstraction</h2>
   <p class="subtitle" style="margin-bottom:18px;">Captures everything needed to define a well-posed PDE problem in a single serializable object.</p>
@@ -500,7 +635,7 @@ spec = (
   <div class="slide-header">
     <span class="slide-tag green">Presets</span>
     <div class="divider-line"></div>
-    <span class="slide-num">07 / 28</span>
+    <span class="slide-num">07 / 31</span>
   </div>
   <h2>40+ Problem Presets Library</h2>
   <p class="subtitle" style="margin-bottom:18px;">Validated, ready-to-use presets spanning multiple domains.</p>
@@ -531,7 +666,7 @@ spec = <span class="fn">get_preset</span>(<span class="st">"black_scholes"</span
   <div class="slide-header">
     <span class="slide-tag orange">Data</span>
     <div class="divider-line"></div>
-    <span class="slide-num">08 / 28</span>
+    <span class="slide-num">08 / 31</span>
   </div>
   <h2>Data Pipeline: Unified Physical Data (UPD)</h2>
   <p class="subtitle" style="margin-bottom:16px;">A standardized carrier for physical state across all modules.</p>
@@ -574,7 +709,7 @@ dl = <span class="fn">DataLoader</span>(ds, batch_size=<span class="nu">16</span
   <div class="slide-header">
     <span class="slide-tag">Sampling</span>
     <div class="divider-line"></div>
-    <span class="slide-num">09 / 28</span>
+    <span class="slide-num">09 / 31</span>
   </div>
   <h2>Collocation Sampling</h2>
   <p class="subtitle" style="margin-bottom:18px;">Four strategies under a single unified interface.</p>
@@ -605,7 +740,7 @@ dl = <span class="fn">DataLoader</span>(ds, batch_size=<span class="nu">16</span
   <div class="slide-header">
     <span class="slide-tag orange">Geometry</span>
     <div class="divider-line"></div>
-    <span class="slide-num">10 / 28</span>
+    <span class="slide-num">10 / 31</span>
   </div>
   <h2>Voxelization &amp; Meshfree Sampling <span class="new-badge">New</span></h2>
   <p class="subtitle" style="margin-bottom:16px;">Convert any geometry representation into collocation points without meshing.</p>
@@ -668,7 +803,7 @@ pts = <span class="fn">sample_voxelgrid</span>(grid, <span class="nu">10000</spa
   <div class="slide-header">
     <span class="slide-tag purple">Solvers</span>
     <div class="divider-line"></div>
-    <span class="slide-num">11 / 28</span>
+    <span class="slide-num">11 / 31</span>
   </div>
   <h2>Problem-Agnostic Numerical Solvers <span class="new-badge">New</span></h2>
   <p class="subtitle" style="margin-bottom:14px;">Every solver reads <span class="inline-code">ProblemSpec</span> directly — no manual assembly or problem-specific code.</p>
@@ -720,7 +855,7 @@ dataset = <span class="fn">generate_pinn_dataset</span>(spec, n_data=<span class
   <div class="slide-header">
     <span class="slide-tag purple">Loss</span>
     <div class="divider-line"></div>
-    <span class="slide-num">12 / 28</span>
+    <span class="slide-num">12 / 31</span>
   </div>
   <h2>Physics Loss Compilation</h2>
   <div style="flex:1;display:flex;flex-direction:column;gap:14px;">
@@ -763,7 +898,7 @@ loss_fn = <span class="fn">PINNFactory</span>(spec).<span class="fn">generate_lo
   <div class="slide-header">
     <span class="slide-tag green">Models</span>
     <div class="divider-line"></div>
-    <span class="slide-num">13 / 28</span>
+    <span class="slide-num">13 / 31</span>
   </div>
   <h2>Model Library: 13 Families, 76 Models</h2>
   <div class="two-col" style="flex:1;align-items:start;gap:16px;">
@@ -811,7 +946,7 @@ model = pp.<span class="fn">build_model</span>(
   <div class="slide-header">
     <span class="slide-tag orange">Training</span>
     <div class="divider-line"></div>
-    <span class="slide-num">14 / 28</span>
+    <span class="slide-num">14 / 31</span>
   </div>
   <h2>Training Infrastructure</h2>
   <div class="two-col" style="flex:1;align-items:start;gap:20px;">
@@ -857,7 +992,7 @@ model = pp.<span class="fn">build_model</span>(
   <div class="slide-header">
     <span class="slide-tag purple">UQ</span>
     <div class="divider-line"></div>
-    <span class="slide-num">15 / 28</span>
+    <span class="slide-num">15 / 31</span>
   </div>
   <h2>Uncertainty Quantification</h2>
   <p class="subtitle" style="margin-bottom:18px;">3 UQ families — single unified API.</p>
@@ -894,7 +1029,7 @@ lower, upper = result.<span class="fn">confidence_interval</span>(alpha=<span cl
   <div class="slide-header">
     <span class="slide-tag green">Meta-Learning</span>
     <div class="divider-line"></div>
-    <span class="slide-num">16 / 28</span>
+    <span class="slide-num">16 / 31</span>
   </div>
   <h2>Meta-Learning for PDE Families</h2>
   <p class="subtitle" style="margin-bottom:16px;">Goal: rapid adaptation to an unseen member of a PDE family (e.g., Burgers at a new viscosity ν).</p>
@@ -933,7 +1068,7 @@ lower, upper = result.<span class="fn">confidence_interval</span>(alpha=<span cl
   <div class="slide-header">
     <span class="slide-tag red">Digital Twin</span>
     <div class="divider-line"></div>
-    <span class="slide-num">17 / 28</span>
+    <span class="slide-num">17 / 31</span>
   </div>
   <h2>Real-Time Digital Twin</h2>
   <div class="two-col" style="flex:1;align-items:start;">
@@ -985,7 +1120,7 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
   <div class="slide-header">
     <span class="slide-tag green">Visualization</span>
     <div class="divider-line"></div>
-    <span class="slide-num">18 / 28</span>
+    <span class="slide-num">18 / 31</span>
   </div>
   <h2>CFD-Style Visualization <span class="new-badge">New</span></h2>
   <p class="subtitle" style="margin-bottom:14px;"><span class="inline-code">pinneaple_viz</span> — ParaView-inspired plots, animations, and PINN diagnostics out of the box.</p>
@@ -1052,7 +1187,7 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
   <div class="slide-header">
     <span class="slide-tag orange">Deployment</span>
     <div class="divider-line"></div>
-    <span class="slide-num">19 / 28</span>
+    <span class="slide-num">19 / 31</span>
   </div>
   <h2>Deployment &amp; Export</h2>
   <div class="two-col" style="flex:1;align-items:start;">
@@ -1104,56 +1239,85 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
   <div class="slide-header">
     <span class="slide-tag green">Results</span>
     <div class="divider-line"></div>
-    <span class="slide-num">20 / 28</span>
+    <span class="slide-num">20 / 31</span>
   </div>
-  <h2>Experimental Results</h2>
+  <h2>Experimental Results — Burgers 1D Benchmark</h2>
+  <p class="subtitle" style="margin-bottom:16px;">VanillaPINN · VPINN · PIELM &nbsp;·&nbsp; ν = 0.01 · 2,000 steps · Adam lr=10⁻³ · CPU</p>
   <div class="two-col" style="flex:1;align-items:start;gap:20px;">
-    <div style="display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;flex-direction:column;gap:14px;">
       <div class="card">
-        <h4>Exp 1 — Physics-Informed ODE</h4>
-        <p style="margin-bottom:10px;">du/dt + u = 0 &nbsp;·&nbsp; exact: u(t) = e⁻ᵗ &nbsp;·&nbsp; 2-layer MLP, 64 hidden, tanh, 3,969 params</p>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-        <table>
-          <thead><tr><th>Epoch</th><th>Val Loss</th><th>MSE</th><th>R²</th></tr></thead>
-          <tbody>
-            <tr><td>0</td><td>0.6287</td><td>0.529</td><td>−782</td></tr>
-            <tr><td>2</td><td>0.0988</td><td>0.083</td><td>−122</td></tr>
-            <tr><td>4</td><td>2.6×10⁻⁴</td><td>4.4×10⁻⁵</td><td>0.9999</td></tr>
-            <tr><td>6</td><td>2.8×10⁻⁵</td><td>1.0×10⁻⁶</td><td style="color:var(--accent2);font-weight:700;">0.9999998</td></tr>
-            <tr><td>14</td><td>5.7×10⁻⁶</td><td>8.8×10⁻⁷</td><td>0.9999983</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="result-badge">→ Six orders of magnitude drop in 15 epochs</div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div class="card">
-        <h4>Exp 2 — Zarr-Streamed Time Series</h4>
-        <p>256 PhysicalSamples · time series 64×8 · 4 DataLoader workers</p>
-        <div style="margin-top:10px;display:flex;gap:10px;">
-          <div class="stat-box" style="flex:1;padding:12px 10px;">
-            <span class="num" style="font-size:24px;">5.6 s</span>
-            <div class="label">First epoch (Zarr metadata scan)</div>
+        <h4>Architecture Comparison</h4>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">CPU run · 2 000 optimisation steps</p>
+        <div class="bar-chart">
+          <div class="bar-row">
+            <span class="bar-label">VanillaPINN</span>
+            <div class="bar-track"><div class="bar-fill blue" style="width:98%;">66.9 s</div></div>
           </div>
-          <div class="stat-box" style="flex:1;padding:12px 10px;">
-            <span class="num" style="font-size:24px;">2.1 s</span>
-            <div class="label">Subsequent epochs</div>
+          <div class="bar-row">
+            <span class="bar-label" style="color:var(--accent2);">VPINN ★</span>
+            <div class="bar-track"><div class="bar-fill green" style="width:68%;">46.5 s</div></div>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">PIELM</span>
+            <div class="bar-track"><div class="bar-fill orange" style="width:100%;">68.4 s</div></div>
           </div>
         </div>
       </div>
+      <div class="hcard" style="padding:14px 18px;">
+        <h4>Key Take-aways</h4>
+        <ul class="bullets" style="gap:6px;font-size:13px;margin-top:6px;">
+          <li><strong style="color:var(--accent2);">VPINN</strong> — 30% faster training than VanillaPINN</li>
+          <li>2.2× lower test MSE on u-field (2.88e-7 vs 6.42e-7)</li>
+          <li>PIELM degrades: 6.21e-3 — 3 orders above neural baseline</li>
+          <li>All models pass PDE residual check (≤ 2×10⁻⁵)</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="metric-chip">
+          <span class="mc-val green">2.88×10⁻⁷</span>
+          <div class="mc-label">VPINN test MSE u</div>
+        </div>
+        <div class="metric-chip">
+          <span class="mc-val">46.5 s</span>
+          <div class="mc-label">VPINN train time</div>
+        </div>
+        <div class="metric-chip">
+          <span class="mc-val orange">6.21×10⁻³</span>
+          <div class="mc-label">PIELM test MSE u</div>
+        </div>
+        <div class="metric-chip">
+          <span class="mc-val purple">1.90×10⁻⁵</span>
+          <div class="mc-label">VPINN PDE residual</div>
+        </div>
+      </div>
       <div class="card">
-        <h4>Exp 3 — CAD Point Cloud</h4>
-        <p>4,096 points via curvature-importance sampling · Conv1D · 2 epochs · CPU</p>
-        <div style="margin-top:10px;display:flex;gap:10px;">
-          <div class="stat-box" style="flex:1;padding:12px 10px;">
-            <span class="num" style="font-size:24px;">0.576</span>
-            <div class="label">val RMSE</div>
+        <h4>Test MSE on u-field — lower is better (×10⁻⁷)</h4>
+        <div class="bar-chart" style="margin-top:8px;">
+          <div class="bar-row">
+            <span class="bar-label">VanillaPINN</span>
+            <div class="bar-track"><div class="bar-fill blue" style="width:10.3%;">6.42</div></div>
+            <span class="bar-val">6.42×10⁻⁷</span>
           </div>
-          <div class="stat-box" style="flex:1;padding:12px 10px;">
-            <span class="num" style="font-size:24px;">1.85 s</span>
-            <div class="label">Per epoch</div>
+          <div class="bar-row">
+            <span class="bar-label" style="color:var(--accent2);">VPINN ★</span>
+            <div class="bar-track"><div class="bar-fill green" style="width:4.6%;">2.88</div></div>
+            <span class="bar-val" style="color:var(--accent2);">2.88×10⁻⁷</span>
           </div>
+          <div class="bar-row">
+            <span class="bar-label">PIELM</span>
+            <div class="bar-track"><div class="bar-fill orange" style="width:100%;">62,100</div></div>
+            <span class="bar-val">6.21×10⁻³</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="img-panel" style="height:130px;">
+          <img src="benchmarks/_out/bar_train_time.png" alt="Training time comparison" />
+        </div>
+        <div class="img-panel" style="height:130px;">
+          <img src="benchmarks/_out/bar_test_mse_u.png" alt="Test MSE u comparison" />
         </div>
       </div>
     </div>
@@ -1167,33 +1331,95 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
   <div class="slide-header">
     <span class="slide-tag orange">Benchmarks</span>
     <div class="divider-line"></div>
-    <span class="slide-num">21 / 28</span>
+    <span class="slide-num">21 / 31</span>
   </div>
   <h2>PINN Benchmark Results</h2>
-  <p class="subtitle" style="margin-bottom:20px;">Burgers 1D &nbsp;·&nbsp; 2,000 steps &nbsp;·&nbsp; CPU &nbsp;·&nbsp; Adam lr=10⁻³</p>
-  <div style="flex:1;display:flex;flex-direction:column;gap:20px;">
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-      <table>
-        <thead><tr><th>Model</th><th>Time (s)</th><th>Test MSE (u field)</th><th>PDE Residual MSE</th></tr></thead>
-        <tbody>
-          <tr>
-            <td>VanillaPINN</td><td>66.9</td><td>6.42×10⁻⁷</td><td>1.55×10⁻⁵</td>
-          </tr>
-          <tr style="background:rgba(63,185,80,.06);">
-            <td><strong style="color:var(--accent2);">VPINN</strong></td>
-            <td><strong style="color:var(--accent2);">46.5</strong></td>
-            <td><strong style="color:var(--accent2);">2.88×10⁻⁷</strong></td>
-            <td>1.95×10⁻⁵</td>
-          </tr>
-          <tr>
-            <td>PIELM</td><td>68.4</td><td>6.21×10⁻³</td><td>2.37×10⁻²</td>
-          </tr>
-        </tbody>
-      </table>
+  <p class="subtitle" style="margin-bottom:14px;">Burgers 1D &nbsp;·&nbsp; 2,000 steps &nbsp;·&nbsp; CPU &nbsp;·&nbsp; Adam lr=10⁻³</p>
+  <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;">
+
+    <!-- Left: table + bar charts -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <table>
+          <thead>
+            <tr><th>Model</th><th>Time (s)</th><th>Test MSE u</th><th>PDE Res. MSE</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>VanillaPINN</td><td>66.9</td><td>6.42×10⁻⁷</td><td>1.55×10⁻⁵</td>
+            </tr>
+            <tr class="winner">
+              <td><strong style="color:var(--accent2);">VPINN</strong></td>
+              <td><strong style="color:var(--accent2);">46.5</strong></td>
+              <td><strong style="color:var(--accent2);">2.88×10⁻⁷</strong></td>
+              <td>1.95×10⁻⁵</td>
+            </tr>
+            <tr>
+              <td>PIELM</td><td>68.4</td><td>6.21×10⁻³</td><td>2.37×10⁻²</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" style="padding:14px 16px;">
+        <h4 style="margin-bottom:10px;">Training Time (s) — lower is better</h4>
+        <div class="bar-chart">
+          <div class="bar-row">
+            <span class="bar-label">VanillaPINN</span>
+            <div class="bar-track"><div class="bar-fill blue" style="width:97.8%;">66.9 s</div></div>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label" style="color:var(--accent2);">VPINN ★</span>
+            <div class="bar-track"><div class="bar-fill green" style="width:68.0%;">46.5 s</div></div>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">PIELM</span>
+            <div class="bar-track"><div class="bar-fill orange" style="width:100%;">68.4 s</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:14px 16px;">
+        <h4 style="margin-bottom:10px;">Test MSE u-field — lower is better (×10⁻⁷)</h4>
+        <div class="bar-chart">
+          <div class="bar-row">
+            <span class="bar-label">VanillaPINN</span>
+            <div class="bar-track"><div class="bar-fill blue" style="width:10.3%;">6.42</div></div>
+            <span class="bar-val">6.42×10⁻⁷</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label" style="color:var(--accent2);">VPINN ★</span>
+            <div class="bar-track"><div class="bar-fill green" style="width:4.6%;">2.88</div></div>
+            <span class="bar-val" style="color:var(--accent2);">2.88×10⁻⁷</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">PIELM</span>
+            <div class="bar-track"><div class="bar-fill orange" style="width:100%;">62,100</div></div>
+            <span class="bar-val">6.21×10⁻³</span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="result-badge" style="font-size:15px;">
-      VPINN is 30% faster and more accurate on the u-field than VanillaPINN
+
+    <!-- Right: actual plots from benchmarks/_out/ -->
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="img-panel" style="height:200px;">
+        <img src="benchmarks/_out/u_true_vs_preds.png"
+             alt="True vs predicted solution comparison (Burgers 1D)" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="img-panel" style="height:145px;">
+          <img src="benchmarks/_out/bar_train_time.png" alt="Training time comparison" />
+        </div>
+        <div class="img-panel" style="height:145px;">
+          <img src="benchmarks/_out/bar_test_mse_u.png" alt="Test MSE u comparison" />
+        </div>
+      </div>
+      <div class="result-badge" style="font-size:13px;">
+        VPINN — 30% faster · 2.2× more accurate than VanillaPINN on u-field
+      </div>
     </div>
+
   </div>
 </div>
 
@@ -1204,45 +1430,96 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
   <div class="slide-header">
     <span class="slide-tag orange">Simulation</span>
     <div class="divider-line"></div>
-    <span class="slide-num">22 / 28</span>
+    <span class="slide-num">22 / 31</span>
   </div>
   <h2>Physics Simulation &amp; Surrogate Workflow</h2>
-  <p class="subtitle" style="margin-bottom:16px;">End-to-end: geometry → mesh → numerical simulation → surrogate training → comparison</p>
-  <div class="two-col" style="flex:1;align-items:start;gap:18px;">
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div class="card">
-        <h4>Structural Mechanics</h4>
-        <ul class="bullets" style="gap:6px;">
-          <li><strong>Hooke's Law 2D</strong> — Q4 FEM plane-stress, 2×2 Gauss integration, sparse K·u=F</li>
-          <li><strong>Von Mises</strong> — stress recovery at element centres, σ_vm = √(σ_xx²−σ_xx·σ_yy+σ_yy²+3σ_xy²)</li>
-          <li><strong>Crash Analysis</strong> — explicit FEM central-difference, CFL dt = 0.5·dx/c, lumped mass</li>
-        </ul>
+
+  <!-- Pipeline steps -->
+  <div class="step-flow" style="margin-bottom:16px;">
+    <div class="step-block">
+      <div class="step-num">1</div>
+      <div class="step-title">Geometry</div>
+      <div class="step-sub">Rectangle · Channel<br>Plate · Annulus</div>
+    </div>
+    <div class="step-block">
+      <div class="step-num">2</div>
+      <div class="step-title">Mesh</div>
+      <div class="step-sub">Q4 structured<br>node sets + BCs</div>
+    </div>
+    <div class="step-block">
+      <div class="step-num">3</div>
+      <div class="step-title">Simulation</div>
+      <div class="step-sub">FEM / FDM<br>scipy sparse</div>
+    </div>
+    <div class="step-block">
+      <div class="step-num">4</div>
+      <div class="step-title">Dataset</div>
+      <div class="step-sub">Normalise<br>train / test split</div>
+    </div>
+    <div class="step-block">
+      <div class="step-num">5</div>
+      <div class="step-title">Surrogate</div>
+      <div class="step-sub">PINN · FourierPINN<br>DeepONet</div>
+    </div>
+    <div class="step-block">
+      <div class="step-num">6</div>
+      <div class="step-title">Evaluate</div>
+      <div class="step-sub">rel-L2 · R²<br>Leaderboard</div>
+    </div>
+  </div>
+
+  <div class="two-col" style="flex:1;align-items:start;gap:16px;">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="card" style="padding:12px 14px;">
+          <h4 style="color:var(--accent5);">Structural</h4>
+          <ul class="bullets" style="gap:4px;font-size:12px;">
+            <li>Q4 FEM plane-stress (K·u=F)</li>
+            <li>Von Mises σ recovery</li>
+            <li>Explicit crash (central-diff, CFL)</li>
+          </ul>
+        </div>
+        <div class="card" style="padding:12px 14px;">
+          <h4 style="color:var(--accent);">Fluid</h4>
+          <ul class="bullets" style="gap:4px;font-size:12px;">
+            <li>Lid-driven cavity (ω-ψ FDM)</li>
+            <li>Cylinder wake (projection, upwind)</li>
+            <li>Re = 80–400, CFL-safe dt</li>
+          </ul>
+        </div>
       </div>
-      <div class="card">
-        <h4>Fluid Mechanics</h4>
-        <ul class="bullets" style="gap:6px;">
-          <li><strong>NS Internal</strong> — lid-driven cavity, vorticity-streamfunction FDM, sparse Poisson per step</li>
-          <li><strong>NS External</strong> — cylinder wake, projection method, <em>upwind advection</em> for cell Pe ≫ 2</li>
-          <li>Re = 80–400; CFL-safe dt; steady + unsteady snapshots</li>
-        </ul>
+      <div class="card" style="padding:12px 14px;">
+        <h4>Surrogate Performance (fast mode, 800 epochs)</h4>
+        <div class="bar-chart" style="margin-top:8px;">
+          <div class="bar-row">
+            <span class="bar-label">FourierPINN</span>
+            <div class="bar-track"><div class="bar-fill green" style="width:6%;">0.6%</div></div>
+            <span class="bar-val" style="color:var(--accent2);">0.6% rel-L2</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">DeepONet</span>
+            <div class="bar-track"><div class="bar-fill blue" style="width:10%;">1.0%</div></div>
+            <span class="bar-val">~1% rel-L2</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">VanillaPINN</span>
+            <div class="bar-track"><div class="bar-fill purple" style="width:18%;">1.8%</div></div>
+            <span class="bar-val">~1.8% rel-L2</span>
+          </div>
+        </div>
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div class="card">
-        <h4>Surrogate Training</h4>
-        <ul class="bullets" style="gap:6px;">
-          <li>VanillaPINN, FourierPINN (RFF), DeepONet — all trained on simulation data</li>
-          <li>Space-time dataset (x,y,t)→fields for time-dependent problems</li>
-          <li>Pure data-driven (PDE weight = 0) — avoids normalisation/physical-unit conflict</li>
-          <li>JSON leaderboard + field comparison plots per model</li>
-        </ul>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="img-panel" style="height:200px;">
+        <img src="benchmarks/_out/loss_data.png"
+             alt="Data loss convergence curve" style="padding:4px;" />
       </div>
-      <div class="hcard">
-        <h4>Key Finding</h4>
-        <p style="font-size:13px;color:var(--text);line-height:1.6;">
-          FourierPINN reaches <strong style="color:var(--accent2);">0.6 % rel-L2</strong> for displacement, DeepONet
-          ~1 % for crash (space-time). PDE residuals require <em>un-normalised</em>
-          model outputs — use <code style="color:var(--accent4);">UnnormModel</code> wrapper.
+      <div class="hcard" style="padding:12px 16px;">
+        <h4>Key Insight</h4>
+        <p style="font-size:12px;color:var(--text);line-height:1.6;">
+          PDE residuals need physical-scale outputs — use
+          <code style="color:var(--accent4);">UnnormModel</code> to un-normalise before computing physics loss.
+          Upwind advection critical for NS at cell Pe ≫ 2.
         </p>
       </div>
     </div>
@@ -1256,50 +1533,62 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
   <div class="slide-header">
     <span class="slide-tag purple">Training</span>
     <div class="divider-line"></div>
-    <span class="slide-num">23 / 28</span>
+    <span class="slide-num">23 / 31</span>
   </div>
   <h2>Advanced PINN Training Methods</h2>
-  <div class="two-col" style="flex:1;align-items:start;gap:18px;">
+  <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start;">
+
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <div class="card">
+      <div class="card" style="padding:14px 16px;">
         <h4>Two-Phase Training <span class="new-badge">pinneaple_train</span></h4>
-        <ul class="bullets" style="gap:6px;">
-          <li><strong>Phase 1</strong> — data MSE only; fast convergence to the right solution manifold</li>
-          <li><strong>Phase 2</strong> — adds physics loss; fine-tunes to satisfy PDEs</li>
-          <li><code style="color:var(--accent4);">TwoPhaseTrainer</code> with configurable LR, epochs, grad-clip, AMP</li>
-          <li>Optional combined mode: physics weight ramps 0→λ over phase 1</li>
+        <ul class="bullets" style="gap:5px;font-size:13px;">
+          <li><strong>Phase 1</strong> — data MSE only; fast convergence to solution manifold</li>
+          <li><strong>Phase 2</strong> — adds PDE residual loss</li>
+          <li><code style="color:var(--accent4);">TwoPhaseTrainer</code> · LR, AMP, grad-clip</li>
+          <li>Physics weight ramps 0 → λ (optional)</li>
         </ul>
       </div>
-      <div class="card">
-        <h4>Adaptive Collocation <span class="new-badge">pinneaple_data</span></h4>
-        <ul class="bullets" style="gap:6px;">
-          <li><strong>R³ / RAD</strong> — sample ∝ |R(x)|² where R is the PDE residual</li>
-          <li><strong>RAR</strong> — top-k highest-residual points added each round</li>
-          <li><code style="color:var(--accent4);">ResidualBasedAL</code>, <code style="color:var(--accent4);">AdaptiveCollocationTrainer</code></li>
-          <li>Concentrates training effort in high-error regions automatically</li>
-        </ul>
+      <div class="img-panel" style="height:140px;">
+        <img src="benchmarks/_out/loss_total.png" alt="Total training loss convergence" />
       </div>
     </div>
+
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <div class="card">
-        <h4>MLP + FNO Hybrid <span class="new-badge">pinneaple_models</span></h4>
-        <ul class="bullets" style="gap:6px;">
-          <li><code style="color:var(--accent4);">MLPFNOSurrogate</code>: FNO2d backbone + MLP decoder</li>
-          <li>FNO processes structured context grid → spectral feature map</li>
-          <li>Bilinear sampling + MLP for point-wise scattered queries</li>
-          <li>Autograd-compatible for physics-informed fine-tuning</li>
+      <div class="card" style="padding:14px 16px;">
+        <h4>Adaptive Collocation <span class="new-badge">pinneaple_data</span></h4>
+        <ul class="bullets" style="gap:5px;font-size:13px;">
+          <li><strong>R³ / RAD</strong> — sample ∝ |R(x)|²</li>
+          <li><strong>RAR</strong> — top-k highest-residual added per round</li>
+          <li><code style="color:var(--accent4);">ResidualBasedAL</code></li>
+          <li>Focuses budget on high-error regions</li>
         </ul>
       </div>
-      <div class="card">
-        <h4>UnnormModel + Weight Balancing</h4>
-        <ul class="bullets" style="gap:6px;">
-          <li><code style="color:var(--accent4);">UnnormModel</code> — unwraps normalised predictions for PDE loss in physical units</li>
-          <li><code style="color:var(--accent4);">GradNormBalancer</code> — keeps per-loss gradient magnitudes equal</li>
-          <li><code style="color:var(--accent4);">NTKWeightBalancer</code> — NTK-trace-based automatic weighting</li>
-          <li><code style="color:var(--accent4);">SelfAdaptiveWeights</code> — learnable log-weights via gradient ascent</li>
+      <div class="img-panel" style="height:140px;">
+        <img src="benchmarks/_out/residual_abs.png" alt="Absolute PDE residuals field" />
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card" style="padding:14px 16px;">
+        <h4>MLP + FNO Hybrid <span class="new-badge">pinneaple_models</span></h4>
+        <ul class="bullets" style="gap:5px;font-size:13px;">
+          <li><code style="color:var(--accent4);">MLPFNOSurrogate</code>: FNO2d + MLP decoder</li>
+          <li>FNO → spectral feature map (grid)</li>
+          <li>Bilinear sampling → MLP for point queries</li>
+          <li>Autograd-compatible for PDE losses</li>
+        </ul>
+      </div>
+      <div class="card" style="padding:14px 16px;">
+        <h4>Weight Balancing</h4>
+        <ul class="bullets" style="gap:5px;font-size:13px;">
+          <li><code style="color:var(--accent4);">UnnormModel</code> — physical-scale PDE loss</li>
+          <li><code style="color:var(--accent4);">GradNormBalancer</code> — equal ∇ norms</li>
+          <li><code style="color:var(--accent4);">NTKWeightBalancer</code> — NTK-trace weights</li>
+          <li><code style="color:var(--accent4);">SelfAdaptiveWeights</code> — learned λ</li>
         </ul>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -1310,7 +1599,7 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
   <div class="slide-header">
     <span class="slide-tag orange">Benchmarks</span>
     <div class="divider-line"></div>
-    <span class="slide-num">24 / 28</span>
+    <span class="slide-num">24 / 31</span>
   </div>
   <h2>PINN Arena — Systematic Benchmark Suite</h2>
   <p class="subtitle" style="margin-bottom:16px;">6 problems × 6 architectures, reproducible YAML-driven experiments</p>
@@ -1349,11 +1638,33 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
           <li>Leaderboard: rel-L2 vs. K, speedup over scratch training</li>
         </ul>
       </div>
-      <div class="hcard">
-        <h4>Key Result</h4>
-        <p style="font-size:13px;color:var(--text);line-height:1.6;">
-          Meta-MAML at <strong style="color:var(--accent2);">K=10</strong> matches full scratch training in the Burgers family.
-          Transfer feature-extract converges <strong style="color:var(--accent2);">3–5×</strong> faster than from-scratch on heat conduction variants.
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="img-panel" style="height:120px;">
+          <img src="benchmarks/_out/loss_total.png" alt="Total training loss curve" />
+        </div>
+        <div class="img-panel" style="height:120px;">
+          <img src="benchmarks/_out/loss_pde.png" alt="PDE residual loss curve" />
+        </div>
+      </div>
+      <div class="hcard" style="padding:12px 16px;">
+        <h4>Key Results — Flow Obstacle 2D</h4>
+        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+          <div class="metric-chip" style="flex:1;min-width:80px;">
+            <span class="mc-val green">0.109</span>
+            <div class="mc-label">PDE RMS</div>
+          </div>
+          <div class="metric-chip" style="flex:1;min-width:80px;">
+            <span class="mc-val">0.451</span>
+            <div class="mc-label">L2 u,v</div>
+          </div>
+          <div class="metric-chip" style="flex:1;min-width:80px;">
+            <span class="mc-val orange">0.019</span>
+            <div class="mc-label">BC MSE</div>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px;">
+          Meta-MAML at K=10 matches full scratch in Burgers family.
+          Transfer feature-extract converges <strong style="color:var(--accent2);">3–5×</strong> faster on heat variants.
         </p>
       </div>
     </div>
@@ -1367,7 +1678,7 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
   <div class="slide-header">
     <span class="slide-tag green">Roadmap</span>
     <div class="divider-line"></div>
-    <span class="slide-num">25 / 28</span>
+    <span class="slide-num">25 / 31</span>
   </div>
   <h2>Module Improvements &amp; Contributions — Core</h2>
   <div class="three-col" style="flex:1;align-items:start;gap:14px;">
@@ -1477,7 +1788,7 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
   <div class="slide-header">
     <span class="slide-tag green">Roadmap</span>
     <div class="divider-line"></div>
-    <span class="slide-num">26 / 28</span>
+    <span class="slide-num">26 / 31</span>
   </div>
   <h2>Module Improvements &amp; Contributions — Advanced</h2>
   <div class="three-col" style="flex:1;align-items:start;gap:14px;">
@@ -1587,48 +1898,211 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
   <div class="slide-header">
     <span class="slide-tag purple">Comparison</span>
     <div class="divider-line"></div>
-    <span class="slide-num">27 / 28</span>
+    <span class="slide-num">27 / 31</span>
   </div>
   <h2>Comparison with Related Work</h2>
-  <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-    <table>
-      <thead>
-        <tr>
-          <th>Feature</th>
-          <th style="text-align:center;color:var(--accent);">PINNeAPPle</th>
-          <th style="text-align:center;">DeepXDE</th>
-          <th style="text-align:center;">SciANN</th>
-          <th style="text-align:center;">PhysNeMo</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>PINN training</td><td class="check-yes">✓</td><td class="check-yes">✓</td><td class="check-yes">✓</td><td class="check-yes">✓</td></tr>
-        <tr><td>Neural operators</td><td class="check-yes">✓</td><td class="check-partial">○</td><td class="check-no">—</td><td class="check-yes">✓</td></tr>
-        <tr><td>Problem-agnostic FDM/FEM/FVM <span class="new-badge">New</span></td><td class="check-yes">✓</td><td class="check-partial">○</td><td class="check-no">—</td><td class="check-partial">○</td></tr>
-        <tr><td>Meshfree (RBF/MLS) <span class="new-badge">New</span></td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
-        <tr><td>Voxelization pipeline <span class="new-badge">New</span></td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-partial">○</td></tr>
-        <tr><td>CFD-style visualization <span class="new-badge">New</span></td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-partial">○</td></tr>
-        <tr><td>Uncertainty quantification</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-partial">○</td></tr>
-        <tr><td>Digital twin runtime</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
-        <tr><td>Meta-learning</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
-        <tr><td>Active learning</td><td class="check-yes">✓</td><td class="check-partial">○</td><td class="check-no">—</td><td class="check-no">—</td></tr>
-        <tr><td>Zarr streaming</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
-        <tr><td>REST serving + ONNX export</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-yes">✓</td></tr>
-        <tr><td>Unified ProblemSpec</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
-      </tbody>
-    </table>
+  <div style="flex:1;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <table style="font-size:13px;">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th style="text-align:center;color:var(--accent);background:rgba(88,166,255,.08);">PINNeAPPle</th>
+            <th style="text-align:center;">DeepXDE</th>
+            <th style="text-align:center;">SciANN</th>
+            <th style="text-align:center;">PhysNeMo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>PINN training</td><td class="check-yes">✓</td><td class="check-yes">✓</td><td class="check-yes">✓</td><td class="check-yes">✓</td></tr>
+          <tr><td>Neural operators (FNO, DeepONet, GNO)</td><td class="check-yes">✓</td><td class="check-partial">○</td><td class="check-no">—</td><td class="check-yes">✓</td></tr>
+          <tr><td>MLP + FNO hybrid <span class="new-badge">New</span></td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-partial">○</td></tr>
+          <tr><td>Physics simulation workflow <span class="new-badge">New</span></td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-partial">○</td></tr>
+          <tr><td>Problem-agnostic FDM/FEM/FVM</td><td class="check-yes">✓</td><td class="check-partial">○</td><td class="check-no">—</td><td class="check-partial">○</td></tr>
+          <tr><td>Meshfree (RBF/MLS)</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+          <tr><td>Two-phase PINN training <span class="new-badge">New</span></td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+          <tr><td>Adaptive collocation (R³/RAD/RAR)</td><td class="check-yes">✓</td><td class="check-partial">○</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+          <tr><td>Uncertainty quantification</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-partial">○</td></tr>
+          <tr><td>Meta-learning (MAML/Reptile)</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+          <tr><td>Digital twin runtime</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+          <tr><td>Zarr streaming + active learning</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-no">—</td></tr>
+          <tr><td>REST serving + ONNX export</td><td class="check-yes">✓</td><td class="check-no">—</td><td class="check-no">—</td><td class="check-yes">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;width:260px;">
+      <div class="img-panel" style="height:180px;">
+        <img src="benchmarks/_out/bar_test_mse_residual.png" alt="PDE residual MSE comparison" style="padding:4px;" />
+      </div>
+      <div class="metric-chip" style="background:rgba(88,166,255,.08);border-color:rgba(88,166,255,.3);">
+        <span class="mc-val">15</span>
+        <div class="mc-label">exclusive features vs. DeepXDE</div>
+      </div>
+      <div class="metric-chip">
+        <span class="mc-val green">28</span>
+        <div class="mc-label">Python packages</div>
+      </div>
+    </div>
   </div>
-  <p style="font-size:12px;color:var(--muted);margin-top:10px;">✓ full &nbsp;·&nbsp; ○ partial &nbsp;·&nbsp; — absent</p>
+  <p style="font-size:12px;color:var(--muted);margin-top:8px;">✓ full &nbsp;·&nbsp; ○ partial &nbsp;·&nbsp; — absent</p>
 </div>
 
 <!-- ══════════════════════════════════════════════
-     SLIDE 23 — Conclusion
+     SLIDE 28 — NACA 0012 Aerodynamic Surrogate
 ══════════════════════════════════════════════ -->
 <div class="slide" id="s28">
   <div class="slide-header">
+    <span class="slide-tag red">Aerospace</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">28 / 31</span>
+  </div>
+  <h2>NACA 0012 Aerodynamic Surrogate</h2>
+  <p class="subtitle" style="margin-bottom:14px;">Joukowski conformal mapping (exact reference) · PINN learns u, v, Cp · α = 5°</p>
+  <div class="two-col" style="flex:1;align-items:start;gap:18px;">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="img-panel" style="height:220px;">
+        <img src="examples/pinneaple_arena/_out/naca0012/naca0012_reference_flow.png"
+             alt="NACA 0012 velocity magnitude and Cp reference fields" />
+      </div>
+      <div class="hcard" style="padding:12px 16px;">
+        <h4>Method</h4>
+        <ul class="bullets" style="gap:5px;font-size:12px;margin-top:4px;">
+          <li><strong>Reference:</strong> Joukowski conformal mapping — exact inviscid potential flow</li>
+          <li><strong>Fields:</strong> u, v velocity + pressure coefficient Cp</li>
+          <li><strong>PINN:</strong> VanillaPINN 5-layer MLP, 3 000 epochs, Adam + cosine LR</li>
+          <li><strong>Loss:</strong> 9.2×10⁻⁴ (normalised targets) at convergence</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="img-panel" style="height:210px;">
+        <img src="examples/pinneaple_arena/_out/naca0012/naca0012_true_vs_pred.png"
+             alt="True vs predicted u and Cp fields comparison" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="img-panel" style="height:130px;">
+          <img src="examples/pinneaple_arena/_out/naca0012/naca0012_cp_distribution.png"
+               alt="Cp distribution comparison reference vs PINN" />
+        </div>
+        <div class="img-panel" style="height:130px;">
+          <img src="examples/pinneaple_arena/_out/naca0012/naca0012_training_loss.png"
+               alt="NACA 0012 training loss convergence" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 29 — Classic PINN Benchmarks
+══════════════════════════════════════════════ -->
+<div class="slide" id="s29">
+  <div class="slide-header">
+    <span class="slide-tag orange">Benchmarks</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">29 / 31</span>
+  </div>
+  <h2>Classic PINN Benchmarks</h2>
+  <p class="subtitle" style="margin-bottom:14px;">Burgers 1D · Heat 2D steady · Poisson 2D — all with known analytical solutions</p>
+  <div class="three-col" style="flex:1;align-items:start;gap:14px;">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="card" style="padding:12px 14px;">
+        <h4>Burgers 1D (space-time)</h4>
+        <ul class="bullets" style="gap:4px;font-size:12px;">
+          <li>u_t + u·u_x = ν·u_xx,  ν = 0.01/π</li>
+          <li>IC: u(x,0) = −sin(πx),  BC: u(±1,t) = 0</li>
+          <li>Shock formation at t ≈ 0.5</li>
+        </ul>
+      </div>
+      <div class="img-panel" style="height:220px;">
+        <img src="examples/pinneaple_arena/_out/common_pinns/burgers_1d.png"
+             alt="Burgers 1D space-time heatmap and solution slices" />
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="card" style="padding:12px 14px;">
+        <h4>Heat Equation 2D (steady)</h4>
+        <ul class="bullets" style="gap:4px;font-size:12px;">
+          <li>−Δu = 2π²sin(πx)sin(πy)</li>
+          <li>Exact: sin(πx)·sin(πy), u|∂Ω = 0</li>
+          <li>rel-L² error &lt; 0.3%</li>
+        </ul>
+      </div>
+      <div class="img-panel" style="height:220px;">
+        <img src="examples/pinneaple_arena/_out/common_pinns/heat_2d.png"
+             alt="Heat 2D true vs PINN vs error" />
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="card" style="padding:12px 14px;">
+        <h4>Poisson 2D (Gaussian sources)</h4>
+        <ul class="bullets" style="gap:4px;font-size:12px;">
+          <li>−Δu = f,  two Gaussian sources at (±0.5, 0)</li>
+          <li>Dirichlet BCs on [−1,1]²</li>
+          <li>PDE residual visualised on solution domain</li>
+        </ul>
+      </div>
+      <div class="img-panel" style="height:220px;">
+        <img src="examples/pinneaple_arena/_out/common_pinns/poisson_2d.png"
+             alt="Poisson 2D source, solution and PDE residual" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 30 — 3D Geometry PINNs
+══════════════════════════════════════════════ -->
+<div class="slide" id="s30">
+  <div class="slide-header">
+    <span class="slide-tag purple">3D Physics</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">30 / 31</span>
+  </div>
+  <h2>3D Geometry PINNs</h2>
+  <p class="subtitle" style="margin-bottom:14px;">Laplace 3D (cube) · Heat conduction in a sphere — verified against exact solutions</p>
+  <div class="two-col" style="flex:1;align-items:start;gap:18px;">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card" style="padding:12px 14px;">
+        <h4>Laplace 3D in [0,1]³</h4>
+        <ul class="bullets" style="gap:4px;font-size:12px;">
+          <li>Δu = 0,  BCs from manufactured solution</li>
+          <li>Exact: sin(πx)·sin(πy)·sinh(√2·π·z) / sinh(√2·π)</li>
+          <li>Cross-sections at z = 0.25, 0.50, 0.75</li>
+          <li>rel-L² error verified per slice</li>
+        </ul>
+      </div>
+      <div class="img-panel" style="height:240px;">
+        <img src="examples/pinneaple_arena/_out/3d_pinn/laplace_3d_cross_sections.png"
+             alt="Laplace 3D cross-sections true vs PINN error" />
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card" style="padding:12px 14px;">
+        <h4>Radial Heat Conduction — Unit Sphere</h4>
+        <ul class="bullets" style="gap:4px;font-size:12px;">
+          <li>ΔT = 0 in sphere,  T(r=1) = 0,  T(0) = 1</li>
+          <li>Exact: T*(r) = 1 − r (linear radial profile)</li>
+          <li>PINN in Cartesian coordinates — tests 3D symmetry</li>
+          <li>Mid-plane T(x,y,0) contour + radial error</li>
+        </ul>
+      </div>
+      <div class="img-panel" style="height:240px;">
+        <img src="examples/pinneaple_arena/_out/3d_pinn/sphere_heat_3d.png"
+             alt="Sphere heat 3D radial profile and midplane contour" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 31 — Conclusion
+══════════════════════════════════════════════ -->
+<div class="slide" id="s31">
+  <div class="slide-header">
     <span class="slide-tag green">Conclusion</span>
     <div class="divider-line"></div>
-    <span class="slide-num">28 / 28</span>
+    <span class="slide-num">31 / 31</span>
   </div>
   <h2>Conclusion</h2>
   <div class="two-col" style="flex:1;align-items:start;gap:20px;">
@@ -1682,7 +2156,7 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
 <nav class="nav">
   <div class="nav-left">
     <span id="nav-title">PINNeAPPle</span>
-    &nbsp;·&nbsp; Slide <span id="nav-cur">1</span> of <span id="nav-tot">28</span>
+    &nbsp;·&nbsp; Slide <span id="nav-cur">1</span> of <span id="nav-tot">31</span>
   </div>
   <div class="nav-btns">
     <button class="nav-btn" id="btn-prev" onclick="move(-1)">← Prev</button>
@@ -1691,7 +2165,7 @@ dt.<span class="fn">add_stream</span>(<span class="fn">MockStream</span>(
 </nav>
 
 <script>
-  const TOTAL = 28;
+  const TOTAL = 31;
   let cur = 1;
 
   function show(n) {
