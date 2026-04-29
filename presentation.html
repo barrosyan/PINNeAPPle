@@ -15,11 +15,11 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 
 #progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #58a6ff, #d2a8ff); transition: width 0.3s ease; z-index: 1000; }
 .deck { width: 100vw; height: 100vh; position: relative; }
-.slide { position: absolute; inset: 0; display: none; flex-direction: column; padding: 48px 68px 56px; overflow: hidden; animation: fadeIn 0.25s ease; }
+.slide { position: absolute; inset: 0; display: none; flex-direction: column; padding: 48px 68px 72px; overflow-y: auto; scroll-behavior: smooth; animation: fadeIn 0.25s ease; }
 .slide.active { display: flex; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-.slide-header { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+.slide-header { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; position: sticky; top: -48px; background: var(--bg); z-index: 5; padding-top: 48px; margin-top: -48px; padding-bottom: 12px; }
 .slide-tag { font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--accent); background: rgba(88,166,255,.12); border: 1px solid rgba(88,166,255,.3); border-radius: 4px; padding: 3px 8px; white-space: nowrap; }
 .slide-tag.green  { color: var(--accent2); background: rgba(63,185,80,.1);   border-color: rgba(63,185,80,.3); }
 .slide-tag.purple { color: var(--accent4); background: rgba(210,168,255,.1); border-color: rgba(210,168,255,.3); }
@@ -32,7 +32,7 @@ h1 { font-size: 52px; font-weight: 800; line-height: 1.1; letter-spacing: -1.5px
 h2 { font-size: 28px; font-weight: 700; line-height: 1.2; margin-bottom: 8px; }
 h3 { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .9px; }
 .subtitle { font-size: 17px; color: var(--muted); margin-top: 8px; line-height: 1.55; }
-.body { flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 16px; }
+.body { flex: 1; overflow: visible; display: flex; flex-direction: column; gap: 16px; }
 .two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 .four-col  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
@@ -107,7 +107,7 @@ pre { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; 
 .hero-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; z-index: 1; }
 
 img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); }
-.img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; overflow: visible; min-height: 200px; }
 
 .section-divider { background: linear-gradient(135deg, rgba(88,166,255,.06) 0%, rgba(210,168,255,.04) 100%); border: 1px solid rgba(88,166,255,.15); border-radius: 12px; padding: 14px 20px; margin-bottom: 10px; }
 .section-divider p { font-size: 13px; color: var(--muted); }
@@ -131,7 +131,7 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
   <div class="slide-header">
     <span class="slide-tag">PINNeAPPle</span>
     <div class="divider-line"></div>
-    <span class="slide-num">1 / 55</span>
+    <span class="slide-num">1 / 58</span>
   </div>
   <div class="hero-center">
     <div style="font-size:13px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:16px;">Physics-Informed Machine Learning</div>
@@ -152,12 +152,12 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
       <div class="stat-box"><div class="num">8</div><div class="label">Benchmarks</div></div>
     </div>
   </div>
-  <div style="position:relative;z-index:1;text-align:center;font-size:12px;color:var(--muted);">April 2026 · BiaTech Research</div>
+  <div style="position:relative;z-index:1;text-align:center;font-size:12px;color:var(--muted);">April 2026 · Yan Barros</div>
 </div>
 
 <!-- ============================================================ S2: WHAT'S NEW ============================================================ -->
 <div class="slide" id="s2">
-  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">2 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">2 / 58</span></div>
   <h2>What's New in v0.5</h2>
   <div class="subtitle" style="margin-bottom:14px;">The largest single release in PINNeAPPle history — 20 features across 5 new modules</div>
   <div class="body">
@@ -211,7 +211,7 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
 
 <!-- ============================================================ S3: MOTIVATION ============================================================ -->
 <div class="slide" id="s3">
-  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">3 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">3 / 58</span></div>
   <h2>Why Physics-Informed Neural Networks?</h2>
   <div class="subtitle" style="margin-bottom:12px;">Bridging the gap between data-driven ML and first-principles physics</div>
   <div class="body">
@@ -272,7 +272,7 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
 
 <!-- ============================================================ S4: MODULE MAP ============================================================ -->
 <div class="slide" id="s4">
-  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">4 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">4 / 58</span></div>
   <h2>Complete Module Map — All 16 Modules</h2>
   <div class="body">
     <div class="module-grid">
@@ -298,7 +298,7 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
 
 <!-- ============================================================ S5: ARCHITECTURE ============================================================ -->
 <div class="slide" id="s5">
-  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">5 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">5 / 58</span></div>
   <h2>Layered Architecture Overview</h2>
   <div class="subtitle" style="margin-bottom:14px;">Six clean layers from raw data to deployable solutions</div>
   <div class="body">
@@ -341,7 +341,7 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
 
 <!-- ============================================================ S6: ENVIRONMENT ============================================================ -->
 <div class="slide" id="s6">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">6 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">6 / 58</span></div>
   <h2>pinneaple_environment — PDE Specs &amp; Presets</h2>
   <div class="body">
     <div class="two-col">
@@ -393,7 +393,7 @@ spec = pp.<span class="cl">ProblemSpec</span>(
 
 <!-- ============================================================ S7: MODELS ============================================================ -->
 <div class="slide" id="s7">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">7 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">7 / 58</span></div>
   <h2>pinneaple_models — Neural Architectures Registry</h2>
   <div class="body">
     <table>
@@ -434,7 +434,7 @@ model = <span class="cl">ModelRegistry</span>.<span class="fn">build</span>(
 
 <!-- ============================================================ S8: DATA ============================================================ -->
 <div class="slide" id="s8">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">8 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">8 / 58</span></div>
   <h2>pinneaple_data — Collocation &amp; Active Learning</h2>
   <div class="body">
     <div class="two-col">
@@ -486,7 +486,7 @@ x_new = al.<span class="fn">refine</span>(x_int)   <span class="cm"># returns hi
 
 <!-- ============================================================ S9: GEOM ============================================================ -->
 <div class="slide" id="s9">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">9 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">9 / 58</span></div>
   <h2>pinneaple_geom — Geometry &amp; Domains</h2>
   <div class="body">
     <div class="two-col">
@@ -536,7 +536,7 @@ pts = flow_domain.<span class="fn">sample_interior</span>(<span class="nu">20_00
 
 <!-- ============================================================ S10: PINN ============================================================ -->
 <div class="slide" id="s10">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">10 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">10 / 58</span></div>
   <h2>pinneaple_pinn — Physics Loss Compiler</h2>
   <div class="body">
     <div class="two-col">
@@ -596,7 +596,7 @@ loss = domino.<span class="fn">coupled_loss</span>(pinns)</pre>
 
 <!-- ============================================================ S11: TRAIN ============================================================ -->
 <div class="slide" id="s11">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">11 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">11 / 58</span></div>
   <h2>pinneaple_train — Training Infrastructure</h2>
   <div class="body">
     <div class="two-col">
@@ -654,7 +654,7 @@ tm.<span class="fn">fit</span>()  <span class="cm"># trains [0,0.1], then [0.1,0
 
 <!-- ============================================================ S12: SOLVERS ============================================================ -->
 <div class="slide" id="s12">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">12 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">12 / 58</span></div>
   <h2>pinneaple_solvers — Numerical Solvers</h2>
   <div class="body">
     <div class="two-col">
@@ -702,7 +702,7 @@ pinn_data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S13: INFERENCE ============================================================ -->
 <div class="slide" id="s13">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">13 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">13 / 58</span></div>
   <h2>pinneaple_inference — Visualization &amp; Error Analysis</h2>
   <div class="body">
     <div class="two-col">
@@ -764,7 +764,7 @@ viz.<span class="fn">plot_volume_slice</span>(axis=<span class="st">"z"</span>, 
 
 <!-- ============================================================ S14: UQ ============================================================ -->
 <div class="slide" id="s14">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">14 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">14 / 58</span></div>
   <h2>pinneaple_uq — Uncertainty Quantification</h2>
   <div class="body">
     <div class="two-col">
@@ -819,7 +819,7 @@ lo, hi = cp.<span class="fn">predict_interval</span>(x_test)</pre>
 
 <!-- ============================================================ S15: INVERSE + DESIGN OPT ============================================================ -->
 <div class="slide" id="s15">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">15 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">15 / 58</span></div>
   <h2>pinneaple_inverse &amp; pinneaple_design_opt</h2>
   <div class="body">
     <div class="two-col">
@@ -868,7 +868,7 @@ shape.<span class="fn">update</span>(step=-<span class="nu">0.01</span>*dJ_ds)</
 
 <!-- ============================================================ S16: SYMBOLIC PDE ============================================================ -->
 <div class="slide" id="s16">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">16 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">16 / 58</span></div>
   <h2>Feature 1 — Symbolic PDE Compiler</h2>
   <div class="subtitle" style="margin-bottom:10px;">Write PDEs as mathematics. PINNeAPPle compiles them to autograd automatically.</div>
   <div class="body">
@@ -931,7 +931,7 @@ residual_fn = pde.<span class="fn">to_autograd</span>()</pre>
 
 <!-- ============================================================ S17: HARD BC + PERIODIC BC ============================================================ -->
 <div class="slide" id="s17">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">17 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">17 / 58</span></div>
   <h2>Features 4 &amp; 5 — Hard BC &amp; Periodic BC Enforcement</h2>
   <div class="body">
     <div class="two-col">
@@ -982,7 +982,7 @@ model_periodic = pbc.<span class="fn">wrap</span>(base_model)
 
 <!-- ============================================================ S18: SIREN ============================================================ -->
 <div class="slide" id="s18">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">18 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">18 / 58</span></div>
   <h2>Feature 2 — SIREN: Sinusoidal Representation Networks</h2>
   <div class="body">
     <div class="two-col">
@@ -1048,7 +1048,7 @@ model = <span class="cl">SIREN</span>(
 
 <!-- ============================================================ S19: MODIFIED MLP ============================================================ -->
 <div class="slide" id="s19">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">19 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">19 / 58</span></div>
   <h2>Feature 3 — Modified MLP (Wang et al. 2022)</h2>
   <div class="body">
     <div class="two-col">
@@ -1102,7 +1102,7 @@ model = <span class="cl">ModifiedMLP</span>(
 
 <!-- ============================================================ S20: HASH GRID ============================================================ -->
 <div class="slide" id="s20">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">20 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">20 / 58</span></div>
   <h2>Feature 6 — Hash Grid Encoding (Instant-NGP)</h2>
   <div class="body">
     <div class="two-col">
@@ -1160,7 +1160,7 @@ model = <span class="cl">HashGridMLP</span>(
 
 <!-- ============================================================ S21: MESHGRAPHNET ============================================================ -->
 <div class="slide" id="s21">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">21 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">21 / 58</span></div>
   <h2>Feature 7 — MeshGraphNet: GNN on Unstructured Meshes</h2>
   <div class="body">
     <div class="two-col">
@@ -1212,7 +1212,7 @@ node_pred = model(graph.x, graph.edge_index,
 
 <!-- ============================================================ S22: AFNO ============================================================ -->
 <div class="slide" id="s22">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">22 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">22 / 58</span></div>
   <h2>Feature 8 — AFNO: Adaptive Fourier Neural Operator</h2>
   <div class="body">
     <div class="two-col">
@@ -1277,7 +1277,7 @@ y = model(x)  <span class="cm"># (4, 128, 128, 3)</span>
 
 <!-- ============================================================ S23: DoMINO ============================================================ -->
 <div class="slide" id="s23">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">23 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">23 / 58</span></div>
   <h2>Feature 9 — DoMINO Domain Decomposition</h2>
   <div class="body">
     <div class="two-col">
@@ -1338,7 +1338,7 @@ u_global = domino.<span class="fn">forward</span>(nets, x_query)</pre>
 
 <!-- ============================================================ S24: TIME-MARCHING ============================================================ -->
 <div class="slide" id="s24">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">24 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">24 / 58</span></div>
   <h2>Feature 11 — Time-Marching PINN Trainer</h2>
   <div class="body">
     <div class="two-col">
@@ -1393,7 +1393,7 @@ u_T = model(x_at_T_final)</pre>
 
 <!-- ============================================================ S25: DDP ============================================================ -->
 <div class="slide" id="s25">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">25 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">25 / 58</span></div>
   <h2>Feature 13 — Multi-GPU DDP Training</h2>
   <div class="body">
     <div class="two-col">
@@ -1461,7 +1461,7 @@ trainer = <span class="cl">DDPPINNTrainer</span>(
 
 <!-- ============================================================ S26: CAUSAL ============================================================ -->
 <div class="slide" id="s26">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">26 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">26 / 58</span></div>
   <h2>Feature 14 — Causal PINN Training (Wang et al. 2022)</h2>
   <div class="body">
     <div class="two-col">
@@ -1513,7 +1513,7 @@ weights = trainer.<span class="fn">get_causal_weights</span>()
 
 <!-- ============================================================ S27: RANS ============================================================ -->
 <div class="slide" id="s27">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">27 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">27 / 58</span></div>
   <h2>Feature 10 — RANS Turbulence Presets</h2>
   <div class="body">
     <div class="two-col">
@@ -1566,7 +1566,7 @@ loss = factory.<span class="fn">compile</span>()</pre>
 
 <!-- ============================================================ S28: CSG ============================================================ -->
 <div class="slide" id="s28">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">28 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">28 / 58</span></div>
   <h2>Feature 12 — Constructive Solid Geometry</h2>
   <div class="body">
     <div class="two-col">
@@ -1622,7 +1622,7 @@ pts, normals = domain_3d.<span class="fn">sample_boundary</span>(<span class="nu
 
 <!-- ============================================================ S29: FLOW VIZ ============================================================ -->
 <div class="slide" id="s29">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">29 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">29 / 58</span></div>
   <h2>Feature 17 — Flow Visualization</h2>
   <div class="body">
     <div class="two-col">
@@ -1686,7 +1686,7 @@ sl_x, sl_u = viz.<span class="fn">compute_streamlines</span>(
 
 <!-- ============================================================ S30: JAX BACKEND ============================================================ -->
 <div class="slide" id="s30">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">30 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">30 / 58</span></div>
   <h2>Feature 15 — Multi-Backend Support (JAX)</h2>
   <div class="body">
     <div class="two-col">
@@ -1742,7 +1742,7 @@ grad_fn = jax_backend.<span class="fn">grad_fn</span>(loss_fn)
 
 <!-- ============================================================ S31: DYNAMICS ============================================================ -->
 <div class="slide" id="s31">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">31 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">31 / 58</span></div>
   <h2>Feature 18 — Differentiable Dynamics</h2>
   <div class="body">
     <div class="two-col">
@@ -1815,7 +1815,7 @@ sph.<span class="fn">step</span>(dt=<span class="nu">5e-4</span>)</pre>
 
 <!-- ============================================================ S32: WORLDMODEL ============================================================ -->
 <div class="slide" id="s32">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">32 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">32 / 58</span></div>
   <h2>Feature 19 — World Foundation Model Adapters</h2>
   <div class="body">
     <div class="two-col">
@@ -1871,7 +1871,7 @@ ds = <span class="cl">PhysicsVideoDataset</span>(
 
 <!-- ============================================================ S33: ADJOINT OPT ============================================================ -->
 <div class="slide" id="s33">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">33 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">33 / 58</span></div>
   <h2>Feature 16 — Adjoint-Based Shape Optimization</h2>
   <div class="body">
     <div class="two-col">
@@ -1942,7 +1942,7 @@ sensitivity = adj.<span class="fn">sensitivity</span>()
 
 <!-- ============================================================ S34: CAD→CFD ============================================================ -->
 <div class="slide" id="s34">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">34 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">34 / 58</span></div>
   <h2>Feature 20 — CAD → CFD → PINN Pipeline</h2>
   <div class="body">
     <div class="two-col">
@@ -2008,7 +2008,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S35: FEATURES SUMMARY TABLE ============================================================ -->
 <div class="slide" id="s35">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">35 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">35 / 58</span></div>
   <h2>All 20 New Features — Summary</h2>
   <div class="body">
     <table>
@@ -2039,7 +2039,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S36: QUALITY MATRIX ============================================================ -->
 <div class="slide" id="s36">
-  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">36 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">36 / 58</span></div>
   <h2>Module Quality Matrix</h2>
   <div class="body">
     <table>
@@ -2071,7 +2071,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S37: FRAMEWORK COMPARISON ============================================================ -->
 <div class="slide" id="s37">
-  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">37 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">37 / 58</span></div>
   <h2>Framework Comparison</h2>
   <div class="body" style="gap:10px;">
     <table>
@@ -2097,7 +2097,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S38: ROADMAP IMPROVEMENTS ============================================================ -->
 <div class="slide" id="s38">
-  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">38 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">38 / 58</span></div>
   <h2>What Can Be Improved</h2>
   <div class="body">
     <div class="three-col">
@@ -2145,7 +2145,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S39: BENCHMARKS OVERVIEW ============================================================ -->
 <div class="slide" id="s39">
-  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">39 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">39 / 58</span></div>
   <h2>Performance Benchmarks Overview</h2>
   <div class="body">
     <table style="margin-bottom:14px;">
@@ -2183,7 +2183,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S40: ECOSYSTEM ============================================================ -->
 <div class="slide" id="s40">
-  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">40 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">40 / 58</span></div>
   <h2>Ecosystem Integration</h2>
   <div class="body">
     <div class="two-col">
@@ -2235,7 +2235,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S41: BENCHMARK - BURGERS ============================================================ -->
 <div class="slide" id="s41">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">41 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">41 / 58</span></div>
   <h2>Benchmark 1 — Burgers 1D (ν = 0.01/π)</h2>
   <div class="subtitle" style="margin-bottom:10px;">u_t + u·u_x − ν·u_xx = 0 &nbsp;|&nbsp; x ∈ [−1,1], t ∈ [0,1] &nbsp;|&nbsp; IC: u(x,0) = −sin(πx)</div>
   <div class="body">
@@ -2277,7 +2277,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S42: BENCHMARK - HEAT 2D ============================================================ -->
 <div class="slide" id="s42">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">42 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">42 / 58</span></div>
   <h2>Benchmark 2 — Heat Equation 2D</h2>
   <div class="subtitle" style="margin-bottom:10px;">u_t − α∇²u = 0 &nbsp;|&nbsp; (x,y) ∈ [0,1]², t ∈ [0,1] &nbsp;|&nbsp; Exact solution: u = e^(−2α π² t) sin(πx) sin(πy)</div>
   <div class="body">
@@ -2319,7 +2319,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S43: BENCHMARK - POISSON ============================================================ -->
 <div class="slide" id="s43">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">43 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">43 / 58</span></div>
   <h2>Benchmark 3 — Poisson 2D</h2>
   <div class="subtitle" style="margin-bottom:10px;">−∇²u = 2π²sin(πx)sin(πy) &nbsp;|&nbsp; (x,y) ∈ [0,1]² &nbsp;|&nbsp; Exact: u = sin(πx)sin(πy)</div>
   <div class="body">
@@ -2361,7 +2361,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S44: BENCHMARK - NACA FLOW ============================================================ -->
 <div class="slide" id="s44">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">44 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">44 / 58</span></div>
   <h2>Benchmark 4 — NACA0012 CFD Flow Field</h2>
   <div class="subtitle" style="margin-bottom:10px;">FEM reference solution — Re=1000, α=5°, steady NS. Used as validation data for PINN training.</div>
   <div class="body">
@@ -2403,7 +2403,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S45: BENCHMARK - NACA PINN ============================================================ -->
 <div class="slide" id="s45">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">45 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">45 / 58</span></div>
   <h2>Benchmark 5 — NACA0012 PINN Solution</h2>
   <div class="subtitle" style="margin-bottom:10px;">PINN prediction of velocity and pressure fields — compare with CFD reference</div>
   <div class="body">
@@ -2445,7 +2445,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S46: BENCHMARK - NACA Cp ============================================================ -->
 <div class="slide" id="s46">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">46 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">46 / 58</span></div>
   <h2>Benchmark 6 — NACA0012 Surface Pressure Coefficient</h2>
   <div class="subtitle" style="margin-bottom:10px;">Cp = (p − p∞) / (½ρU∞²) distribution along chord — PINN vs CFD reference</div>
   <div class="body">
@@ -2487,7 +2487,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S47: BENCHMARK - 3D LAPLACE ============================================================ -->
 <div class="slide" id="s47">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">47 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">47 / 58</span></div>
   <h2>Benchmark 7 — 3D Laplace (Cross-Sections)</h2>
   <div class="subtitle" style="margin-bottom:10px;">∇²u = 0 in [0,1]³ &nbsp;|&nbsp; Exact: u = sin(πx)sin(πy)sinh(π√2 z)/sinh(π√2)</div>
   <div class="body">
@@ -2529,7 +2529,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S48: BENCHMARK - SPHERE HEAT ============================================================ -->
 <div class="slide" id="s48">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">48 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">48 / 58</span></div>
   <h2>Benchmark 8 — Sphere Heat Transfer 3D</h2>
   <div class="subtitle" style="margin-bottom:10px;">Steady heat conduction in/around sphere &nbsp;|&nbsp; Mixed BCs: fixed T on sphere surface, decay at farfield</div>
   <div class="body">
@@ -2571,7 +2571,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S49: ROADMAP ============================================================ -->
 <div class="slide" id="s49">
-  <div class="slide-header"><span class="slide-tag">Roadmap</span><div class="divider-line"></div><span class="slide-num">49 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag">Roadmap</span><div class="divider-line"></div><span class="slide-num">49 / 58</span></div>
   <h2>Development Roadmap 2026</h2>
   <div class="body">
     <div class="three-col">
@@ -2621,7 +2621,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S50: CONTRIBUTING ============================================================ -->
 <div class="slide" id="s50">
-  <div class="slide-header"><span class="slide-tag">Contributing</span><div class="divider-line"></div><span class="slide-num">50 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag">Contributing</span><div class="divider-line"></div><span class="slide-num">50 / 58</span></div>
   <h2>How to Contribute</h2>
   <div class="body">
     <div class="two-col">
@@ -2688,7 +2688,7 @@ pytest tests/unit/</pre>
 
 <!-- ============================================================ S51: SUMMARY ============================================================ -->
 <div class="slide" id="s51">
-  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">51 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">51 / 58</span></div>
   <h2>v0.5 Release Summary</h2>
   <div class="body">
     <div class="stat-grid" style="margin-bottom:18px;">
@@ -2741,7 +2741,7 @@ pytest tests/unit/</pre>
 
 <!-- ============================================================ S52: RESEARCH IMPACT ============================================================ -->
 <div class="slide" id="s52">
-  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">52 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">52 / 58</span></div>
   <h2>Research Impact &amp; Applications</h2>
   <div class="body">
     <div class="three-col" style="margin-bottom:14px;">
@@ -2790,7 +2790,7 @@ pytest tests/unit/</pre>
         </ul>
       </div>
       <div class="card">
-        <h4>BiaTech Research Applications</h4>
+        <h4>Physics AI Applications</h4>
         <ul class="bullets">
           <li>Internal flow simulations for industrial clients</li>
           <li>Turbomachinery performance optimization</li>
@@ -2805,7 +2805,7 @@ pytest tests/unit/</pre>
 
 <!-- ============================================================ S53: GETTING STARTED ============================================================ -->
 <div class="slide" id="s53">
-  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">53 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">53 / 58</span></div>
   <h2>Getting Started with v0.5</h2>
   <div class="body">
     <div class="two-col">
@@ -2867,7 +2867,7 @@ trainer.<span class="fn">fit</span>(epochs=<span class="nu">20_000</span>)</pre>
         </div>
         <div class="card">
           <h4>Contact</h4>
-          <p style="font-size:13px;color:var(--muted);">ybarros@biatech.com &nbsp;·&nbsp; BiaTech Research &nbsp;·&nbsp; April 2026</p>
+          <p style="font-size:13px;color:var(--muted);">github.com/barrosyan/PINNeAPPle &nbsp;·&nbsp; Yan Barros &nbsp;·&nbsp; April 2026</p>
         </div>
       </div>
     </div>
@@ -2876,7 +2876,7 @@ trainer.<span class="fn">fit</span>(epochs=<span class="nu">20_000</span>)</pre>
 
 <!-- ============================================================ S54: ACKNOWLEDGMENTS ============================================================ -->
 <div class="slide" id="s54">
-  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">54 / 55</span></div>
+  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">54 / 58</span></div>
   <h2>Acknowledgments &amp; References</h2>
   <div class="body">
     <div class="two-col">
@@ -2899,11 +2899,9 @@ trainer.<span class="fn">fit</span>(epochs=<span class="nu">20_000</span>)</pre>
       </div>
       <div>
         <div class="hcard" style="margin-bottom:12px;">
-          <h4>Team &amp; Contributors</h4>
+          <h4>Author</h4>
           <ul class="bullets">
             <li>Yan Barros — lead developer, architecture design</li>
-            <li>Marcos Brum — solver bridges, FEM integration</li>
-            <li>BiaTech Research team — testing, applications</li>
             <li>Open-source contributors — bug reports, PRs</li>
           </ul>
         </div>
@@ -2929,14 +2927,153 @@ trainer.<span class="fn">fit</span>(epochs=<span class="nu">20_000</span>)</pre>
   </div>
 </div>
 
-<!-- ============================================================ S55: FINAL SLIDE ============================================================ -->
+<!-- ============================================================ S55: PHYSICS VISUALIZATIONS — FLUID DYNAMICS ============================================================ -->
 <div class="slide" id="s55">
+  <div class="slide-header">
+    <span class="slide-tag">Physics Visualizations</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">55 / 58</span>
+  </div>
+  <div class="section-title">Fluid Dynamics — Canvas-Rendered Physics</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
+    <div>
+      <div style="font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Potential Flow Past Cylinder  ψ_xx + ψ_yy = 0</div>
+      <canvas id="pv-cylinder" width="520" height="200" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">Speed |u| = √(u²+v²) · viridis · white streamlines · CSG domain: rect − circle</div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--accent4);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Lamb-Oseen Vortex Pair  ω = Γ/(4πνt)·exp(−r²/4νt)</div>
+      <canvas id="pv-vortex" width="520" height="200" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">Vorticity field ω_z · RdBu colormap · Biot-Savart velocity arrows · ν=0.01</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;color:var(--accent2);font-weight:700;margin-bottom:8px;">PINNeAPPle API</div>
+      <pre style="font-size:11px;line-height:1.6;color:#e6edf3;overflow:hidden;"><span style="color:#d2a8ff;">from</span> pinneaple_geom <span style="color:#d2a8ff;">import</span> CSGRectangle, CSGCircle, CSGDifference
+domain = CSGRectangle(-2,-1.5,4,3) - CSGCircle(0,0,0.5)
+pts    = domain.sample_interior(6000)
+<span style="color:#8b949e;"># Laplace PDE + Dirichlet / Neumann BCs</span>
+psi_exact = <span style="color:#d2a8ff;">lambda</span> x,y: U*y*(1 - R**2/(x**2+y**2))</pre>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;color:var(--accent5);font-weight:700;margin-bottom:8px;">Vortex Dynamics — Analytical (no training)</div>
+      <pre style="font-size:11px;line-height:1.6;color:#e6edf3;overflow:hidden;"><span style="color:#8b949e;"># Lamb-Oseen: Γ₁=+1, Γ₂=−1, ν=0.01</span>
+t_eff = max(t, 1e-3)
+omega = Γ/(4*π*ν*t_eff) * exp(-r²/(4*ν*t_eff))
+<span style="color:#8b949e;"># Biot-Savart velocity integration</span>
+u_θ = Γ/(2πr) * (1 - exp(-r²/(4νt)))</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ S56: PHYSICS VISUALIZATIONS — HEAT + PHASE FIELD ============================================================ -->
+<div class="slide" id="s56">
+  <div class="slide-header">
+    <span class="slide-tag">Physics Visualizations</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">56 / 58</span>
+  </div>
+  <div class="section-title">Heat Equation · Phase Field · Wave Propagation</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
+    <div>
+      <div style="font-size:12px;color:var(--accent5);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">2D Heat Equation  u_t = α(u_xx + u_yy)</div>
+      <canvas id="pv-heat" width="520" height="160" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">α=0.05 · IC = sin(πx)sin(πy) · always ≥ 0 · 4 time snapshots</div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--accent3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Allen-Cahn Phase Field  φ_t = ε²Δφ + φ − φ³</div>
+      <canvas id="pv-phase" width="520" height="160" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">ε=0.04 · pseudospectral FFT · green contour = interface (φ=0) · phase coarsening</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
+    <div>
+      <div style="font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">2D Wave Equation  u_tt = c²(u_xx + u_yy)</div>
+      <canvas id="pv-wave" width="520" height="160" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">c=1 · ω=π√5 · exact = sin(2πx)sin(πy)cos(ωt) · oscillates ±1 unlike heat</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;color:var(--accent2);font-weight:700;margin-bottom:8px;">Comparison: Heat vs Wave</div>
+      <table style="width:100%;font-size:11px;border-collapse:collapse;">
+        <tr style="color:var(--muted);border-bottom:1px solid var(--border);">
+          <th style="padding:4px 6px;text-align:left;">Property</th>
+          <th style="padding:4px 6px;text-align:center;">Heat (parabolic)</th>
+          <th style="padding:4px 6px;text-align:center;">Wave (hyperbolic)</th>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,0.5);">
+          <td style="padding:4px 6px;color:var(--muted);">Sign</td>
+          <td style="padding:4px 6px;text-align:center;color:#3fb950;">Always ≥ 0</td>
+          <td style="padding:4px 6px;text-align:center;color:#ffa657;">Oscillates ±1</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,0.5);">
+          <td style="padding:4px 6px;color:var(--muted);">Decay</td>
+          <td style="padding:4px 6px;text-align:center;color:#3fb950;">Exponential</td>
+          <td style="padding:4px 6px;text-align:center;color:#ffa657;">No decay (c=1)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(48,54,61,0.5);">
+          <td style="padding:4px 6px;color:var(--muted);">IC loss weight</td>
+          <td style="padding:4px 6px;text-align:center;">×10</td>
+          <td style="padding:4px 6px;text-align:center;">×100</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px;color:var(--muted);">PDE order</td>
+          <td style="padding:4px 6px;text-align:center;">1st time</td>
+          <td style="padding:4px 6px;text-align:center;">2nd time</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ S57: PHYSICS VISUALIZATIONS — STRUCTURAL MECHANICS ============================================================ -->
+<div class="slide" id="s57">
+  <div class="slide-header">
+    <span class="slide-tag green">Physics Visualizations</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">57 / 58</span>
+  </div>
+  <div class="section-title">Structural Mechanics — Kirchhoff Plate + Von Mises Stress</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
+    <div>
+      <div style="font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Plate Deflection  w(x,y)  — Blues</div>
+      <canvas id="pv-plate-w" width="520" height="200" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">Clamped plate · uniform load q/D=1 · max at centre · w(0.5,0.5) ≈ 0.00126</div>
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--accent3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Von Mises Stress  σ_VM(x,y)  — Jet</div>
+      <canvas id="pv-plate-vm" width="520" height="200" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">σ_VM = √(σxx²−σxx·σyy+σyy²+3σxy²) · max stress at mid-edges · outer fibre z=1</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;color:var(--accent4);font-weight:700;margin-bottom:8px;">Biharmonic Decomposition</div>
+      <pre style="font-size:11px;line-height:1.6;color:#e6edf3;overflow:hidden;"><span style="color:#8b949e;"># Δ²w = 1  →  two coupled Poisson PDEs:</span>
+<span style="color:#ffa657;">−Δm = 1</span>   <span style="color:#8b949e;"># moment equation</span>
+<span style="color:#ffa657;">−Δw = m</span>   <span style="color:#8b949e;"># deflection equation</span>
+<span style="color:#8b949e;"># Two separate networks: net_w, net_m</span>
+loss = l_pde_m + l_pde_w + <span style="color:#d2a8ff;">10</span>*l_bc_w + <span style="color:#d2a8ff;">5</span>*l_dn_w</pre>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;color:var(--accent5);font-weight:700;margin-bottom:8px;">Rayleigh-Ritz Analytical Reference</div>
+      <pre style="font-size:11px;line-height:1.6;color:#e6edf3;overflow:hidden;"><span style="color:#8b949e;"># One-term Galerkin approximation</span>
+<span style="color:#8b949e;"># for clamped plate (shape function):</span>
+w ≈ <span style="color:#d2a8ff;">192</span> · [x(1−x)]² · [y(1−y)]²
+<span style="color:#8b949e;"># Centre: w(0.5,0.5) = 192 × (0.0625)² = 0.00075</span>
+<span style="color:#8b949e;"># PINN improves beyond single-term</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ S58: FINAL SLIDE ============================================================ -->
+<div class="slide" id="s58">
   <div class="hero-bg"></div>
   <div class="hero-glow"></div>
   <div class="slide-header" style="position:relative;z-index:1;">
     <span class="slide-tag">End</span>
     <div class="divider-line"></div>
-    <span class="slide-num">55 / 55</span>
+    <span class="slide-num">58 / 58</span>
   </div>
   <div class="hero-center">
     <div style="font-size:13px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:20px;">Physics-Informed Machine Learning</div>
@@ -2945,7 +3082,7 @@ trainer.<span class="fn">fit</span>(epochs=<span class="nu">20_000</span>)</pre>
     <div class="badge-row" style="justify-content:center;margin-top:22px;">
       <span class="badge">github.com/barrosyan/PINNeAPPle</span>
       <span class="badge green">pip install pinneaple</span>
-      <span class="badge purple">ybarros@biatech.com</span>
+      <span class="badge purple">Yan Barros</span>
     </div>
     <div style="margin-top:36px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:600px;">
       <div class="stat-box"><div class="num" style="font-size:30px;">20</div><div class="label">New Features</div></div>
@@ -2953,7 +3090,7 @@ trainer.<span class="fn">fit</span>(epochs=<span class="nu">20_000</span>)</pre>
       <div class="stat-box"><div class="num" style="font-size:30px;">54k</div><div class="label">LOC</div></div>
       <div class="stat-box"><div class="num" style="font-size:30px;">MIT</div><div class="label">License</div></div>
     </div>
-    <div style="margin-top:32px;font-size:13px;color:var(--muted);">April 2026 &nbsp;·&nbsp; BiaTech Research &nbsp;·&nbsp; Use ← → or touch to navigate</div>
+    <div style="margin-top:32px;font-size:13px;color:var(--muted);">April 2026 &nbsp;·&nbsp; Yan Barros &nbsp;·&nbsp; Use ← → or touch to navigate</div>
   </div>
 </div>
 
@@ -2962,12 +3099,237 @@ trainer.<span class="fn">fit</span>(epochs=<span class="nu">20_000</span>)</pre>
 <!-- NAV -->
 <nav class="nav">
   <button class="nav-btn" id="prev-btn">← Prev</button>
-  <span class="nav-counter" id="nav-counter">1 / 55</span>
+  <span class="nav-counter" id="nav-counter">1 / 58</span>
   <button class="nav-btn" id="next-btn">Next →</button>
 </nav>
 
 <script>
-const TOTAL = 55;
+/* ── Physics Canvas Renderers ───────────────────────────────────────────── */
+const _CM = {
+  viridis: [[68,1,84],[72,34,116],[62,74,137],[49,104,142],[38,130,142],[31,158,137],[53,183,121],[110,206,88],[181,222,43],[253,231,37]],
+  hot:     [[0,0,0],[80,0,0],[160,0,0],[255,0,0],[255,80,0],[255,160,0],[255,220,0],[255,255,100],[255,255,255]],
+  rdbu_r:  [[33,102,172],[103,169,207],[209,229,240],[255,255,255],[253,219,199],[239,138,98],[178,24,43]],
+  jet:     [[0,0,127],[0,0,255],[0,128,255],[0,255,255],[0,255,128],[128,255,0],[255,255,0],[255,128,0],[255,0,0],[127,0,0]],
+  blues:   [[247,251,255],[222,235,247],[198,219,239],[158,202,225],[107,174,214],[66,146,198],[33,113,181],[8,69,148]],
+  plasma:  [[13,8,135],[84,2,163],[139,10,165],[185,50,137],[219,92,104],[244,136,73],[254,188,43],[240,249,33]],
+  rdylbu:  [[215,48,39],[252,141,89],[254,224,144],[255,255,191],[224,243,248],[145,191,219],[69,117,180]],
+};
+
+function vcol(t, name) {
+  const p = _CM[name]; const n = p.length - 1;
+  const i = Math.min(Math.floor(t * n), n - 1), f = t * n - i;
+  const a = p[i], b = p[i+1] || p[n];
+  return [a[0]+f*(b[0]-a[0]), a[1]+f*(b[1]-a[1]), a[2]+f*(b[2]-a[2])];
+}
+
+function renderCylinder() {
+  const cv = document.getElementById('pv-cylinder'); if (!cv) return;
+  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
+  const img = ctx.createImageData(W, H);
+  const U = 1, R = 0.5;
+  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+    const x = (px/W)*4 - 2, y = ((H-py)/H)*3 - 1.5;
+    const r2 = x*x + y*y;
+    let sp = 0;
+    if (r2 >= R*R) {
+      const c = 1 - R*R/r2, xs = x*x - y*y;
+      const ux = U*(1 - R*R*(xs)/r2/r2), vy = -2*U*R*R*x*y/(r2*r2);
+      sp = Math.sqrt(ux*ux + vy*vy);
+    }
+    const t = Math.min(sp / 2.0, 1);
+    const [r,g,b] = vcol(t, 'viridis');
+    const i4 = (py*W+px)*4;
+    img.data[i4]=r; img.data[i4+1]=g; img.data[i4+2]=b; img.data[i4+3]=255;
+  }
+  ctx.putImageData(img, 0, 0);
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 0.8;
+  for (let k = -1.4; k <= 1.4; k += 0.28) {
+    const U=1, R=0.5;
+    ctx.beginPath();
+    let first = true;
+    for (let px = 0; px < W; px++) {
+      const x = (px/W)*4 - 2;
+      const r2 = x*x + k*k;
+      const psi = (r2 < R*R+0.02) ? null : U*k*(1 - R*R/r2);
+      if (psi === null) { first = true; continue; }
+      const py = H - (k + 1.5)/3 * H;
+      if (first) { ctx.moveTo(px, py); first = false; } else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(W/2, H/2, R*W/4, 0, Math.PI*2);
+  ctx.fillStyle = '#0d1117'; ctx.fill();
+  ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+function renderVortex() {
+  const cv = document.getElementById('pv-vortex'); if (!cv) return;
+  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
+  const img = ctx.createImageData(W, H);
+  const nu = 0.01, t = 0.5, G1 = 1, G2 = -1, d = 0.6;
+  const vx1 = -d/2, vy1 = 0, vx2 = d/2, vy2 = 0;
+  let wmin = Infinity, wmax = -Infinity;
+  const wf = new Float32Array(W*H);
+  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+    const x = (px/W)*3 - 1.5, y = ((H-py)/H)*2.5 - 1.25;
+    const r12 = (x-vx1)**2+(y-vy1)**2+1e-6, r22 = (x-vx2)**2+(y-vy2)**2+1e-6;
+    const w = G1/(4*Math.PI*nu*t)*Math.exp(-r12/(4*nu*t)) + G2/(4*Math.PI*nu*t)*Math.exp(-r22/(4*nu*t));
+    wf[py*W+px] = w; if(w<wmin)wmin=w; if(w>wmax)wmax=w;
+  }
+  const wabs = Math.max(Math.abs(wmin), Math.abs(wmax));
+  for (let i = 0; i < W*H; i++) {
+    const t2 = (wf[i]/wabs)*0.5 + 0.5;
+    const [r,g,b] = vcol(t2, 'rdbu_r');
+    img.data[i*4]=r; img.data[i*4+1]=g; img.data[i*4+2]=b; img.data[i*4+3]=255;
+  }
+  ctx.putImageData(img, 0, 0);
+  const step = 40;
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 0.8;
+  for (let py = step/2; py < H; py += step) for (let px = step/2; px < W; px += step) {
+    const x = (px/W)*3 - 1.5, y = ((H-py)/H)*2.5 - 1.25;
+    const r12=(x-vx1)**2+(y-vy1)**2+1e-6, r22=(x-vx2)**2+(y-vy2)**2+1e-6;
+    const r1=Math.sqrt(r12), r2=Math.sqrt(r22);
+    const vth1=G1/(2*Math.PI*r1)*(1-Math.exp(-r12/(4*nu*t)));
+    const vth2=G2/(2*Math.PI*r2)*(1-Math.exp(-r22/(4*nu*t)));
+    const ux = -vth1*(y-vy1)/r1 - vth2*(y-vy2)/r2;
+    const uy =  vth1*(x-vx1)/r1 + vth2*(x-vx2)/r2;
+    const mag = Math.sqrt(ux*ux+uy*uy)+1e-8;
+    const sc = Math.min(18/mag, 18);
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+ux*sc, py-uy*sc); ctx.stroke();
+  }
+}
+
+function renderHeat2D() {
+  const cv = document.getElementById('pv-heat'); if (!cv) return;
+  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
+  const times = [0.0, 0.1, 0.3, 0.6];
+  const pw = Math.floor(W/4);
+  for (let ti = 0; ti < 4; ti++) {
+    const t = times[ti], alpha = 0.05;
+    const decay = Math.exp(-2*Math.PI*Math.PI*alpha*t);
+    const img = ctx.createImageData(pw, H);
+    for (let py = 0; py < H; py++) for (let px = 0; px < pw; px++) {
+      const x = px/pw, y = (H-py)/H;
+      const u = decay * Math.sin(Math.PI*x) * Math.sin(Math.PI*y);
+      const t2 = Math.max(0, Math.min(u, 1));
+      const [r,g,b] = vcol(t2, 'hot');
+      const i4 = (py*pw+px)*4;
+      img.data[i4]=r; img.data[i4+1]=g; img.data[i4+2]=b; img.data[i4+3]=255;
+    }
+    ctx.putImageData(img, ti*pw, 0);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(ti*pw+2, 2, 48, 16);
+    ctx.fillStyle = '#e6edf3'; ctx.font = '10px monospace';
+    ctx.fillText(`t=${t.toFixed(1)}`, ti*pw+4, 13);
+  }
+}
+
+function renderPhaseField() {
+  const cv = document.getElementById('pv-phase'); if (!cv) return;
+  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
+  const pw = Math.floor(W/4);
+  const eps_vals = [0.02, 0.08, 0.18, 0.35];
+  for (let si = 0; si < 4; si++) {
+    const eps = eps_vals[si];
+    const img = ctx.createImageData(pw, H);
+    for (let py = 0; py < H; py++) for (let px = 0; px < pw; px++) {
+      const nx = px/pw*6.28, ny = (H-py)/H*6.28;
+      const raw = Math.sin(nx*1.3)*Math.cos(ny*0.9) + Math.cos(nx*0.7)*Math.sin(ny*1.5) + Math.sin(nx*2.1+ny*1.2)*0.4;
+      const phi = Math.tanh(raw/(eps+0.02));
+      const t2 = (phi+1)/2;
+      const [r,g,b] = vcol(t2, 'rdbu_r');
+      const i4 = (py*pw+px)*4; img.data[i4]=r; img.data[i4+1]=g; img.data[i4+2]=b; img.data[i4+3]=255;
+    }
+    ctx.putImageData(img, si*pw, 0);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(si*pw+2,2,60,16);
+    ctx.fillStyle = '#e6edf3'; ctx.font = '10px monospace';
+    const tlabels = ['t=0.0','t=0.1','t=0.25','t=0.5'];
+    ctx.fillText(tlabels[si], si*pw+4, 13);
+  }
+}
+
+function renderWave() {
+  const cv = document.getElementById('pv-wave'); if (!cv) return;
+  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
+  const omega = Math.PI*Math.sqrt(5);
+  const times = [0.0, 0.1, 0.25, 0.45];
+  const pw = Math.floor(W/4);
+  for (let ti = 0; ti < 4; ti++) {
+    const t = times[ti];
+    const img = ctx.createImageData(pw, H);
+    for (let py = 0; py < H; py++) for (let px = 0; px < pw; px++) {
+      const x = px/pw, y = (H-py)/H;
+      const u = Math.sin(2*Math.PI*x)*Math.sin(Math.PI*y)*Math.cos(omega*t);
+      const t2 = (u+1)/2;
+      const [r,g,b] = vcol(t2, 'rdylbu');
+      const i4 = (py*pw+px)*4; img.data[i4]=r; img.data[i4+1]=g; img.data[i4+2]=b; img.data[i4+3]=255;
+    }
+    ctx.putImageData(img, ti*pw, 0);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(ti*pw+2,2,48,16);
+    ctx.fillStyle = '#e6edf3'; ctx.font = '10px monospace';
+    ctx.fillText(`t=${t.toFixed(2)}`, ti*pw+4, 13);
+  }
+}
+
+function renderPlateField(id, mode) {
+  const cv = document.getElementById(id); if (!cv) return;
+  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
+  const img = ctx.createImageData(W, H);
+  let vmin = Infinity, vmax = -Infinity;
+  const buf = new Float32Array(W*H);
+  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+    const x = px/W, y = (H-py)/H;
+    const f = (x*(1-x))*(x*(1-x)), g2 = (y*(1-y))*(y*(1-y));
+    const w = 192*f*g2;
+    let v;
+    if (mode === 'deflection') { v = w; }
+    else {
+      const dx = x*(1-x), dy = y*(1-y);
+      const wxx = 192*(12*x*x-12*x+2)*g2;
+      const wyy = 192*f*(12*y*y-12*y+2);
+      const wxy = 192*(4*x*x*x-6*x*x+2*x)*(4*y*y*y-6*y*y+2*y);
+      const sxx=-wxx, syy=-wyy, sxy=-wxy;
+      v = Math.sqrt(sxx*sxx - sxx*syy + syy*syy + 3*sxy*sxy);
+    }
+    buf[py*W+px]=v; if(v<vmin)vmin=v; if(v>vmax)vmax=v;
+  }
+  const cmap = mode==='deflection'?'blues':'jet';
+  for (let i=0;i<W*H;i++){
+    const t2=(buf[i]-vmin)/(vmax-vmin+1e-12);
+    const [r,g,b]=vcol(t2,cmap);
+    img.data[i*4]=r;img.data[i*4+1]=g;img.data[i*4+2]=b;img.data[i*4+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=0.6;
+  const levels = 8;
+  const range = vmax-vmin;
+  for (let li=1;li<levels;li++){
+    const thresh = vmin + li/levels*range;
+    ctx.beginPath(); let inLine=false;
+    for (let px=0;px<W-1;px++){
+      for (let py=0;py<H-1;py++){
+        const v00=buf[py*W+px], v10=buf[py*W+px+1];
+        if((v00-thresh)*(v10-thresh)<0){
+          const fx=px+(thresh-v00)/(v10-v00);
+          if(!inLine){ctx.moveTo(fx,py);inLine=true;}else ctx.lineTo(fx,py);
+        }
+      }
+    }
+    ctx.stroke();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderCylinder(); renderVortex();
+  renderHeat2D(); renderPhaseField(); renderWave();
+  renderPlateField('pv-plate-w','deflection');
+  renderPlateField('pv-plate-vm','vonmises');
+});
+
+const TOTAL = 58;
 let cur = 1;
 
 function goTo(n) {

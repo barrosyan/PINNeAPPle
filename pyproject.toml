@@ -185,6 +185,7 @@ pinneaple = "pinneaple_pdb.cli:main"
 packages = [
   "pinneaple",
   "pinneaple_arena",
+  "pinneaple_learning",
   "pinneaple_symbolic",
   "pinneaple_capabilities",
   "pinneaple_data",

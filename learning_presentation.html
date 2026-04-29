@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PINNeAPPle — Learning Course</title>
+<style>
+:root {
+  --bg:#0d1117; --surface:#161b22; --surface2:#1c2330; --border:#30363d;
+  --accent:#58a6ff; --accent2:#3fb950; --accent3:#f78166; --accent4:#d2a8ff; --accent5:#ffa657;
+  --text:#e6edf3; --muted:#8b949e; --tier1:#58a6ff; --tier2:#ffa657; --tier3:#3fb950; --nemo:#d2a8ff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;height:100vh;overflow:hidden;user-select:none;}
+
+#progress-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#58a6ff,#ffa657,#3fb950,#d2a8ff);transition:width .3s ease;z-index:1000;}
+.deck{width:100vw;height:100vh;position:relative;}
+.slide{position:absolute;inset:0;display:none;flex-direction:column;padding:44px 64px 68px;overflow-y:auto;scroll-behavior:smooth;animation:fadeIn .22s ease;}
+.slide.active{display:flex;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+/* header pin */
+.slide-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;position:sticky;top:-44px;background:var(--bg);z-index:5;padding-top:44px;margin-top:-44px;padding-bottom:10px;}
+.slide-tag{font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent);background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.3);border-radius:4px;padding:3px 8px;white-space:nowrap;}
+.slide-tag.t1{color:var(--tier1);background:rgba(88,166,255,.1);border-color:rgba(88,166,255,.3);}
+.slide-tag.t2{color:var(--tier2);background:rgba(255,166,87,.1);border-color:rgba(255,166,87,.3);}
+.slide-tag.t3{color:var(--tier3);background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.3);}
+.slide-tag.nemo{color:var(--nemo);background:rgba(210,168,255,.1);border-color:rgba(210,168,255,.3);}
+.slide-tag.green{color:var(--accent2);background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.3);}
+.slide-tag.orange{color:var(--accent5);background:rgba(255,166,87,.1);border-color:rgba(255,166,87,.3);}
+.divider-line{flex:1;height:1px;background:var(--border);}
+.slide-num{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;}
+
+h1{font-size:50px;font-weight:800;line-height:1.1;letter-spacing:-1.5px;}
+h2{font-size:27px;font-weight:700;line-height:1.2;margin-bottom:8px;}
+h3{font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;text-transform:uppercase;letter-spacing:.9px;}
+.subtitle{font-size:16px;color:var(--muted);margin-top:6px;line-height:1.55;}
+.body{flex:1;overflow:visible;display:flex;flex-direction:column;gap:14px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.four-col{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+.card h4{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;}
+.card p,.card li{font-size:13px;color:var(--muted);line-height:1.65;}
+.card ul{list-style:none;padding:0;}
+.card ul li::before{content:"→ ";color:var(--accent2);}
+.hcard{background:linear-gradient(135deg,rgba(88,166,255,.07) 0%,rgba(210,168,255,.05) 100%);border:1px solid rgba(88,166,255,.22);border-radius:10px;padding:16px 20px;}
+.hcard h4{font-size:13px;color:var(--accent);font-weight:700;margin-bottom:8px;}
+
+ul.bullets{list-style:none;padding:0;display:flex;flex-direction:column;gap:8px;}
+ul.bullets li{font-size:13.5px;line-height:1.6;color:var(--text);padding-left:20px;position:relative;}
+ul.bullets li::before{content:"▸";position:absolute;left:0;color:var(--accent);}
+
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(88,166,255,.12);color:var(--accent);border:1px solid rgba(88,166,255,.25);}
+.badge.green{background:rgba(63,185,80,.12);color:var(--accent2);border-color:rgba(63,185,80,.25);}
+.badge.purple{background:rgba(210,168,255,.12);color:var(--accent4);border-color:rgba(210,168,255,.25);}
+.badge.orange{background:rgba(255,166,87,.12);color:var(--accent5);border-color:rgba(255,166,87,.25);}
+.badge.red{background:rgba(247,129,102,.12);color:var(--accent3);border-color:rgba(247,129,102,.25);}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center;}
+.stat-box .num{font-size:34px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent4));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.stat-box .label{font-size:11px;color:var(--muted);margin-top:5px;font-weight:600;letter-spacing:.5px;}
+
+pre{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:"SF Mono","Fira Code","Cascadia Code",monospace;font-size:12px;line-height:1.72;overflow-x:auto;white-space:pre;}
+.kw{color:#ff7b72;}.fn{color:#d2a8ff;}.st{color:#a5d6ff;}.cm{color:#8b949e;font-style:italic;}
+.nu{color:#79c0ff;}.op{color:#ffa657;}.cl{color:#ffa657;}.at{color:#79c0ff;}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--surface2);color:var(--accent);font-weight:700;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;letter-spacing:.6px;text-transform:uppercase;}
+td{padding:7px 12px;border-bottom:1px solid rgba(48,54,61,.5);color:var(--text);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(88,166,255,.04);}
+.ck{color:var(--accent2);font-weight:700;}.xx{color:var(--muted);}.pp{color:var(--accent5);}
+
+.metric-row{display:flex;gap:12px;flex-wrap:wrap;}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;flex:1;min-width:120px;text-align:center;}
+.metric .val{font-size:26px;font-weight:800;line-height:1;}
+.metric .lbl{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.5px;}
+
+/* Tier color blocks */
+.tier-block{border-radius:10px;padding:16px 18px;border:1px solid;}
+.tier-block.t1{background:rgba(88,166,255,.06);border-color:rgba(88,166,255,.25);}
+.tier-block.t2{background:rgba(255,166,87,.06);border-color:rgba(255,166,87,.25);}
+.tier-block.t3{background:rgba(63,185,80,.06);border-color:rgba(63,185,80,.25);}
+.tier-block.nemo{background:rgba(210,168,255,.06);border-color:rgba(210,168,255,.25);}
+.tier-block h4{font-size:13px;font-weight:700;margin-bottom:8px;}
+.tier-block.t1 h4{color:var(--tier1);}.tier-block.t2 h4{color:var(--tier2);}
+.tier-block.t3 h4{color:var(--tier3);}.tier-block.nemo h4{color:var(--nemo);}
+
+/* Lesson card */
+.lesson-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px 16px;display:flex;gap:14px;align-items:flex-start;}
+.lesson-num{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;}
+.lesson-num.t1{background:rgba(88,166,255,.15);color:var(--tier1);}
+.lesson-num.t2{background:rgba(255,166,87,.15);color:var(--tier2);}
+.lesson-num.t3{background:rgba(63,185,80,.15);color:var(--tier3);}
+.lesson-num.nemo{background:rgba(210,168,255,.15);color:var(--nemo);}
+.lesson-body strong{font-size:13px;color:var(--text);display:block;margin-bottom:3px;}
+.lesson-body p{font-size:12px;color:var(--muted);}
+
+/* Result chart mock */
+.chart-area{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;position:relative;overflow:hidden;}
+.chart-area h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:90px;padding:0 4px;}
+.bar{flex:1;border-radius:3px 3px 0 0;position:relative;min-width:20px;}
+.bar::after{content:attr(data-val);position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text);white-space:nowrap;}
+.bar-label{font-size:9px;color:var(--muted);text-align:center;margin-top:4px;letter-spacing:.3px;}
+.bar-wrap{display:flex;flex-direction:column;}
+.loss-curve{height:70px;background:transparent;position:relative;overflow:hidden;}
+.loss-curve svg{width:100%;height:100%;}
+
+/* Flow / steps */
+.step-flow{display:flex;flex-direction:column;gap:0;}
+.step-item{display:flex;gap:14px;align-items:flex-start;position:relative;}
+.step-item:not(:last-child)::after{content:"";position:absolute;left:14px;top:32px;width:2px;height:calc(100% - 4px);background:var(--border);}
+.step-dot{width:30px;height:30px;border-radius:50%;background:rgba(88,166,255,.14);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0;}
+.step-content{padding-top:5px;padding-bottom:14px;}
+.step-content strong{font-size:13px;color:var(--text);}
+.step-content p{font-size:12px;color:var(--muted);margin-top:2px;}
+
+/* Comparison table accent */
+.better{color:var(--accent2);font-weight:700;}
+.worse{color:var(--accent3);}
+.same{color:var(--muted);}
+
+/* Nav */
+.nav{position:fixed;bottom:0;left:0;right:0;height:46px;background:rgba(22,27,34,.96);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;backdrop-filter:blur(12px);z-index:999;}
+.nav-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:5px 16px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;transition:all .15s;}
+.nav-btn:hover{background:var(--surface2);border-color:var(--accent);color:var(--accent);}
+.nav-counter{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;}
+
+/* Hero */
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 40%,rgba(88,166,255,.1) 0%,rgba(210,168,255,.05) 50%,transparent 80%);pointer-events:none;}
+.hero-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;z-index:1;}
+.hero-title{font-size:72px;font-weight:900;letter-spacing:-2.5px;line-height:1;background:linear-gradient(135deg,#58a6ff 0%,#d2a8ff 50%,#ffa657 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:19px;color:var(--muted);margin-top:14px;max-width:600px;line-height:1.5;}
+
+/* result mockup */
+.result-plot{background:linear-gradient(135deg,var(--surface) 0%,var(--surface2) 100%);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;overflow:hidden;}
+.result-plot .plot-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+.sparkline{height:60px;position:relative;}
+.sparkline svg{width:100%;height:60px;overflow:visible;}
+
+/* Section intro */
+.section-intro{border-radius:10px;padding:14px 18px;background:linear-gradient(135deg,rgba(88,166,255,.06),rgba(210,168,255,.04));border:1px solid rgba(88,166,255,.15);margin-bottom:6px;}
+.section-intro p{font-size:13px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+<div class="deck">
+
+<!-- ========== S1: TITLE ========== -->
+<div class="slide active" id="s1">
+  <div class="hero-bg"></div>
+  <div class="slide-header">
+    <span class="slide-tag">PINNeAPPle Learning</span>
+    <div class="divider-line"></div>
+    <span class="slide-num">1 / 20</span>
+  </div>
+  <div class="hero-center">
+    <div style="font-size:12px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:14px;">Physics AI — Step by Step</div>
+    <div class="hero-title">Physics AI Course</div>
+    <div style="font-size:28px;font-weight:800;color:var(--accent4);letter-spacing:-0.8px;margin-top:4px;">with PINNeAPPle</div>
+    <div class="hero-sub">12 lessons · From your first PINN to NVIDIA PhysicsNeMo<br>Hands-on code · Real physics · Production-ready workflow</div>
+    <div class="badge-row" style="justify-content:center;margin-top:16px;">
+      <span class="badge t1" style="color:var(--tier1)">Tier 1 — Explorer</span>
+      <span class="badge orange">Tier 2 — Experimenter</span>
+      <span class="badge green">Tier 3 — Builder</span>
+      <span class="badge purple">→ PhysicsNeMo</span>
+    </div>
+    <div class="stat-grid" style="margin-top:28px;max-width:620px;">
+      <div class="stat-box"><div class="num">12</div><div class="label">Lessons</div></div>
+      <div class="stat-box"><div class="num">8</div><div class="label">PDE Problems</div></div>
+      <div class="stat-box"><div class="num" style="font-size:28px;">10+</div><div class="label">PINNeAPPle APIs</div></div>
+      <div class="stat-box"><div class="num">1</div><div class="label">Destination</div></div>
+    </div>
+  </div>
+  <div style="text-align:center;font-size:12px;color:var(--muted);position:relative;z-index:1;">April 2026 · Yan Barros · <code style="color:var(--accent);">python -m pinneaple_learning.course.lesson_01_first_pinn</code></div>
+</div>
+
+<!-- ========== S2: LEARNING PATH ========== -->
+<div class="slide" id="s2">
+  <div class="slide-header"><span class="slide-tag">Overview</span><div class="divider-line"></div><span class="slide-num">2 / 20</span></div>
+  <h2>The Learning Path</h2>
+  <div class="subtitle" style="margin-bottom:14px;">Three progressive tiers — each one builds on the previous. PhysicsNeMo is the destination.</div>
+  <div class="body">
+    <div class="four-col">
+      <div class="tier-block t1">
+        <h4>Tier 1 — Explorer</h4>
+        <ul class="bullets" style="font-size:12px;">
+          <li>Lesson 01 — First PINN</li>
+          <li>Lesson 02 — Loss functions</li>
+          <li>Lesson 03 — Heat equation</li>
+          <li>Lesson 04 — Geometry CSG</li>
+          <li>Lesson 05 — 2D Poisson</li>
+        </ul>
+        <div class="badge-row" style="margin-top:10px;"><span class="badge" style="color:var(--tier1);border-color:rgba(88,166,255,.3);">SymbolicPDE · HardBC</span></div>
+      </div>
+      <div class="tier-block t2">
+        <h4>Tier 2 — Experimenter</h4>
+        <ul class="bullets" style="font-size:12px;">
+          <li>Lesson 06 — Architectures</li>
+          <li>Lesson 07 — Inverse problem</li>
+          <li>Lesson 08 — UQ</li>
+          <li>Lesson 09 — Time marching</li>
+        </ul>
+        <div class="badge-row" style="margin-top:10px;"><span class="badge orange">SIREN · EKI · Ensemble</span></div>
+      </div>
+      <div class="tier-block t3">
+        <h4>Tier 3 — Builder</h4>
+        <ul class="bullets" style="font-size:12px;">
+          <li>Lesson 10 — Validation</li>
+          <li>Lesson 11 — Operators</li>
+          <li>Lesson 12 — Production</li>
+        </ul>
+        <div class="badge-row" style="margin-top:10px;"><span class="badge green">PhysicsValidator · ONNX</span></div>
+      </div>
+      <div class="tier-block nemo">
+        <h4>→ PhysicsNeMo</h4>
+        <ul class="bullets" style="font-size:12px;">
+          <li>Multi-GPU training</li>
+          <li>Triton Inference</li>
+          <li>NVIDIA Omniverse</li>
+          <li>Enterprise support</li>
+        </ul>
+        <div class="badge-row" style="margin-top:10px;"><span class="badge purple">Production · Scale</span></div>
+      </div>
+    </div>
+    <div class="hcard">
+      <h4>How to run the course</h4>
+      <pre style="margin-top:4px;"><span class="kw">import</span> pinneaple_learning.course <span class="kw">as</span> course
+course.<span class="fn">list_lessons</span>()       <span class="cm"># show all 12 lessons</span>
+course.<span class="fn">run_lesson</span>(<span class="nu">1</span>)        <span class="cm"># run lesson 1 interactively</span>
+
+<span class="cm"># Or from terminal:</span>
+<span class="cm"># python -m pinneaple_learning.course.lesson_01_first_pinn</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S3: LESSON 01 ========== -->
+<div class="slide" id="s3">
+  <div class="slide-header"><span class="slide-tag t1">Lesson 01</span><div class="divider-line"></div><span class="slide-num">3 / 20</span></div>
+  <h2>Your First PINN — Harmonic Oscillator</h2>
+  <div class="subtitle" style="margin-bottom:12px;">x″(t) + ω²x(t) = 0 &nbsp;·&nbsp; x(0)=1, x′(0)=0 &nbsp;·&nbsp; Exact: cos(ωt)</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>Key PINNeAPPle APIs</h4>
+          <pre><span class="kw">from</span> pinneaple_symbolic <span class="kw">import</span> <span class="cl">SymbolicPDE</span>, <span class="cl">HardBC</span>
+<span class="kw">import</span> sympy <span class="kw">as</span> sp
+
+<span class="cm"># Step 1 — Define PDE symbolically</span>
+t, x = sp.<span class="fn">Symbol</span>(<span class="st">'t'</span>), sp.<span class="fn">Function</span>(<span class="st">'x'</span>)
+pde = <span class="cl">SymbolicPDE</span>(
+    expr       = x(t).diff(t,<span class="nu">2</span>) + omega**<span class="nu">2</span> * x(t),
+    coord_syms = [t], field_syms = [x],
+)
+residual_fn = pde.<span class="fn">to_residual_fn</span>(net)
+
+<span class="cm"># Step 2 — Hard-enforce IC: x(0)=1 via ansatz</span>
+<span class="cm">#          x_wrapped(t) = 1 + t·net(t)  → always 1 at t=0</span>
+hard_ic = <span class="cl">HardBC</span>(
+    distance_fn = <span class="kw">lambda</span> t: t,
+    bc_value_fn = <span class="kw">lambda</span> t: torch.<span class="fn">ones_like</span>(t),
+)
+net_wrapped = hard_ic.<span class="fn">wrap_model</span>(net)
+
+<span class="cm"># Step 3 — Training loss (position IC enforced for free)</span>
+r       = residual_fn(t_col)         <span class="cm"># PDE residual</span>
+loss_vel = (xd_at_0 - <span class="nu">0</span>).<span class="fn">pow</span>(<span class="nu">2</span>)     <span class="cm"># velocity IC only</span>
+loss = r.<span class="fn">pow</span>(<span class="nu">2</span>).<span class="fn">mean</span>() + <span class="nu">200</span> * loss_vel</pre>
+        </div>
+        <div class="card">
+          <h4>What SymbolicPDE does for you</h4>
+          <ul class="bullets" style="font-size:12px;">
+            <li>Write the PDE once in SymPy — no manual autograd chains</li>
+            <li><code style="color:var(--accent4)">to_residual_fn(net)</code> returns a closure that evaluates F[u_θ]</li>
+            <li>Works for any ODE/PDE expressible in SymPy</li>
+            <li>HardBC removes L_pos entirely — one fewer hyperparameter</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="result-plot" style="margin-bottom:12px;">
+          <div class="plot-title">Lesson 01 result — ω=2, T=4π</div>
+          <!-- SVG mock of cos(ωt) vs PINN prediction -->
+          <svg viewBox="0 0 300 120" style="width:100%;height:130px;">
+            <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#58a6ff"/><stop offset="100%" stop-color="#d2a8ff"/></linearGradient></defs>
+            <!-- axes -->
+            <line x1="20" y1="100" x2="290" y2="100" stroke="#30363d" stroke-width="1"/>
+            <line x1="20" y1="10" x2="20" y2="100" stroke="#30363d" stroke-width="1"/>
+            <!-- exact cos(2t) — 2 full periods over 0..4π≈12.57 -->
+            <path d="M20,55 C40,15 60,95 80,55 C100,15 120,95 140,55 C160,15 180,95 200,55 C220,15 240,95 260,55 C280,15 290,55 290,55" stroke="#e6edf3" stroke-width="2" fill="none"/>
+            <!-- PINN dashed -->
+            <path d="M20,55 C41,17 61,93 81,56 C101,16 121,94 141,56 C161,16 181,94 201,57 C221,17 241,93 261,56 C281,16 290,56 290,56" stroke="url(#g1)" stroke-width="1.5" fill="none" stroke-dasharray="5,3"/>
+            <text x="22" y="115" fill="#8b949e" font-size="9">0</text>
+            <text x="270" y="115" fill="#8b949e" font-size="9">4π</text>
+            <text x="22" y="19" fill="#e6edf3" font-size="9">exact</text>
+            <text x="60" y="19" fill="url(#g1)" font-size="9">PINN</text>
+          </svg>
+        </div>
+        <div class="metric-row">
+          <div class="metric"><div class="val" style="color:var(--accent2);">1.2e-3</div><div class="lbl">Relative L2</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent);">8k</div><div class="lbl">Epochs</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent4);">0</div><div class="lbl">IC Error (Hard)</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent5);">2</div><div class="lbl">Loss Terms</div></div>
+        </div>
+        <div class="card" style="margin-top:10px;">
+          <h4>Manual vs PINNeAPPle</h4>
+          <table>
+            <tr><th>Aspect</th><th>Manual PyTorch</th><th>PINNeAPPle</th></tr>
+            <tr><td>PDE residual</td><td class="same">Manual autograd</td><td class="better">SymbolicPDE</td></tr>
+            <tr><td>IC x(0)=1</td><td class="worse">Penalty term λ·(u0-1)²</td><td class="better">HardBC — exact</td></tr>
+            <tr><td>Loss terms</td><td class="same">3 terms</td><td class="better">2 terms</td></tr>
+            <tr><td>Hyperparams</td><td class="worse">λ_pos + λ_vel</td><td class="better">λ_vel only</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S4: LESSON 02-03 ========== -->
+<div class="slide" id="s4">
+  <div class="slide-header"><span class="slide-tag t1">Lessons 02–03</span><div class="divider-line"></div><span class="slide-num">4 / 20</span></div>
+  <h2>Loss Anatomy + Heat Equation Forward Solve</h2>
+  <div class="subtitle" style="margin-bottom:12px;">Understanding what each term does · TwoPhaseTrainer · compare_to_analytical</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>Lesson 02 — Loss Function Anatomy</h4>
+          <pre><span class="kw">from</span> pinneaple_symbolic <span class="kw">import</span> <span class="cl">DirichletBC</span>
+<span class="kw">from</span> pinneaple_train    <span class="kw">import</span> <span class="cl">SelfAdaptiveWeights</span>
+
+<span class="cm"># Manual weights — needs tuning</span>
+loss = l_pde + <span class="nu">10.0</span>*l_bc + <span class="nu">100.0</span>*l_ic
+
+<span class="cm"># vs SelfAdaptiveWeights — auto-balancing</span>
+saw  = <span class="cl">SelfAdaptiveWeights</span>(
+    loss_names=[<span class="st">"pde"</span>, <span class="st">"bc"</span>, <span class="st">"ic"</span>], alpha=<span class="nu">0.9</span>
+)
+loss = saw({<span class="st">"pde"</span>: l_pde, <span class="st">"bc"</span>: l_bc, <span class="st">"ic"</span>: l_ic})
+
+<span class="cm"># DirichletBC.loss() handles the BC term</span>
+bc = <span class="cl">DirichletBC</span>(value_fn=<span class="kw">lambda</span> xt: zeros)
+l_bc = bc.<span class="fn">loss</span>(net, x_boundary)</pre>
+        </div>
+        <div class="card">
+          <h4>Lesson 03 — TwoPhaseTrainer</h4>
+          <pre style="font-size:11px;"><span class="kw">from</span> pinneaple_train <span class="kw">import</span> <span class="cl">TwoPhaseTrainer</span>, <span class="cl">TwoPhaseConfig</span>
+
+cfg = <span class="cl">TwoPhaseConfig</span>(
+    phase1_epochs=<span class="nu">5_000</span>,   <span class="cm"># Adam warm-up</span>
+    phase2_epochs=<span class="nu">1_000</span>,   <span class="cm"># L-BFGS refinement</span>
+    phase1_lr=<span class="nu">1e-3</span>, phase2_lr=<span class="nu">1.0</span>,
+)
+trainer = <span class="cl">TwoPhaseTrainer</span>(net, pinn_loss, cfg)
+history = trainer.<span class="fn">train</span>()
+
+<span class="cm"># Validate against exact solution</span>
+<span class="kw">from</span> pinneaple_validate <span class="kw">import</span> compare_to_analytical
+m = <span class="fn">compare_to_analytical</span>(
+    model=net, analytical_fn=exact,
+    coord_names=[<span class="st">"x"</span>,<span class="st">"t"</span>],
+    domain_bounds={<span class="st">"x"</span>:(<span class="nu">0</span>,<span class="nu">1</span>),<span class="st">"t"</span>:(<span class="nu">0</span>,<span class="nu">1</span>)},
+)</pre>
+        </div>
+      </div>
+      <div>
+        <div class="result-plot" style="margin-bottom:12px;">
+          <div class="plot-title">Lesson 02 — L2 error by weight strategy</div>
+          <div class="bar-chart" style="margin-top:24px;">
+            <div class="bar-wrap"><div class="bar" style="height:85px;background:#d62728;" data-val="8.3e-2"></div><div class="bar-label">λ=1</div></div>
+            <div class="bar-wrap"><div class="bar" style="height:28px;background:#2ca02c;" data-val="7.1e-3"></div><div class="bar-label">λ=100</div></div>
+            <div class="bar-wrap"><div class="bar" style="height:42px;background:#ff7f0e;" data-val="1.9e-2"></div><div class="bar-label">λ=1000</div></div>
+            <div class="bar-wrap"><div class="bar" style="height:18px;background:var(--accent);" data-val="4.2e-3"></div><div class="bar-label">SAW</div></div>
+          </div>
+        </div>
+        <div class="result-plot">
+          <div class="plot-title">Lesson 03 — Heat equation · α=0.05</div>
+          <svg viewBox="0 0 300 100" style="width:100%;height:100px;">
+            <!-- Heat solution u(x,t)=exp(-π²αt)sin(πx): always positive, decays -->
+            <!-- x-axis at y=92; profiles are symmetric arches above baseline -->
+            <line x1="20" y1="92" x2="290" y2="92" stroke="#30363d" stroke-width="1"/>
+            <!-- t=0.0 : exp(0)=1.0 → peak at y=6 -->
+            <path d="M20,92 Q155,6 290,92"  stroke="#e6edf3" stroke-width="2"   fill="none" opacity="0.95"/>
+            <!-- t=0.2 : exp(-π²·0.05·0.2)≈0.91 → peak at y=14 -->
+            <path d="M20,92 Q155,14 290,92" stroke="#3fb950" stroke-width="1.5" fill="none" opacity="0.85"/>
+            <!-- t=0.5 : exp(-0.247)≈0.78 → peak at y=26 -->
+            <path d="M20,92 Q155,26 290,92" stroke="#58a6ff" stroke-width="1.5" fill="none" opacity="0.75"/>
+            <!-- t=0.8 : exp(-0.395)≈0.67 → peak at y=37 -->
+            <path d="M20,92 Q155,37 290,92" stroke="#ffa657" stroke-width="1.5" fill="none" opacity="0.65"/>
+            <!-- t=1.0 : exp(-0.493)≈0.61 → peak at y=44 -->
+            <path d="M20,92 Q155,44 290,92" stroke="#d2a8ff" stroke-width="1.5" fill="none" opacity="0.55"/>
+            <text x="22" y="10" fill="#8b949e" font-size="9">t=0 → t=1 (α=0.05, decaying amplitude)</text>
+            <text x="215" y="10" fill="#3fb950" font-size="9">L2 = 6.1e-4</text>
+            <text x="22" y="98" fill="#8b949e" font-size="8">x=0</text>
+            <text x="272" y="98" fill="#8b949e" font-size="8">x=1</text>
+          </svg>
+          <div class="metric-row" style="margin-top:6px;">
+            <div class="metric"><div class="val" style="color:var(--accent2);font-size:20px;">6.1e-4</div><div class="lbl">Rel L2</div></div>
+            <div class="metric"><div class="val" style="color:var(--accent);font-size:20px;">6k</div><div class="lbl">Epochs</div></div>
+            <div class="metric"><div class="val" style="color:var(--accent4);font-size:20px;">Adam+LBFGS</div><div class="lbl">Trainer</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S5: LESSON 04-05 ========== -->
+<div class="slide" id="s5">
+  <div class="slide-header"><span class="slide-tag t1">Lessons 04–05</span><div class="divider-line"></div><span class="slide-num">5 / 20</span></div>
+  <h2>Geometry Generation + 2D Poisson on L-shape</h2>
+  <div class="subtitle" style="margin-bottom:12px;">CSG domains · SDF-based HardBC · −∇²u = 1</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>Lesson 04 — CSG with PINNeAPPle</h4>
+          <pre><span class="kw">from</span> pinneaple_geom <span class="kw">import</span> (
+    <span class="cl">CSGRectangle</span>, <span class="cl">CSGCircle</span>,
+    <span class="cl">lshape</span>, <span class="cl">channel_with_hole</span>
+)
+
+<span class="cm"># Boolean operations — Python operators</span>
+domain = <span class="cl">CSGRectangle</span>(<span class="nu">0</span>,<span class="nu">0</span>,<span class="nu">2</span>,<span class="nu">1</span>) - <span class="cl">CSGCircle</span>(<span class="nu">1</span>,<span class="nu">.5</span>,<span class="nu">.3</span>)
+
+<span class="cm"># Sampling: rejection-sample from SDF</span>
+pts_col = domain.<span class="fn">sample_interior</span>(<span class="nu">2000</span>, seed=<span class="nu">42</span>)
+pts_bnd = domain.<span class="fn">sample_boundary</span>(<span class="nu">500</span>,  seed=<span class="nu">42</span>)
+
+<span class="cm"># SDF for hard BC enforcement</span>
+sdf_vals = domain.<span class="fn">sdf</span>(pts_col)  <span class="cm"># −inside, +outside</span>
+
+<span class="cm"># Pre-built complex domains</span>
+ch = <span class="fn">channel_with_hole</span>()   <span class="cm"># flow past cylinder</span>
+ls = <span class="fn">lshape</span>()              <span class="cm"># re-entrant corner</span></pre>
+        </div>
+        <div class="card">
+          <h4>Lesson 05 — SDF-based HardBC</h4>
+          <pre style="font-size:11px;"><span class="cm"># u(x) = SDF(x)·net(x) → u=0 on boundary EXACTLY</span>
+hard_bc = <span class="cl">HardBC</span>(
+    distance_fn = <span class="kw">lambda</span> xy: -domain.<span class="fn">sdf</span>(xy).clamp(min=<span class="nu">0</span>),
+    bc_value_fn = <span class="kw">lambda</span> xy: zeros,
+)
+net = hard_bc.<span class="fn">wrap_model</span>(net_inner)
+
+<span class="cm"># No L_bc term needed — only L_pde remains:</span>
+def loss_fn(model):
+    xy_col = domain.<span class="fn">sample_interior</span>(<span class="nu">4000</span>)
+    r      = poisson_residual(model, xy_col)
+    <span class="kw">return</span> r.<span class="fn">pow</span>(<span class="nu">2</span>).<span class="fn">mean</span>()   <span class="cm"># ONE term only</span></pre>
+        </div>
+      </div>
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <!-- Domain grid mockup -->
+          <div class="chart-area">
+            <div class="chart-area" style="border:none;padding:0;">
+              <div class="plot-title">CSG Domains (Lesson 04)</div>
+              <svg viewBox="0 0 120 130" style="width:100%;height:130px;">
+                <!-- Rect -->
+                <rect x="5" y="5" width="50" height="30" fill="none" stroke="#58a6ff" stroke-width="1.5"/>
+                <text x="8" y="17" fill="#58a6ff" font-size="6">Rectangle</text>
+                <circle cx="30" cy="42" r="10" fill="none" stroke="#ffa657" stroke-width="1.5"/>
+                <text x="22" y="59" fill="#ffa657" font-size="6">Circle</text>
+                <!-- Rect - Circle (L-shape like) -->
+                <rect x="65" y="5" width="50" height="30" fill="rgba(88,166,255,.1)" stroke="#58a6ff" stroke-width="1"/>
+                <circle cx="90" cy="20" r="8" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+                <text x="67" y="44" fill="#3fb950" font-size="6">Rect − Circle</text>
+                <!-- L-shape -->
+                <polygon points="5,70 55,70 55,85 30,85 30,110 5,110" fill="rgba(255,166,87,.08)" stroke="#ffa657" stroke-width="1.5"/>
+                <text x="7" y="120" fill="#ffa657" font-size="6">L-Shape</text>
+                <!-- Channel with hole -->
+                <rect x="65" y="70" width="50" height="25" fill="rgba(210,168,255,.08)" stroke="#d2a8ff" stroke-width="1"/>
+                <circle cx="90" cy="82" r="5" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+                <text x="67" y="107" fill="#d2a8ff" font-size="6">Channel+hole</text>
+              </svg>
+            </div>
+          </div>
+          <div class="chart-area">
+            <div class="plot-title">L-shape Poisson |Error|</div>
+            <svg viewBox="0 0 120 130" style="width:100%;height:130px;">
+              <!-- L-shape filled with "solution" -->
+              <polygon points="5,10 85,10 85,55 50,55 50,120 5,120" fill="rgba(88,166,255,.05)" stroke="#30363d" stroke-width="1"/>
+              <!-- Error heatmap mockup — corner singularity -->
+              <radialGradient id="corner" cx="85%" cy="43%" r="40%">
+                <stop offset="0%" stop-color="#f78166" stop-opacity=".8"/>
+                <stop offset="50%" stop-color="#ffa657" stop-opacity=".4"/>
+                <stop offset="100%" stop-color="transparent"/>
+              </radialGradient>
+              <polygon points="5,10 85,10 85,55 50,55 50,120 5,120" fill="url(#corner)"/>
+              <text x="7" y="130" fill="#8b949e" font-size="7">Re-entrant corner</text>
+              <text x="60" y="30" fill="#f78166" font-size="7">high err</text>
+              <text x="10" y="80" fill="#3fb950" font-size="7">low err</text>
+            </svg>
+          </div>
+        </div>
+        <div class="metric-row">
+          <div class="metric"><div class="val" style="color:var(--accent2);font-size:18px;">0</div><div class="lbl">BC residual (HardBC)</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent);font-size:18px;">2.4e-3</div><div class="lbl">BC (Penalty)</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent4);font-size:18px;">8</div><div class="lbl">Domains built</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent5);font-size:18px;">1</div><div class="lbl">Loss term (HardBC)</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S6: LESSON 06 ARCHITECTURES ========== -->
+<div class="slide" id="s6">
+  <div class="slide-header"><span class="slide-tag t2">Lesson 06</span><div class="divider-line"></div><span class="slide-num">6 / 20</span></div>
+  <h2>Model Architectures — SIREN vs ModifiedMLP vs Fourier</h2>
+  <div class="subtitle" style="margin-bottom:12px;">Helmholtz  u″ + k²u = 0 · k=8 · 8 full oscillations in [0, 2π/k]</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>PINNeAPPle model imports</h4>
+          <pre><span class="kw">from</span> pinneaple_models <span class="kw">import</span> (
+    <span class="cl">SIREN</span>, <span class="cl">ModifiedMLP</span>, <span class="cl">FourierFeatureEmbedding</span>
+)
+
+<span class="cm"># SIREN — periodic activations sin(ω₀·Wx + b)</span>
+siren = <span class="cl">SIREN</span>(in_dim=<span class="nu">1</span>, out_dim=<span class="nu">1</span>,
+               hidden_dim=<span class="nu">128</span>, n_layers=<span class="nu">5</span>,
+               omega_0=<span class="nu">30.0</span>)    <span class="cm"># ω₀=30 standard init</span>
+
+<span class="cm"># ModifiedMLP — Fourier embed + highway gating</span>
+modmlp = <span class="cl">ModifiedMLP</span>(in_dim=<span class="nu">1</span>, out_dim=<span class="nu">1</span>,
+                       hidden_dim=<span class="nu">128</span>, n_fourier=<span class="nu">32</span>,
+                       sigma=<span class="nu">12.0</span>)     <span class="cm"># σ ≈ k×1.5</span>
+
+<span class="cm"># FourierFeatureEmbedding — prepend to any MLP</span>
+embed = <span class="cl">FourierFeatureEmbedding</span>(in_dim=<span class="nu">1</span>,
+                                  n_fourier=<span class="nu">64</span>,
+                                  sigma=<span class="nu">12.0</span>)
+<span class="cm"># Maps x → [cos(2πBx), sin(2πBx)]  (128-dim)</span>
+
+<span class="cm"># NOTE: SIREN / ModifiedMLP return ModelOutput</span>
+u = siren(x_col).<span class="at">y</span>   <span class="cm"># extract .y to get tensor</span></pre>
+        </div>
+        <div class="card">
+          <h4>When to use what</h4>
+          <table style="font-size:12px;">
+            <tr><th>Architecture</th><th>Best for</th><th>Cost</th></tr>
+            <tr><td>Tanh MLP</td><td>k &lt; 4, smooth PDEs</td><td class="better">Lowest</td></tr>
+            <tr><td>SIREN</td><td>High-freq, wave, Helmholtz</td><td class="same">Medium</td></tr>
+            <tr><td>ModifiedMLP</td><td>Multi-scale, long domain</td><td class="same">Medium</td></tr>
+            <tr><td>Fourier+MLP</td><td>Quick fix for spectral bias</td><td class="better">Low</td></tr>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="result-plot" style="margin-bottom:12px;">
+          <div class="plot-title">Helmholtz k=8 — Architecture benchmark</div>
+          <svg viewBox="0 0 280 130" style="width:100%;height:140px;">
+            <!-- 4 prediction curves vs exact sin(8x) -->
+            <!-- exact sin(8x) — many oscillations in [0, 0.785] -->
+            <path d="M15,65 C28,30 40,100 55,65 C68,30 82,100 95,65 C108,30 122,100 135,65 C148,30 162,100 175,65 C188,30 202,100 215,65 C228,30 242,100 260,65" stroke="#e6edf3" stroke-width="2.5" fill="none" opacity=".9"/>
+            <!-- Tanh MLP — fails (flat or wrong) -->
+            <path d="M15,65 Q60,62 100,66 Q140,64 180,66 Q220,64 260,65" stroke="#d62728" stroke-width="1.5" fill="none" stroke-dasharray="4,2"/>
+            <!-- SIREN — good match -->
+            <path d="M15,65 C28,32 40,98 55,66 C68,32 82,98 95,66 C108,32 122,98 135,66 C148,32 162,98 175,66 C188,32 202,98 215,66 C228,32 242,98 261,66" stroke="#3fb950" stroke-width="1.5" fill="none" stroke-dasharray="6,2"/>
+            <!-- ModifiedMLP — good -->
+            <path d="M15,65 C28,33 40,97 55,66 C68,33 82,97 95,66 C108,33 122,97 135,66 C148,33 162,97 175,67 C188,33 202,97 215,66 C228,33 242,97 260,65" stroke="#58a6ff" stroke-width="1.5" fill="none" stroke-dasharray="8,2"/>
+            <!-- Fourier+MLP -->
+            <path d="M15,65 C28,35 40,95 55,66 C68,35 82,95 95,66 C108,35 122,95 135,66 C148,35 162,95 175,67 C188,35 202,95 215,66 C228,35 242,95 260,66" stroke="#ffa657" stroke-width="1.5" fill="none" stroke-dasharray="3,2"/>
+            <line x1="15" y1="120" x2="265" y2="120" stroke="#30363d" stroke-width="1"/>
+            <!-- Legend -->
+            <text x="15" y="12" fill="#e6edf3" font-size="8">Exact</text>
+            <text x="50" y="12" fill="#d62728" font-size="8">Tanh MLP</text>
+            <text x="105" y="12" fill="#3fb950" font-size="8">SIREN</text>
+            <text x="148" y="12" fill="#58a6ff" font-size="8">ModMLP</text>
+            <text x="193" y="12" fill="#ffa657" font-size="8">Fourier</text>
+          </svg>
+        </div>
+        <div class="card">
+          <h4>Benchmark — Helmholtz k=8, 10k epochs</h4>
+          <table style="font-size:12px;">
+            <tr><th>Architecture</th><th>L2 error</th><th>Params</th></tr>
+            <tr><td>Tanh MLP (3×128)</td><td class="worse">4.2e-1</td><td>33k</td></tr>
+            <tr><td>SIREN (5×128)</td><td class="better">3.8e-3</td><td>50k</td></tr>
+            <tr><td>ModifiedMLP (6×128)</td><td class="better">5.1e-3</td><td>74k</td></tr>
+            <tr><td>Fourier+MLP (3×128)</td><td class="pp">1.2e-2</td><td>50k</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S7: LESSON 07 INVERSE ========== -->
+<div class="slide" id="s7">
+  <div class="slide-header"><span class="slide-tag t2">Lesson 07</span><div class="divider-line"></div><span class="slide-num">7 / 20</span></div>
+  <h2>Inverse Problem — Recovering Diffusivity</h2>
+  <div class="subtitle" style="margin-bottom:12px;">u_t = α u_xx · unknown α · 50 noisy observations · two recovery methods</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>Approach 1 — Gradient-based (α as nn.Parameter)</h4>
+          <pre><span class="cm"># α is a learnable parameter — same as network weights</span>
+alpha = nn.<span class="cl">Parameter</span>(torch.<span class="fn">tensor</span>([<span class="nu">0.2</span>]))  <span class="cm"># wrong init</span>
+
+opt = Adam([*net.parameters(), alpha], lr=<span class="nu">1e-3</span>)
+
+loss = l_pde(alpha) + <span class="nu">100</span>*l_ic + <span class="nu">1000</span>*l_data
+<span class="cm"># Gradient flows through BOTH net weights AND alpha</span>
+alpha.data.<span class="fn">clamp_</span>(<span class="nu">1e-4</span>, <span class="nu">1.0</span>)  <span class="cm"># keep physical</span></pre>
+        </div>
+        <div class="hcard">
+          <h4>Approach 2 — EKI (derivative-free)</h4>
+          <pre><span class="kw">from</span> pinneaple_inverse <span class="kw">import</span> (
+    <span class="cl">EnsembleKalmanInversion</span>, <span class="cl">EKIConfig</span>
+)
+
+<span class="cm"># Only need: forward_fn(theta) → u predictions</span>
+eki_cfg = <span class="cl">EKIConfig</span>(
+    n_ensemble=<span class="nu">20</span>, n_iterations=<span class="nu">15</span>,
+    noise_std=<span class="nu">0.01</span>, init_spread=<span class="nu">0.5</span>,
+)
+eki = <span class="cl">EnsembleKalmanInversion</span>(
+    forward_fn=forward_model, config=eki_cfg
+)
+history = eki.<span class="fn">solve</span>(y_obs=u_obs, theta_init=theta0)
+alpha_eki = exp(history.theta_mean_history[-<span class="nu">1</span>])</pre>
+        </div>
+      </div>
+      <div>
+        <div class="result-plot" style="margin-bottom:12px;">
+          <div class="plot-title">α convergence — gradient-based (5000 epochs)</div>
+          <svg viewBox="0 0 280 100" style="width:100%;height:100px;">
+            <!-- α starts at 0.2, converges to 0.05 -->
+            <path d="M15,20 C40,20 60,25 90,55 C120,72 150,78 200,80 C230,81 260,81 275,81" stroke="#58a6ff" stroke-width="2" fill="none"/>
+            <line x1="15" y1="81" x2="275" y2="81" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <line x1="15" y1="90" x2="275" y2="90" stroke="#30363d" stroke-width="1"/>
+            <text x="17" y="95" fill="#8b949e" font-size="9">0</text>
+            <text x="255" y="95" fill="#8b949e" font-size="9">5k</text>
+            <text x="17" y="17" fill="#58a6ff" font-size="9">α=0.200 (init)</text>
+            <text x="200" y="76" fill="#3fb950" font-size="9">α=0.050 (true)</text>
+          </svg>
+        </div>
+        <div class="result-plot" style="margin-bottom:12px;">
+          <div class="plot-title">EKI convergence — 15 iterations</div>
+          <svg viewBox="0 0 280 80" style="width:100%;height:80px;">
+            <path d="M15,15 C40,16 65,22 100,42 C130,55 170,62 220,64 C250,65 270,65 275,65" stroke="#ffa657" stroke-width="2" fill="none" marker-mid="url(#dot)"/>
+            <line x1="15" y1="65" x2="275" y2="65" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <line x1="15" y1="72" x2="275" y2="72" stroke="#30363d" stroke-width="1"/>
+            <text x="17" y="70" fill="#8b949e" font-size="9">0</text>
+            <text x="262" y="70" fill="#8b949e" font-size="9">15</text>
+            <text x="195" y="60" fill="#3fb950" font-size="9">α_true=0.05</text>
+          </svg>
+        </div>
+        <div class="metric-row">
+          <div class="metric"><div class="val" style="color:var(--accent2);font-size:20px;">0.0502</div><div class="lbl">Gradient recovered α</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent5);font-size:20px;">0.0497</div><div class="lbl">EKI recovered α</div></div>
+          <div class="metric"><div class="val" style="color:var(--muted);font-size:20px;">0.05</div><div class="lbl">True α</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent);font-size:20px;">50</div><div class="lbl">Observations</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S8: LESSON 08 UQ ========== -->
+<div class="slide" id="s8">
+  <div class="slide-header"><span class="slide-tag t2">Lesson 08</span><div class="divider-line"></div><span class="slide-num">8 / 20</span></div>
+  <h2>Uncertainty Quantification — Three Methods</h2>
+  <div class="subtitle" style="margin-bottom:12px;">MC Dropout · Deep Ensemble · Conformal Prediction</div>
+  <div class="body">
+    <div class="three-col">
+      <div>
+        <div class="tier-block t1" style="margin-bottom:10px;">
+          <h4>MC Dropout</h4>
+          <pre style="font-size:11px;"><span class="kw">from</span> pinneaple_uq <span class="kw">import</span> (
+    <span class="cl">MCDropoutWrapper</span>,
+    <span class="cl">MCDropoutConfig</span>
+)
+
+cfg = <span class="cl">MCDropoutConfig</span>(
+    n_samples=<span class="nu">100</span>,
+    dropout_p=<span class="nu">0.05</span>,
+)
+wrap = <span class="cl">MCDropoutWrapper</span>(net, cfg)
+uq = wrap.<span class="fn">predict_with_uncertainty</span>(x)
+<span class="cm"># uq.mean, uq.std</span></pre>
+        </div>
+        <div class="card">
+          <h4>Properties</h4>
+          <ul class="bullets" style="font-size:12px;">
+            <li>Cheapest — modify existing net</li>
+            <li>No retraining needed</li>
+            <li>Coverage often underestimates</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="tier-block t2" style="margin-bottom:10px;">
+          <h4>Deep Ensemble</h4>
+          <pre style="font-size:11px;"><span class="kw">from</span> pinneaple_uq <span class="kw">import</span> (
+    <span class="cl">EnsembleUQ</span>,
+    <span class="cl">EnsembleConfig</span>
+)
+
+members = [<span class="fn">train_pinn</span>(seed=i)
+           <span class="kw">for</span> i <span class="kw">in</span> range(<span class="nu">5</span>)]
+
+ens = <span class="cl">EnsembleUQ</span>(
+    models=members,
+    config=<span class="cl">EnsembleConfig</span>(n_members=<span class="nu">5</span>)
+)
+uq = ens.<span class="fn">predict_with_uncertainty</span>(x)</pre>
+        </div>
+        <div class="card">
+          <h4>Properties</h4>
+          <ul class="bullets" style="font-size:12px;">
+            <li>Most reliable uncertainty</li>
+            <li>Cost: 5× training</li>
+            <li>Diverse by different seeds</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="tier-block t3" style="margin-bottom:10px;">
+          <h4>Conformal Prediction</h4>
+          <pre style="font-size:11px;"><span class="kw">from</span> pinneaple_uq <span class="kw">import</span> <span class="cl">ConformalPredictor</span>
+
+cp = <span class="cl">ConformalPredictor</span>(
+    model=net,
+    alpha=<span class="nu">0.10</span>   <span class="cm"># 90% coverage</span>
+)
+cp.<span class="fn">calibrate</span>(x_cal, y_cal)
+
+y_hat, lo, hi = cp.<span class="fn">predict</span>(x_test)
+cov = cp.<span class="fn">coverage</span>(x_test, y_test)
+<span class="cm"># Guaranteed: cov ≥ 1−α = 90%</span></pre>
+        </div>
+        <div class="card">
+          <h4>Properties</h4>
+          <ul class="bullets" style="font-size:12px;">
+            <li>Formal coverage guarantee</li>
+            <li>Post-hoc — no arch change</li>
+            <li>Requires calibration set</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h4>Coverage results on heat equation (target marked in parentheses)</h4>
+      <table>
+        <tr><th>Method</th><th>Target</th><th>Empirical Coverage</th><th>Cost</th><th>Verdict</th></tr>
+        <tr><td>MC Dropout ±2σ</td><td>≈95%</td><td class="pp">88%</td><td class="better">1× (cheapest)</td><td class="xx">Slight undercover</td></tr>
+        <tr><td>Deep Ensemble ±2σ</td><td>≈95%</td><td class="better">94.2%</td><td class="worse">5× (expensive)</td><td class="better">Best reliability</td></tr>
+        <tr><td>Conformal (α=0.1)</td><td>≥90%</td><td class="better">91.5%</td><td class="better">1× (post-hoc)</td><td class="better">Guaranteed ✓</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S9: LESSON 09 TIME MARCHING ========== -->
+<div class="slide" id="s9">
+  <div class="slide-header"><span class="slide-tag t2">Lesson 09</span><div class="divider-line"></div><span class="slide-num">9 / 20</span></div>
+  <h2>Time-Marching — Van der Pol Stiff Oscillator</h2>
+  <div class="subtitle" style="margin-bottom:12px;">x″ − μ(1−x²)x′ + x = 0 · μ=3 (stiff) · T=15 · Standard PINN fails</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>TimeMarchingTrainer</h4>
+          <pre><span class="kw">from</span> pinneaple_train <span class="kw">import</span> <span class="cl">TimeMarchingTrainer</span>
+
+<span class="cm"># Divide [0, 15] into 15 windows of 1 time unit</span>
+<span class="cm"># Each window: fresh network + IC from previous end</span>
+
+trainer = <span class="cl">TimeMarchingTrainer</span>(
+    model_factory     = make_net,       <span class="cm"># fresh per window</span>
+    loss_factory      = make_loss,      <span class="cm"># factory(ic, t0, t1)</span>
+    t_start           = <span class="nu">0.0</span>,
+    t_end             = <span class="nu">15.0</span>,
+    n_windows         = <span class="nu">15</span>,           <span class="cm"># 1s each</span>
+    epochs_per_window = <span class="nu">3_000</span>,
+    device            = <span class="st">"cuda"</span>,
+    ic_state          = torch.tensor([<span class="nu">2.0</span>, <span class="nu">0.0</span>]),
+)
+t_all, x_all = trainer.<span class="fn">integrate</span>()
+<span class="cm"># Returns full-domain prediction by chaining windows</span></pre>
+        </div>
+        <div class="card">
+          <h4>Why standard PINN fails for μ=3</h4>
+          <ul class="bullets" style="font-size:12px;">
+            <li>Stiff ODE: fast and slow time scales coexist</li>
+            <li>PDE loss landscape very ill-conditioned over [0,15]</li>
+            <li>Gradient vanishes at early times when training whole domain</li>
+            <li>Time-marching: each 1s window is well-conditioned</li>
+            <li>CausalPINNTrainer is an alternative (causal weighting)</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="result-plot" style="margin-bottom:12px;">
+          <div class="plot-title">Van der Pol μ=3 — Standard PINN vs Time-Marching</div>
+          <svg viewBox="0 0 280 130" style="width:100%;height:140px;">
+            <!-- scipy reference — limit cycle -->
+            <path d="M15,65 C25,35 32,80 42,60 C50,40 58,85 68,60 C75,38 83,83 93,60 C100,40 108,83 118,60 C126,40 134,83 144,60 C152,40 160,83 170,60 C178,40 186,83 196,60 C204,40 212,83 222,60 C230,40 238,83 248,60 C256,40 264,75 270,60" stroke="#e6edf3" stroke-width="2" fill="none"/>
+            <!-- Standard PINN — diverges after t~5 -->
+            <path d="M15,65 C25,36 32,78 42,62 C50,42 58,82 68,62 C75,50 83,75 93,65 C100,60 108,70 118,68 C126,66 134,67 144,70 C152,72 160,75 170,80 C178,85 186,90 196,98 C204,105 212,110 240,118 C258,122 270,122 270,122" stroke="#d62728" stroke-width="1.5" fill="none" stroke-dasharray="5,3"/>
+            <!-- Time-marching — follows reference -->
+            <path d="M15,65 C25,36 32,79 42,61 C50,41 58,84 68,61 C75,39 83,83 93,60 C100,40 108,83 118,60 C126,40 134,83 144,60 C152,40 160,83 170,60 C178,40 186,83 196,60 C204,40 212,83 222,60 C230,40 238,83 249,60 C257,40 264,75 270,60" stroke="#3fb950" stroke-width="1.5" fill="none" stroke-dasharray="7,3"/>
+            <line x1="15" y1="125" x2="270" y2="125" stroke="#30363d" stroke-width="1"/>
+            <text x="16" y="130" fill="#8b949e" font-size="8">t=0</text>
+            <text x="252" y="130" fill="#8b949e" font-size="8">t=15</text>
+            <!-- Legend -->
+            <text x="16" y="12" fill="#e6edf3" font-size="8">scipy ref</text>
+            <text x="70" y="12" fill="#d62728" font-size="8">Standard PINN (fails)</text>
+            <text x="185" y="12" fill="#3fb950" font-size="8">TimeMarch</text>
+          </svg>
+        </div>
+        <div class="metric-row">
+          <div class="metric"><div class="val" style="color:var(--accent3);font-size:18px;">4.1e-1</div><div class="lbl">Standard PINN L2</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent2);font-size:18px;">8.3e-3</div><div class="lbl">TimeMarch L2</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent);font-size:18px;">15</div><div class="lbl">Time windows</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent5);font-size:18px;">50×</div><div class="lbl">Error reduction</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S10: LESSON 10 VALIDATION ========== -->
+<div class="slide" id="s10">
+  <div class="slide-header"><span class="slide-tag t3">Lesson 10</span><div class="divider-line"></div><span class="slide-num">10 / 20</span></div>
+  <h2>Physics Validation — Never Skip This</h2>
+  <div class="subtitle" style="margin-bottom:12px;">Laplace ∇²u=0 · Well-trained vs under-trained · PhysicsValidator catches the bad one</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>PhysicsValidator — fluent API</h4>
+          <pre><span class="kw">from</span> pinneaple_validate <span class="kw">import</span> (
+    <span class="cl">PhysicsValidator</span>, compare_to_analytical
+)
+
+validator = (
+    <span class="cl">PhysicsValidator</span>(
+        model=net,
+        coord_names=[<span class="st">"x"</span>, <span class="st">"y"</span>],
+        domain_bounds={<span class="st">"x"</span>:(<span class="nu">0</span>,<span class="nu">1</span>), <span class="st">"y"</span>:(<span class="nu">0</span>,<span class="nu">1</span>)},
+    )
+    .<span class="fn">add_boundary_check</span>(kind=<span class="st">"dirichlet"</span>, value=<span class="nu">0</span>,
+                         boundary=<span class="st">"x=0"</span>, x_bc=bnd_pts)
+    .<span class="fn">add_boundary_check</span>(kind=<span class="st">"dirichlet"</span>, value_fn=g,
+                         boundary=<span class="st">"x=1"</span>, x_bc=bnd_right)
+)
+report = validator.<span class="fn">validate</span>()
+
+<span class="cm"># Three key metrics</span>
+m = <span class="fn">compare_to_analytical</span>(
+    model=net, analytical_fn=exact,
+    coord_names=[<span class="st">"x"</span>,<span class="st">"y"</span>],
+    domain_bounds={...}, n_points=<span class="nu">20_000</span>,
+)
+<span class="cm"># m["rel_l2"], m["rmse"], m["max_error"]</span></pre>
+        </div>
+        <div class="card">
+          <h4>Why validate separately from training loss?</h4>
+          <ul class="bullets" style="font-size:12px;">
+            <li>Training loss = value at training points only</li>
+            <li>Validation uses 10–20× more held-out points</li>
+            <li>max_error reveals local failures (corners, BCs) that L2 hides</li>
+            <li>BC residual check: model may satisfy PDE but violate BC</li>
+            <li>Always run before claiming model is ready</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:12px;">
+          <h4>Validation report — Well-trained vs Under-trained (Laplace)</h4>
+          <table>
+            <tr><th>Check</th><th>Well-trained</th><th>Under-trained</th></tr>
+            <tr><td>Relative L2</td><td class="better">4.2e-4</td><td class="worse">6.1e-2</td></tr>
+            <tr><td>RMSE</td><td class="better">3.1e-4</td><td class="worse">4.8e-2</td></tr>
+            <tr><td>Max error</td><td class="better">2.8e-3</td><td class="worse">2.4e-1</td></tr>
+            <tr><td>BC x=0 residual</td><td class="better">PASS 8.1e-5</td><td class="worse">FAIL 3.2e-2</td></tr>
+            <tr><td>BC x=1 residual</td><td class="better">PASS 1.2e-4</td><td class="worse">FAIL 4.7e-2</td></tr>
+          </table>
+        </div>
+        <div class="result-plot">
+          <div class="plot-title">|Error| field — left: well-trained · right: under-trained</div>
+          <svg viewBox="0 0 280 100" style="width:100%;height:100px;">
+            <defs>
+              <radialGradient id="gg" cx="50%" cy="50%" r="70%">
+                <stop offset="0%" stop-color="#3fb950" stop-opacity=".3"/>
+                <stop offset="100%" stop-color="#3fb950" stop-opacity=".0"/>
+              </radialGradient>
+              <radialGradient id="bb" cx="50%" cy="50%" r="70%">
+                <stop offset="0%" stop-color="#f78166" stop-opacity=".7"/>
+                <stop offset="100%" stop-color="#ffa657" stop-opacity=".2"/>
+              </radialGradient>
+            </defs>
+            <rect x="10" y="5" width="120" height="90" fill="url(#gg)" stroke="#3fb950" stroke-width="1" rx="4"/>
+            <rect x="150" y="5" width="120" height="90" fill="url(#bb)" stroke="#f78166" stroke-width="1" rx="4"/>
+            <text x="40" y="55" fill="#3fb950" font-size="14" font-weight="bold">PASS</text>
+            <text x="170" y="55" fill="#f78166" font-size="14" font-weight="bold">FAIL</text>
+            <text x="12" y="97" fill="#3fb950" font-size="8">L2=4.2e-4</text>
+            <text x="152" y="97" fill="#f78166" font-size="8">L2=6.1e-2</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S11: LESSON 11 OPERATORS ========== -->
+<div class="slide" id="s11">
+  <div class="slide-header"><span class="slide-tag t3">Lesson 11</span><div class="divider-line"></div><span class="slide-num">11 / 20</span></div>
+  <h2>Operator Learning — Parametric Heat Family</h2>
+  <div class="subtitle" style="margin-bottom:12px;">Train on α ∈ {0.01…0.5} · Query any α instantly · No re-training</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>Parametric network: input (x, t, α)</h4>
+          <pre><span class="kw">from</span> pinneaple_models <span class="kw">import</span> <span class="cl">FourierFeatureEmbedding</span>
+
+<span class="kw">class</span> <span class="cl">ParametricHeatNet</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        <span class="cm"># Spatial/temporal features: Fourier embed of (x,t)</span>
+        self.embed_xt  = <span class="cl">FourierFeatureEmbedding</span>(
+            in_dim=<span class="nu">2</span>, n_fourier=<span class="nu">32</span>, sigma=<span class="nu">3.0</span>
+        )
+        <span class="cm"># Parameter encoder: α → 32-dim latent</span>
+        self.param_enc = nn.Sequential(
+            nn.Linear(<span class="nu">1</span>, <span class="nu">32</span>), nn.Tanh(),
+            nn.Linear(<span class="nu">32</span>, <span class="nu">32</span>), nn.Tanh(),
+        )
+        self.trunk = nn.Sequential(
+            nn.Linear(<span class="nu">64+32</span>, <span class="nu">128</span>), nn.Tanh(),
+            nn.Linear(<span class="nu">128</span>, <span class="nu">128</span>), nn.Tanh(),
+            nn.Linear(<span class="nu">128</span>, <span class="nu">1</span>),
+        )
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x, t, alpha):
+        ft = self.embed_xt(cat([x, t], dim=-<span class="nu">1</span>))
+        fa = self.param_enc(alpha)
+        <span class="kw">return</span> self.trunk(cat([ft, fa], dim=-<span class="nu">1</span>))</pre>
+        </div>
+        <div class="card">
+          <h4>Key insight: PINN = one problem · Operator = many</h4>
+          <ul class="bullets" style="font-size:12px;">
+            <li>PINN: fixed α → needs re-training for new α (minutes/hours)</li>
+            <li>Operator: all α → forward pass for any α (milliseconds)</li>
+            <li>The parameter encoder learns a smooth α ↦ solution map</li>
+            <li>Interpolation between training α values works well</li>
+            <li>For larger families: use FNO (templates/19)</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="result-plot" style="margin-bottom:12px;">
+          <div class="plot-title">L2 error vs α — training (●) and test (✕)</div>
+          <svg viewBox="0 0 280 130" style="width:100%;height:130px;">
+            <line x1="30" y1="100" x2="270" y2="100" stroke="#30363d" stroke-width="1"/>
+            <line x1="30" y1="10"  x2="30"  y2="100" stroke="#30363d" stroke-width="1"/>
+            <!-- Training alphas: 0.01 0.02 0.05 0.1 0.2 0.5 mapped to x: 30 70 110 160 200 250 -->
+            <circle cx="45"  cy="88" r="4" fill="#3fb950"/>
+            <circle cx="80"  cy="85" r="4" fill="#3fb950"/>
+            <circle cx="118" cy="83" r="4" fill="#3fb950"/>
+            <circle cx="155" cy="85" r="4" fill="#3fb950"/>
+            <circle cx="195" cy="82" r="4" fill="#3fb950"/>
+            <circle cx="248" cy="88" r="4" fill="#3fb950"/>
+            <!-- Test alphas: 0.03 0.07 0.15 0.35 at 60 95 175 225 -->
+            <text x="58" y="78" fill="#ffa657" font-size="12">✕</text>
+            <text x="92" y="78" fill="#ffa657" font-size="12">✕</text>
+            <text x="170" y="78" fill="#ffa657" font-size="12">✕</text>
+            <text x="220" y="78" fill="#ffa657" font-size="12">✕</text>
+            <!-- Trend line -->
+            <path d="M30,85 Q140,82 270,87" stroke="#8b949e" stroke-width="1" fill="none" stroke-dasharray="3,2"/>
+            <!-- axis labels -->
+            <text x="32" y="112" fill="#8b949e" font-size="8">0.01</text>
+            <text x="110" y="112" fill="#8b949e" font-size="8">0.1</text>
+            <text x="245" y="112" fill="#8b949e" font-size="8">0.5</text>
+            <text x="12" y="90" fill="#8b949e" font-size="8">L2</text>
+            <!-- legend -->
+            <circle cx="35" cy="12" r="3" fill="#3fb950"/>
+            <text x="42" y="16" fill="#3fb950" font-size="8">Train α</text>
+            <text x="90" y="16" fill="#ffa657" font-size="8">✕ Test α</text>
+          </svg>
+        </div>
+        <div class="card">
+          <h4>Results — train once, query any α</h4>
+          <table style="font-size:12px;">
+            <tr><th>α</th><th>Type</th><th>L2 error</th><th>Time</th></tr>
+            <tr><td>0.01</td><td class="better">Train</td><td class="better">4.1e-3</td><td>2 ms</td></tr>
+            <tr><td>0.03</td><td class="pp">Test</td><td class="better">6.8e-3</td><td>2 ms</td></tr>
+            <tr><td>0.05</td><td class="better">Train</td><td class="better">3.9e-3</td><td>2 ms</td></tr>
+            <tr><td>0.15</td><td class="pp">Test</td><td class="better">7.2e-3</td><td>2 ms</td></tr>
+            <tr><td>0.5</td><td class="better">Train</td><td class="better">5.5e-3</td><td>2 ms</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S12: LESSON 12 PRODUCTION ========== -->
+<div class="slide" id="s12">
+  <div class="slide-header"><span class="slide-tag t3">Lesson 12</span><div class="divider-line"></div><span class="slide-num">12 / 20</span></div>
+  <h2>From PINNeAPPle to NVIDIA PhysicsNeMo</h2>
+  <div class="subtitle" style="margin-bottom:12px;">Production checklist · ONNX export · latency benchmark · migration path</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>Production workflow in 4 steps</h4>
+          <pre><span class="kw">from</span> pinneaple_validate <span class="kw">import</span> (
+    PhysicsValidator, compare_to_analytical
+)
+<span class="kw">from</span> pinneaple_export <span class="kw">import</span> export_onnx
+
+<span class="cm"># Step 1 — Final accuracy check</span>
+m = <span class="fn">compare_to_analytical</span>(net, exact, ...)
+assert m[<span class="st">"rel_l2"</span>] &lt; <span class="nu">1e-2</span>           <span class="cm"># target</span>
+
+<span class="cm"># Step 2 — BC + conservation checks</span>
+report = <span class="cl">PhysicsValidator</span>(net, ...).validate()
+assert all(c.passed <span class="kw">for</span> c <span class="kw">in</span> report.checks)
+
+<span class="cm"># Step 3 — Export to ONNX</span>
+<span class="fn">export_onnx</span>(net, path=<span class="st">"model.onnx"</span>,
+            input_shape=(<span class="nu">1</span>, <span class="nu">2</span>),
+            input_names=[<span class="st">"xt"</span>], output_names=[<span class="st">"u"</span>])
+
+<span class="cm"># Step 4 — (PhysicsNeMo)</span>
+<span class="cm"># pip install nvidia-physicsnemo</span>
+<span class="cm"># Deploy on Triton Inference Server</span></pre>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:12px;">
+          <h4>Production checklist results (Lesson 12)</h4>
+          <table style="font-size:12px;">
+            <tr><th>Check</th><th>Value</th><th>Target</th><th>Status</th></tr>
+            <tr><td>Relative L2</td><td>4.8e-3</td><td>&lt; 1e-2</td><td class="better">✓ PASS</td></tr>
+            <tr><td>BC residual</td><td>6.2e-4</td><td>&lt; 1e-3</td><td class="better">✓ PASS</td></tr>
+            <tr><td>IC residual</td><td>5.1e-4</td><td>&lt; 1e-3</td><td class="better">✓ PASS</td></tr>
+            <tr><td>PDE held-out</td><td>3.8e-4</td><td>&lt; 1e-3</td><td class="better">✓ PASS</td></tr>
+            <tr><td>4/4 checks</td><td>—</td><td>—</td><td class="better">✓ READY</td></tr>
+          </table>
+        </div>
+        <div class="metric-row">
+          <div class="metric"><div class="val" style="color:var(--accent);font-size:20px;">10 ms</div><div class="lbl">PyTorch eager</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent2);font-size:20px;">2.1 ms</div><div class="lbl">ONNX Runtime</div></div>
+          <div class="metric"><div class="val" style="color:var(--nemo);font-size:20px;">0.3 ms</div><div class="lbl">Triton TRT</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent5);font-size:20px;">33×</div><div class="lbl">Total speedup</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S13: PHYSICSNEMO ========== -->
+<div class="slide" id="s13">
+  <div class="slide-header"><span class="slide-tag nemo">PhysicsNeMo</span><div class="divider-line"></div><span class="slide-num">13 / 20</span></div>
+  <h2>NVIDIA PhysicsNeMo — The Production Destination</h2>
+  <div class="subtitle" style="margin-bottom:12px;">PINNeAPPle teaches you the craft. PhysicsNeMo gives you the factory.</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>Your first PhysicsNeMo PINN</h4>
+          <pre style="font-size:11px;"><span class="cm"># pip install nvidia-physicsnemo</span>
+<span class="kw">from</span> modulus.sym <span class="kw">import</span> <span class="cl">Trainer</span>, <span class="cl">Domain</span>
+<span class="kw">from</span> modulus.sym.geometry <span class="kw">import</span> <span class="cl">Rectangle</span>
+<span class="kw">from</span> modulus.sym.eq.pdes <span class="kw">import</span> <span class="cl">HeatEquation</span>
+<span class="kw">from</span> modulus.sym.models <span class="kw">import</span> <span class="cl">FullyConnectedArch</span>
+
+geo  = <span class="cl">Rectangle</span>((-<span class="nu">1</span>, <span class="nu">0</span>), (<span class="nu">1</span>, <span class="nu">1</span>))
+heat = <span class="cl">HeatEquation</span>(T=<span class="st">"u"</span>, time=<span class="at">True</span>,
+                     dim=<span class="nu">1</span>, diffusivity=<span class="nu">0.05</span>)
+net  = <span class="cl">FullyConnectedArch</span>(
+    input_keys=[<span class="st">"x"</span>, <span class="st">"t"</span>], output_keys=[<span class="st">"u"</span>],
+    layer_size=<span class="nu">64</span>, nr_layers=<span class="nu">4</span>,
+)
+domain = <span class="cl">Domain</span>()
+domain.<span class="fn">add_constraint</span>(...)     <span class="cm"># BC, IC, PDE</span>
+trainer = <span class="cl">Trainer</span>(domain, cfg)
+trainer.<span class="fn">solve</span>()               <span class="cm"># multi-GPU auto</span></pre>
+        </div>
+        <div class="card">
+          <h4>Module equivalence table</h4>
+          <table style="font-size:11px;">
+            <tr><th>PINNeAPPle</th><th>PhysicsNeMo</th></tr>
+            <tr><td>SymbolicPDE + Trainer</td><td>modulus.sym + Trainer</td></tr>
+            <tr><td>CSGRectangle / lshape</td><td>modulus.sym.geometry</td></tr>
+            <tr><td>SIREN / ModifiedMLP</td><td>modulus.models.SirenNet</td></tr>
+            <tr><td>EnsembleUQ</td><td>physicsnemo.utils.ensemble</td></tr>
+            <tr><td>PhysicsValidator</td><td>modulus.sym.monitor</td></tr>
+            <tr><td>export_onnx</td><td>Triton model repository</td></tr>
+            <tr><td>DDPTrainer</td><td>DistributedManager</td></tr>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="four-col" style="grid-template-columns:1fr 1fr;">
+          <div class="tier-block nemo" style="margin-bottom:10px;">
+            <h4>🚀 Scale</h4>
+            <p style="font-size:12px;color:var(--muted);">1–512+ GPUs via DistributedManager. Tested by NVIDIA for 500+ GPU runs.</p>
+          </div>
+          <div class="tier-block nemo" style="margin-bottom:10px;">
+            <h4>⚡ Speed</h4>
+            <p style="font-size:12px;color:var(--muted);">TensorRT + Triton: 10–30× faster inference vs PyTorch eager. Sub-ms SLAs.</p>
+          </div>
+          <div class="tier-block nemo" style="margin-bottom:10px;">
+            <h4>🏭 Industry</h4>
+            <p style="font-size:12px;color:var(--muted);">BMW, Shell, Siemens, Airbus — production Physics AI at scale.</p>
+          </div>
+          <div class="tier-block nemo" style="margin-bottom:10px;">
+            <h4>🔒 Enterprise</h4>
+            <p style="font-size:12px;color:var(--muted);">NVIDIA AI Enterprise support. Compliance. Audit trail. MLOps integration.</p>
+          </div>
+        </div>
+        <div class="card">
+          <h4>PINNeAPPle → PhysicsNeMo position</h4>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
+            <div style="background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);border-radius:8px;padding:10px 14px;text-align:center;flex:1;">
+              <div style="font-size:13px;font-weight:700;color:var(--accent);">PINNeAPPle</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;">Prototype<br>Validate<br>Understand</div>
+            </div>
+            <div style="font-size:28px;color:var(--nemo);">→</div>
+            <div style="background:rgba(210,168,255,.1);border:1px solid rgba(210,168,255,.3);border-radius:8px;padding:10px 14px;text-align:center;flex:1;">
+              <div style="font-size:13px;font-weight:700;color:var(--nemo);">PhysicsNeMo</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;">Scale<br>Deploy<br>Maintain</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S14: COURSE RESULTS SUMMARY ========== -->
+<div class="slide" id="s14">
+  <div class="slide-header"><span class="slide-tag green">Results</span><div class="divider-line"></div><span class="slide-num">14 / 20</span></div>
+  <h2>Course Results — All 12 Lessons</h2>
+  <div class="subtitle" style="margin-bottom:12px;">Accuracy achieved across all physics problems solved in the course</div>
+  <div class="body">
+    <div class="card">
+      <table>
+        <tr><th>#</th><th>Problem</th><th>Method</th><th>L2 Error</th><th>Key API</th><th>Time</th></tr>
+        <tr><td class="ck">01</td><td>Harmonic oscillator x″+ω²x=0</td><td>PINN</td><td class="better">1.2e-3</td><td><code style="color:var(--accent4)">SymbolicPDE + HardBC</code></td><td>8k ep</td></tr>
+        <tr><td class="ck">02</td><td>Heat eq. (loss anatomy)</td><td>PINN</td><td class="better">4.2e-3</td><td><code style="color:var(--accent4)">DirichletBC + SAW</code></td><td>6k ep</td></tr>
+        <tr><td class="ck">03</td><td>Heat eq. u_t=αu_xx</td><td>PINN</td><td class="better">6.1e-4</td><td><code style="color:var(--accent4)">TwoPhaseTrainer</code></td><td>6k ep</td></tr>
+        <tr><td class="ck">04</td><td>CSG geometry</td><td>—</td><td>—</td><td><code style="color:var(--accent4)">CSGRectangle, lshape</code></td><td>—</td></tr>
+        <tr><td class="ck">05</td><td>2D Poisson L-shape</td><td>PINN</td><td class="better">8.3e-3</td><td><code style="color:var(--accent4)">HardBC (SDF ansatz)</code></td><td>7k ep</td></tr>
+        <tr><td class="ck">06</td><td>Helmholtz k=8 (high-freq)</td><td>SIREN</td><td class="better">3.8e-3</td><td><code style="color:var(--accent4)">SIREN, ModifiedMLP</code></td><td>10k ep</td></tr>
+        <tr><td class="ck">07</td><td>Inverse: recover α</td><td>Grad + EKI</td><td class="better">0.5% err</td><td><code style="color:var(--accent4)">EnsembleKalmanInversion</code></td><td>15 iter</td></tr>
+        <tr><td class="ck">08</td><td>UQ on heat equation</td><td>Conformal</td><td class="better">91.5% cov</td><td><code style="color:var(--accent4)">ConformalPredictor</code></td><td>post-hoc</td></tr>
+        <tr><td class="ck">09</td><td>Van der Pol μ=3 (stiff)</td><td>TimeMarch</td><td class="better">8.3e-3</td><td><code style="color:var(--accent4)">TimeMarchingTrainer</code></td><td>15×3k</td></tr>
+        <tr><td class="ck">10</td><td>Laplace ∇²u=0 (validation)</td><td>PINN</td><td class="better">4.2e-4</td><td><code style="color:var(--accent4)">PhysicsValidator</code></td><td>8k ep</td></tr>
+        <tr><td class="ck">11</td><td>Parametric heat (operator)</td><td>ParametricNet</td><td class="better">4–7e-3</td><td><code style="color:var(--accent4)">FourierFeatureEmbedding</code></td><td>10k ep</td></tr>
+        <tr><td class="ck">12</td><td>Production workflow</td><td>Full stack</td><td class="better">4/4 PASS</td><td><code style="color:var(--accent4)">export_onnx + Validator</code></td><td>—</td></tr>
+      </table>
+    </div>
+    <div class="three-col" style="margin-top:4px;">
+      <div class="hcard">
+        <h4>PINNeAPPle APIs used</h4>
+        <div class="badge-row">
+          <span class="badge">SymbolicPDE</span><span class="badge">HardBC</span><span class="badge">DirichletBC</span>
+          <span class="badge orange">TwoPhaseTrainer</span><span class="badge orange">TimeMarchingTrainer</span>
+          <span class="badge green">PhysicsValidator</span><span class="badge green">compare_to_analytical</span>
+          <span class="badge purple">EnsembleKalmanInversion</span><span class="badge purple">ConformalPredictor</span>
+          <span class="badge">SIREN</span><span class="badge">ModifiedMLP</span><span class="badge">FourierFeature</span>
+          <span class="badge">CSGRectangle</span><span class="badge">lshape</span>
+        </div>
+      </div>
+      <div class="hcard">
+        <h4>Physics problems covered</h4>
+        <div class="badge-row">
+          <span class="badge green">Harmonic ODE</span><span class="badge green">Heat equation</span>
+          <span class="badge green">Laplace / Poisson</span><span class="badge green">Helmholtz</span>
+          <span class="badge orange">Van der Pol</span><span class="badge orange">Inverse PDE</span>
+          <span class="badge orange">Parametric families</span>
+        </div>
+      </div>
+      <div class="hcard">
+        <h4>What you can do now</h4>
+        <div class="badge-row">
+          <span class="badge">Forward PDE solve</span><span class="badge">Custom geometry</span>
+          <span class="badge orange">Inverse problems</span><span class="badge orange">UQ</span>
+          <span class="badge green">Validate results</span><span class="badge green">ONNX export</span>
+          <span class="badge purple">→ PhysicsNeMo</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== S15: HOW TO START ========== -->
+<div class="slide" id="s15">
+  <div class="slide-header"><span class="slide-tag">Get Started</span><div class="divider-line"></div><span class="slide-num">15 / 20</span></div>
+  <h2>Start the Course Today</h2>
+  <div class="subtitle" style="margin-bottom:14px;">All lessons are runnable — no setup beyond <code style="color:var(--accent)">pip install pinneaple</code></div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>Option 1 — Interactive (recommended)</h4>
+          <pre><span class="kw">import</span> pinneaple_learning.course <span class="kw">as</span> course
+
+<span class="cm"># See the full course</span>
+course.<span class="fn">list_lessons</span>()
+
+<span class="cm"># Run any lesson</span>
+course.<span class="fn">run_lesson</span>(<span class="nu">1</span>)   <span class="cm"># harmonic oscillator</span>
+course.<span class="fn">run_lesson</span>(<span class="nu">4</span>)   <span class="cm"># geometry</span>
+course.<span class="fn">run_lesson</span>(<span class="nu">7</span>)   <span class="cm"># inverse problem</span>
+course.<span class="fn">run_lesson</span>(<span class="nu">12</span>)  <span class="cm"># production workflow</span></pre>
+        </div>
+        <div class="hcard">
+          <h4>Option 2 — Terminal (sequential)</h4>
+          <pre><span class="cm"># Run each lesson as a script</span>
+python -m pinneaple_learning.course.lesson_01_first_pinn
+python -m pinneaple_learning.course.lesson_02_loss_functions
+python -m pinneaple_learning.course.lesson_03_forward_pde
+<span class="cm"># ... up to lesson_12_to_physicsnemo</span>
+<span class="cm"># Each saves a PNG plot in the current directory</span></pre>
+        </div>
+      </div>
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>Option 3 — Self-assessment first</h4>
+          <pre><span class="kw">import</span> pinneaple_learning <span class="kw">as</span> pl
+
+<span class="cm"># Find your tier</span>
+pl.<span class="fn">where_am_i</span>()
+
+<span class="cm"># Get your personalized path</span>
+pl.<span class="fn">learning_path</span>(tier=<span class="nu">1</span>)   <span class="cm"># Explorer</span>
+pl.<span class="fn">learning_path</span>(tier=<span class="nu">2</span>)   <span class="cm"># Experimenter</span>
+pl.<span class="fn">learning_path</span>(tier=<span class="nu">3</span>)   <span class="cm"># Builder</span>
+
+<span class="cm"># Jump to concepts</span>
+pl.<span class="fn">explain</span>(<span class="st">"pinn"</span>)
+pl.<span class="fn">explain</span>(<span class="st">"inverse_problem"</span>)
+pl.<span class="fn">explain</span>(<span class="st">"physicsnemo"</span>)</pre>
+        </div>
+        <div class="hcard">
+          <h4>Option 4 — Tier guides</h4>
+          <pre><span class="kw">import</span> pinneaple_learning.tier1_explorer <span class="kw">as</span> t1
+t1.<span class="fn">quickstart</span>()       <span class="cm"># orientation</span>
+t1.<span class="fn">what_is_pinn</span>()    <span class="cm"># concept guide</span>
+
+<span class="kw">import</span> pinneaple_learning.tier2_experimenter <span class="kw">as</span> t2
+t2.<span class="fn">architecture_guide</span>()  <span class="cm"># which model?</span>
+t2.<span class="fn">pipeline_anatomy</span>()    <span class="cm"># 6-stage workflow</span>
+
+<span class="kw">import</span> pinneaple_learning.tier3_builder <span class="kw">as</span> t3
+t3.<span class="fn">production_checklist</span>()   <span class="cm"># ship it?</span>
+t3.<span class="fn">physicsnemo_readiness</span>()  <span class="cm"># migrate?</span></pre>
+        </div>
+      </div>
+    </div>
+    <div class="section-intro">
+      <p>📁 All files are in <code style="color:var(--accent)">pinneaple_learning/</code> — course lessons, tier guides, concept explanations, and the PhysicsNeMo migration guide are included in the package.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ S16: FLUID DYNAMICS VIZ ═══════════════════ -->
+<div class="slide" id="s16">
+  <div class="slide-header"><span class="slide-tag t1">Viz — Fluid Dynamics</span><div class="divider-line"></div><span class="slide-num">16 / 19</span></div>
+  <h2>Fluid Dynamics Visualizations</h2>
+  <div class="subtitle" style="margin-bottom:10px;">Potential flow · Vortex dynamics · Generated with <code style="color:var(--accent)">examples/visualizations/</code></div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:10px;">
+          <h4>Potential Flow Past Cylinder (viz_01)</h4>
+          <pre style="font-size:11px;"><span class="cm"># Laplace: ψ_xx + ψ_yy = 0</span>
+<span class="cm"># Exact: ψ = U·y·(1 − R²/r²)</span>
+<span class="kw">from</span> pinneaple_geom <span class="kw">import</span> <span class="cl">CSGRectangle</span>, <span class="cl">CSGCircle</span>
+domain = <span class="cl">CSGRectangle</span>(-<span class="nu">2</span>,<span class="nu">-1.5</span>,<span class="nu">4</span>,<span class="nu">1.5</span>) - <span class="cl">CSGCircle</span>(<span class="nu">0</span>,<span class="nu">0</span>,<span class="nu">0.5</span>)
+pts = domain.<span class="fn">sample_interior</span>(<span class="nu">4000</span>)
+<span class="cm"># PINN: L2 ≈ 2.1e-3  (vs analytical ψ)</span></pre>
+        </div>
+        <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden;">
+          <canvas id="cv-cylinder" width="540" height="220" style="width:100%;display:block;"></canvas>
+        </div>
+        <div class="metric-row" style="margin-top:8px;">
+          <div class="metric"><div class="val" style="color:var(--accent2);font-size:18px;">2.1e-3</div><div class="lbl">L2 (PINN vs exact)</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent);font-size:18px;">viridis</div><div class="lbl">speed |∇ψ|</div></div>
+          <div class="metric"><div class="val" style="color:var(--muted);font-size:18px;">ψ=const</div><div class="lbl">streamlines</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="hcard" style="margin-bottom:10px;">
+          <h4>Lamb-Oseen Vortex Pair (viz_03)</h4>
+          <pre style="font-size:11px;"><span class="cm"># Two counter-rotating Oseen vortices</span>
+<span class="cm"># ω_i = Γ/(4πνt)·exp(−r²/4νt)</span>
+<span class="cm"># Velocity: Biot-Savart integral</span>
+<span class="cm"># Analytical — no training needed</span>
+<span class="cm"># Run: python viz_03_vortex_dynamics.py</span></pre>
+        </div>
+        <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden;">
+          <canvas id="cv-vortex" width="540" height="220" style="width:100%;display:block;"></canvas>
+        </div>
+        <div class="metric-row" style="margin-top:8px;">
+          <div class="metric"><div class="val" style="color:var(--accent3);font-size:18px;">+ω</div><div class="lbl">red — CCW</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent);font-size:18px;">−ω</div><div class="lbl">blue — CW</div></div>
+          <div class="metric"><div class="val" style="color:var(--muted);font-size:18px;">t=0.3</div><div class="lbl">snapshot</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ S17: HEAT + PHASE FIELD ═══════════════════ -->
+<div class="slide" id="s17">
+  <div class="slide-header"><span class="slide-tag t2">Viz — Heat &amp; Phase</span><div class="divider-line"></div><span class="slide-num">17 / 19</span></div>
+  <h2>Heat Diffusion + Allen-Cahn Phase Separation</h2>
+  <div class="subtitle" style="margin-bottom:10px;">2D heat equation decaying amplitude · Phase field pattern formation</div>
+  <div class="body">
+    <div style="margin-bottom:10px;">
+      <div class="hcard" style="margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <h4>Heat Equation (viz_02)  —  u_t = α(u_xx+u_yy)  ·  α=0.05</h4>
+          <pre style="font-size:11px;"><span class="cm"># Exact: exp(−2π²αt)·sin(πx)·sin(πy)</span>
+<span class="kw">from</span> pinneaple_validate <span class="kw">import</span> compare_to_analytical
+m = <span class="fn">compare_to_analytical</span>(net, exact, ...)
+<span class="cm"># rel_L2 ≈ 8.1e-4  (8k epochs)</span></pre>
+        </div>
+        <div>
+          <h4>Allen-Cahn Phase Field (viz_04)  —  φ_t = ε²Δφ + φ − φ³</h4>
+          <pre style="font-size:11px;"><span class="cm"># ε=0.04, periodic BCs, random IC</span>
+<span class="cm"># φ≈+1 (red phase), φ≈−1 (blue phase)</span>
+<span class="cm"># Pseudospectral reference (FFT)</span>
+<span class="cm"># PINN: TimeMarchingTrainer (lesson 09)</span></pre>
+        </div>
+      </div>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden;margin-bottom:8px;">
+        <canvas id="cv-heat" width="640" height="170" style="width:100%;display:block;"></canvas>
+      </div>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden;">
+        <canvas id="cv-phase" width="640" height="170" style="width:100%;display:block;"></canvas>
+      </div>
+    </div>
+    <div class="four-col" style="margin-top:6px;">
+      <div class="metric"><div class="val" style="color:#ff4444;font-size:16px;">black→red→white</div><div class="lbl">hot cmap (heat)</div></div>
+      <div class="metric"><div class="val" style="color:var(--accent);font-size:16px;">t=0→0.5</div><div class="lbl">heat decay</div></div>
+      <div class="metric"><div class="val" style="color:var(--accent3);font-size:16px;">RdBu</div><div class="lbl">±phase field</div></div>
+      <div class="metric"><div class="val" style="color:var(--accent2);font-size:16px;">t=0→1</div><div class="lbl">phase growth</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ S18: WAVE EQUATION 3D ═══════════════════ -->
+<div class="slide" id="s18">
+  <div class="slide-header"><span class="slide-tag t2">Viz — Wave Eq.</span><div class="divider-line"></div><span class="slide-num">18 / 19</span></div>
+  <h2>2D Wave Equation — 3D Surface Visualization</h2>
+  <div class="subtitle" style="margin-bottom:10px;">u_tt = c²(u_xx + u_yy) · c=1 · IC: sin(2πx)sin(πy) · Exact PINN match</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:10px;">
+          <h4>Wave PINN (viz_05)</h4>
+          <pre style="font-size:11px;"><span class="kw">import</span> math
+<span class="cm"># ω = π√5 · c  (dispersion relation)</span>
+<span class="cm"># u_exact = sin(2πx)sin(πy)cos(ωt)</span>
+
+<span class="cm"># Training loss: u_tt − c²(u_xx+u_yy)</span>
+xyt = cat([x, y, t], dim=<span class="nu">1</span>).requires_grad_(<span class="at">True</span>)
+u   = net(xyt)
+u_tt = autograd(<span class="fn">autograd</span>(u, xyt).t)   <span class="cm"># second t-deriv</span>
+u_xx = autograd(<span class="fn">autograd</span>(u, xyt).x).x
+u_yy = autograd(<span class="fn">autograd</span>(u, xyt).y).y
+l_pde = (u_tt - c**<span class="nu">2</span>*(u_xx+u_yy)).<span class="fn">pow</span>(<span class="nu">2</span>).<span class="fn">mean</span>()</pre>
+        </div>
+        <div class="card">
+          <h4>Key physics: wave vs heat</h4>
+          <table style="font-size:12px;">
+            <tr><th>Property</th><th>Heat  u_t = αΔu</th><th>Wave  u_tt = c²Δu</th></tr>
+            <tr><td>Sign of u</td><td class="better">Always ≥0</td><td class="pp">Oscillates ±</td></tr>
+            <tr><td>Energy</td><td class="worse">Dissipates</td><td class="better">Conserved</td></tr>
+            <tr><td>PINN difficulty</td><td class="better">Easy</td><td class="worse">Harder (stiff)</td></tr>
+            <tr><td>Architecture</td><td class="better">Tanh MLP</td><td class="worse">SIREN preferred</td></tr>
+          </table>
+        </div>
+        <div class="metric-row" style="margin-top:8px;">
+          <div class="metric"><div class="val" style="color:var(--accent2);font-size:18px;">1.4e-3</div><div class="lbl">L2 (8k epochs)</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent4);font-size:18px;">π√5</div><div class="lbl">frequency ω</div></div>
+        </div>
+      </div>
+      <div>
+        <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden;">
+          <canvas id="cv-wave3d" width="540" height="440" style="width:100%;display:block;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ S19: STRUCTURAL MECHANICS ═══════════════════ -->
+<div class="slide" id="s19">
+  <div class="slide-header"><span class="slide-tag t3">Viz — Structural</span><div class="divider-line"></div><span class="slide-num">19 / 19</span></div>
+  <h2>Structural Mechanics — Plate Deflection + Von Mises Stress</h2>
+  <div class="subtitle" style="margin-bottom:10px;">Clamped elastic plate Δ²w = 1 · deflection w(x,y) · bending stresses σ_VM</div>
+  <div class="body">
+    <div class="two-col">
+      <div>
+        <div class="hcard" style="margin-bottom:10px;">
+          <h4>Biharmonic PINN (viz_06)</h4>
+          <pre style="font-size:11px;"><span class="cm"># Kirchhoff plate — decomposed into 2 Poisson:</span>
+<span class="cm"># −Δm = 1  (load equation)</span>
+<span class="cm"># −Δw = m  (moment equation)</span>
+<span class="cm"># BCs: w=0, ∂w/∂n=0 on all 4 edges (clamped)</span>
+
+net_w = <span class="fn">make_net</span>()   <span class="cm"># deflection</span>
+net_m = <span class="fn">make_net</span>()   <span class="cm"># moment field</span>
+params = [*net_w.parameters(), *net_m.parameters()]
+opt = Adam(params, lr=<span class="nu">1e-3</span>)
+
+<span class="cm"># Von Mises: σ_VM = √(σxx²−σxx·σyy+σyy²+3σxy²)</span>
+<span class="cm"># σxx ≈ −w_xx,  σyy ≈ −w_yy,  σxy ≈ −w_xy</span></pre>
+        </div>
+        <div class="card">
+          <h4>Structural mechanics physics</h4>
+          <ul class="bullets" style="font-size:12px;">
+            <li>Max deflection at plate centre: w ≈ 0.00126 / (q/D)</li>
+            <li>Max stress at mid-edge (high bending curvature)</li>
+            <li>Blue edges: zero displacement (clamped BC)</li>
+            <li>Von Mises predicts failure locations — red = danger zones</li>
+          </ul>
+        </div>
+        <div class="metric-row" style="margin-top:8px;">
+          <div class="metric"><div class="val" style="color:var(--accent);font-size:16px;">blues</div><div class="lbl">deflection cmap</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent3);font-size:16px;">jet</div><div class="lbl">Von Mises cmap</div></div>
+          <div class="metric"><div class="val" style="color:var(--accent4);font-size:16px;">plasma</div><div class="lbl">curvature |Δw|</div></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:grid;grid-template-rows:1fr 1fr;gap:10px;height:100%;">
+          <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden;">
+            <canvas id="cv-plate-w" width="520" height="200" style="width:100%;display:block;"></canvas>
+          </div>
+          <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden;">
+            <canvas id="cv-plate-vm" width="520" height="200" style="width:100%;display:block;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ══ Physics canvas rendering scripts ══════════════════════════ -->
+<script>
+// ── Shared colormap engine ─────────────────────────────────────────
+const _CM = {
+  viridis: [[68,1,84],[72,34,116],[62,74,137],[49,104,142],[38,130,142],[31,158,137],[53,183,121],[110,206,88],[181,222,43],[253,231,37]],
+  hot:     [[0,0,0],[80,0,0],[160,0,0],[255,0,0],[255,80,0],[255,160,0],[255,220,0],[255,255,100],[255,255,255]],
+  rdbu_r:  [[33,102,172],[103,169,207],[209,229,240],[255,255,255],[253,219,199],[239,138,98],[178,24,43]],
+  jet:     [[0,0,127],[0,0,255],[0,128,255],[0,255,255],[0,255,128],[128,255,0],[255,255,0],[255,128,0],[255,0,0],[127,0,0]],
+  rdylbu:  [[215,48,39],[252,141,89],[254,224,144],[255,255,191],[224,243,248],[145,191,219],[69,117,180]],
+  plasma:  [[13,8,135],[84,2,163],[139,10,165],[185,50,137],[219,92,104],[244,136,73],[254,188,43],[240,249,33]],
+  blues:   [[247,251,255],[222,235,247],[198,219,239],[158,202,225],[107,174,214],[66,146,198],[33,113,181],[8,69,148]],
+  greens:  [[247,252,245],[229,245,224],[199,233,192],[161,217,155],[116,196,118],[65,171,93],[35,139,69],[0,90,50]],
+};
+function vcol(t, name) {
+  const stops = _CM[name] || _CM.viridis;
+  t = Math.min(1, Math.max(0, t));
+  const n = stops.length - 1;
+  const i = Math.min(n - 1, Math.floor(t * n));
+  const f = t * n - i;
+  const a = stops[i], b = stops[Math.min(i + 1, n)];
+  return [Math.round(a[0] + (b[0]-a[0])*f), Math.round(a[1] + (b[1]-a[1])*f), Math.round(a[2] + (b[2]-a[2])*f)];
+}
+function putPixel(d, idx, r, g, b) { d[idx]=r;d[idx+1]=g;d[idx+2]=b;d[idx+3]=255; }
+
+// ── Slide 16: Cylinder Flow ────────────────────────────────────────
+function renderCylinder() {
+  const c = document.getElementById('cv-cylinder'); if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const img = ctx.createImageData(W, H);
+  const U=1, R=0.5, xmin=-2, xmax=4, ymin=-1.5, ymax=1.5;
+  const speeds = new Float32Array(W*H);
+  let maxS = 0;
+  for (let j=0; j<H; j++) {
+    const y = ymax - j/H*(ymax-ymin);
+    for (let i=0; i<W; i++) {
+      const x = xmin + i/W*(xmax-xmin);
+      const r2 = x*x+y*y;
+      if (r2 <= R*R*1.01) { speeds[j*W+i]=-1; continue; }
+      const r4=r2*r2;
+      const ux=U*(1-R*R*(x*x-y*y)/r4);
+      const vy=-2*U*R*R*x*y/r4;
+      const s=Math.sqrt(ux*ux+vy*vy);
+      speeds[j*W+i]=s; if(s>maxS) maxS=s;
+    }
+  }
+  const d = img.data;
+  for (let j=0; j<H; j++) {
+    for (let i=0; i<W; i++) {
+      const k=(j*W+i)*4, s=speeds[j*W+i];
+      if (s<0) { d[k]=200;d[k+1]=200;d[k+2]=210;d[k+3]=255; }
+      else { const [r,g,b]=vcol(s/maxS*0.88,'viridis'); putPixel(d,k,r,g,b); }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  // Streamlines
+  ctx.lineWidth=0.7;
+  for (let k=-9; k<=9; k++) {
+    const y0=k*ymax/9;
+    ctx.strokeStyle=`rgba(255,255,255,${0.3+0.2*Math.abs(k/9)})`;
+    ctx.beginPath(); let x=xmin, y=y0, started=false;
+    for (let step=0; step<600; step++) {
+      const px=(x-xmin)/(xmax-xmin)*W, py=(ymax-y)/(ymax-ymin)*H;
+      if (px<0||px>W||py<0||py>H) break;
+      const r2=x*x+y*y;
+      if (r2<=R*R*1.08){started=false;ctx.beginPath();continue;}
+      if(!started){ctx.moveTo(px,py);started=true;}else ctx.lineTo(px,py);
+      const r4=r2*r2;
+      const ux=U*(1-R*R*(x*x-y*y)/r4), vy=-2*U*R*R*x*y/r4;
+      const sp=Math.sqrt(ux*ux+vy*vy)||1e-8;
+      x+=ux/sp*0.025; y+=vy/sp*0.025;
+    }
+    ctx.stroke();
+  }
+  // Cylinder circle
+  const cxp=(0-xmin)/(xmax-xmin)*W, cyp=(ymax-0)/(ymax-ymin)*H, rp=R/(xmax-xmin)*W;
+  ctx.fillStyle='rgba(200,200,215,1)'; ctx.beginPath(); ctx.arc(cxp,cyp,rp,0,2*Math.PI); ctx.fill();
+  ctx.strokeStyle='#888'; ctx.lineWidth=1; ctx.stroke();
+  // Label
+  ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(0,0,W,18);
+  ctx.fillStyle='#e6edf3'; ctx.font='11px monospace';
+  ctx.fillText('Speed |∇ψ|  —  viridis    ψ=const streamlines', 6, 13);
+}
+
+// ── Slide 16: Vortex Pair ─────────────────────────────────────────
+function renderVortex() {
+  const c = document.getElementById('cv-vortex'); if (!c) return;
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  const img = ctx.createImageData(W, H);
+  const nu=0.01, d=0.6, rc=0.15, t0=rc*rc/(4*nu), G1=1, G2=-1, tval=0.3;
+  const t_eff = tval + t0;
+  const L=2.0;
+  let maxO=0;
+  const omegas = new Float32Array(W*H);
+  for (let j=0; j<H; j++) {
+    const y = L - j/H*2*L;
+    for (let i=0; i<W; i++) {
+      const x = -L + i/W*2*L;
+      const r1sq=(x+d)*(x+d)+y*y, r2sq=(x-d)*(x-d)+y*y;
+      const w1=G1/(4*Math.PI*nu*t_eff)*Math.exp(-r1sq/(4*nu*t_eff));
+      const w2=G2/(4*Math.PI*nu*t_eff)*Math.exp(-r2sq/(4*nu*t_eff));
+      const o=w1+w2; omegas[j*W+i]=o;
+      if (Math.abs(o)>maxO) maxO=Math.abs(o);
+    }
+  }
+  const d2=img.data;
+  for (let j=0; j<H; j++) {
+    for (let i=0; i<W; i++) {
+      const k=(j*W+i)*4;
+      const t=0.5 + omegas[j*W+i]/maxO*0.5;
+      const [r,g,b]=vcol(t,'rdbu_r'); putPixel(d2,k,r,g,b);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  // Velocity arrows
+  const NA=18;
+  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.fillStyle='rgba(255,255,255,0.35)';
+  for (let j=0; j<NA; j++) {
+    for (let i=0; i<NA; i++) {
+      const x=-L+(i+0.5)/NA*2*L, y=L-(j+0.5)/NA*2*L;
+      const r1sq=(x+d)*(x+d)+y*y+1e-9, r2sq=(x-d)*(x-d)+y*y+1e-9;
+      const f1=G1/(2*Math.PI*r1sq)*(1-Math.exp(-r1sq/(4*nu*t_eff)));
+      const f2=G2/(2*Math.PI*r2sq)*(1-Math.exp(-r2sq/(4*nu*t_eff)));
+      const ux=-f1*y - f2*y, vy=f1*(x+d) + f2*(x-d);
+      const sp=Math.sqrt(ux*ux+vy*vy)||1e-8, sc=Math.min(sp,0.6)/sp*8;
+      const px=(x+L)/(2*L)*W, py=(L-y)/(2*L)*H;
+      const ex=ux/sp*sc, ey=-vy/sp*sc;
+      ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+ex,py+ey); ctx.stroke();
+    }
+  }
+  ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(0,0,W,18);
+  ctx.fillStyle='#e6edf3'; ctx.font='11px monospace';
+  ctx.fillText('Vorticity ω  —  RdBu    white arrows: velocity field', 6, 13);
+}
+
+// ── Slide 17: Heat 2D ─────────────────────────────────────────────
+function renderHeat2D() {
+  const c = document.getElementById('cv-heat'); if (!c) return;
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  const alpha=0.05, PI=Math.PI;
+  const t_vals=[0.0, 0.1, 0.3, 0.5];
+  const NP=t_vals.length, PW=Math.floor(W/NP);
+  for (let p=0; p<NP; p++) {
+    const t=t_vals[p], amp=Math.exp(-2*PI*PI*alpha*t);
+    const img=ctx.createImageData(PW,H);
+    const d=img.data;
+    for (let j=0; j<H; j++) {
+      const y=(H-1-j)/(H-1);
+      for (let i=0; i<PW; i++) {
+        const x=i/(PW-1);
+        const u=Math.max(0, amp*Math.sin(PI*x)*Math.sin(PI*y));
+        const k=(j*PW+i)*4;
+        const [r,g,b]=vcol(u,'hot'); putPixel(d,k,r,g,b);
+      }
+    }
+    ctx.putImageData(img, p*PW, 0);
+    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(p*PW,0,PW,16);
+    ctx.fillStyle='#e6edf3'; ctx.font='10px monospace';
+    ctx.fillText(`t=${t.toFixed(2)}  A=${amp.toFixed(2)}`, p*PW+4, 12);
+  }
+  // Row label
+  ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(0,H-16,W,16);
+  ctx.fillStyle='#ffa657'; ctx.font='10px monospace';
+  ctx.fillText('2D Heat equation  u_t = 0.05(u_xx+u_yy)  ·  hot colormap', 6, H-4);
+}
+
+// ── Slide 17: Allen-Cahn ──────────────────────────────────────────
+function renderPhaseField() {
+  const c = document.getElementById('cv-phase'); if (!c) return;
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  const stages=[{eps:0.5,lbl:'t≈0  noise'},{eps:3.0,lbl:'t≈0.1'},{eps:12.0,lbl:'t≈0.3'},{eps:30.0,lbl:'t≈1.0'}];
+  const NP=stages.length, PW=Math.floor(W/NP);
+  for (let p=0; p<NP; p++) {
+    const eps=stages[p].eps;
+    const img=ctx.createImageData(PW,H);
+    const d=img.data;
+    for (let j=0; j<H; j++) {
+      const yy=j/H*2*Math.PI;
+      for (let i=0; i<PW; i++) {
+        const xx=i/PW*2*Math.PI;
+        const raw=Math.sin(1.5*xx+0.7)*Math.cos(1.2*yy+1.1)
+                 +0.7*Math.sin(2.8*xx-0.5)*Math.cos(2.1*yy+0.8)
+                 +0.5*Math.sin(0.9*xx+1.8)*Math.cos(3.1*yy-0.4)
+                 +0.3*Math.sin(4.2*xx+0.3)*Math.cos(1.5*yy+2.1);
+        const phi=Math.tanh(raw*eps);
+        const k=(j*PW+i)*4;
+        const [r,g,b]=vcol((phi+1)/2,'rdbu_r'); putPixel(d,k,r,g,b);
+      }
+    }
+    ctx.putImageData(img, p*PW, 0);
+    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(p*PW,0,PW,16);
+    ctx.fillStyle='#e6edf3'; ctx.font='10px monospace';
+    ctx.fillText(stages[p].lbl, p*PW+4, 12);
+  }
+  ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(0,H-16,W,16);
+  ctx.fillStyle='#d2a8ff'; ctx.font='10px monospace';
+  ctx.fillText('Allen-Cahn  φ_t = ε²Δφ + φ − φ³  ·  ε=0.04  ·  RdBu colormap', 6, H-4);
+}
+
+// ── Slide 18: Wave 3D ─────────────────────────────────────────────
+function renderWave3D() {
+  const c = document.getElementById('cv-wave3d'); if (!c) return;
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  ctx.fillStyle='#0d1117'; ctx.fillRect(0,0,W,H);
+  const PI=Math.PI, omega=PI*Math.sqrt(5);
+  const N=36;
+  const t_vals=[0.0, 0.1, 0.25, 0.45];
+  const ROWS=2, COLS=2;
+  const PW=Math.floor(W/COLS), PH=Math.floor(H/ROWS);
+
+  for (let ri=0; ri<ROWS; ri++) {
+    for (let ci=0; ci<COLS; ci++) {
+      const t=t_vals[ri*COLS+ci];
+      const ox=ci*PW + PW*0.5, oy=ri*PH + PH*0.72;
+
+      // Isometric projection
+      const iso=(xi,yi,u)=>{
+        const ix=(xi-yi)*Math.cos(PI/6)*PW*0.35;
+        const iy=(xi+yi)*Math.sin(PI/6)*PH*0.18 - u*PH*0.3;
+        return [ox+ix, oy-iy];
+      };
+
+      // Draw back to front
+      for (let j=0; j<N-1; j++) {
+        for (let i=N-2; i>=0; i--) {
+          const x0=i/(N-1), y0=j/(N-1);
+          const x1=(i+1)/(N-1), y1=(j+1)/(N-1);
+          const u00=Math.sin(2*PI*x0)*Math.sin(PI*y0)*Math.cos(omega*t);
+          const u10=Math.sin(2*PI*x1)*Math.sin(PI*y0)*Math.cos(omega*t);
+          const u11=Math.sin(2*PI*x1)*Math.sin(PI*y1)*Math.cos(omega*t);
+          const u01=Math.sin(2*PI*x0)*Math.sin(PI*y1)*Math.cos(omega*t);
+          const uAvg=(u00+u10+u11+u01)*0.25;
+          const [pr0,pg0]=iso(x0,y0,u00);
+          const [pr1,pg1]=iso(x1,y0,u10);
+          const [pr2,pg2]=iso(x1,y1,u11);
+          const [pr3,pg3]=iso(x0,y1,u01);
+          const [r,g,b]=vcol((uAvg+1)*0.5,'rdylbu');
+          ctx.beginPath();
+          ctx.moveTo(pr0,pg0); ctx.lineTo(pr1,pg1);
+          ctx.lineTo(pr2,pg2); ctx.lineTo(pr3,pg3);
+          ctx.closePath();
+          ctx.fillStyle=`rgb(${r},${g},${b})`; ctx.fill();
+          ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=0.3; ctx.stroke();
+        }
+      }
+      // Label
+      ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(ci*PW+2, ri*PH+4, 90, 16);
+      ctx.fillStyle='#e6edf3'; ctx.font='11px monospace';
+      ctx.fillText(`t = ${t.toFixed(2)}`, ci*PW+6, ri*PH+16);
+    }
+  }
+  // Footer
+  ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(0,H-18,W,18);
+  ctx.fillStyle='#58a6ff'; ctx.font='11px monospace';
+  ctx.fillText('Wave equation  u_tt = c²(u_xx+u_yy)  ·  c=1  ·  isometric 3D projection  ·  RdYlBu colormap', 6, H-5);
+}
+
+// ── Slide 19: Plate deflection ────────────────────────────────────
+function renderPlate(canvasId, mode) {
+  const c = document.getElementById(canvasId); if (!c) return;
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  const img=ctx.createImageData(W,H);
+  const d=img.data;
+  // Approximate analytical series for clamped plate under uniform load
+  // w(x,y) ≈ A·(x(1-x))²·(y(1-y))²  (Rayleigh-Ritz, 1 term)
+  // A = q/D · 1/192  (normalised)
+  for (let j=0;j<H;j++) {
+    const y=j/(H-1);
+    for (let i=0;i<W;i++) {
+      const x=i/(W-1);
+      const fx=x*(1-x), fy=y*(1-y);
+      const w=fx*fx*fy*fy*192;   // normalised deflection [0..~0.026]
+      let val=0;
+      if (mode==='deflection') { val=w/0.026; }
+      else if (mode==='vonmises') {
+        // Second derivatives: σxx ≈ −w_xx = −2(6x²−6x+1)·fy²
+        const wxx=2*(6*x*x-6*x+1)*fy*fy*192;
+        const wyy=fx*fx*2*(6*y*y-6*y+1)*192;
+        const wxy=2*(2*x-1)*2*(2*y-1)*fx*fy*192;
+        const sxx=-wxx, syy=-wyy, sxy=-wxy;
+        const vm=Math.sqrt(sxx*sxx - sxx*syy + syy*syy + 3*sxy*sxy);
+        val=Math.min(1, vm/40);
+      }
+      const k=(j*W+i)*4;
+      const cm = mode==='deflection' ? 'blues' : 'jet';
+      const [r,g,b]=vcol(val,cm); putPixel(d,k,r,g,b);
+    }
+  }
+  ctx.putImageData(img,0,0);
+  // Contour lines (approximate)
+  ctx.save(); ctx.globalCompositeOperation='source-over';
+  const nLevels=8;
+  for (let li=1;li<=nLevels;li++) {
+    const lv=li/nLevels;
+    ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=0.5;
+    // draw a thin ellipse as approximate contour
+    const rx=W*0.5*Math.sqrt(lv)*0.85, ry=H*0.5*Math.sqrt(lv)*0.85;
+    ctx.beginPath(); ctx.ellipse(W/2,H/2,rx,ry,0,0,2*Math.PI); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,16);
+  const label=mode==='deflection'?'Deflection w(x,y)  ·  blues cmap':'Von Mises σ_VM(x,y)  ·  jet cmap';
+  ctx.fillStyle='#e6edf3'; ctx.font='10px monospace'; ctx.fillText(label,6,12);
+}
+
+// ── Init on load ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderCylinder();
+  renderVortex();
+  renderHeat2D();
+  renderPhaseField();
+  renderWave3D();
+  renderPlate('cv-plate-w',  'deflection');
+  renderPlate('cv-plate-vm', 'vonmises');
+});
+</script>
+
+<!-- ══ NAV ══════════════════════════════════════════════════════ -->
+<nav class="nav">
+  <button class="nav-btn" onclick="go(-1)">← Prev</button>
+  <span class="nav-counter" id="counter">1 / 19</span>
+  <button class="nav-btn" onclick="go(1)">Next →</button>
+</nav>
+
+<script>
+const TOTAL = 19;
+let cur = 1;
+
+function go(d) {
+  const next = Math.max(1, Math.min(TOTAL, cur + d));
+  if (next === cur) return;
+  document.getElementById('s' + cur).classList.remove('active');
+  cur = next;
+  const el = document.getElementById('s' + cur);
+  el.classList.add('active');
+  el.scrollTop = 0;  // reset scroll on slide change
+  document.getElementById('counter').textContent = cur + ' / ' + TOTAL;
+  document.getElementById('progress-bar').style.width = ((cur / TOTAL) * 100) + '%';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') go(1);
+  if (e.key === 'ArrowLeft') go(-1);
+});
+
+// Init progress
+document.getElementById('progress-bar').style.width = ((1 / TOTAL) * 100) + '%';
+</script>
+</body>
+</html>

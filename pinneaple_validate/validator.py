@@ -309,3 +309,48 @@ class PhysicsValidator:
         return self.validate(
             model_name=getattr(problem_spec, "title", None) or type(self.model).__name__
         )
+
+
+# ---------------------------------------------------------------------------
+# Convenience function
+# ---------------------------------------------------------------------------
+
+
+def validate_model(
+    model: object,
+    spec: Any,
+    coord_names: Optional[List[str]] = None,
+    domain_bounds: Optional[Dict[str, Tuple[float, float]]] = None,
+    device: str = "cpu",
+) -> ValidationReport:
+    """Quick one-shot validation from a ProblemSpec or explicit arguments.
+
+    Parameters
+    ----------
+    model:
+        Trained PINN model.
+    spec:
+        A :class:`~pinneaple_problemdesign.schema.ProblemSpec` instance, or
+        ``None`` to use *coord_names* / *domain_bounds* directly.
+    coord_names:
+        Required when *spec* is ``None``.
+    domain_bounds:
+        Required when *spec* is ``None``.
+    device:
+        PyTorch device string.
+
+    Returns
+    -------
+    ValidationReport
+    """
+    if spec is not None:
+        _coords = getattr(getattr(spec, "domain", None), "coord_names", None) or coord_names or []
+        _bounds = getattr(getattr(spec, "domain", None), "bounds", None) or domain_bounds or {}
+    else:
+        _coords = coord_names or []
+        _bounds = domain_bounds or {}
+
+    validator = PhysicsValidator(model, _coords, _bounds, device=device)
+    if spec is not None:
+        return validator.validate_from_spec(spec)
+    return validator.validate()
