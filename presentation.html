@@ -3116,10 +3116,28 @@ const _CM = {
 };
 
 function vcol(t, name) {
-  const p = _CM[name]; const n = p.length - 1;
-  const i = Math.min(Math.floor(t * n), n - 1), f = t * n - i;
-  const a = p[i], b = p[i+1] || p[n];
-  return [a[0]+f*(b[0]-a[0]), a[1]+f*(b[1]-a[1]), a[2]+f*(b[2]-a[2])];
+  const p = _CM[name];
+  if (!p) {
+    console.warn("Colormap não encontrado:", name);
+    return [255, 0, 255];
+  }
+
+  // 🔥 CLAMP + SANITIZE
+  if (!Number.isFinite(t)) t = 0;
+  t = Math.max(0, Math.min(1, t));
+
+  const n = p.length - 1;
+  const i = Math.min(Math.floor(t * n), n - 1);
+  const f = t * n - i;
+
+  const a = p[i];
+  const b = p[i+1] || p[n];
+
+  return [
+    a[0] + f*(b[0]-a[0]),
+    a[1] + f*(b[1]-a[1]),
+    a[2] + f*(b[2]-a[2])
+  ];
 }
 
 function renderCylinder() {

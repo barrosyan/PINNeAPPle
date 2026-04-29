@@ -1,3 +1,98 @@
 C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\visualizations\viz_01_flow_cylinder.py:135: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
 Consider using tensor.detach() first. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\torch\csrc\autograd\generated\python_variable_methods.cpp:837.)
   print(f"  ep {ep:5d}  loss={float(loss):.4e}")
+C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\visualizations\viz_02_heat_2d.py:174: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+  plt.tight_layout()
+C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\visualizations\viz_03_vortex_dynamics.py:113: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+  plt.tight_layout()
+C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\visualizations\viz_04_phase_field.py:124: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+  plt.tight_layout()
+
+  PINNeAPPle Physics Visualization Suite
+  Running scripts: [1, 2, 3, 4, 5, 6]
+
+
+==========================================================
+  [1/6]  Potential Flow Past Cylinder
+==========================================================
+───────────────────────────────────────────────────────
+  Viz 01 — Potential Flow Past Cylinder
+───────────────────────────────────────────────────────
+  Training on cpu...
+  ep     0  loss=3.0801e+01
+  ep  1000  loss=1.4577e-01
+  ep  2000  loss=1.2032e-02
+  ep  3000  loss=5.6045e-03
+  ep  4000  loss=4.0332e-03
+  ep  5000  loss=3.4123e-03
+
+  Relative L2 = nan
+  Saved viz_01_flow_cylinder.png
+  Completed in 347.8s
+
+==========================================================
+  [2/6]  2D Heat Equation
+==========================================================
+───────────────────────────────────────────────────────
+  Viz 02 — 2D Heat Equation
+───────────────────────────────────────────────────────
+  Training on cpu...
+  ep     0  loss=2.3320e+01
+  ep  2000  loss=1.9927e-02
+  ep  4000  loss=7.0371e-03
+  ep  6000  loss=3.1224e-03
+  Saved viz_02_heat_2d.png
+  Completed in 279.2s
+
+==========================================================
+  [3/6]  Vortex Dynamics (Lamb-Oseen)
+==========================================================
+───────────────────────────────────────────────────────
+  Viz 03 — Vortex Dynamics (Lamb-Oseen pair)
+───────────────────────────────────────────────────────
+  Saved viz_03_vortex_dynamics.png
+  Done (analytical — no training required)
+  Completed in 0.9s
+
+==========================================================
+  [4/6]  Allen-Cahn Phase Field
+==========================================================
+───────────────────────────────────────────────────────
+  Viz 04 — Allen-Cahn Phase Field
+───────────────────────────────────────────────────────
+  Running pseudospectral integration...
+  Saved viz_04_phase_field.png
+  Completed in 7.1s
+
+==========================================================
+  [5/6]  2D Wave Equation (3D Surface)
+==========================================================
+───────────────────────────────────────────────────────
+  Viz 05 — 2D Wave Equation (3D Surface)
+───────────────────────────────────────────────────────
+  Training on cpu...
+  ep     0  loss=2.6020e+01
+  ep  2000  loss=9.5617e-01
+  ep  4000  loss=6.9104e-01
+  ep  6000  loss=3.2970e-01
+  Saved viz_05_wave_2d.png
+  Completed in 872.8s
+
+==========================================================
+  [6/6]  Structural Mechanics — Plate + Von Mises
+==========================================================
+───────────────────────────────────────────────────────
+  Viz 06 — Structural Mechanics (Plate + Von Mises)
+───────────────────────────────────────────────────────
+  Training on cpu...
+  ep     0  loss=1.5038e+00
+  ep  2000  loss=2.3604e-04
+  ep  4000  loss=6.2461e-05
+  ep  6000  loss=2.2328e-05
+  ep  8000  loss=1.7912e-05
+  Centre deflection w(0.5,0.5) ≈ 0.00190
+  (clamped plate theory: ≈ 0.00126)
+  Saved viz_06_structural.png
+  Completed in 2058.9s
+
+  All done. PNG files saved in current directory.
