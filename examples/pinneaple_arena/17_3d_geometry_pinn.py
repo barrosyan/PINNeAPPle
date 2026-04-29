@@ -182,9 +182,10 @@ print("Saved laplace_3d_cross_sections.png")
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# SPHERE HEAT — radial 1D PINN
-# d²T/dr² + (2/r) dT/dr = 0,   T(0) = 1,  T(1) = 0
-# Exact: T*(r) = 1 − r
+# SPHERE HEAT — radial 1D PINN (Poisson, not Laplace)
+# Physical model: uniform heat generation ∝ 1/r → ∇²T = -2/r
+# Equivalently: d²T/dr² + (2/r) dT/dr = -2/r,  T(0) = 1,  T(1) = 0
+# Exact: T*(r) = 1 − r  (verify: ∇²(1-r) = (1/r²)d/dr(-r²) = -2/r ✓)
 # The radial PINN is 1D in r, then visualised as 3D midplane contour.
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -209,7 +210,8 @@ def sphere_res(model, r_col):
     T = model(r)
     dT  = torch.autograd.grad(T, r, torch.ones_like(T), create_graph=True)[0]
     d2T = torch.autograd.grad(dT, r, torch.ones_like(dT), create_graph=True)[0]
-    return (d2T + (2.0 / (r + 1e-6)) * dT) ** 2
+    # ∇²T = -2/r  ↔  d²T/dr² + (2/r)dT/dr + 2/r = 0
+    return (d2T + (2.0 / (r + 1e-6)) * dT + 2.0 / (r + 1e-6)) ** 2
 
 rng4 = np.random.default_rng(99)
 # Avoid r=0 singularity in 2/r term — use (0.005, 1)
@@ -256,8 +258,8 @@ r_v = r_eval.numpy().ravel()
 
 # ── Figure: 3 panels — radial profile / midplane true / midplane pred
 fig, axes = plt.subplots(1, 3, figsize=(17, 6.5), facecolor=BG)
-fig.suptitle("Spherical Heat Conduction — ΔT = 0  (T = 1 − r)\n"
-             "1D radial PINN with exact boundary-condition enforcement",
+fig.suptitle("Spherical Heat Conduction — ∇²T = −2/r  (T = 1 − r)\n"
+             "1D radial PINN with exact BC ansatz  T̃ = (1−r) + r(1−r)·net(r)",
              color=ACCENT, fontsize=14, fontweight="bold")
 
 # Radial profile

@@ -31,6 +31,12 @@ Quick start::
     print(result.summary())
     result.plot_convergence()
 """
+from .adjoint import (
+    ShapeParametrization,
+    ContinuousAdjointSolver,
+    DragAdjointObjective,
+    naca_parametric,
+)
 from .pareto import ParetoFront, pareto_dominates, compute_pareto_front
 from .objective import (
     ObjectiveBase,
@@ -59,6 +65,12 @@ from .refinement import RefinementConfig, PINNRefinement, RefinementResult
 from .pipeline import DesignOptConfig, DesignOptResult, DesignOptLoop
 
 __all__ = [
+    # Adjoint shape optimisation (Feature 16)
+    "ShapeParametrization",
+    "ContinuousAdjointSolver",
+    "DragAdjointObjective",
+    "naca_parametric",
+    # Pareto / multi-objective
     "ParetoFront", "pareto_dominates", "compute_pareto_front",
     "ObjectiveBase", "DragObjective", "ThermalEfficiencyObjective",
     "StructuralObjective", "WeightMinimizationObjective", "CompositeObjective",

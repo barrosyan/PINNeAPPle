@@ -29,24 +29,31 @@ Quick start
 Submodules
 ----------
 Core:
-- pinneaple_environment   problem presets, PDE specs, BCs
-- pinneaple_models        PINN, DeepONet, FNO, GNO, GNN, autoencoders, ...
-- pinneaple_train         Trainer, metrics, AMP, parallelization, sweeps
-- pinneaple_pinn          physics loss compiler (PINNFactory)
-- pinneaple_solvers       FDM, FEM, FVM, SPH, OpenFOAM, FEniCS bridges
+- pinneaple_environment   problem presets, PDE specs, BCs, RANS turbulence presets
+- pinneaple_models        PINN, DeepONet, FNO, GNO, GNN, autoencoders, SIREN,
+                          ModifiedMLP, HashGridMLP, MeshGraphNet, AFNO
+- pinneaple_train         Trainer, metrics, AMP, parallelization, sweeps,
+                          TimeMarchingTrainer, DDPPINNTrainer, CausalPINNTrainer
+- pinneaple_pinn          physics loss compiler (PINNFactory), DoMINO decomposition
+- pinneaple_solvers       FDM, FEM, FVM, SPH, OpenFOAM, FEniCS bridges,
+                          CADToCFDPipeline, NSFlowSolver, CFDMesh
 - pinneaple_data          collocation samplers, active learning, dataset builders
-- pinneaple_geom          geometry generation, SDF, mesh, domains
-- pinneaple_inference     grid inference, error maps, visualization
+- pinneaple_geom          geometry generation, SDF, mesh, CSG domains
+- pinneaple_inference     grid inference, error maps, streamlines, isosurfaces
 - pinneaple_digital_twin  digital twin runtime, sensor streams, anomaly detection
 - pinneaple_arena         benchmark runner, YAML experiments, end-to-end pipeline
 
 Advanced:
+- pinneaple_symbolic      symbolic PDE compiler (SymPy → autograd), HardBC, PeriodicBC
 - pinneaple_uq            uncertainty quantification (MC Dropout, ensemble, conformal)
 - pinneaple_transfer      transfer learning and parametric fine-tuning
 - pinneaple_meta          meta-learning: MAML and Reptile for PDE families
 - pinneaple_validate      physical consistency validation (conservation, BCs, symmetry)
 - pinneaple_serve         REST API inference server (FastAPI)
 - pinneaple_export        model export to ONNX and TorchScript
+- pinneaple_backend       multi-backend support: PyTorch + JAX (vmap/jit)
+- pinneaple_dynamics      differentiable dynamics: rigid body, MPM, SPH particles
+- pinneaple_worldmodel    world foundation model integration (NVIDIA Cosmos adapter)
 
 Examples
 --------
@@ -62,11 +69,18 @@ See examples/pinneaple_arena/ for ready-to-run scripts:
   10_datacenter_digital_twin.py     — Industrial digital twin
   12_physics_benchmark_suite.py     — Multi-architecture PINN Arena benchmark
   13_transfer_meta_benchmark.py     — Transfer & meta-learning benchmark
+
+New feature examples:
+  examples/pinneaple_pinn/03_symbolic_pde_hard_bc.py   — Symbolic PDE + HardBC
+  examples/pinneaple_models/60_new_architectures_demo.py — SIREN/ModMLP/AFNO/etc.
+  examples/pinneaple_pinn/06_domino_time_marching_demo.py — DoMINO + time-marching
+  examples/pinneaple_geom/07_csg_domain_demo.py         — CSG L-shape/annulus domains
+  examples/pinneaple_solvers/11_cad_cfd_pipeline_demo.py — CAD→mesh→NS→PINN pipeline
 """
 
 from __future__ import annotations
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __author__  = "pinneaple contributors"
 
 # ---------------------------------------------------------------------------
@@ -209,7 +223,124 @@ except Exception:  # pragma: no cover
     pass
 
 
+# ---------------------------------------------------------------------------
+# New features: Symbolic PDE compiler + BC enforcement (Features 1, 4, 5)
+# ---------------------------------------------------------------------------
+try:
+    from pinneaple_symbolic import (
+        SymbolicPDE, pde_from_sympy, auto_residual,
+        HardBC, PeriodicBC, DirichletBC, NeumannBC,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# New architectures (Features 2, 3, 6, 7, 8)
+try:
+    from pinneaple_models import (
+        SIREN, SineLayer,
+        ModifiedMLP, FourierFeatureEmbedding,
+        HashGridEncoding, HashGridMLP,
+        MeshGraphNet,
+        AFNO,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# DoMINO domain decomposition (Feature 9)
+try:
+    from pinneaple_pinn import (
+        DoMINO, Subdomain, SubdomainPINN,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# Advanced training: time-marching, DDP, causal (Features 11, 13, 14)
+try:
+    from pinneaple_train import (
+        TimeMarchingTrainer,
+        DDPTrainerConfig, DDPPINNTrainer,
+        is_distributed, get_rank, get_world_size,
+        CausalWeightScheduler, CausalPINNTrainer,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# RANS turbulence presets (Feature 10)
+try:
+    from pinneaple_environment import (
+        KOmegaSSTResiduals, SpalartAllmarasResiduals, get_rans_preset,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# CSG geometry (Feature 12)
+try:
+    from pinneaple_geom import (
+        CSGRectangle, CSGCircle, CSGEllipse, CSGPolygon,
+        CSGUnion, CSGIntersection, CSGDifference,
+        lshape, csg_annulus, channel_with_hole, t_junction,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# Streamline / isosurface post-processing (Feature 17)
+try:
+    from pinneaple_inference import (
+        FlowVisualizer, compute_streamlines, compute_isosurface,
+        plot_streamlines_2d_model, plot_isosurface_3d, plot_volume_slice,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# Multi-backend JAX support (Feature 15)
+try:
+    from pinneaple_backend import (
+        get_backend, set_backend, Backend,
+        JAXBackend, jit_pinn, vmap_residual,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# Differentiable dynamics: rigid body, MPM, particles (Feature 18)
+try:
+    from pinneaple_dynamics import (
+        RigidBody, RigidBodySystem, RigidBodyState,
+        MPMSimulator, MPMState,
+        SPHParticles, ParticleSystem,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# World foundation model integration (Feature 19)
+try:
+    from pinneaple_worldmodel import (
+        CosmosAdapter, WorldModelConfig,
+        PhysicsVideoDataset, SimToRealAdapter,
+        PhysicalScene, SceneObject,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# Adjoint shape optimization (Feature 16)
+try:
+    from pinneaple_design_opt import (
+        ContinuousAdjointSolver, ShapeParametrization,
+        DragAdjointObjective, naca_parametric,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# CAD → mesh → NS CFD pipeline (Feature 20)
+try:
+    from pinneaple_solvers import (
+        CFDMesh, NSFlowSolver, CADToCFDPipeline,
+    )
+except Exception:  # pragma: no cover
+    pass
+
+# ---------------------------------------------------------------------------
 # Benchmark suite
+# ---------------------------------------------------------------------------
 try:
     from pinneaple_arena import (
         PINNArenaBenchmark, BenchmarkConfig, BenchmarkResult,
@@ -319,13 +450,18 @@ def info():
 
     # New modules status
     new_modules = {
-        "pinneaple_uq":       "Uncertainty quantification",
-        "pinneaple_transfer": "Transfer learning",
-        "pinneaple_meta":     "Meta-learning (MAML/Reptile)",
-        "pinneaple_validate": "Physical validation",
-        "pinneaple_serve":    "REST inference server",
-        "pinneaple_export":   "Model export (ONNX/TorchScript)",
-        "pinneaple_quantum":  "Hybrid classical–quantum ML (PQM)",
+        "pinneaple_uq":         "Uncertainty quantification",
+        "pinneaple_transfer":   "Transfer learning",
+        "pinneaple_meta":       "Meta-learning (MAML/Reptile)",
+        "pinneaple_validate":   "Physical validation",
+        "pinneaple_serve":      "REST inference server",
+        "pinneaple_export":     "Model export (ONNX/TorchScript)",
+        "pinneaple_quantum":    "Hybrid classical–quantum ML (PQM)",
+        # v0.5 new modules
+        "pinneaple_symbolic":   "Symbolic PDE compiler + HardBC/PeriodicBC",
+        "pinneaple_backend":    "Multi-backend (PyTorch + JAX)",
+        "pinneaple_dynamics":   "Differentiable dynamics (rigid body, MPM, SPH)",
+        "pinneaple_worldmodel": "World foundation model integration (Cosmos)",
     }
     import importlib
     print()
@@ -371,6 +507,11 @@ _SUBMODULES = {
     "export":    "pinneaple_export",
     # quantum
     "quantum":   "pinneaple_quantum",
+    # new features (v0.5)
+    "symbolic":   "pinneaple_symbolic",
+    "backend":    "pinneaple_backend",
+    "dynamics":   "pinneaple_dynamics",
+    "worldmodel": "pinneaple_worldmodel",
 }
 
 
@@ -449,4 +590,47 @@ __all__ = [
     "uq", "transfer", "meta", "validate", "serve", "export",
     # Quantum
     "quantum",
+    # ---- v0.5 new features ----
+    # Symbolic PDE compiler + BC (Features 1, 4, 5)
+    "SymbolicPDE", "pde_from_sympy", "auto_residual",
+    "HardBC", "PeriodicBC", "DirichletBC", "NeumannBC",
+    # New architectures (Features 2, 3, 6, 7, 8)
+    "SIREN", "SineLayer",
+    "ModifiedMLP", "FourierFeatureEmbedding",
+    "HashGridEncoding", "HashGridMLP",
+    "MeshGraphNet",
+    "AFNO",
+    # Domain decomposition PINN (Feature 9)
+    "DoMINO", "Subdomain", "SubdomainPINN",
+    # Advanced training (Features 11, 13, 14)
+    "TimeMarchingTrainer",
+    "DDPTrainerConfig", "DDPPINNTrainer",
+    "is_distributed", "get_rank", "get_world_size",
+    "CausalWeightScheduler", "CausalPINNTrainer",
+    # RANS turbulence (Feature 10)
+    "KOmegaSSTResiduals", "SpalartAllmarasResiduals", "get_rans_preset",
+    # CSG geometry (Feature 12)
+    "CSGRectangle", "CSGCircle", "CSGEllipse", "CSGPolygon",
+    "CSGUnion", "CSGIntersection", "CSGDifference",
+    "lshape", "csg_annulus", "channel_with_hole", "t_junction",
+    # Post-processing viz (Feature 17)
+    "FlowVisualizer", "compute_streamlines", "compute_isosurface",
+    "plot_streamlines_2d_model", "plot_isosurface_3d", "plot_volume_slice",
+    # Multi-backend (Feature 15)
+    "get_backend", "set_backend", "Backend", "JAXBackend", "jit_pinn", "vmap_residual",
+    # Dynamics (Feature 18)
+    "RigidBody", "RigidBodySystem", "RigidBodyState",
+    "MPMSimulator", "MPMState",
+    "SPHParticles", "ParticleSystem",
+    # World model (Feature 19)
+    "CosmosAdapter", "WorldModelConfig",
+    "PhysicsVideoDataset", "SimToRealAdapter",
+    "PhysicalScene", "SceneObject",
+    # Adjoint shape opt (Feature 16)
+    "ContinuousAdjointSolver", "ShapeParametrization",
+    "DragAdjointObjective", "naca_parametric",
+    # CAD → CFD (Feature 20)
+    "CFDMesh", "NSFlowSolver", "CADToCFDPipeline",
+    # Lazy submodule aliases (v0.5)
+    "symbolic", "backend", "dynamics", "worldmodel",
 ]

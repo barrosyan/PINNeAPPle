@@ -72,12 +72,37 @@ def _rbf_laplacian_mq(centres: torch.Tensor, eps: float) -> torch.Tensor:
     r2 = ((centres.unsqueeze(1) - centres.unsqueeze(0)) ** 2).sum(-1)
     e2 = eps ** 2
     phi = torch.sqrt(1.0 + e2 * r2)
-    # Δ√(1+e²r²) = e²·((d-1)/φ + e²r²·(d-1+2)/φ³) — standard result for d=2:
-    # = e² * (1/φ + e²*r²/φ³) * (d-1) + e²*(-e²*r²/φ³ + ... )
-    # Simplified exact d-dim formula:
-    # Δ_x φ(||x-c||) = e²(d + (d-2)*e²r²) / φ³   (for multiquadric)
-    # Corrected:
+    # Δ_x φ(||x-c||) = e²(d + (d-2)*e²r²) / φ³
     lap = e2 * (d + (d - 2) * e2 * r2) / phi ** 3
+    return lap
+
+
+def _rbf_laplacian_thin_plate(centres, eps=None):
+    """Analytical Laplacian of thin-plate spline φ(r) = r² log(r).
+
+    In d dimensions: Δφ = d·log(r²) + (d+2). Diagonal (r=0) set to 0.
+    """
+    import numpy as np
+    N, d = centres.shape
+    diff = centres[:, None, :] - centres[None, :, :]
+    r2 = (diff ** 2).sum(-1)
+    r2_safe = np.where(r2 < 1e-24, 1e-24, r2)
+    lap = d * np.log(r2_safe) + (d + 2)
+    np.fill_diagonal(lap, 0.0)
+    return lap
+
+
+def _rbf_laplacian_imq(centres, eps: float):
+    """Analytical Laplacian of inverse multiquadric φ(r) = (1+ε²r²)^(-1/2).
+
+    Δφ = ε²(1+ε²r²)^(-5/2) · (-d + ε²r²(3-d))
+    """
+    import numpy as np
+    N, d = centres.shape
+    diff = centres[:, None, :] - centres[None, :, :]
+    r2 = (diff ** 2).sum(-1)
+    denom = (1.0 + eps ** 2 * r2) ** 2.5
+    lap = eps ** 2 * (-d + eps ** 2 * r2 * (3 - d)) / denom
     return lap
 
 
@@ -140,9 +165,17 @@ class RBFCollocationSolver(SolverBase):
             return _rbf_laplacian_gaussian(centres, self.eps)
         if self.rbf_name == "multiquadric":
             return _rbf_laplacian_mq(centres, self.eps)
+        if self.rbf_name == "thin_plate":
+            import numpy as np
+            lap_np = _rbf_laplacian_thin_plate(centres.detach().cpu().numpy())
+            return torch.tensor(lap_np, dtype=centres.dtype, device=centres.device)
+        if self.rbf_name == "imq":
+            import numpy as np
+            lap_np = _rbf_laplacian_imq(centres.detach().cpu().numpy(), self.eps)
+            return torch.tensor(lap_np, dtype=centres.dtype, device=centres.device)
         raise NotImplementedError(
             f"Analytical Laplacian not implemented for rbf={self.rbf_name!r}. "
-            "Use 'gaussian' or 'multiquadric'."
+            "Use 'gaussian', 'multiquadric', 'thin_plate', or 'imq'."
         )
 
     # ------------------------------------------------------------------

@@ -24,6 +24,14 @@ from .visualize import (
     plot_design_opt_convergence,
     plot_pareto_front_2d,
 )
+from .postprocess import (
+    compute_streamlines,
+    compute_isosurface,
+    plot_streamlines_2d as plot_streamlines_2d_model,
+    plot_isosurface_3d,
+    plot_volume_slice,
+    FlowVisualizer,
+)
 
 __all__ = [
     "infer",
@@ -48,4 +56,11 @@ __all__ = [
     # Design optimization
     "plot_design_opt_convergence",
     "plot_pareto_front_2d",
+    # Postprocess (Feature 17)
+    "compute_streamlines",
+    "compute_isosurface",
+    "plot_streamlines_2d_model",
+    "plot_isosurface_3d",
+    "plot_volume_slice",
+    "FlowVisualizer",
 ]

@@ -83,6 +83,19 @@ __all__ = [
     "mesh_sdf_2d",
     "mesh_polygon_2d",
     "mesh_quality_report",
+    # CSG (Feature 12)
+    "SDFShape",
+    "CSGRectangle",
+    "CSGCircle",
+    "CSGEllipse",
+    "CSGPolygon",
+    "CSGUnion",
+    "CSGIntersection",
+    "CSGDifference",
+    "lshape",
+    "csg_annulus",
+    "channel_with_hole",
+    "t_junction",
 ]
 
 
@@ -145,4 +158,20 @@ from .mesh import (
     mesh_sdf_2d,
     mesh_polygon_2d,
     mesh_quality_report,
+)
+
+# New: CSG (Feature 12)
+from .csg import (
+    SDFShape,
+    CSGRectangle,
+    CSGCircle,
+    CSGEllipse,
+    CSGPolygon,
+    CSGUnion,
+    CSGIntersection,
+    CSGDifference,
+    lshape,
+    annulus as csg_annulus,
+    channel_with_hole,
+    t_junction,
 )

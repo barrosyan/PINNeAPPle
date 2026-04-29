@@ -1,4 +1,13 @@
 from .two_phase import TwoPhaseConfig, TwoPhaseHistory, TwoPhaseTrainer, UnnormModel
+from .time_marching import TimeMarchingTrainer
+from .distributed import (
+    DDPTrainerConfig,
+    DDPPINNTrainer,
+    is_distributed,
+    get_rank,
+    get_world_size,
+)
+from .causal import CausalWeightScheduler, CausalPINNTrainer
 from .hpc import (
     FSDPConfig, wrap_fsdp,
     wrap_zero_optimizer,
@@ -47,6 +56,17 @@ from .parallel import (
 
 __all__ = [
     "TwoPhaseConfig", "TwoPhaseHistory", "TwoPhaseTrainer", "UnnormModel",
+    # Time-marching
+    "TimeMarchingTrainer",
+    # Distributed / DDP
+    "DDPTrainerConfig",
+    "DDPPINNTrainer",
+    "is_distributed",
+    "get_rank",
+    "get_world_size",
+    # Causal training
+    "CausalWeightScheduler",
+    "CausalPINNTrainer",
     # HPC
     "FSDPConfig", "wrap_fsdp",
     "wrap_zero_optimizer",

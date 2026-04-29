@@ -40,6 +40,13 @@ try:
 except ImportError:
     pass
 
+from .turbulence_presets import (
+    KOmegaSSTResiduals,
+    SpalartAllmarasResiduals,
+    get_rans_preset,
+    SST_CONSTS,
+)
+
 __all__ = [
     "PDETermSpec",
     "ProblemSpec",
@@ -75,4 +82,9 @@ __all__ = [
     "linear_elasticity_3d",
     "drill_pipe_torsion_default",
     "thermoelasticity_2d_default",
+    # RANS turbulence presets (Feature 10)
+    "SST_CONSTS",
+    "KOmegaSSTResiduals",
+    "SpalartAllmarasResiduals",
+    "get_rans_preset",
 ]

@@ -253,7 +253,45 @@ def build_physical_sample_dataloader(
     loader = loader or DataLoaderSpec()
 
     if not sample.is_grid():
-        raise NotImplementedError("Mesh dataloader is MVP-2. For now, only grid PhysicalSample is supported.")
+        import numpy as np
+        from torch.utils.data import TensorDataset
+
+        geom = sample.geometry
+        if geom is not None and hasattr(geom, "nodes"):
+            nodes_arr = geom.nodes
+        else:
+            raise ValueError(
+                "Mesh PhysicalSample requires a geometry object with a .nodes attribute "
+                "(array of shape [N, d]) to build the mesh dataloader."
+            )
+
+        state = sample.state
+        if not isinstance(state, dict):
+            raise ValueError(
+                "Mesh PhysicalSample requires state to be a dict mapping field names "
+                "to arrays of shape [N] or [N, k]."
+            )
+
+        def _to_2d(arr):
+            a = np.asarray(arr, dtype=np.float32)
+            return a[:, None] if a.ndim == 1 else a
+
+        nodes_np = np.asarray(nodes_arr, dtype=np.float32)
+        nodes_t = torch.from_numpy(nodes_np)
+
+        field_tensors = [nodes_t]
+        for field_arr in state.values():
+            field_tensors.append(torch.from_numpy(_to_2d(field_arr)))
+
+        mesh_dataset = TensorDataset(*field_tensors)
+        return DataLoader(
+            mesh_dataset,
+            batch_size=loader.batch_size,
+            shuffle=loader.shuffle,
+            num_workers=loader.num_workers,
+            pin_memory=loader.pin_memory,
+            drop_last=loader.drop_last,
+        )
 
     # Create an in-memory UPDInput dict supported by UPDDataset
     upd_input = {"ds": sample.state, "meta": {"schema": sample.schema, "domain": sample.domain, "provenance": sample.provenance}}

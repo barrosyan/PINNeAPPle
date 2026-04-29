@@ -46,15 +46,8 @@ from .config import MAMLConfig, ReptileConfig
 from .task_sampler import PDETaskSampler
 from .maml import MAMLTrainer
 
-try:
-    from .reptile import ReptileTrainer
-except Exception:  # pragma: no cover
-    ReptileTrainer = None  # type: ignore[assignment,misc]
-
-try:
-    from .meta_model import MetaModel
-except Exception:  # pragma: no cover
-    MetaModel = None  # type: ignore[assignment,misc]
+from .reptile import ReptileTrainer
+from .meta_model import MetaModel
 
 
 def meta_train(model, sampler, *, algorithm: str = "reptile", **cfg_kwargs):

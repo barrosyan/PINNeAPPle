@@ -14,7 +14,8 @@ def register_all() -> None:
     from pinneaple_models.reservoir_computing.registry import register_into_global as reg_rc
     from pinneaple_models.rom.registry import register_into_global as reg_rom
     from pinneaple_models.transformers.registry import register_into_global as reg_tf
-    
+    from pinneaple_models.group_b_registry import register_into_global as reg_group_b
+
     reg_autoenc()
     reg_classical()
     reg_continuous()
@@ -27,4 +28,5 @@ def register_all() -> None:
     reg_rc()
     reg_rom()
     reg_tf()
+    reg_group_b()
     

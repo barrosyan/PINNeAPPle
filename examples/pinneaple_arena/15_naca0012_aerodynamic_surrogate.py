@@ -72,8 +72,8 @@ def potential_flow(zeta, ctr, R):
     Gamma = 4 * np.pi * U_INF * R * np.sin(alpha)
     s     = zeta - ctr
     df    = U_INF * (np.exp(-1j * alpha) - np.exp(1j * alpha) * R**2 / s**2) \
-            - 1j * Gamma / (2 * np.pi * s)
-    dz    = 1.0 - C_J**2 / s**2
+            + 1j * Gamma / (2 * np.pi * s)
+    dz    = 1.0 - C_J**2 / zeta**2
     w     = df / dz
     return np.real(w), -np.imag(w)
 
@@ -300,8 +300,8 @@ def surface_cp(theta_arr):
     z_s    = joukowski(zeta_s)
     s      = zeta_s - ctr
     df     = U_INF * (np.exp(-1j * alpha_r) - np.exp(1j * alpha_r) * R_circ**2 / s**2) \
-             - 1j * Gamma / (2 * np.pi * s)
-    dz     = 1.0 - C_J**2 / s**2
+             + 1j * Gamma / (2 * np.pi * s)
+    dz     = 1.0 - C_J**2 / zeta_s**2
     w      = df / dz
     speed  = np.abs(w)
     cp     = 1.0 - speed**2 / U_INF**2
@@ -317,13 +317,12 @@ x_up, cp_up = surface_cp(theta_upper)
 theta_lower = np.linspace(np.pi, 2 * np.pi - 0.12, n_surf)
 x_lo, cp_lo = surface_cp(theta_lower)
 
-# Display limits: remove singularity regions
-# Keep only points where x/c ∈ [0.02, 0.95] and |Cp| < 2
-CHORD_MIN, CHORD_MAX = 0.02, 0.95
-CP_DISPLAY_MIN, CP_DISPLAY_MAX = -2.0, 1.3
+# Display limits: remove only the immediate singularity at leading/trailing edge
+CHORD_MIN, CHORD_MAX = 0.01, 0.98
+CP_DISPLAY_MIN, CP_DISPLAY_MAX = -3.0, 1.5
 
 def trim(x_c, cp_vals):
-    mask = (x_c >= CHORD_MIN) & (x_c <= CHORD_MAX) & (np.abs(cp_vals) < 3.0)
+    mask = (x_c >= CHORD_MIN) & (x_c <= CHORD_MAX) & (np.abs(cp_vals) < 10.0)
     return x_c[mask], np.clip(cp_vals[mask], CP_DISPLAY_MIN, CP_DISPLAY_MAX)
 
 x_up_t, cp_up_c  = trim(x_up, cp_up)
@@ -344,9 +343,9 @@ z_lo = joukowski(ctr + R_circ * np.exp(1j * theta_lower))
 cp_up_pinn_raw = pinn_cp_on_surface(z_up.real, z_up.imag)
 cp_lo_pinn_raw = pinn_cp_on_surface(z_lo.real, z_lo.imag)
 
-# Apply same mask
-mask_up = (x_up >= CHORD_MIN) & (x_up <= CHORD_MAX) & (np.abs(cp_up) < 3.0)
-mask_lo = (x_lo >= CHORD_MIN) & (x_lo <= CHORD_MAX) & (np.abs(cp_lo) < 3.0)
+# Apply same mask as trim
+mask_up = (x_up >= CHORD_MIN) & (x_up <= CHORD_MAX) & (np.abs(cp_up) < 10.0)
+mask_lo = (x_lo >= CHORD_MIN) & (x_lo <= CHORD_MAX) & (np.abs(cp_lo) < 10.0)
 x_up_p = x_up[mask_up]
 x_lo_p = x_lo[mask_lo]
 cp_up_pinn_c = np.clip(cp_up_pinn_raw[mask_up], CP_DISPLAY_MIN, CP_DISPLAY_MAX)
@@ -366,21 +365,29 @@ ax.plot(x_lo_p, cp_lo_pinn_c, color=ORANGE,  lw=1.6, linestyle="--", alpha=0.85,
 
 ax.axhline(0, color=MUTED, lw=0.8, linestyle="--", alpha=0.5)
 ax.axhline(1, color=MUTED, lw=0.6, linestyle=":", alpha=0.5, label="Cp = 1 (stagnation)")
-ax.invert_yaxis()
-ax.set_xlim(0, 1); ax.set_ylim(CP_DISPLAY_MAX + 0.2, CP_DISPLAY_MIN - 0.2)
+ax.set_xlim(0, 1)
+ax.set_ylim(CP_DISPLAY_MAX + 0.2, CP_DISPLAY_MIN - 0.3)  # inverted aeronautical convention
 ax.set_xlabel("x / c  (chord fraction)", fontsize=13)
 ax.set_ylabel("Cp  (y-axis inverted — aeronautical convention)", fontsize=12)
 ax.set_title("NACA 0012 — Surface pressure coefficient  α = 5°\nSolid: Joukowski reference  |  Dashed: PINN surrogate",
              fontsize=13, fontweight="bold", color=ACCENT)
 ax.legend(fontsize=11, framealpha=0.3, loc="lower right")
 ax.grid(True, color=BORD, lw=0.5, alpha=0.7)
-# Annotate suction peak
+# Annotate suction peak on upper (suction) surface
 idx_peak = np.argmin(cp_up_c)
-ax.annotate(f"Suction peak\n−Cp = {-cp_up_c[idx_peak]:.2f}",
-            xy=(x_up_t[idx_peak], cp_up_c[idx_peak]),
-            xytext=(x_up_t[idx_peak] + 0.15, cp_up_c[idx_peak] - 0.25),
+x_pk, y_pk = x_up_t[idx_peak], cp_up_c[idx_peak]
+ax.annotate(f"Suction peak\n−Cp = {-y_pk:.2f}  (x/c ≈ {x_pk:.2f})",
+            xy=(x_pk, y_pk),
+            xytext=(x_pk + 0.20, y_pk + 0.8),
             color=ACCENT, fontsize=10,
             arrowprops=dict(arrowstyle="->", color=ACCENT, lw=1.1))
+# Annotate stagnation on lower surface
+idx_stag = np.argmax(cp_lo_c)
+ax.annotate(f"Stagnation  Cp ≈ {cp_lo_c[idx_stag]:.2f}",
+            xy=(x_lo_t[idx_stag], cp_lo_c[idx_stag]),
+            xytext=(x_lo_t[idx_stag] + 0.10, cp_lo_c[idx_stag] - 0.3),
+            color=ORANGE, fontsize=10,
+            arrowprops=dict(arrowstyle="->", color=ORANGE, lw=1.1))
 
 plt.tight_layout()
 fig.savefig(os.path.join(OUT, "naca0012_surface_cp.png"), dpi=160,

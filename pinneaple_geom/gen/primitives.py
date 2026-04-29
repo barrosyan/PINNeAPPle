@@ -701,8 +701,23 @@ def project_points_to_surface(
 
     Raise by default so you don't mistakenly assume it's working.
     """
-    raise NotImplementedError(
-        "Surface projection is not implemented in this module. "
-        "Use centerline+frames builders for practical vascular mapping, "
-        "or implement a robust mesh projection pipeline (BVH + constraints)."
-    )
+    import numpy as np
+
+    mesh_vertices = surface.vertices
+    mesh_faces = surface.faces if surface.faces is not None else None
+
+    try:
+        import trimesh
+        if mesh_faces is not None:
+            tm = trimesh.Trimesh(vertices=mesh_vertices, faces=mesh_faces, process=False)
+            closest, distances, _ = trimesh.proximity.closest_point(tm, points)
+            return closest, distances
+        raise ImportError("no faces")
+    except (ImportError, Exception):
+        pass
+
+    from scipy.spatial import cKDTree
+    tree = cKDTree(mesh_vertices)
+    distances, indices = tree.query(points, k=1)
+    projected = mesh_vertices[indices]
+    return projected, distances

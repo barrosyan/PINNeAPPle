@@ -1,6 +1,7 @@
 from .base import SolverBase, SolverOutput
 from .registry import SolverRegistry, SolverSpec, register_all, SolverCatalog
 from .problem_runner import generate_pinn_dataset
+from .cfd_pipeline import CFDMesh, NSFlowSolver, CADToCFDPipeline
 from .fdm3d import (
     SolverOutput3D,
     HeatConfig3D, HeatConduction3D,
@@ -44,6 +45,10 @@ __all__ = [
     "generate_pinn_dataset",
     "openfoam_available",
     "fenics_available",
+    # CAD-to-CFD pipeline (Feature 20)
+    "CFDMesh",
+    "NSFlowSolver",
+    "CADToCFDPipeline",
     # 3D FDM
     "SolverOutput3D",
     "HeatConfig3D",
