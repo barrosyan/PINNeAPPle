@@ -2938,12 +2938,12 @@ trainer.<span class="fn">fit</span>(epochs=<span class="nu">20_000</span>)</pre>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
     <div>
       <div style="font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Potential Flow Past Cylinder  ψ_xx + ψ_yy = 0</div>
-      <canvas id="pv-cylinder" width="520" height="200" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <img src="data/viz_01_flow_cylinder.png" alt="Potential flow past cylinder" style="width:100%;border-radius:8px;border:1px solid var(--border);display:block;" />
       <div style="font-size:11px;color:var(--muted);margin-top:6px;">Speed |u| = √(u²+v²) · viridis · white streamlines · CSG domain: rect − circle</div>
     </div>
     <div>
       <div style="font-size:12px;color:var(--accent4);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Lamb-Oseen Vortex Pair  ω = Γ/(4πνt)·exp(−r²/4νt)</div>
-      <canvas id="pv-vortex" width="520" height="200" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <img src="data/viz_03_vortex_dynamics.png" alt="Lamb-Oseen vortex pair" style="width:100%;border-radius:8px;border:1px solid var(--border);display:block;" />
       <div style="font-size:11px;color:var(--muted);margin-top:6px;">Vorticity field ω_z · RdBu colormap · Biot-Savart velocity arrows · ν=0.01</div>
     </div>
   </div>
@@ -2978,19 +2978,19 @@ u_θ = Γ/(2πr) * (1 - exp(-r²/(4νt)))</pre>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
     <div>
       <div style="font-size:12px;color:var(--accent5);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">2D Heat Equation  u_t = α(u_xx + u_yy)</div>
-      <canvas id="pv-heat" width="520" height="160" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <img src="data/viz_02_heat_2d.png" alt="2D Heat equation snapshots" style="width:100%;border-radius:8px;border:1px solid var(--border);display:block;" />
       <div style="font-size:11px;color:var(--muted);margin-top:6px;">α=0.05 · IC = sin(πx)sin(πy) · always ≥ 0 · 4 time snapshots</div>
     </div>
     <div>
       <div style="font-size:12px;color:var(--accent3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Allen-Cahn Phase Field  φ_t = ε²Δφ + φ − φ³</div>
-      <canvas id="pv-phase" width="520" height="160" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <img src="data/viz_04_phase_field.png" alt="Allen-Cahn phase field" style="width:100%;border-radius:8px;border:1px solid var(--border);display:block;" />
       <div style="font-size:11px;color:var(--muted);margin-top:6px;">ε=0.04 · pseudospectral FFT · green contour = interface (φ=0) · phase coarsening</div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
     <div>
       <div style="font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">2D Wave Equation  u_tt = c²(u_xx + u_yy)</div>
-      <canvas id="pv-wave" width="520" height="160" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
+      <img src="data/viz_05_wave_2d.png" alt="2D Wave equation snapshots" style="width:100%;border-radius:8px;border:1px solid var(--border);display:block;" />
       <div style="font-size:11px;color:var(--muted);margin-top:6px;">c=1 · ω=π√5 · exact = sin(2πx)sin(πy)cos(ωt) · oscillates ±1 unlike heat</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
@@ -3034,17 +3034,10 @@ u_θ = Γ/(2πr) * (1 - exp(-r²/(4νt)))</pre>
     <span class="slide-num">57 / 58</span>
   </div>
   <div class="section-title">Structural Mechanics — Kirchhoff Plate + Von Mises Stress</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
-    <div>
-      <div style="font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Plate Deflection  w(x,y)  — Blues</div>
-      <canvas id="pv-plate-w" width="520" height="200" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px;">Clamped plate · uniform load q/D=1 · max at centre · w(0.5,0.5) ≈ 0.00126</div>
-    </div>
-    <div>
-      <div style="font-size:12px;color:var(--accent3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Von Mises Stress  σ_VM(x,y)  — Jet</div>
-      <canvas id="pv-plate-vm" width="520" height="200" style="border-radius:8px;border:1px solid var(--border);display:block;"></canvas>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px;">σ_VM = √(σxx²−σxx·σyy+σyy²+3σxy²) · max stress at mid-edges · outer fibre z=1</div>
-    </div>
+  <div style="margin-top:12px;">
+    <div style="font-size:12px;color:var(--accent);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Plate Deflection w(x,y) &amp; Von Mises Stress σ_VM(x,y)</div>
+    <img src="data/viz_06_structural.png" alt="Kirchhoff plate deflection and Von Mises stress" style="width:100%;border-radius:8px;border:1px solid var(--border);display:block;" />
+    <div style="font-size:11px;color:var(--muted);margin-top:6px;">Left: deflection w — clamped plate · uniform load q/D=1 · max at centre · w(0.5,0.5) ≈ 0.00126 &nbsp;|&nbsp; Right: σ_VM = √(σxx²−σxx·σyy+σyy²+3σxy²) · max at mid-edges</div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
@@ -3140,212 +3133,8 @@ function vcol(t, name) {
   ];
 }
 
-function renderCylinder() {
-  const cv = document.getElementById('pv-cylinder'); if (!cv) return;
-  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
-  const img = ctx.createImageData(W, H);
-  const U = 1, R = 0.5;
-  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
-    const x = (px/W)*4 - 2, y = ((H-py)/H)*3 - 1.5;
-    const r2 = x*x + y*y;
-    let sp = 0;
-    if (r2 >= R*R) {
-      const c = 1 - R*R/r2, xs = x*x - y*y;
-      const ux = U*(1 - R*R*(xs)/r2/r2), vy = -2*U*R*R*x*y/(r2*r2);
-      sp = Math.sqrt(ux*ux + vy*vy);
-    }
-    const t = Math.min(sp / 2.0, 1);
-    const [r,g,b] = vcol(t, 'viridis');
-    const i4 = (py*W+px)*4;
-    img.data[i4]=r; img.data[i4+1]=g; img.data[i4+2]=b; img.data[i4+3]=255;
-  }
-  ctx.putImageData(img, 0, 0);
-  ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 0.8;
-  for (let k = -1.4; k <= 1.4; k += 0.28) {
-    const U=1, R=0.5;
-    ctx.beginPath();
-    let first = true;
-    for (let px = 0; px < W; px++) {
-      const x = (px/W)*4 - 2;
-      const r2 = x*x + k*k;
-      const psi = (r2 < R*R+0.02) ? null : U*k*(1 - R*R/r2);
-      if (psi === null) { first = true; continue; }
-      const py = H - (k + 1.5)/3 * H;
-      if (first) { ctx.moveTo(px, py); first = false; } else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-  }
-  ctx.beginPath(); ctx.arc(W/2, H/2, R*W/4, 0, Math.PI*2);
-  ctx.fillStyle = '#0d1117'; ctx.fill();
-  ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 1.5; ctx.stroke();
-}
-
-function renderVortex() {
-  const cv = document.getElementById('pv-vortex'); if (!cv) return;
-  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
-  const img = ctx.createImageData(W, H);
-  const nu = 0.01, t = 0.5, G1 = 1, G2 = -1, d = 0.6;
-  const vx1 = -d/2, vy1 = 0, vx2 = d/2, vy2 = 0;
-  let wmin = Infinity, wmax = -Infinity;
-  const wf = new Float32Array(W*H);
-  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
-    const x = (px/W)*3 - 1.5, y = ((H-py)/H)*2.5 - 1.25;
-    const r12 = (x-vx1)**2+(y-vy1)**2+1e-6, r22 = (x-vx2)**2+(y-vy2)**2+1e-6;
-    const w = G1/(4*Math.PI*nu*t)*Math.exp(-r12/(4*nu*t)) + G2/(4*Math.PI*nu*t)*Math.exp(-r22/(4*nu*t));
-    wf[py*W+px] = w; if(w<wmin)wmin=w; if(w>wmax)wmax=w;
-  }
-  const wabs = Math.max(Math.abs(wmin), Math.abs(wmax));
-  for (let i = 0; i < W*H; i++) {
-    const t2 = (wf[i]/wabs)*0.5 + 0.5;
-    const [r,g,b] = vcol(t2, 'rdbu_r');
-    img.data[i*4]=r; img.data[i*4+1]=g; img.data[i*4+2]=b; img.data[i*4+3]=255;
-  }
-  ctx.putImageData(img, 0, 0);
-  const step = 40;
-  ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 0.8;
-  for (let py = step/2; py < H; py += step) for (let px = step/2; px < W; px += step) {
-    const x = (px/W)*3 - 1.5, y = ((H-py)/H)*2.5 - 1.25;
-    const r12=(x-vx1)**2+(y-vy1)**2+1e-6, r22=(x-vx2)**2+(y-vy2)**2+1e-6;
-    const r1=Math.sqrt(r12), r2=Math.sqrt(r22);
-    const vth1=G1/(2*Math.PI*r1)*(1-Math.exp(-r12/(4*nu*t)));
-    const vth2=G2/(2*Math.PI*r2)*(1-Math.exp(-r22/(4*nu*t)));
-    const ux = -vth1*(y-vy1)/r1 - vth2*(y-vy2)/r2;
-    const uy =  vth1*(x-vx1)/r1 + vth2*(x-vx2)/r2;
-    const mag = Math.sqrt(ux*ux+uy*uy)+1e-8;
-    const sc = Math.min(18/mag, 18);
-    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+ux*sc, py-uy*sc); ctx.stroke();
-  }
-}
-
-function renderHeat2D() {
-  const cv = document.getElementById('pv-heat'); if (!cv) return;
-  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
-  ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
-  const times = [0.0, 0.1, 0.3, 0.6];
-  const pw = Math.floor(W/4);
-  for (let ti = 0; ti < 4; ti++) {
-    const t = times[ti], alpha = 0.05;
-    const decay = Math.exp(-2*Math.PI*Math.PI*alpha*t);
-    const img = ctx.createImageData(pw, H);
-    for (let py = 0; py < H; py++) for (let px = 0; px < pw; px++) {
-      const x = px/pw, y = (H-py)/H;
-      const u = decay * Math.sin(Math.PI*x) * Math.sin(Math.PI*y);
-      const t2 = Math.max(0, Math.min(u, 1));
-      const [r,g,b] = vcol(t2, 'hot');
-      const i4 = (py*pw+px)*4;
-      img.data[i4]=r; img.data[i4+1]=g; img.data[i4+2]=b; img.data[i4+3]=255;
-    }
-    ctx.putImageData(img, ti*pw, 0);
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(ti*pw+2, 2, 48, 16);
-    ctx.fillStyle = '#e6edf3'; ctx.font = '10px monospace';
-    ctx.fillText(`t=${t.toFixed(1)}`, ti*pw+4, 13);
-  }
-}
-
-function renderPhaseField() {
-  const cv = document.getElementById('pv-phase'); if (!cv) return;
-  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
-  ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
-  const pw = Math.floor(W/4);
-  const eps_vals = [0.02, 0.08, 0.18, 0.35];
-  for (let si = 0; si < 4; si++) {
-    const eps = eps_vals[si];
-    const img = ctx.createImageData(pw, H);
-    for (let py = 0; py < H; py++) for (let px = 0; px < pw; px++) {
-      const nx = px/pw*6.28, ny = (H-py)/H*6.28;
-      const raw = Math.sin(nx*1.3)*Math.cos(ny*0.9) + Math.cos(nx*0.7)*Math.sin(ny*1.5) + Math.sin(nx*2.1+ny*1.2)*0.4;
-      const phi = Math.tanh(raw/(eps+0.02));
-      const t2 = (phi+1)/2;
-      const [r,g,b] = vcol(t2, 'rdbu_r');
-      const i4 = (py*pw+px)*4; img.data[i4]=r; img.data[i4+1]=g; img.data[i4+2]=b; img.data[i4+3]=255;
-    }
-    ctx.putImageData(img, si*pw, 0);
-    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(si*pw+2,2,60,16);
-    ctx.fillStyle = '#e6edf3'; ctx.font = '10px monospace';
-    const tlabels = ['t=0.0','t=0.1','t=0.25','t=0.5'];
-    ctx.fillText(tlabels[si], si*pw+4, 13);
-  }
-}
-
-function renderWave() {
-  const cv = document.getElementById('pv-wave'); if (!cv) return;
-  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
-  ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
-  const omega = Math.PI*Math.sqrt(5);
-  const times = [0.0, 0.1, 0.25, 0.45];
-  const pw = Math.floor(W/4);
-  for (let ti = 0; ti < 4; ti++) {
-    const t = times[ti];
-    const img = ctx.createImageData(pw, H);
-    for (let py = 0; py < H; py++) for (let px = 0; px < pw; px++) {
-      const x = px/pw, y = (H-py)/H;
-      const u = Math.sin(2*Math.PI*x)*Math.sin(Math.PI*y)*Math.cos(omega*t);
-      const t2 = (u+1)/2;
-      const [r,g,b] = vcol(t2, 'rdylbu');
-      const i4 = (py*pw+px)*4; img.data[i4]=r; img.data[i4+1]=g; img.data[i4+2]=b; img.data[i4+3]=255;
-    }
-    ctx.putImageData(img, ti*pw, 0);
-    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(ti*pw+2,2,48,16);
-    ctx.fillStyle = '#e6edf3'; ctx.font = '10px monospace';
-    ctx.fillText(`t=${t.toFixed(2)}`, ti*pw+4, 13);
-  }
-}
-
-function renderPlateField(id, mode) {
-  const cv = document.getElementById(id); if (!cv) return;
-  const W = cv.width, H = cv.height, ctx = cv.getContext('2d');
-  const img = ctx.createImageData(W, H);
-  let vmin = Infinity, vmax = -Infinity;
-  const buf = new Float32Array(W*H);
-  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
-    const x = px/W, y = (H-py)/H;
-    const f = (x*(1-x))*(x*(1-x)), g2 = (y*(1-y))*(y*(1-y));
-    const w = 192*f*g2;
-    let v;
-    if (mode === 'deflection') { v = w; }
-    else {
-      const dx = x*(1-x), dy = y*(1-y);
-      const wxx = 192*(12*x*x-12*x+2)*g2;
-      const wyy = 192*f*(12*y*y-12*y+2);
-      const wxy = 192*(4*x*x*x-6*x*x+2*x)*(4*y*y*y-6*y*y+2*y);
-      const sxx=-wxx, syy=-wyy, sxy=-wxy;
-      v = Math.sqrt(sxx*sxx - sxx*syy + syy*syy + 3*sxy*sxy);
-    }
-    buf[py*W+px]=v; if(v<vmin)vmin=v; if(v>vmax)vmax=v;
-  }
-  const cmap = mode==='deflection'?'blues':'jet';
-  for (let i=0;i<W*H;i++){
-    const t2=(buf[i]-vmin)/(vmax-vmin+1e-12);
-    const [r,g,b]=vcol(t2,cmap);
-    img.data[i*4]=r;img.data[i*4+1]=g;img.data[i*4+2]=b;img.data[i*4+3]=255;
-  }
-  ctx.putImageData(img,0,0);
-  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=0.6;
-  const levels = 8;
-  const range = vmax-vmin;
-  for (let li=1;li<levels;li++){
-    const thresh = vmin + li/levels*range;
-    ctx.beginPath(); let inLine=false;
-    for (let px=0;px<W-1;px++){
-      for (let py=0;py<H-1;py++){
-        const v00=buf[py*W+px], v10=buf[py*W+px+1];
-        if((v00-thresh)*(v10-thresh)<0){
-          const fx=px+(thresh-v00)/(v10-v00);
-          if(!inLine){ctx.moveTo(fx,py);inLine=true;}else ctx.lineTo(fx,py);
-        }
-      }
-    }
-    ctx.stroke();
-  }
-}
 
 document.addEventListener('DOMContentLoaded', () => {
-  renderCylinder(); renderVortex();
-  renderHeat2D(); renderPhaseField(); renderWave();
-  renderPlateField('pv-plate-w','deflection');
-  renderPlateField('pv-plate-vm','vonmises');
-});
 
 const TOTAL = 58;
 let cur = 1;
@@ -3380,6 +3169,7 @@ document.addEventListener('touchend', e => {
 });
 
 goTo(1);
+});
 </script>
 </body>
 </html>
