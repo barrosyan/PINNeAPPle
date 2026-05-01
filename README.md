@@ -78,7 +78,7 @@ results.leaderboard()
 
 <div align="center">
 
-![Potential Flow Past Cylinder](./assets/potential_flow_cylinder.jpeg)
+![Potential Flow Past Cylinder](./data/viz_05_wave_2d.png)
 *Potential Flow Past Circular Cylinder — exact solution vs PINN vs pointwise error*
 
 </div>
@@ -95,7 +95,7 @@ from pinneaple_export.onnx_exporter import ONNXExporter
 
 <div align="center">
 
-![Model Comparison](./assets/model_comparison.jpeg)
+![Model Comparison](./data/)
 *Multi-model forecast comparison across test windows — Naive, FFT-only, LSTM, FFT+LSTM*
 
 </div>
