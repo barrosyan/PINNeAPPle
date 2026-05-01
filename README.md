@@ -11,7 +11,7 @@ PINNeAPPle is an open-source **Physics AI research and experimentation platform*
 |:---:|:---:|
 | ![Clamped Plate](./data/viz_06_structural.png) | ![2D Heat Equation](./data/viz_02_heat_2d.png) |
 | *Clamped Plate — deflection, Von Mises stress & bending moment* | *2D Heat Equation — Exact vs PINN across time steps* |
-| ![Lamb-Oseen Vortex](./data/viz_03_vortex_dynamics.png) | ![Allen-Cahn Phase](./assets/allen_cahn.jpeg) |
+| ![Lamb-Oseen Vortex](./data/viz_03_vortex_dynamics.png) | ![Allen-Cahn Phase](./data/viz_04_phase_field.png) |
 | *Lamb-Oseen Vortex Pair — vorticity evolution* | *Allen-Cahn Phase Separation — interface dynamics* |
 
 </div>
