@@ -131,7 +131,7 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
   <div class="slide-header">
     <span class="slide-tag">PINNeAPPle</span>
     <div class="divider-line"></div>
-    <span class="slide-num">1 / 58</span>
+    <span class="slide-num">1 / 59</span>
   </div>
   <div class="hero-center">
     <div style="font-size:13px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:16px;">Physics-Informed Machine Learning</div>
@@ -157,7 +157,7 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
 
 <!-- ============================================================ S2: WHAT'S NEW ============================================================ -->
 <div class="slide" id="s2">
-  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">2 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">2 / 59</span></div>
   <h2>What's New in v0.5</h2>
   <div class="subtitle" style="margin-bottom:14px;">The largest single release in PINNeAPPle history — 20 features across 5 new modules</div>
   <div class="body">
@@ -211,7 +211,7 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
 
 <!-- ============================================================ S3: MOTIVATION ============================================================ -->
 <div class="slide" id="s3">
-  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">3 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">3 / 59</span></div>
   <h2>Why Physics-Informed Neural Networks?</h2>
   <div class="subtitle" style="margin-bottom:12px;">Bridging the gap between data-driven ML and first-principles physics</div>
   <div class="body">
@@ -272,8 +272,8 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
 
 <!-- ============================================================ S4: MODULE MAP ============================================================ -->
 <div class="slide" id="s4">
-  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">4 / 58</span></div>
-  <h2>Complete Module Map — All 16 Modules</h2>
+  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">4 / 59</span></div>
+  <h2>Complete Module Map — All 17 Modules</h2>
   <div class="body">
     <div class="module-grid">
       <div class="module-card"><div class="mname">pinneaple_environment</div><div class="mdesc">PDE specs &amp; 20+ presets</div><div style="margin-top:6px;"><span class="level-badge level-production">Production</span></div></div>
@@ -292,13 +292,14 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
       <div class="module-card"><div class="mname">pinneaple_dynamics</div><div class="mdesc">Differentiable dynamics</div><div style="margin-top:6px;"><span class="level-badge level-production">Production</span> <span class="tag-new">NEW</span></div></div>
       <div class="module-card"><div class="mname">pinneaple_worldmodel</div><div class="mdesc">World foundation adapters</div><div style="margin-top:6px;"><span class="level-badge level-prototype">Prototype</span> <span class="tag-new">NEW</span></div></div>
       <div class="module-card"><div class="mname">pinneaple_arena</div><div class="mdesc">Benchmark suite</div><div style="margin-top:6px;"><span class="level-badge level-production">Production</span></div></div>
+      <div class="module-card"><div class="mname">pinneaple_cosim</div><div class="mdesc">Graph co-simulation engine</div><div style="margin-top:6px;"><span class="level-badge level-research">Research</span> <span class="tag-new">NEW</span></div></div>
     </div>
   </div>
 </div>
 
 <!-- ============================================================ S5: ARCHITECTURE ============================================================ -->
 <div class="slide" id="s5">
-  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">5 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag">Introduction</span><div class="divider-line"></div><span class="slide-num">5 / 59</span></div>
   <h2>Layered Architecture Overview</h2>
   <div class="subtitle" style="margin-bottom:14px;">Six clean layers from raw data to deployable solutions</div>
   <div class="body">
@@ -325,6 +326,10 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
           <h4>pinneaple_worldmodel</h4>
           <p style="font-size:12px;color:var(--muted);">CosmosAdapter · SimToRealAdapter. Foundation model layer for video prediction, sim-to-real transfer, and physics-aware generative modeling.</p>
         </div>
+        <div class="hcard">
+          <h4>pinneaple_cosim <span class="tag-new" style="font-size:10px;">NEW</span></h4>
+          <p style="font-size:12px;color:var(--muted);">CoSimGraph · CoSimEngine · CoSimTrainer · PINNeProblemNode. Graph-based differentiable co-simulation for coupling PINNs, surrogates, and time-series models.</p>
+        </div>
         <div class="card" style="background:var(--surface2);">
           <h4>Design Principles</h4>
           <ul class="bullets">
@@ -341,7 +346,7 @@ img.bench { max-width: 100%; max-height: 100%; object-fit: contain; border-radiu
 
 <!-- ============================================================ S6: ENVIRONMENT ============================================================ -->
 <div class="slide" id="s6">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">6 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">6 / 59</span></div>
   <h2>pinneaple_environment — PDE Specs &amp; Presets</h2>
   <div class="body">
     <div class="two-col">
@@ -393,7 +398,7 @@ spec = pp.<span class="cl">ProblemSpec</span>(
 
 <!-- ============================================================ S7: MODELS ============================================================ -->
 <div class="slide" id="s7">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">7 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">7 / 59</span></div>
   <h2>pinneaple_models — Neural Architectures Registry</h2>
   <div class="body">
     <table>
@@ -434,7 +439,7 @@ model = <span class="cl">ModelRegistry</span>.<span class="fn">build</span>(
 
 <!-- ============================================================ S8: DATA ============================================================ -->
 <div class="slide" id="s8">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">8 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">8 / 59</span></div>
   <h2>pinneaple_data — Collocation &amp; Active Learning</h2>
   <div class="body">
     <div class="two-col">
@@ -486,7 +491,7 @@ x_new = al.<span class="fn">refine</span>(x_int)   <span class="cm"># returns hi
 
 <!-- ============================================================ S9: GEOM ============================================================ -->
 <div class="slide" id="s9">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">9 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">9 / 59</span></div>
   <h2>pinneaple_geom — Geometry &amp; Domains</h2>
   <div class="body">
     <div class="two-col">
@@ -536,7 +541,7 @@ pts = flow_domain.<span class="fn">sample_interior</span>(<span class="nu">20_00
 
 <!-- ============================================================ S10: PINN ============================================================ -->
 <div class="slide" id="s10">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">10 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">10 / 59</span></div>
   <h2>pinneaple_pinn — Physics Loss Compiler</h2>
   <div class="body">
     <div class="two-col">
@@ -596,7 +601,7 @@ loss = domino.<span class="fn">coupled_loss</span>(pinns)</pre>
 
 <!-- ============================================================ S11: TRAIN ============================================================ -->
 <div class="slide" id="s11">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">11 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">11 / 59</span></div>
   <h2>pinneaple_train — Training Infrastructure</h2>
   <div class="body">
     <div class="two-col">
@@ -654,7 +659,7 @@ tm.<span class="fn">fit</span>()  <span class="cm"># trains [0,0.1], then [0.1,0
 
 <!-- ============================================================ S12: SOLVERS ============================================================ -->
 <div class="slide" id="s12">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">12 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">12 / 59</span></div>
   <h2>pinneaple_solvers — Numerical Solvers</h2>
   <div class="body">
     <div class="two-col">
@@ -702,7 +707,7 @@ pinn_data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S13: INFERENCE ============================================================ -->
 <div class="slide" id="s13">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">13 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">13 / 59</span></div>
   <h2>pinneaple_inference — Visualization &amp; Error Analysis</h2>
   <div class="body">
     <div class="two-col">
@@ -764,7 +769,7 @@ viz.<span class="fn">plot_volume_slice</span>(axis=<span class="st">"z"</span>, 
 
 <!-- ============================================================ S14: UQ ============================================================ -->
 <div class="slide" id="s14">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">14 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">14 / 59</span></div>
   <h2>pinneaple_uq — Uncertainty Quantification</h2>
   <div class="body">
     <div class="two-col">
@@ -819,7 +824,7 @@ lo, hi = cp.<span class="fn">predict_interval</span>(x_test)</pre>
 
 <!-- ============================================================ S15: INVERSE + DESIGN OPT ============================================================ -->
 <div class="slide" id="s15">
-  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">15 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag green">Core Modules</span><div class="divider-line"></div><span class="slide-num">15 / 59</span></div>
   <h2>pinneaple_inverse &amp; pinneaple_design_opt</h2>
   <div class="body">
     <div class="two-col">
@@ -868,7 +873,7 @@ shape.<span class="fn">update</span>(step=-<span class="nu">0.01</span>*dJ_ds)</
 
 <!-- ============================================================ S16: SYMBOLIC PDE ============================================================ -->
 <div class="slide" id="s16">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">16 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">16 / 59</span></div>
   <h2>Feature 1 — Symbolic PDE Compiler</h2>
   <div class="subtitle" style="margin-bottom:10px;">Write PDEs as mathematics. PINNeAPPle compiles them to autograd automatically.</div>
   <div class="body">
@@ -931,7 +936,7 @@ residual_fn = pde.<span class="fn">to_autograd</span>()</pre>
 
 <!-- ============================================================ S17: HARD BC + PERIODIC BC ============================================================ -->
 <div class="slide" id="s17">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">17 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">17 / 59</span></div>
   <h2>Features 4 &amp; 5 — Hard BC &amp; Periodic BC Enforcement</h2>
   <div class="body">
     <div class="two-col">
@@ -982,7 +987,7 @@ model_periodic = pbc.<span class="fn">wrap</span>(base_model)
 
 <!-- ============================================================ S18: SIREN ============================================================ -->
 <div class="slide" id="s18">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">18 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">18 / 59</span></div>
   <h2>Feature 2 — SIREN: Sinusoidal Representation Networks</h2>
   <div class="body">
     <div class="two-col">
@@ -1048,7 +1053,7 @@ model = <span class="cl">SIREN</span>(
 
 <!-- ============================================================ S19: MODIFIED MLP ============================================================ -->
 <div class="slide" id="s19">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">19 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">19 / 59</span></div>
   <h2>Feature 3 — Modified MLP (Wang et al. 2022)</h2>
   <div class="body">
     <div class="two-col">
@@ -1102,7 +1107,7 @@ model = <span class="cl">ModifiedMLP</span>(
 
 <!-- ============================================================ S20: HASH GRID ============================================================ -->
 <div class="slide" id="s20">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">20 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">20 / 59</span></div>
   <h2>Feature 6 — Hash Grid Encoding (Instant-NGP)</h2>
   <div class="body">
     <div class="two-col">
@@ -1160,7 +1165,7 @@ model = <span class="cl">HashGridMLP</span>(
 
 <!-- ============================================================ S21: MESHGRAPHNET ============================================================ -->
 <div class="slide" id="s21">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">21 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">21 / 59</span></div>
   <h2>Feature 7 — MeshGraphNet: GNN on Unstructured Meshes</h2>
   <div class="body">
     <div class="two-col">
@@ -1212,7 +1217,7 @@ node_pred = model(graph.x, graph.edge_index,
 
 <!-- ============================================================ S22: AFNO ============================================================ -->
 <div class="slide" id="s22">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">22 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">22 / 59</span></div>
   <h2>Feature 8 — AFNO: Adaptive Fourier Neural Operator</h2>
   <div class="body">
     <div class="two-col">
@@ -1277,7 +1282,7 @@ y = model(x)  <span class="cm"># (4, 128, 128, 3)</span>
 
 <!-- ============================================================ S23: DoMINO ============================================================ -->
 <div class="slide" id="s23">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">23 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">23 / 59</span></div>
   <h2>Feature 9 — DoMINO Domain Decomposition</h2>
   <div class="body">
     <div class="two-col">
@@ -1338,7 +1343,7 @@ u_global = domino.<span class="fn">forward</span>(nets, x_query)</pre>
 
 <!-- ============================================================ S24: TIME-MARCHING ============================================================ -->
 <div class="slide" id="s24">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">24 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">24 / 59</span></div>
   <h2>Feature 11 — Time-Marching PINN Trainer</h2>
   <div class="body">
     <div class="two-col">
@@ -1393,7 +1398,7 @@ u_T = model(x_at_T_final)</pre>
 
 <!-- ============================================================ S25: DDP ============================================================ -->
 <div class="slide" id="s25">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">25 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">25 / 59</span></div>
   <h2>Feature 13 — Multi-GPU DDP Training</h2>
   <div class="body">
     <div class="two-col">
@@ -1461,7 +1466,7 @@ trainer = <span class="cl">DDPPINNTrainer</span>(
 
 <!-- ============================================================ S26: CAUSAL ============================================================ -->
 <div class="slide" id="s26">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">26 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">26 / 59</span></div>
   <h2>Feature 14 — Causal PINN Training (Wang et al. 2022)</h2>
   <div class="body">
     <div class="two-col">
@@ -1513,7 +1518,7 @@ weights = trainer.<span class="fn">get_causal_weights</span>()
 
 <!-- ============================================================ S27: RANS ============================================================ -->
 <div class="slide" id="s27">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">27 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">27 / 59</span></div>
   <h2>Feature 10 — RANS Turbulence Presets</h2>
   <div class="body">
     <div class="two-col">
@@ -1566,7 +1571,7 @@ loss = factory.<span class="fn">compile</span>()</pre>
 
 <!-- ============================================================ S28: CSG ============================================================ -->
 <div class="slide" id="s28">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">28 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">28 / 59</span></div>
   <h2>Feature 12 — Constructive Solid Geometry</h2>
   <div class="body">
     <div class="two-col">
@@ -1622,7 +1627,7 @@ pts, normals = domain_3d.<span class="fn">sample_boundary</span>(<span class="nu
 
 <!-- ============================================================ S29: FLOW VIZ ============================================================ -->
 <div class="slide" id="s29">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">29 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">29 / 59</span></div>
   <h2>Feature 17 — Flow Visualization</h2>
   <div class="body">
     <div class="two-col">
@@ -1686,7 +1691,7 @@ sl_x, sl_u = viz.<span class="fn">compute_streamlines</span>(
 
 <!-- ============================================================ S30: JAX BACKEND ============================================================ -->
 <div class="slide" id="s30">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">30 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">30 / 59</span></div>
   <h2>Feature 15 — Multi-Backend Support (JAX)</h2>
   <div class="body">
     <div class="two-col">
@@ -1742,7 +1747,7 @@ grad_fn = jax_backend.<span class="fn">grad_fn</span>(loss_fn)
 
 <!-- ============================================================ S31: DYNAMICS ============================================================ -->
 <div class="slide" id="s31">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">31 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">31 / 59</span></div>
   <h2>Feature 18 — Differentiable Dynamics</h2>
   <div class="body">
     <div class="two-col">
@@ -1815,7 +1820,7 @@ sph.<span class="fn">step</span>(dt=<span class="nu">5e-4</span>)</pre>
 
 <!-- ============================================================ S32: WORLDMODEL ============================================================ -->
 <div class="slide" id="s32">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">32 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">32 / 59</span></div>
   <h2>Feature 19 — World Foundation Model Adapters</h2>
   <div class="body">
     <div class="two-col">
@@ -1871,7 +1876,7 @@ ds = <span class="cl">PhysicsVideoDataset</span>(
 
 <!-- ============================================================ S33: ADJOINT OPT ============================================================ -->
 <div class="slide" id="s33">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">33 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">33 / 59</span></div>
   <h2>Feature 16 — Adjoint-Based Shape Optimization</h2>
   <div class="body">
     <div class="two-col">
@@ -1942,7 +1947,7 @@ sensitivity = adj.<span class="fn">sensitivity</span>()
 
 <!-- ============================================================ S34: CAD→CFD ============================================================ -->
 <div class="slide" id="s34">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">34 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">34 / 59</span></div>
   <h2>Feature 20 — CAD → CFD → PINN Pipeline</h2>
   <div class="body">
     <div class="two-col">
@@ -2008,7 +2013,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S35: FEATURES SUMMARY TABLE ============================================================ -->
 <div class="slide" id="s35">
-  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">35 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag orange">v0.5 Features</span><div class="divider-line"></div><span class="slide-num">35 / 59</span></div>
   <h2>All 20 New Features — Summary</h2>
   <div class="body">
     <table>
@@ -2039,7 +2044,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S36: QUALITY MATRIX ============================================================ -->
 <div class="slide" id="s36">
-  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">36 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">36 / 59</span></div>
   <h2>Module Quality Matrix</h2>
   <div class="body">
     <table>
@@ -2071,7 +2076,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S37: FRAMEWORK COMPARISON ============================================================ -->
 <div class="slide" id="s37">
-  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">37 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">37 / 59</span></div>
   <h2>Framework Comparison</h2>
   <div class="body" style="gap:10px;">
     <table>
@@ -2097,7 +2102,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S38: ROADMAP IMPROVEMENTS ============================================================ -->
 <div class="slide" id="s38">
-  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">38 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">38 / 59</span></div>
   <h2>What Can Be Improved</h2>
   <div class="body">
     <div class="three-col">
@@ -2145,7 +2150,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S39: BENCHMARKS OVERVIEW ============================================================ -->
 <div class="slide" id="s39">
-  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">39 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">39 / 59</span></div>
   <h2>Performance Benchmarks Overview</h2>
   <div class="body">
     <table style="margin-bottom:14px;">
@@ -2183,7 +2188,7 @@ data = pipeline.<span class="fn">to_pinn_training_data</span>(
 
 <!-- ============================================================ S40: ECOSYSTEM ============================================================ -->
 <div class="slide" id="s40">
-  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">40 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag purple">Quality Matrix</span><div class="divider-line"></div><span class="slide-num">40 / 59</span></div>
   <h2>Ecosystem Integration</h2>
   <div class="body">
     <div class="two-col">
@@ -2235,7 +2240,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S41: BENCHMARK - BURGERS ============================================================ -->
 <div class="slide" id="s41">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">41 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">41 / 59</span></div>
   <h2>Benchmark 1 — Burgers 1D (ν = 0.01/π)</h2>
   <div class="subtitle" style="margin-bottom:10px;">u_t + u·u_x − ν·u_xx = 0 &nbsp;|&nbsp; x ∈ [−1,1], t ∈ [0,1] &nbsp;|&nbsp; IC: u(x,0) = −sin(πx)</div>
   <div class="body">
@@ -2277,7 +2282,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S42: BENCHMARK - HEAT 2D ============================================================ -->
 <div class="slide" id="s42">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">42 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">42 / 59</span></div>
   <h2>Benchmark 2 — Heat Equation 2D</h2>
   <div class="subtitle" style="margin-bottom:10px;">u_t − α∇²u = 0 &nbsp;|&nbsp; (x,y) ∈ [0,1]², t ∈ [0,1] &nbsp;|&nbsp; Exact solution: u = e^(−2α π² t) sin(πx) sin(πy)</div>
   <div class="body">
@@ -2319,7 +2324,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S43: BENCHMARK - POISSON ============================================================ -->
 <div class="slide" id="s43">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">43 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">43 / 59</span></div>
   <h2>Benchmark 3 — Poisson 2D</h2>
   <div class="subtitle" style="margin-bottom:10px;">−∇²u = 2π²sin(πx)sin(πy) &nbsp;|&nbsp; (x,y) ∈ [0,1]² &nbsp;|&nbsp; Exact: u = sin(πx)sin(πy)</div>
   <div class="body">
@@ -2361,7 +2366,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S44: BENCHMARK - NACA FLOW ============================================================ -->
 <div class="slide" id="s44">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">44 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">44 / 59</span></div>
   <h2>Benchmark 4 — NACA0012 CFD Flow Field</h2>
   <div class="subtitle" style="margin-bottom:10px;">FEM reference solution — Re=1000, α=5°, steady NS. Used as validation data for PINN training.</div>
   <div class="body">
@@ -2403,7 +2408,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S45: BENCHMARK - NACA PINN ============================================================ -->
 <div class="slide" id="s45">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">45 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">45 / 59</span></div>
   <h2>Benchmark 5 — NACA0012 PINN Solution</h2>
   <div class="subtitle" style="margin-bottom:10px;">PINN prediction of velocity and pressure fields — compare with CFD reference</div>
   <div class="body">
@@ -2445,7 +2450,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S46: BENCHMARK - NACA Cp ============================================================ -->
 <div class="slide" id="s46">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">46 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">46 / 59</span></div>
   <h2>Benchmark 6 — NACA0012 Surface Pressure Coefficient</h2>
   <div class="subtitle" style="margin-bottom:10px;">Cp = (p − p∞) / (½ρU∞²) distribution along chord — PINN vs CFD reference</div>
   <div class="body">
@@ -2487,7 +2492,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S47: BENCHMARK - 3D LAPLACE ============================================================ -->
 <div class="slide" id="s47">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">47 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">47 / 59</span></div>
   <h2>Benchmark 7 — 3D Laplace (Cross-Sections)</h2>
   <div class="subtitle" style="margin-bottom:10px;">∇²u = 0 in [0,1]³ &nbsp;|&nbsp; Exact: u = sin(πx)sin(πy)sinh(π√2 z)/sinh(π√2)</div>
   <div class="body">
@@ -2529,7 +2534,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S48: BENCHMARK - SPHERE HEAT ============================================================ -->
 <div class="slide" id="s48">
-  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">48 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag red">Benchmarks</span><div class="divider-line"></div><span class="slide-num">48 / 59</span></div>
   <h2>Benchmark 8 — Sphere Heat Transfer 3D</h2>
   <div class="subtitle" style="margin-bottom:10px;">Steady heat conduction in/around sphere &nbsp;|&nbsp; Mixed BCs: fixed T on sphere surface, decay at farfield</div>
   <div class="body">
@@ -2571,7 +2576,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S49: ROADMAP ============================================================ -->
 <div class="slide" id="s49">
-  <div class="slide-header"><span class="slide-tag">Roadmap</span><div class="divider-line"></div><span class="slide-num">49 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag">Roadmap</span><div class="divider-line"></div><span class="slide-num">49 / 59</span></div>
   <h2>Development Roadmap 2026</h2>
   <div class="body">
     <div class="three-col">
@@ -2621,7 +2626,7 @@ pip install pinneaple[cad]  <span class="cm"># gmsh + meshio</span></pre>
 
 <!-- ============================================================ S50: CONTRIBUTING ============================================================ -->
 <div class="slide" id="s50">
-  <div class="slide-header"><span class="slide-tag">Contributing</span><div class="divider-line"></div><span class="slide-num">50 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag">Contributing</span><div class="divider-line"></div><span class="slide-num">50 / 59</span></div>
   <h2>How to Contribute</h2>
   <div class="body">
     <div class="two-col">
@@ -2688,7 +2693,7 @@ pytest tests/unit/</pre>
 
 <!-- ============================================================ S51: SUMMARY ============================================================ -->
 <div class="slide" id="s51">
-  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">51 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">51 / 59</span></div>
   <h2>v0.5 Release Summary</h2>
   <div class="body">
     <div class="stat-grid" style="margin-bottom:18px;">
@@ -2741,7 +2746,7 @@ pytest tests/unit/</pre>
 
 <!-- ============================================================ S52: RESEARCH IMPACT ============================================================ -->
 <div class="slide" id="s52">
-  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">52 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">52 / 59</span></div>
   <h2>Research Impact &amp; Applications</h2>
   <div class="body">
     <div class="three-col" style="margin-bottom:14px;">
@@ -2805,7 +2810,7 @@ pytest tests/unit/</pre>
 
 <!-- ============================================================ S53: GETTING STARTED ============================================================ -->
 <div class="slide" id="s53">
-  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">53 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">53 / 59</span></div>
   <h2>Getting Started with v0.5</h2>
   <div class="body">
     <div class="two-col">
@@ -2876,7 +2881,7 @@ trainer.<span class="fn">fit</span>(epochs=<span class="nu">20_000</span>)</pre>
 
 <!-- ============================================================ S54: ACKNOWLEDGMENTS ============================================================ -->
 <div class="slide" id="s54">
-  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">54 / 58</span></div>
+  <div class="slide-header"><span class="slide-tag">Closing</span><div class="divider-line"></div><span class="slide-num">54 / 59</span></div>
   <h2>Acknowledgments &amp; References</h2>
   <div class="body">
     <div class="two-col">
@@ -2932,7 +2937,7 @@ trainer.<span class="fn">fit</span>(epochs=<span class="nu">20_000</span>)</pre>
   <div class="slide-header">
     <span class="slide-tag">Physics Visualizations</span>
     <div class="divider-line"></div>
-    <span class="slide-num">55 / 58</span>
+    <span class="slide-num">55 / 59</span>
   </div>
   <div class="section-title">Fluid Dynamics — Canvas-Rendered Physics</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
@@ -2972,7 +2977,7 @@ u_θ = Γ/(2πr) * (1 - exp(-r²/(4νt)))</pre>
   <div class="slide-header">
     <span class="slide-tag">Physics Visualizations</span>
     <div class="divider-line"></div>
-    <span class="slide-num">56 / 58</span>
+    <span class="slide-num">56 / 59</span>
   </div>
   <div class="section-title">Heat Equation · Phase Field · Wave Propagation</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
@@ -3031,7 +3036,7 @@ u_θ = Γ/(2πr) * (1 - exp(-r²/(4νt)))</pre>
   <div class="slide-header">
     <span class="slide-tag green">Physics Visualizations</span>
     <div class="divider-line"></div>
-    <span class="slide-num">57 / 58</span>
+    <span class="slide-num">57 / 59</span>
   </div>
   <div class="section-title">Structural Mechanics — Kirchhoff Plate + Von Mises Stress</div>
   <div style="margin-top:12px;">
@@ -3059,19 +3064,80 @@ w ≈ <span style="color:#d2a8ff;">192</span> · [x(1−x)]² · [y(1−y)]²
   </div>
 </div>
 
-<!-- ============================================================ S58: FINAL SLIDE ============================================================ -->
+<!-- ============================================================ S58: PINNEAPLE_COSIM ============================================================ -->
 <div class="slide" id="s58">
+  <div class="slide-header"><span class="slide-tag purple">New Module</span><div class="divider-line"></div><span class="slide-num">58 / 59</span></div>
+  <h2>pinneaple_cosim — Graph Co-Simulation Engine</h2>
+  <div class="subtitle" style="margin-bottom:14px;">Differentiable, physics-aware co-simulation for multi-physics workflows</div>
+  <div class="body">
+    <div class="two-col" style="gap:24px;">
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <h4>Architecture</h4>
+          <ul class="bullets">
+            <li><strong>CoSimNode</strong> — base unit with typed input/output ports (TorchNode · AnalyticalNode · PINNNode · BlackBoxNode)</li>
+            <li><strong>CoSimGraph</strong> — directed graph with Tarjan SCC for algebraic-loop detection and condensation-order execution</li>
+            <li><strong>CoSimEngine</strong> — time-stepped solver; Gauss-Seidel or Jacobi iteration for feedback loops</li>
+            <li><strong>CoSimTrainer</strong> — BPTT over N-step rollouts, integrates TrainConfig · WeightScheduler · EarlyStopping</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>PINNeAPPle Adapter Nodes</h4>
+          <ul class="bullets">
+            <li><strong>PINNeProblemNode</strong> — ProblemSpec + compile_problem() + ModelRegistry in one node</li>
+            <li><strong>PINNeAPPleModelNode</strong> — any BaseModel (DeepONet · FNO · GNN) as co-sim node</li>
+            <li><strong>SymbolicPDENode</strong> — SymPy expression → autograd residual at runtime</li>
+            <li><strong>TimeSeriesCoSimNode</strong> — LSTM · N-BEATS · TFT · FFT+LSTM · HHT+LSTM in co-sim graphs</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card" style="background:var(--surface2);">
+          <h4>Why co-simulation?</h4>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6;">Real systems span multiple physics domains. A turbine couples structural dynamics, fluid flow, and thermal transport — each best modeled by a different neural architecture. Co-simulation orchestrates them in a single differentiable graph, trains end-to-end, and preserves inter-subsystem physics constraints.</p>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">
+          <div style="font-size:12px;color:var(--accent5);font-weight:700;margin-bottom:8px;">Quick Start</div>
+          <pre style="font-size:11px;line-height:1.7;color:#e6edf3;overflow:hidden;"><span style="color:#8b949e;"># Build a coupled PINN co-sim graph</span>
+<span style="color:#ff7b72;">from</span> pinneaple_cosim <span style="color:#ff7b72;">import</span> (
+    CoSimGraph, CoSimEngine, CoSimTrainer,
+    AnalyticalNode, PINNNode, CoSimLoss,
+)
+
+graph = CoSimGraph()
+graph.add_node(force_node).add_node(mass_node)
+graph.connect(<span style="color:#a5d6ff;">"forcing.F"</span>,  <span style="color:#a5d6ff;">"mass.F_ext"</span>)
+graph.connect(<span style="color:#a5d6ff;">"mass.x"</span>,     <span style="color:#a5d6ff;">"mass.x_prev"</span>)  <span style="color:#8b949e;"># feedback</span>
+
+trainer = CoSimTrainer(graph, engine,
+    criterion=CoSimLoss(physics_weight=<span style="color:#d2a8ff;">2.0</span>))
+trainer.fit(cfg, n_unroll=<span style="color:#d2a8ff;">10</span>, dt=<span style="color:#d2a8ff;">0.02</span>,
+    targets_fn=<span style="color:#ff7b72;">lambda</span> t, pv: targets(t))</pre>
+        </div>
+        <div class="badge-row" style="flex-wrap:wrap;gap:8px;">
+          <span class="badge">Problem-agnostic</span>
+          <span class="badge green">Differentiable BPTT</span>
+          <span class="badge purple">Algebraic-loop solver</span>
+          <span class="badge orange">Multi-physics coupling</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ S59: FINAL SLIDE ============================================================ -->
+<div class="slide" id="s59">
   <div class="hero-bg"></div>
   <div class="hero-glow"></div>
   <div class="slide-header" style="position:relative;z-index:1;">
     <span class="slide-tag">End</span>
     <div class="divider-line"></div>
-    <span class="slide-num">58 / 58</span>
+    <span class="slide-num">59 / 59</span>
   </div>
   <div class="hero-center">
     <div style="font-size:13px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:20px;">Physics-Informed Machine Learning</div>
     <div class="hero-title" style="font-size:64px;">PINNeAPPle v0.5.0</div>
-    <div class="hero-sub" style="margin-top:16px;font-size:18px;">20 new features · 16 modules · Open source · MIT<br>The most complete open-source PINN framework.</div>
+    <div class="hero-sub" style="margin-top:16px;font-size:18px;">20 new features · 17 modules · Open source · MIT<br>The most complete open-source PINN framework.</div>
     <div class="badge-row" style="justify-content:center;margin-top:22px;">
       <span class="badge">github.com/barrosyan/PINNeAPPle</span>
       <span class="badge green">pip install pinneaple</span>
@@ -3079,7 +3145,7 @@ w ≈ <span style="color:#d2a8ff;">192</span> · [x(1−x)]² · [y(1−y)]²
     </div>
     <div style="margin-top:36px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:600px;">
       <div class="stat-box"><div class="num" style="font-size:30px;">20</div><div class="label">New Features</div></div>
-      <div class="stat-box"><div class="num" style="font-size:30px;">16</div><div class="label">Modules</div></div>
+      <div class="stat-box"><div class="num" style="font-size:30px;">17</div><div class="label">Modules</div></div>
       <div class="stat-box"><div class="num" style="font-size:30px;">54k</div><div class="label">LOC</div></div>
       <div class="stat-box"><div class="num" style="font-size:30px;">MIT</div><div class="label">License</div></div>
     </div>
@@ -3092,7 +3158,7 @@ w ≈ <span style="color:#d2a8ff;">192</span> · [x(1−x)]² · [y(1−y)]²
 <!-- NAV -->
 <nav class="nav">
   <button class="nav-btn" id="prev-btn">← Prev</button>
-  <span class="nav-counter" id="nav-counter">1 / 58</span>
+  <span class="nav-counter" id="nav-counter">1 / 59</span>
   <button class="nav-btn" id="next-btn">Next →</button>
 </nav>
 
@@ -3136,7 +3202,7 @@ function vcol(t, name) {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-const TOTAL = 58;
+const TOTAL = 59;
 let cur = 1;
 
 function goTo(n) {

@@ -218,15 +218,15 @@ tr:hover td{background:rgba(88,166,255,.04);}
         </ul>
         <div class="badge-row" style="margin-top:10px;"><span class="badge green">PhysicsValidator · ONNX</span></div>
       </div>
-      <div class="tier-block nemo">
-        <h4>→ PhysicsNeMo</h4>
+      <div class="tier-block nemo" style="border-color:rgba(210,168,255,.35);">
+        <h4>Advanced — Co-Simulation</h4>
         <ul class="bullets" style="font-size:12px;">
-          <li>Multi-GPU training</li>
-          <li>Triton Inference</li>
-          <li>NVIDIA Omniverse</li>
-          <li>Enterprise support</li>
+          <li>Lesson 13 — Co-sim graphs</li>
+          <li>Lesson 14 — Multi-physics BPTT</li>
+          <li>pinneaple_cosim engine</li>
+          <li>→ PhysicsNeMo / scale</li>
         </ul>
-        <div class="badge-row" style="margin-top:10px;"><span class="badge purple">Production · Scale</span></div>
+        <div class="badge-row" style="margin-top:10px;"><span class="badge purple">NEW · pinneaple_cosim</span></div>
       </div>
     </div>
     <div class="hcard">
@@ -1276,7 +1276,7 @@ t3.<span class="fn">physicsnemo_readiness</span>()  <span class="cm"># migrate?<
 
 <!-- ═══════════════════ S16: FLUID DYNAMICS VIZ ═══════════════════ -->
 <div class="slide" id="s16">
-  <div class="slide-header"><span class="slide-tag t1">Viz — Fluid Dynamics</span><div class="divider-line"></div><span class="slide-num">16 / 19</span></div>
+  <div class="slide-header"><span class="slide-tag t1">Viz — Fluid Dynamics</span><div class="divider-line"></div><span class="slide-num">16 / 20</span></div>
   <h2>Fluid Dynamics Visualizations</h2>
   <div class="subtitle" style="margin-bottom:10px;">Potential flow · Vortex dynamics · Generated with <code style="color:var(--accent)">examples/visualizations/</code></div>
   <div class="body">
@@ -1324,7 +1324,7 @@ pts = domain.<span class="fn">sample_interior</span>(<span class="nu">4000</span
 
 <!-- ═══════════════════ S17: HEAT + PHASE FIELD ═══════════════════ -->
 <div class="slide" id="s17">
-  <div class="slide-header"><span class="slide-tag t2">Viz — Heat &amp; Phase</span><div class="divider-line"></div><span class="slide-num">17 / 19</span></div>
+  <div class="slide-header"><span class="slide-tag t2">Viz — Heat &amp; Phase</span><div class="divider-line"></div><span class="slide-num">17 / 20</span></div>
   <h2>Heat Diffusion + Allen-Cahn Phase Separation</h2>
   <div class="subtitle" style="margin-bottom:10px;">2D heat equation decaying amplitude · Phase field pattern formation</div>
   <div class="body">
@@ -1363,7 +1363,7 @@ m = <span class="fn">compare_to_analytical</span>(net, exact, ...)
 
 <!-- ═══════════════════ S18: WAVE EQUATION 3D ═══════════════════ -->
 <div class="slide" id="s18">
-  <div class="slide-header"><span class="slide-tag t2">Viz — Wave Eq.</span><div class="divider-line"></div><span class="slide-num">18 / 19</span></div>
+  <div class="slide-header"><span class="slide-tag t2">Viz — Wave Eq.</span><div class="divider-line"></div><span class="slide-num">18 / 20</span></div>
   <h2>2D Wave Equation — 3D Surface Visualization</h2>
   <div class="subtitle" style="margin-bottom:10px;">u_tt = c²(u_xx + u_yy) · c=1 · IC: sin(2πx)sin(πy) · Exact PINN match</div>
   <div class="body">
@@ -1409,7 +1409,7 @@ l_pde = (u_tt - c**<span class="nu">2</span>*(u_xx+u_yy)).<span class="fn">pow</
 
 <!-- ═══════════════════ S19: STRUCTURAL MECHANICS ═══════════════════ -->
 <div class="slide" id="s19">
-  <div class="slide-header"><span class="slide-tag t3">Viz — Structural</span><div class="divider-line"></div><span class="slide-num">19 / 19</span></div>
+  <div class="slide-header"><span class="slide-tag t3">Viz — Structural</span><div class="divider-line"></div><span class="slide-num">19 / 20</span></div>
   <h2>Structural Mechanics — Plate Deflection + Von Mises Stress</h2>
   <div class="subtitle" style="margin-bottom:10px;">Clamped elastic plate Δ²w = 1 · deflection w(x,y) · bending stresses σ_VM</div>
   <div class="body">
@@ -1453,6 +1453,63 @@ opt = Adam(params, lr=<span class="nu">1e-3</span>)
           <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden;">
             <canvas id="cv-plate-vm" width="520" height="200" style="width:100%;display:block;"></canvas>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ S20: CO-SIMULATION (NEW) ═══════════════════ -->
+<div class="slide" id="s20">
+  <div class="slide-header"><span class="slide-tag nemo">Advanced</span><div class="divider-line"></div><span class="slide-num">20 / 20</span></div>
+  <h2>Co-Simulation — Lesson 13: Multi-Physics Graphs</h2>
+  <div class="subtitle" style="margin-bottom:12px;">Couple PINNs, surrogates, and time-series models in a single differentiable graph</div>
+  <div class="body">
+    <div class="two-col" style="gap:20px;">
+      <div>
+        <div class="hcard" style="margin-bottom:12px;">
+          <h4>What is co-simulation?</h4>
+          <p style="font-size:12px;color:var(--muted);line-height:1.65;">Real engineering systems span multiple physics domains. A wind turbine couples structural dynamics, aerodynamics, and thermal transport — each best described by a different model type.<br><br><code style="font-size:11px;background:#0d1117;padding:2px 6px;border-radius:4px;">pinneaple_cosim</code> orchestrates them as a directed graph, trains end-to-end with BPTT, and enforces inter-subsystem physics constraints.</p>
+        </div>
+        <div class="card">
+          <h4>Key concepts</h4>
+          <ul class="bullets" style="font-size:12px;">
+            <li><strong>CoSimNode</strong> — typed port interface (input / output)</li>
+            <li><strong>CoSimGraph</strong> — algebraic-loop detection via Tarjan SCC</li>
+            <li><strong>CoSimEngine</strong> — Gauss-Seidel/Jacobi loop solver</li>
+            <li><strong>CoSimTrainer</strong> — BPTT over N-step rollouts</li>
+            <li><strong>PINNeProblemNode</strong> — ProblemSpec + any ModelRegistry model</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--accent5);font-weight:700;margin-bottom:8px;">Example — 2-DOF Coupled Spring-Mass</div>
+          <pre style="font-size:11px;line-height:1.7;"><span class="kw">from</span> pinneaple_cosim <span class="kw">import</span> (
+    CoSimGraph, CoSimEngine, CoSimTrainer,
+    PINNNode, AnalyticalNode, CoSimLoss,
+)
+<span class="kw">from</span> pinneaple_models.pinns.vanilla <span class="kw">import</span> VanillaPINN
+
+<span class="cm"># Two separate PINN models for each subsystem</span>
+mass1 = PINNNode(<span class="st">"mass1"</span>, SpringMassNet(),
+    input_ports=[<span class="st">"x1_prev"</span>,<span class="st">"v1_prev"</span>,<span class="st">"F_ext"</span>,<span class="st">"x2_in"</span>],
+    output_ports=[<span class="st">"x1"</span>,<span class="st">"v1"</span>], physics_fn=mass1_physics)
+
+mass2 = PINNNode(<span class="st">"mass2"</span>, VanillaPINN(in_dim=<span class="nu">3</span>, out_dim=<span class="nu">2</span>),
+    input_ports=[<span class="st">"x2_prev"</span>,<span class="st">"v2_prev"</span>,<span class="st">"x1_in"</span>],
+    output_ports=[<span class="st">"x2"</span>,<span class="st">"v2"</span>], physics_fn=mass2_physics)
+
+graph = CoSimGraph()
+graph.add_node(mass1).add_node(mass2)
+graph.connect(<span class="st">"mass1.x1"</span>, <span class="st">"mass2.x1_in"</span>)  <span class="cm"># coupling</span>
+graph.connect(<span class="st">"mass2.x2"</span>, <span class="st">"mass1.x2_in"</span>)  <span class="cm"># feedback</span></pre>
+        </div>
+        <div class="badge-row" style="flex-wrap:wrap;gap:8px;">
+          <span class="badge">Problem-agnostic</span>
+          <span class="badge green">Differentiable BPTT</span>
+          <span class="badge purple">Multi-model coupling</span>
+          <span class="badge orange">pinneaple_cosim</span>
         </div>
       </div>
     </div>
@@ -1786,12 +1843,12 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- ══ NAV ══════════════════════════════════════════════════════ -->
 <nav class="nav">
   <button class="nav-btn" onclick="go(-1)">← Prev</button>
-  <span class="nav-counter" id="counter">1 / 19</span>
+  <span class="nav-counter" id="counter">1 / 20</span>
   <button class="nav-btn" onclick="go(1)">Next →</button>
 </nav>
 
 <script>
-const TOTAL = 19;
+const TOTAL = 20;
 let cur = 1;
 
 function go(d) {
