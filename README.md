@@ -95,7 +95,7 @@ from pinneaple_export.onnx_exporter import ONNXExporter
 
 <div align="center">
 
-![Model Comparison](./data/)
+![Model Comparison](./outputs/07_forecast_comparison.png)
 *Multi-model forecast comparison across test windows — Naive, FFT-only, LSTM, FFT+LSTM*
 
 </div>
