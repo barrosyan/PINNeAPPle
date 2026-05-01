@@ -110,7 +110,11 @@ class TorchNode(CoSimNode):
         dt: float,
     ) -> Dict[str, torch.Tensor]:
         x = torch.cat([inputs[p] for p in self.input_ports], dim=-1)
-        out = self.model(x)
+        raw = self.model(x)
+        # Accept plain Tensor or any wrapper with a .y Tensor (PINNOutput, TSOutput, etc.)
+        if not isinstance(raw, torch.Tensor):
+            raw = getattr(raw, "y", raw)
+        out: torch.Tensor = raw
         n = len(self.output_ports)
         if n == 1:
             return {self.output_ports[0]: out}
@@ -187,6 +191,7 @@ class PINNNode(TorchNode):
         self._physics_fn = physics_fn
         self.physics_weight = physics_weight
         self._last_inputs: Optional[Dict[str, torch.Tensor]] = None
+        self._last_outputs: Optional[Dict[str, torch.Tensor]] = None
         self._last_t: float = 0.0
         self._last_dt: float = 0.0
 
@@ -199,7 +204,9 @@ class PINNNode(TorchNode):
         self._last_inputs = {k: v for k, v in inputs.items()}
         self._last_t = t
         self._last_dt = dt
-        return super().step(inputs, t, dt)
+        result = super().step(inputs, t, dt)
+        self._last_outputs = result  # cache predictions for physics_fn
+        return result
 
     def physics_loss(self) -> Optional[torch.Tensor]:
         if self._last_inputs is None:
@@ -212,6 +219,7 @@ class PINNNode(TorchNode):
     def reset(self) -> None:
         super().reset()
         self._last_inputs = None
+        self._last_outputs = None
 
 
 # ---------------------------------------------------------------------------

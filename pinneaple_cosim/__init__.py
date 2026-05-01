@@ -46,22 +46,38 @@ from .recorder import Trajectory, TrajectoryRecorder
 from .engine import CoSimEngine
 from .losses import DataLoss, PhysicsLoss, CouplingLoss, CoSimLoss
 
+# PINNeAPPle ecosystem adapters (import individually to avoid hard deps at package level)
+from .adapters import (
+    PINNeProblemNode,
+    PINNeAPPleModelNode,
+    SymbolicPDENode,
+    TimeSeriesCoSimNode,
+)
+from .trainer import CoSimTrainer
+
 __all__ = [
-    # Nodes
+    # --- Core nodes ---
     "CoSimNode",
     "TorchNode",
     "AnalyticalNode",
     "PINNNode",
     "BlackBoxNode",
-    # Graph primitives
+    # --- PINNeAPPle adapter nodes ---
+    "PINNeProblemNode",        # ProblemSpec + compiled physics + ModelRegistry
+    "PINNeAPPleModelNode",     # any BaseModel (DeepONet, FNO, surrogate, …)
+    "SymbolicPDENode",         # SymPy expression → autograd residual
+    "TimeSeriesCoSimNode",     # TSModelBase (LSTM, FFT+LSTM, TFT, …)
+    # --- Graph primitives ---
     "Connection",
     "CoSimGraph",
-    # Recording
+    # --- Recording ---
     "Trajectory",
     "TrajectoryRecorder",
-    # Execution
+    # --- Execution ---
     "CoSimEngine",
-    # Losses
+    # --- Training ---
+    "CoSimTrainer",
+    # --- Losses ---
     "DataLoss",
     "PhysicsLoss",
     "CouplingLoss",
