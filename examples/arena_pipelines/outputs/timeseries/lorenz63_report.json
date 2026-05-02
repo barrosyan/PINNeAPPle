@@ -1,0 +1,213 @@
+{
+  "benchmark_type": "timeseries",
+  "version": "1.0",
+  "created_at": "2026-05-01T22:48:35",
+  "problem_info": {
+    "source": "lorenz63",
+    "n_samples": 5000,
+    "n_features": 3,
+    "n_train_windows": 3931,
+    "n_test_windows": 981,
+    "horizon": 20,
+    "lookback": 50
+  },
+  "config": {
+    "models": [
+      "lstm",
+      "tcn",
+      "nbeats"
+    ],
+    "metrics": [
+      "mse",
+      "mae",
+      "rmse"
+    ],
+    "test_size": 0.2,
+    "epochs": 60,
+    "lr": 0.001,
+    "batch_size": 64,
+    "seed": 42
+  },
+  "models": {
+    "lstm": {
+      "model_id": "lstm",
+      "n_params": 54844,
+      "training_time_s": 162.91030788,
+      "metrics": {
+        "mse": 0.00511846,
+        "mae": 0.02853889,
+        "rmse": 0.07154339
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 0.3449334
+        },
+        {
+          "epoch": 7,
+          "loss": 0.00692546
+        },
+        {
+          "epoch": 14,
+          "loss": 0.00249142
+        },
+        {
+          "epoch": 21,
+          "loss": 0.0015546
+        },
+        {
+          "epoch": 28,
+          "loss": 0.00104126
+        },
+        {
+          "epoch": 35,
+          "loss": 0.00085155
+        },
+        {
+          "epoch": 42,
+          "loss": 0.0006306
+        },
+        {
+          "epoch": 49,
+          "loss": 0.00051944
+        },
+        {
+          "epoch": 56,
+          "loss": 0.00047508
+        }
+      ],
+      "param_estimates": null,
+      "rank": 2,
+      "error_message": null
+    },
+    "tcn": {
+      "model_id": "tcn",
+      "n_params": 91260,
+      "training_time_s": 210.01195526,
+      "metrics": {
+        "mse": 0.00222227,
+        "mae": 0.02602676,
+        "rmse": 0.04714092
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 0.23289054
+        },
+        {
+          "epoch": 7,
+          "loss": 0.00324386
+        },
+        {
+          "epoch": 14,
+          "loss": 0.0013042
+        },
+        {
+          "epoch": 21,
+          "loss": 0.00043288
+        },
+        {
+          "epoch": 28,
+          "loss": 0.00026832
+        },
+        {
+          "epoch": 35,
+          "loss": 0.00020126
+        },
+        {
+          "epoch": 42,
+          "loss": 0.00015281
+        },
+        {
+          "epoch": 49,
+          "loss": 0.0001331
+        },
+        {
+          "epoch": 56,
+          "loss": 0.00012133
+        }
+      ],
+      "param_estimates": null,
+      "rank": 1,
+      "error_message": null
+    },
+    "nbeats": {
+      "model_id": "nbeats",
+      "n_params": 390564,
+      "training_time_s": 442.98744226,
+      "metrics": {
+        "mse": 0.02247693,
+        "mae": 0.06152987,
+        "rmse": 0.14992309
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 0.19340785
+        },
+        {
+          "epoch": 7,
+          "loss": 0.01664666
+        },
+        {
+          "epoch": 14,
+          "loss": 0.0132832
+        },
+        {
+          "epoch": 21,
+          "loss": 0.01902986
+        },
+        {
+          "epoch": 28,
+          "loss": 0.00162365
+        },
+        {
+          "epoch": 35,
+          "loss": 0.00152482
+        },
+        {
+          "epoch": 42,
+          "loss": 0.00077261
+        },
+        {
+          "epoch": 49,
+          "loss": 0.00061678
+        },
+        {
+          "epoch": 56,
+          "loss": 0.00054372
+        }
+      ],
+      "param_estimates": null,
+      "rank": 3,
+      "error_message": null
+    }
+  },
+  "leaderboard": [
+    {
+      "rank": 1,
+      "model": "tcn",
+      "mse": 0.00222227
+    },
+    {
+      "rank": 2,
+      "model": "lstm",
+      "mse": 0.00511846
+    },
+    {
+      "rank": 3,
+      "model": "nbeats",
+      "mse": 0.02247693
+    }
+  ],
+  "best_model": "tcn",
+  "plots_saved": [
+    "outputs\\timeseries\\ts_lorenz63_lstm_loss.png",
+    "outputs\\timeseries\\ts_lorenz63_lstm_forecast.png",
+    "outputs\\timeseries\\ts_lorenz63_tcn_loss.png",
+    "outputs\\timeseries\\ts_lorenz63_tcn_forecast.png",
+    "outputs\\timeseries\\ts_lorenz63_nbeats_loss.png",
+    "outputs\\timeseries\\ts_lorenz63_nbeats_forecast.png"
+  ],
+  "metadata": {}
+}

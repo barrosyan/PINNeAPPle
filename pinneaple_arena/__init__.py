@@ -3,6 +3,17 @@ from __future__ import annotations
 from . import io, bundle, tasks, backends, runner
 from .api import Arena, ArenaResult, ArenaCompareResult
 from .runner.run_arena_yaml import run_arena_experiment
+from .report import BenchmarkReport, ModelRunResult
+
+try:
+    from .physics_pipeline import PhysicsBenchmarkSpec
+except Exception:
+    pass
+
+try:
+    from .timeseries_pipeline import TimeSeriesBenchmarkSpec
+except Exception:
+    pass
 
 try:
     from .runner.run_pipeline import run_full_pipeline
@@ -52,6 +63,12 @@ except Exception:
     pass
 
 __all__ = [
+    # Pipelines (new)
+    "PhysicsBenchmarkSpec",
+    "TimeSeriesBenchmarkSpec",
+    "BenchmarkReport",
+    "ModelRunResult",
+    # Existing
     "Arena",
     "ArenaResult",
     "ArenaCompareResult",

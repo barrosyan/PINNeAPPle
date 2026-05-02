@@ -1,0 +1,154 @@
+{
+  "benchmark_type": "timeseries",
+  "version": "1.0",
+  "created_at": "2026-05-01T23:02:19",
+  "problem_info": {
+    "source": "air_passengers",
+    "n_samples": 144,
+    "n_features": 1,
+    "n_train_windows": 73,
+    "n_test_windows": 25,
+    "horizon": 12,
+    "lookback": 24
+  },
+  "config": {
+    "models": [
+      "lstm",
+      "nbeats"
+    ],
+    "metrics": [
+      "mse",
+      "rmse",
+      "mape"
+    ],
+    "test_size": 0.25,
+    "epochs": 100,
+    "lr": 0.0005,
+    "batch_size": 64,
+    "seed": 1
+  },
+  "models": {
+    "lstm": {
+      "model_id": "lstm",
+      "n_params": 51212,
+      "training_time_s": 9.81431532,
+      "metrics": {
+        "mse": 0.61864698,
+        "rmse": 0.78654116,
+        "mape": 47.6040802
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 0.39935055
+        },
+        {
+          "epoch": 12,
+          "loss": 0.31048711
+        },
+        {
+          "epoch": 24,
+          "loss": 0.24022347
+        },
+        {
+          "epoch": 36,
+          "loss": 0.12345229
+        },
+        {
+          "epoch": 48,
+          "loss": 0.09350898
+        },
+        {
+          "epoch": 60,
+          "loss": 0.10190343
+        },
+        {
+          "epoch": 72,
+          "loss": 0.08841934
+        },
+        {
+          "epoch": 84,
+          "loss": 0.07916508
+        },
+        {
+          "epoch": 96,
+          "loss": 0.08918946
+        }
+      ],
+      "param_estimates": null,
+      "rank": 2,
+      "error_message": null
+    },
+    "nbeats": {
+      "model_id": "nbeats",
+      "n_params": 344280,
+      "training_time_s": 10.71088552,
+      "metrics": {
+        "mse": 0.11317907,
+        "rmse": 0.33642095,
+        "mape": 24.64585686
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 0.35815611
+        },
+        {
+          "epoch": 12,
+          "loss": 0.09125286
+        },
+        {
+          "epoch": 24,
+          "loss": 0.03827634
+        },
+        {
+          "epoch": 36,
+          "loss": 0.0174792
+        },
+        {
+          "epoch": 48,
+          "loss": 0.01236391
+        },
+        {
+          "epoch": 60,
+          "loss": 0.01067543
+        },
+        {
+          "epoch": 72,
+          "loss": 0.0087959
+        },
+        {
+          "epoch": 84,
+          "loss": 0.00956877
+        },
+        {
+          "epoch": 96,
+          "loss": 0.00795449
+        }
+      ],
+      "param_estimates": null,
+      "rank": 1,
+      "error_message": null
+    }
+  },
+  "leaderboard": [
+    {
+      "rank": 1,
+      "model": "nbeats",
+      "mse": 0.11317907
+    },
+    {
+      "rank": 2,
+      "model": "lstm",
+      "mse": 0.61864698
+    }
+  ],
+  "best_model": "nbeats",
+  "plots_saved": [
+    "outputs\\timeseries\\ts_air_passengers_lstm_loss.png",
+    "outputs\\timeseries\\ts_air_passengers_lstm_forecast.png",
+    "outputs\\timeseries\\ts_air_passengers_nbeats_loss.png",
+    "outputs\\timeseries\\ts_air_passengers_nbeats_forecast.png"
+  ],
+  "metadata": {}
+}
