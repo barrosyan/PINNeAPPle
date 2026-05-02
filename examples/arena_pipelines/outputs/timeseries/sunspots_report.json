@@ -1,0 +1,56 @@
+{
+  "benchmark_type": "timeseries",
+  "version": "1.0",
+  "created_at": "2026-05-01T23:02:18",
+  "problem_info": {
+    "source": "sunspots",
+    "n_samples": 100,
+    "n_features": 1,
+    "n_train_windows": 0,
+    "n_test_windows": 0,
+    "horizon": 12,
+    "lookback": 60
+  },
+  "config": {
+    "models": [
+      "lstm",
+      "mlp"
+    ],
+    "metrics": [
+      "mse",
+      "rmse",
+      "mae"
+    ],
+    "test_size": 0.2,
+    "epochs": 80,
+    "lr": 0.001,
+    "batch_size": 64,
+    "seed": 0
+  },
+  "models": {
+    "lstm": {
+      "model_id": "lstm",
+      "n_params": 0,
+      "training_time_s": 0.00337172,
+      "metrics": {},
+      "history": [],
+      "param_estimates": null,
+      "rank": 0,
+      "error_message": "LSTM: Expected input to be 2D or 3D, got 1D instead"
+    },
+    "mlp": {
+      "model_id": "mlp",
+      "n_params": 0,
+      "training_time_s": 0.01220369,
+      "metrics": {},
+      "history": [],
+      "param_estimates": null,
+      "rank": 0,
+      "error_message": "cannot reshape tensor of 0 elements into shape [0, -1] because the unspecified dimension size -1 can be any value and is ambiguous"
+    }
+  },
+  "leaderboard": [],
+  "best_model": null,
+  "plots_saved": [],
+  "metadata": {}
+}

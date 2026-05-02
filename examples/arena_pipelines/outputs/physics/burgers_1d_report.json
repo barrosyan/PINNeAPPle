@@ -1,0 +1,128 @@
+{
+  "benchmark_type": "physics",
+  "version": "1.0",
+  "created_at": "2026-05-01T22:53:22",
+  "problem_info": {
+    "id": "burgers_1d",
+    "pde": "u_t + u*u_x = nu*u_xx",
+    "in_dim": 2,
+    "out_dim": 1,
+    "domain": {
+      "x": [
+        -1.0,
+        1.0
+      ],
+      "t": [
+        0.0,
+        1.0
+      ]
+    },
+    "params": {
+      "nu": 0.0031831
+    }
+  },
+  "config": {
+    "load_generate_data": "generate",
+    "source": null,
+    "collocation_points": "sobol",
+    "n_col": 2000,
+    "n_bc": 300,
+    "n_ic": 300,
+    "epochs": 1500,
+    "lr": 0.001,
+    "metrics": [
+      "mse",
+      "l2_rel",
+      "max_err"
+    ],
+    "models": [
+      "vanilla_pinn"
+    ],
+    "inverse": false,
+    "inverse_variables": [],
+    "hidden": [
+      64,
+      64,
+      64
+    ],
+    "seed": 42
+  },
+  "models": {
+    "vanilla_pinn": {
+      "model_id": "vanilla_pinn",
+      "n_params": 8577,
+      "training_time_s": 90.98432302,
+      "metrics": {
+        "mse": 0.58616874,
+        "l2_rel": 1.27289898,
+        "max_err": 1.86201345
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss_total": 5.46345186,
+          "loss_pde": 0.00303388,
+          "loss_bc": 0.03843031,
+          "loss_ic": 0.50761151
+        },
+        {
+          "epoch": 250,
+          "loss_total": 0.44184852,
+          "loss_pde": 0.2599428,
+          "loss_bc": 0.00389321,
+          "loss_ic": 0.01429736
+        },
+        {
+          "epoch": 500,
+          "loss_total": 0.32233912,
+          "loss_pde": 0.24989451,
+          "loss_bc": 0.00104128,
+          "loss_ic": 0.00620318
+        },
+        {
+          "epoch": 750,
+          "loss_total": 0.26297417,
+          "loss_pde": 0.21286252,
+          "loss_bc": 0.00044377,
+          "loss_ic": 0.00456739
+        },
+        {
+          "epoch": 1000,
+          "loss_total": 0.22724701,
+          "loss_pde": 0.18918256,
+          "loss_bc": 0.00010483,
+          "loss_ic": 0.00370161
+        },
+        {
+          "epoch": 1250,
+          "loss_total": 0.21850419,
+          "loss_pde": 0.1833726,
+          "loss_bc": 5.96e-05,
+          "loss_ic": 0.00345356
+        },
+        {
+          "epoch": 1500,
+          "loss_total": 0.21737394,
+          "loss_pde": 0.18259914,
+          "loss_bc": 5.439e-05,
+          "loss_ic": 0.00342309
+        }
+      ],
+      "param_estimates": null,
+      "rank": 1,
+      "error_message": null
+    }
+  },
+  "leaderboard": [
+    {
+      "rank": 1,
+      "model": "vanilla_pinn",
+      "mse": 0.58616874
+    }
+  ],
+  "best_model": "vanilla_pinn",
+  "plots_saved": [
+    "outputs\\physics\\physics_burgers_1d_vanilla_pinn_loss.png"
+  ],
+  "metadata": {}
+}

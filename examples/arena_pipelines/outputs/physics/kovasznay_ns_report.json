@@ -1,0 +1,66 @@
+{
+  "benchmark_type": "physics",
+  "version": "1.0",
+  "created_at": "2026-05-01T22:38:24",
+  "problem_info": {
+    "id": "kovasznay_ns",
+    "pde": "NS incompressible (Kovasznay)",
+    "in_dim": 2,
+    "out_dim": 3,
+    "domain": {
+      "x": [
+        -0.5,
+        1.0
+      ],
+      "y": [
+        -0.5,
+        1.5
+      ]
+    },
+    "params": {
+      "Re": 40.0
+    }
+  },
+  "config": {
+    "load_generate_data": "generate",
+    "source": null,
+    "collocation_points": "sobol",
+    "n_col": 3000,
+    "n_bc": 500,
+    "n_ic": 0,
+    "epochs": 3000,
+    "lr": 0.001,
+    "metrics": [
+      "mse",
+      "l2_rel"
+    ],
+    "models": [
+      "vanilla_pinn"
+    ],
+    "inverse": false,
+    "inverse_variables": [],
+    "hidden": [
+      64,
+      64,
+      64,
+      64
+    ],
+    "seed": 42
+  },
+  "models": {
+    "vanilla_pinn": {
+      "model_id": "vanilla_pinn",
+      "n_params": 0,
+      "training_time_s": 364.20912838,
+      "metrics": {},
+      "history": [],
+      "param_estimates": null,
+      "rank": 0,
+      "error_message": "operands could not be broadcast together with shapes (12288,) (4096,) "
+    }
+  },
+  "leaderboard": [],
+  "best_model": null,
+  "plots_saved": [],
+  "metadata": {}
+}

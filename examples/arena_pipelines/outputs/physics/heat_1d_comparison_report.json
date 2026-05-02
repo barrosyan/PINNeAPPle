@@ -1,0 +1,197 @@
+{
+  "benchmark_type": "physics",
+  "version": "1.0",
+  "created_at": "2026-05-01T22:54:56",
+  "problem_info": {
+    "id": "heat_1d",
+    "pde": "u_t = k*u_xx",
+    "in_dim": 2,
+    "out_dim": 1,
+    "domain": {
+      "x": [
+        0.0,
+        1.0
+      ],
+      "t": [
+        0.0,
+        0.5
+      ]
+    },
+    "params": {
+      "k": 0.4
+    }
+  },
+  "config": {
+    "load_generate_data": "generate",
+    "source": null,
+    "collocation_points": "lhs",
+    "n_col": 2000,
+    "n_bc": 300,
+    "n_ic": 300,
+    "epochs": 2000,
+    "lr": 0.001,
+    "metrics": [
+      "mse",
+      "l2_rel"
+    ],
+    "models": [
+      "vanilla_pinn",
+      "siren"
+    ],
+    "inverse": false,
+    "inverse_variables": [],
+    "hidden": [
+      64,
+      64,
+      64,
+      64
+    ],
+    "seed": 0
+  },
+  "models": {
+    "vanilla_pinn": {
+      "model_id": "vanilla_pinn",
+      "n_params": 12737,
+      "training_time_s": 104.41733122,
+      "metrics": {
+        "mse": 0.1174054,
+        "l2_rel": 0.97181121
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss_total": 7.8407445,
+          "loss_pde": 0.0001019,
+          "loss_bc": 0.02375016,
+          "loss_ic": 0.76031411
+        },
+        {
+          "epoch": 333,
+          "loss_total": 0.20582914,
+          "loss_pde": 0.03609299,
+          "loss_bc": 0.0088554,
+          "loss_ic": 0.00811822
+        },
+        {
+          "epoch": 666,
+          "loss_total": 0.04380682,
+          "loss_pde": 0.00689831,
+          "loss_bc": 0.00193638,
+          "loss_ic": 0.00175447
+        },
+        {
+          "epoch": 999,
+          "loss_total": 0.01579183,
+          "loss_pde": 0.00354764,
+          "loss_bc": 0.00044948,
+          "loss_ic": 0.00077494
+        },
+        {
+          "epoch": 1332,
+          "loss_total": 0.00705612,
+          "loss_pde": 0.00218505,
+          "loss_bc": 0.00028076,
+          "loss_ic": 0.00020634
+        },
+        {
+          "epoch": 1665,
+          "loss_total": 0.00201021,
+          "loss_pde": 0.00148369,
+          "loss_bc": 4.469e-05,
+          "loss_ic": 7.96e-06
+        },
+        {
+          "epoch": 1998,
+          "loss_total": 0.00177528,
+          "loss_pde": 0.00132729,
+          "loss_bc": 3.805e-05,
+          "loss_ic": 6.75e-06
+        }
+      ],
+      "param_estimates": null,
+      "rank": 1,
+      "error_message": null
+    },
+    "siren": {
+      "model_id": "siren",
+      "n_params": 12737,
+      "training_time_s": 151.78622675,
+      "metrics": {
+        "mse": 0.11774028,
+        "l2_rel": 0.97319619
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss_total": 19.66914558,
+          "loss_pde": 14.12879372,
+          "loss_bc": 0.00065072,
+          "loss_ic": 0.55338454
+        },
+        {
+          "epoch": 333,
+          "loss_total": 0.27868071,
+          "loss_pde": 0.18259552,
+          "loss_bc": 0.00503009,
+          "loss_ic": 0.00457843
+        },
+        {
+          "epoch": 666,
+          "loss_total": 0.25042182,
+          "loss_pde": 0.19277705,
+          "loss_bc": 0.00133238,
+          "loss_ic": 0.00443209
+        },
+        {
+          "epoch": 999,
+          "loss_total": 0.07116139,
+          "loss_pde": 0.06672616,
+          "loss_bc": 2.324e-05,
+          "loss_ic": 0.00042028
+        },
+        {
+          "epoch": 1332,
+          "loss_total": 0.01626972,
+          "loss_pde": 0.01470985,
+          "loss_bc": 9.833e-05,
+          "loss_ic": 5.766e-05
+        },
+        {
+          "epoch": 1665,
+          "loss_total": 0.00091347,
+          "loss_pde": 0.00086196,
+          "loss_bc": 1.62e-06,
+          "loss_ic": 3.54e-06
+        },
+        {
+          "epoch": 1998,
+          "loss_total": 2.742e-05,
+          "loss_pde": 2.286e-05,
+          "loss_bc": 3.1e-07,
+          "loss_ic": 1.5e-07
+        }
+      ],
+      "param_estimates": null,
+      "rank": 2,
+      "error_message": null
+    }
+  },
+  "leaderboard": [
+    {
+      "rank": 1,
+      "model": "vanilla_pinn",
+      "mse": 0.1174054
+    },
+    {
+      "rank": 2,
+      "model": "siren",
+      "mse": 0.11774028
+    }
+  ],
+  "best_model": "vanilla_pinn",
+  "plots_saved": [
+    "outputs\\physics\\physics_heat_1d_vanilla_pinn_loss.png",
+    "outputs\\physics\\physics_heat_1d_siren_loss.png"
+  ],
+  "metadata": {}
+}
