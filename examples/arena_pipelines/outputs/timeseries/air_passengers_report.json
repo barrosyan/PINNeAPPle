@@ -1,13 +1,13 @@
 {
   "benchmark_type": "timeseries",
   "version": "1.0",
-  "created_at": "2026-05-01T23:02:19",
+  "created_at": "2026-05-03T00:20:06",
   "problem_info": {
     "source": "air_passengers",
     "n_samples": 144,
     "n_features": 1,
-    "n_train_windows": 73,
-    "n_test_windows": 25,
+    "n_train_windows": 81,
+    "n_test_windows": 28,
     "horizon": 12,
     "lookback": 24
   },
@@ -24,55 +24,55 @@
     "test_size": 0.25,
     "epochs": 100,
     "lr": 0.0005,
-    "batch_size": 64,
+    "batch_size": 256,
     "seed": 1
   },
   "models": {
     "lstm": {
       "model_id": "lstm",
-      "n_params": 51212,
-      "training_time_s": 9.81431532,
+      "n_params": 51340,
+      "training_time_s": 2.07064104,
       "metrics": {
-        "mse": 0.61864698,
-        "rmse": 0.78654116,
-        "mape": 47.6040802
+        "mse": 0.39745662,
+        "rmse": 0.63044161,
+        "mape": 46.31256485
       },
       "history": [
         {
           "epoch": 1,
-          "loss": 0.39935055
+          "loss": 0.75604832
         },
         {
           "epoch": 12,
-          "loss": 0.31048711
+          "loss": 0.30387226
         },
         {
           "epoch": 24,
-          "loss": 0.24022347
+          "loss": 0.1744135
         },
         {
           "epoch": 36,
-          "loss": 0.12345229
+          "loss": 0.11603174
         },
         {
           "epoch": 48,
-          "loss": 0.09350898
+          "loss": 0.10740883
         },
         {
           "epoch": 60,
-          "loss": 0.10190343
+          "loss": 0.10562584
         },
         {
           "epoch": 72,
-          "loss": 0.08841934
+          "loss": 0.10332251
         },
         {
           "epoch": 84,
-          "loss": 0.07916508
+          "loss": 0.10258856
         },
         {
           "epoch": 96,
-          "loss": 0.08918946
+          "loss": 0.10337314
         }
       ],
       "param_estimates": null,
@@ -81,49 +81,49 @@
     },
     "nbeats": {
       "model_id": "nbeats",
-      "n_params": 344280,
-      "training_time_s": 10.71088552,
+      "n_params": 90880,
+      "training_time_s": 1.66910529,
       "metrics": {
-        "mse": 0.11317907,
-        "rmse": 0.33642095,
-        "mape": 24.64585686
+        "mse": 0.25201941,
+        "rmse": 0.50201535,
+        "mape": 35.77862167
       },
       "history": [
         {
           "epoch": 1,
-          "loss": 0.35815611
+          "loss": 0.41251487
         },
         {
           "epoch": 12,
-          "loss": 0.09125286
+          "loss": 0.23132187
         },
         {
           "epoch": 24,
-          "loss": 0.03827634
+          "loss": 0.10180369
         },
         {
           "epoch": 36,
-          "loss": 0.0174792
+          "loss": 0.08815663
         },
         {
           "epoch": 48,
-          "loss": 0.01236391
+          "loss": 0.07244317
         },
         {
           "epoch": 60,
-          "loss": 0.01067543
+          "loss": 0.06002254
         },
         {
           "epoch": 72,
-          "loss": 0.0087959
+          "loss": 0.05186137
         },
         {
           "epoch": 84,
-          "loss": 0.00956877
+          "loss": 0.04784281
         },
         {
           "epoch": 96,
-          "loss": 0.00795449
+          "loss": 0.04673338
         }
       ],
       "param_estimates": null,
@@ -135,12 +135,12 @@
     {
       "rank": 1,
       "model": "nbeats",
-      "mse": 0.11317907
+      "mse": 0.25201941
     },
     {
       "rank": 2,
       "model": "lstm",
-      "mse": 0.61864698
+      "mse": 0.39745662
     }
   ],
   "best_model": "nbeats",

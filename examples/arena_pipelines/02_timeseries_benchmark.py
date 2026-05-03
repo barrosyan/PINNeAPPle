@@ -64,7 +64,7 @@ print("="*60)
 
 spec2 = TimeSeriesBenchmarkSpec(
     source    = "sunspots",
-    models    = ["lstm", "mlp"],
+    models    = ["lstm", "transformer"],
     metrics   = ["mse", "rmse", "mae"],
     horizon   = 12,         # 12 months ahead
     lookback  = 60,         # 5-year window

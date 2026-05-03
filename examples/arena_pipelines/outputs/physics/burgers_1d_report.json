@@ -1,7 +1,7 @@
 {
   "benchmark_type": "physics",
   "version": "1.0",
-  "created_at": "2026-05-01T22:53:22",
+  "created_at": "2026-05-03T00:12:03",
   "problem_info": {
     "id": "burgers_1d",
     "pde": "u_t + u*u_x = nu*u_xx",
@@ -51,11 +51,11 @@
     "vanilla_pinn": {
       "model_id": "vanilla_pinn",
       "n_params": 8577,
-      "training_time_s": 90.98432302,
+      "training_time_s": 34.1728127,
       "metrics": {
-        "mse": 0.58616874,
-        "l2_rel": 1.27289898,
-        "max_err": 1.86201345
+        "mse": 0.58616877,
+        "l2_rel": 1.27289879,
+        "max_err": 1.86201346
       },
       "history": [
         {
@@ -117,7 +117,7 @@
     {
       "rank": 1,
       "model": "vanilla_pinn",
-      "mse": 0.58616874
+      "mse": 0.58616877
     }
   ],
   "best_model": "vanilla_pinn",

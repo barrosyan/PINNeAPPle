@@ -1,7 +1,7 @@
 {
   "benchmark_type": "physics",
   "version": "1.0",
-  "created_at": "2026-05-01T22:59:15",
+  "created_at": "2026-05-03T00:14:51",
   "problem_info": {
     "id": "heat_1d",
     "pde": "u_t = k*u_xx",
@@ -53,10 +53,10 @@
     "vanilla_pinn": {
       "model_id": "vanilla_pinn",
       "n_params": 12738,
-      "training_time_s": 206.98288608,
+      "training_time_s": 73.29571271,
       "metrics": {
         "mse": 0.05813762,
-        "l2_rel": 0.68385886,
+        "l2_rel": 0.68385881,
         "param_k_err_pct": 43.76881719
       },
       "history": [
