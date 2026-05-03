@@ -1,7 +1,7 @@
 {
   "benchmark_type": "physics",
   "version": "1.0",
-  "created_at": "2026-05-01T22:54:56",
+  "created_at": "2026-05-03T00:12:42",
   "problem_info": {
     "id": "heat_1d",
     "pde": "u_t = k*u_xx",
@@ -52,10 +52,10 @@
     "vanilla_pinn": {
       "model_id": "vanilla_pinn",
       "n_params": 12737,
-      "training_time_s": 104.41733122,
+      "training_time_s": 57.40014434,
       "metrics": {
-        "mse": 0.1174054,
-        "l2_rel": 0.97181121
+        "mse": 0.11740538,
+        "l2_rel": 0.97181123
       },
       "history": [
         {
@@ -115,10 +115,10 @@
     "siren": {
       "model_id": "siren",
       "n_params": 12737,
-      "training_time_s": 151.78622675,
+      "training_time_s": 66.10475063,
       "metrics": {
-        "mse": 0.11774028,
-        "l2_rel": 0.97319619
+        "mse": 0.11774027,
+        "l2_rel": 0.97319609
       },
       "history": [
         {
@@ -180,12 +180,12 @@
     {
       "rank": 1,
       "model": "vanilla_pinn",
-      "mse": 0.1174054
+      "mse": 0.11740538
     },
     {
       "rank": 2,
       "model": "siren",
-      "mse": 0.11774028
+      "mse": 0.11774027
     }
   ],
   "best_model": "vanilla_pinn",

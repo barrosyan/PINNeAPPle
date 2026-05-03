@@ -1,13 +1,13 @@
 {
   "benchmark_type": "timeseries",
   "version": "1.0",
-  "created_at": "2026-05-01T22:48:35",
+  "created_at": "2026-05-03T00:11:59",
   "problem_info": {
     "source": "lorenz63",
     "n_samples": 5000,
     "n_features": 3,
-    "n_train_windows": 3931,
-    "n_test_windows": 981,
+    "n_train_windows": 3944,
+    "n_test_windows": 987,
     "horizon": 20,
     "lookback": 50
   },
@@ -25,189 +25,141 @@
     "test_size": 0.2,
     "epochs": 60,
     "lr": 0.001,
-    "batch_size": 64,
+    "batch_size": 256,
     "seed": 42
   },
   "models": {
     "lstm": {
       "model_id": "lstm",
-      "n_params": 54844,
-      "training_time_s": 162.91030788,
+      "n_params": 54972,
+      "training_time_s": 85.25436711,
       "metrics": {
-        "mse": 0.00511846,
-        "mae": 0.02853889,
-        "rmse": 0.07154339
+        "mse": 0.00683934,
+        "mae": 0.04603674,
+        "rmse": 0.0827003
       },
       "history": [
         {
           "epoch": 1,
-          "loss": 0.3449334
+          "loss": 0.52414804
         },
         {
           "epoch": 7,
-          "loss": 0.00692546
+          "loss": 0.0343622
         },
         {
           "epoch": 14,
-          "loss": 0.00249142
+          "loss": 0.00719765
         },
         {
           "epoch": 21,
-          "loss": 0.0015546
+          "loss": 0.00415971
         },
         {
           "epoch": 28,
-          "loss": 0.00104126
+          "loss": 0.00278634
         },
         {
           "epoch": 35,
-          "loss": 0.00085155
+          "loss": 0.00207848
         },
         {
           "epoch": 42,
-          "loss": 0.0006306
+          "loss": 0.00175132
         },
         {
           "epoch": 49,
-          "loss": 0.00051944
+          "loss": 0.00161921
         },
         {
           "epoch": 56,
-          "loss": 0.00047508
-        }
-      ],
-      "param_estimates": null,
-      "rank": 2,
-      "error_message": null
-    },
-    "tcn": {
-      "model_id": "tcn",
-      "n_params": 91260,
-      "training_time_s": 210.01195526,
-      "metrics": {
-        "mse": 0.00222227,
-        "mae": 0.02602676,
-        "rmse": 0.04714092
-      },
-      "history": [
-        {
-          "epoch": 1,
-          "loss": 0.23289054
-        },
-        {
-          "epoch": 7,
-          "loss": 0.00324386
-        },
-        {
-          "epoch": 14,
-          "loss": 0.0013042
-        },
-        {
-          "epoch": 21,
-          "loss": 0.00043288
-        },
-        {
-          "epoch": 28,
-          "loss": 0.00026832
-        },
-        {
-          "epoch": 35,
-          "loss": 0.00020126
-        },
-        {
-          "epoch": 42,
-          "loss": 0.00015281
-        },
-        {
-          "epoch": 49,
-          "loss": 0.0001331
-        },
-        {
-          "epoch": 56,
-          "loss": 0.00012133
+          "loss": 0.00154699
         }
       ],
       "param_estimates": null,
       "rank": 1,
       "error_message": null
     },
-    "nbeats": {
-      "model_id": "nbeats",
-      "n_params": 390564,
-      "training_time_s": 442.98744226,
+    "tcn": {
+      "model_id": "tcn",
+      "n_params": 92284,
+      "training_time_s": 385.75103402,
       "metrics": {
-        "mse": 0.02247693,
-        "mae": 0.06152987,
-        "rmse": 0.14992309
+        "mse": 0.01655708,
+        "mae": 0.07435995,
+        "rmse": 0.1286743
       },
       "history": [
         {
           "epoch": 1,
-          "loss": 0.19340785
+          "loss": 0.73854791
         },
         {
           "epoch": 7,
-          "loss": 0.01664666
+          "loss": 0.04542725
         },
         {
           "epoch": 14,
-          "loss": 0.0132832
+          "loss": 0.02232198
         },
         {
           "epoch": 21,
-          "loss": 0.01902986
+          "loss": 0.01572951
         },
         {
           "epoch": 28,
-          "loss": 0.00162365
+          "loss": 0.01216075
         },
         {
           "epoch": 35,
-          "loss": 0.00152482
+          "loss": 0.00983707
         },
         {
           "epoch": 42,
-          "loss": 0.00077261
+          "loss": 0.00870242
         },
         {
           "epoch": 49,
-          "loss": 0.00061678
+          "loss": 0.00822218
         },
         {
           "epoch": 56,
-          "loss": 0.00054372
+          "loss": 0.00785184
         }
       ],
       "param_estimates": null,
-      "rank": 3,
+      "rank": 2,
       "error_message": null
+    },
+    "nbeats": {
+      "model_id": "nbeats",
+      "n_params": 0,
+      "training_time_s": 0.02483249,
+      "metrics": {},
+      "history": [],
+      "param_estimates": null,
+      "rank": 0,
+      "error_message": "mat1 and mat2 shapes cannot be multiplied (256x50 and 150x64)"
     }
   },
   "leaderboard": [
     {
       "rank": 1,
-      "model": "tcn",
-      "mse": 0.00222227
+      "model": "lstm",
+      "mse": 0.00683934
     },
     {
       "rank": 2,
-      "model": "lstm",
-      "mse": 0.00511846
-    },
-    {
-      "rank": 3,
-      "model": "nbeats",
-      "mse": 0.02247693
+      "model": "tcn",
+      "mse": 0.01655708
     }
   ],
-  "best_model": "tcn",
+  "best_model": "lstm",
   "plots_saved": [
     "outputs\\timeseries\\ts_lorenz63_lstm_loss.png",
     "outputs\\timeseries\\ts_lorenz63_lstm_forecast.png",
     "outputs\\timeseries\\ts_lorenz63_tcn_loss.png",
-    "outputs\\timeseries\\ts_lorenz63_tcn_forecast.png",
-    "outputs\\timeseries\\ts_lorenz63_nbeats_loss.png",
-    "outputs\\timeseries\\ts_lorenz63_nbeats_forecast.png"
+    "outputs\\timeseries\\ts_lorenz63_tcn_forecast.png"
   ],
   "metadata": {}
 }
