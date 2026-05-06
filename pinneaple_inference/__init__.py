@@ -3,6 +3,7 @@ from .infer import (
     infer_on_grid_1d,
     infer_on_grid_2d,
     InferenceResult,
+    batched_inference,
 )
 from .visualize import (
     plot_field_1d,
@@ -27,7 +28,7 @@ from .visualize import (
 from .postprocess import (
     compute_streamlines,
     compute_isosurface,
-    plot_streamlines_2d as plot_streamlines_2d_model,
+    plot_streamlines_2d_from_model,
     plot_isosurface_3d,
     plot_volume_slice,
     FlowVisualizer,
@@ -38,6 +39,7 @@ __all__ = [
     "infer_on_grid_1d",
     "infer_on_grid_2d",
     "InferenceResult",
+    "batched_inference",
     "plot_field_1d",
     "plot_field_2d",
     "plot_error_map_1d",
@@ -59,7 +61,7 @@ __all__ = [
     # Postprocess (Feature 17)
     "compute_streamlines",
     "compute_isosurface",
-    "plot_streamlines_2d_model",
+    "plot_streamlines_2d_from_model",
     "plot_isosurface_3d",
     "plot_volume_slice",
     "FlowVisualizer",

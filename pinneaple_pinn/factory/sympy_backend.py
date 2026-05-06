@@ -1,4 +1,17 @@
-"""SymPy-based compiler for symbolic equations to torch-callable lambdas."""
+"""SymPy-based compiler for symbolic equations to torch-callable lambdas.
+
+Design note — two SymPy→PyTorch compilation paths exist in this codebase:
+
+* **This module** (``SympyTorchCompiler``): uses ``sympy.lambdify`` to emit a
+  fast Python lambda.  Gradients do *not* flow through the symbolic evaluation
+  itself; the lambdified call is opaque to autograd.  Suitable when PDE losses
+  are evaluated at fixed collocation points and runtime speed is the priority.
+
+* ``pinneaple_symbolic.SymbolicPDE``: walks the expression tree with
+  ``torch.autograd.grad``, so gradients *do* flow through the evaluation.
+  Use that path when you need the symbolic expression to participate in the
+  autograd graph (e.g. differentiating the residual w.r.t. model weights for
+  meta-learning, or computing higher-order cross derivatives)."""
 
 from __future__ import annotations
 

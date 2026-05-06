@@ -1,10 +1,11 @@
-"""UPD dataset loader and PINN-ready sampling (collocation, conditions, data)."""
+"""UPD dataset loader and PINN-ready sampling (collocation, conditions, data).
+
+Pure data-structure types (UPDItem, ConditionSpec, SamplingSpec, Batch) live
+in pinneaple_data.upd_types and are re-exported here for backwards compatibility.
+"""
 
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -13,74 +14,10 @@ import xarray as xr
 
 from .mappings import PINNMapping
 
+# Re-export pure data structures from pinneaple_data (single source of truth)
+from pinneaple_data.upd_types import UPDItem, ConditionSpec, SamplingSpec, Batch  # noqa: F401
 
 Tensor = torch.Tensor
-
-
-@dataclass
-class UPDItem:
-    """
-    One UPD shard item: points to Zarr and JSON metadata.
-    """
-    zarr_path: str
-    meta_path: str
-
-    def load_meta(self) -> Dict[str, Any]:
-        """Load JSON metadata from meta_path."""
-        return json.loads(Path(self.meta_path).read_text(encoding="utf-8"))
-
-    def open_dataset(self) -> xr.Dataset:
-        """Open Zarr dataset at zarr_path."""
-        return xr.open_zarr(self.zarr_path)
-
-
-@dataclass
-class ConditionSpec:
-    """
-    Sampling definition for a condition.
-
-    type:
-      - "initial": t fixed to first time in shard
-      - "boundary": lat/lon boundaries (edges)
-      - "interior": random interior points (often used as extra constraints)
-      - "slice": any slice on a coord: {"coord":"lev","value":850}
-
-    equation:
-      symbolic equation string (used by PINNFactory separately)
-      stored here only for coordination / debugging.
-    """
-    name: str
-    type: str
-    equation: str
-    n: int = 1024
-    options: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class SamplingSpec:
-    """
-    Overall sampling plan for a UPD shard.
-    """
-    n_collocation: int = 4096
-    conditions: List[ConditionSpec] = field(default_factory=list)
-    # supervised data points (optional)
-    n_data: int = 0
-    # allow sampling with replacement
-    replace: bool = True
-    seed: int = 0
-
-
-@dataclass
-class Batch:
-    """
-    A training batch compatible with PINNFactory loss_fn:
-      - collocation: tuple(inputs...) for PDE residual
-      - conditions: list of tuple(inputs...) for each condition
-      - data: (tuple(inputs...), y_true) if provided
-    """
-    collocation: Optional[Tuple[Tensor, ...]] = None
-    conditions: Optional[List[Tuple[Tensor, ...]]] = None
-    data: Optional[Tuple[Tuple[Tensor, ...], Tensor]] = None
 
 
 class UPDDataset:

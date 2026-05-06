@@ -1,6 +1,11 @@
-"""PINN-specific visualisations: training curves, residual fields, collocation points."""
+"""PINN-specific visualisations: training curves, residual fields, collocation points.
+
+Also provides :func:`predict_and_plot` — a convenience bridge that runs model
+inference and immediately visualizes the result, without requiring the caller
+to handle ``torch.no_grad`` / device placement manually.
+"""
 from __future__ import annotations
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -241,3 +246,95 @@ def plot_gradient_magnitude(
     gy = _to_np(grad_y).ravel()
     mag = np.sqrt(gx ** 2 + gy ** 2)
     return plot_scalar(_to_np(x), _to_np(y), mag, title=title, label="|∇u|", cmap=cmap, show=show)
+
+
+# ---------------------------------------------------------------------------
+# Inference + visualization bridge
+# ---------------------------------------------------------------------------
+
+def predict_and_plot(
+    model: Any,
+    x_coords: "ArrayLike",
+    y_coords: "ArrayLike",
+    *,
+    ref: Optional["ArrayLike"] = None,
+    field_name: str = "u",
+    device: Optional[str] = None,
+    cmap: str = DEFAULT_CMAP,
+    show: bool = False,
+) -> Figure:
+    """Run model inference and immediately plot the prediction panel.
+
+    A convenience wrapper that combines :mod:`pinneaple_train` inference
+    with :func:`plot_pinn_prediction` in a single call.  Handles device
+    placement and ``torch.no_grad`` internally.
+
+    Parameters
+    ----------
+    model : nn.Module or callable
+        Trained model.  Moved to *device* if provided.
+    x_coords : array-like, shape ``(N,)``
+        First spatial coordinate (horizontal axis).
+    y_coords : array-like, shape ``(N,)``
+        Second spatial coordinate (vertical axis).
+    ref : array-like, shape ``(N,)`` or ``None``
+        Reference / analytical solution for the error panel.
+        When ``None``, only the prediction panel is shown.
+    field_name : str — label for the plotted field (default ``"u"``).
+    device : str or ``None`` — device for inference (e.g. ``"cuda"``).
+    cmap : colormap name (default: CFD rainbow).
+    show : call ``plt.show()`` after plotting.
+
+    Returns
+    -------
+    Figure — matplotlib Figure with one or three panels.
+
+    Examples
+    --------
+    >>> fig = predict_and_plot(model, x_col, y_col, ref=u_exact, show=True)
+    """
+    try:
+        import torch
+        import torch.nn as nn
+
+        x_np = _to_np(x_coords)
+        y_np = _to_np(y_coords)
+
+        # Build input tensor
+        coords = np.stack([x_np.ravel(), y_np.ravel()], axis=1)  # (N, 2)
+        x_t = torch.from_numpy(coords.astype(np.float32))
+
+        if device is not None:
+            model_dev = torch.device(device)
+            if hasattr(model, "to"):
+                model = model.to(model_dev)
+            x_t = x_t.to(model_dev)
+
+        if hasattr(model, "eval"):
+            model.eval()
+
+        with torch.no_grad():
+            out = model(x_t)
+            # Handle PINNOutput / named tuples
+            if not torch.is_tensor(out):
+                for attr in ("y", "pred", "out", "logits"):
+                    val = getattr(out, attr, None)
+                    if val is not None and torch.is_tensor(val):
+                        out = val
+                        break
+            pred_np = out.detach().cpu().numpy().ravel()
+
+    except Exception as exc:
+        raise RuntimeError(
+            f"predict_and_plot: model inference failed — {exc}"
+        ) from exc
+
+    return plot_pinn_prediction(
+        x_coords,
+        y_coords,
+        pred_np,
+        ref=ref,
+        field_name=field_name,
+        cmap=cmap,
+        show=show,
+    )

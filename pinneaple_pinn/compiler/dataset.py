@@ -5,6 +5,11 @@ from typing import Any, Dict, List
 import torch
 from torch.utils.data import Dataset
 
+try:
+    from pinneaple_data.collate import collate_pinn_batches as _collate_pinn
+except Exception:
+    _collate_pinn = None
+
 
 class SingleBatchDataset(Dataset):
     """
@@ -66,6 +71,13 @@ class SingleBatchDataset(Dataset):
 
 
 def dict_collate(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Collate list of PINN dict-batches.
+
+    Delegates to pinneaple_data.collate.collate_pinn_batches when available;
+    falls back to a minimal local implementation.
+    """
+    if _collate_pinn is not None:
+        return _collate_pinn(batch)
     out: Dict[str, Any] = {}
     keys = batch[0].keys()
     for k in keys:
@@ -73,6 +85,5 @@ def dict_collate(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
         if torch.is_tensor(v0):
             out[k] = torch.stack([b[k] for b in batch], dim=0)
         else:
-            # keep ctx as-is (first)
             out[k] = v0
     return out

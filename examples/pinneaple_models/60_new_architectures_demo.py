@@ -124,46 +124,70 @@ print()
 # ---------------------------------------------------------------------------
 # 4. MeshGraphNet
 # ---------------------------------------------------------------------------
-from pinneaple_models.mesh_graph_net import MeshGraphNet
+from pinneaple_models.graphnn.mesh_graph_net import MeshGraphNet
+from pinneaple_models.graphnn.base import GraphBatch
 
 print("=" * 60)
 print("4. MeshGraphNet (GNN for unstructured FEM meshes)")
 print("=" * 60)
 
-N_nodes = 200    # mesh nodes
-N_edges = 800    # mesh edges
+B_graphs = 2     # batch size (graphs processed in parallel)
+N_nodes  = 200   # nodes per graph
+N_edges  = 800   # edges per graph (shared topology across batch)
 
+# ── 4a. Standard usage: raw edge features, no positions ────────────────────
 model_mgn = MeshGraphNet(
-    node_in_dim=5,       # e.g. (x, y, u, v, p)  node attributes
-    edge_in_dim=3,       # e.g. (dx, dy, |d|)    edge attributes
-    out_dim=2,           # predict (u_next, v_next)
+    node_in_dim=5,        # e.g. (x, y, u, v, p) node attributes
+    out_dim=2,            # predict (u_next, v_next)
+    edge_in_dim=3,        # e.g. (dx, dy, |d|) edge displacement + distance
     hidden_dim=128,
     n_message_passing=6,
 )
 print(model_mgn)
 
-node_feats = torch.rand(N_nodes, 5)
-# Random sparse connectivity (no self-loops)
-src = torch.randint(0, N_nodes, (N_edges,))
-dst = torch.randint(0, N_nodes, (N_edges,))
-edge_index = torch.stack([src, dst], dim=0)  # (2, E)
-edge_feats = torch.rand(N_edges, 3)
+node_feats = torch.rand(B_graphs, N_nodes, 5)    # (B, N, node_in_dim)
+src_idx    = torch.randint(0, N_nodes, (N_edges,))
+dst_idx    = torch.randint(0, N_nodes, (N_edges,))
+edge_index = torch.stack([src_idx, dst_idx], dim=0)  # (2, E) — shared topology
+edge_feats = torch.rand(B_graphs, N_edges, 3)    # (B, E, edge_in_dim)
 
-out_mgn = model_mgn(node_feats, edge_index, edge_feats)
-print(f"  Node features shape  : {tuple(node_feats.shape)}")
-print(f"  Edge index shape     : {tuple(edge_index.shape)}")
-print(f"  Edge features shape  : {tuple(edge_feats.shape)}")
-print(f"  Output shape         : {tuple(out_mgn.y.shape)}")
+g = GraphBatch(x=node_feats, edge_index=edge_index, edge_attr=edge_feats)
+out_mgn = model_mgn(g)
+print(f"  [GraphBatch] node shape  : {tuple(node_feats.shape)}")
+print(f"  [GraphBatch] edge_index  : {tuple(edge_index.shape)}")
+print(f"  [GraphBatch] edge shape  : {tuple(edge_feats.shape)}")
+print(f"  [GraphBatch] output y    : {tuple(out_mgn.y.shape)}")  # (B, N, out_dim)
 print()
 
-# Also test the dict-based forward_batch interface
+# ── 4b. Dict-based forward_batch interface (used by Arena / GNNAdapter) ────
 batch_mgn = {
-    "node_features": node_feats,
+    "x":          node_feats,
     "edge_index": edge_index,
-    "edge_features": edge_feats,
+    "edge_attr":  edge_feats,
 }
 out_batch = model_mgn.forward_batch(batch_mgn)
-print(f"  forward_batch output : {tuple(out_batch.y.shape)}  (same via dict interface)")
+print(f"  [forward_batch] output y : {tuple(out_batch.y.shape)}")
+print()
+
+# ── 4c. With node positions and return_loss ─────────────────────────────────
+pos_dim = 2  # 2-D mesh
+model_mgn_pos = MeshGraphNet(
+    node_in_dim=3,        # e.g. (rho, u, v) — velocity + density
+    out_dim=3,
+    edge_in_dim=0,        # no explicit edge features; build from positions
+    pos_dim=pos_dim,      # must be > 0 when use_pos=True
+    hidden_dim=64,
+    n_message_passing=4,
+    use_pos=True,         # auto-compute relative displacement + distance edges
+)
+node_feats_pos = torch.rand(B_graphs, N_nodes, 3)       # (B, N, 3)
+positions      = torch.rand(B_graphs, N_nodes, pos_dim)  # (B, N, 2)
+y_true         = torch.rand(B_graphs, N_nodes, 3)        # (B, N, 3)
+
+g_pos = GraphBatch(x=node_feats_pos, edge_index=edge_index, pos=positions)
+out_pos = model_mgn_pos(g_pos, y_true=y_true, return_loss=True)
+print(f"  [use_pos] output y       : {tuple(out_pos.y.shape)}")
+print(f"  [use_pos] MSE loss       : {out_pos.losses['mse'].item():.4f}")
 print()
 
 

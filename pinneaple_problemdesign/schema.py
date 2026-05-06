@@ -149,8 +149,79 @@ class Plan:
 
 
 @dataclass
+class PinneapleSpec:
+    """Concrete Pinneaple API objects derived from the elicited design spec.
+
+    Produced by ``pinneaple_problemdesign.codegen.build_pinneaple_spec`` at
+    finalization time. All fields are plain Python dicts/lists so the object
+    is JSON-serialisable and renderable in Markdown without requiring the full
+    Pinneaple stack at design time.
+
+    Fields
+    ------
+    pde_kind : str
+        Canonical PDE kind accepted by ``pinneaple_pinn.compile_problem`` and
+        ``pinneaple_environment.ProblemSpec``.  ``"custom"`` when the PDE
+        could not be identified from the elicited physics description.
+    pde_confidence : float
+        Match confidence score returned by ``identify_pde`` (keyword overlap).
+        0 = no match.
+    coords : list[str]
+        Suggested coordinate names (e.g. ``["x", "t"]``).
+    fields : list[str]
+        Suggested field names (e.g. ``["u", "v", "p"]``).
+    pde_params : dict
+        Default PDE parameters for the identified kind.
+    environment_kwargs : dict
+        Keyword arguments for ``pinneaple_environment.ProblemSpec()``.
+    model_name : str
+        Model name accepted by ``pp.build_model()``.
+    model_kwargs : dict
+        Keyword arguments for ``pp.build_model(model_name, **model_kwargs)``.
+    train_config_kwargs : dict
+        Fields for ``pinneaple_train.TrainConfig``.
+    collocation_kwargs : dict
+        Keyword arguments for ``CollocationSampler.sample()``.
+    pipeline_code : str
+        Runnable Python code snippet implementing the end-to-end flow.
+    """
+    pde_kind: str = "custom"
+    pde_confidence: float = 0.0
+    coords: List[str] = field(default_factory=list)
+    fields: List[str] = field(default_factory=list)
+    pde_params: Dict[str, Any] = field(default_factory=dict)
+
+    environment_kwargs: Dict[str, Any] = field(default_factory=dict)
+
+    model_name: str = "VanillaPINN"
+    model_kwargs: Dict[str, Any] = field(default_factory=dict)
+
+    train_config_kwargs: Dict[str, Any] = field(default_factory=dict)
+
+    collocation_kwargs: Dict[str, Any] = field(default_factory=dict)
+
+    pipeline_code: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "pde_kind": self.pde_kind,
+            "pde_confidence": self.pde_confidence,
+            "coords": self.coords,
+            "fields": self.fields,
+            "pde_params": self.pde_params,
+            "environment_kwargs": self.environment_kwargs,
+            "model_name": self.model_name,
+            "model_kwargs": self.model_kwargs,
+            "train_config_kwargs": self.train_config_kwargs,
+            "collocation_kwargs": self.collocation_kwargs,
+            "pipeline_code": self.pipeline_code,
+        }
+
+
+@dataclass
 class DesignReport:
     spec: ProblemSpec
     gaps: List[Gap]
     plan: Plan
+    pinneaple_spec: Optional["PinneapleSpec"] = None
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")

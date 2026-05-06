@@ -1,10 +1,16 @@
-"""Preprocessing pipeline and standard scaler for training batches."""
+"""Preprocessing pipeline and preprocessing steps for training batches.
+
+StandardScaler lives in pinneaple_data.transforms (single source of truth).
+It is re-exported here for backwards compatibility.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple
 
 import torch
+
+from pinneaple_data.transforms import StandardScaler  # noqa: F401  (re-export)
 
 
 class PreprocessStep(Protocol):
@@ -42,32 +48,6 @@ class PreprocessPipeline:
             if hasattr(step, "load_state_dict"):
                 step.load_state_dict(item.get("state", {}))  # type: ignore
         return self
-
-
-@dataclass
-class StandardScaler:
-    mean: torch.Tensor
-    std: torch.Tensor
-    eps: float = 1e-8
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {"mean": self.mean.detach().cpu(), "std": self.std.detach().cpu(), "eps": float(self.eps)}
-
-    @staticmethod
-    def from_dict(d: Dict[str, Any]) -> "StandardScaler":
-        return StandardScaler(mean=d["mean"], std=d["std"], eps=float(d.get("eps", 1e-8)))
-
-    def encode(self, x: torch.Tensor) -> torch.Tensor:
-        return (x - self.mean) / (self.std + self.eps)
-
-    def decode(self, x: torch.Tensor) -> torch.Tensor:
-        return x * (self.std + self.eps) + self.mean
-
-    @staticmethod
-    def fit(x: torch.Tensor, dim: int | tuple[int, ...] = 0) -> "StandardScaler":
-        mean = x.mean(dim=dim, keepdim=True)
-        std = x.std(dim=dim, keepdim=True)
-        return StandardScaler(mean=mean, std=std)
 
 
 @dataclass

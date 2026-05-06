@@ -30,7 +30,11 @@ class QTrainerConfig:
           the QNode (useful for shot-based evaluation).
         - ``"backprop"``        — standard autograd (simulators only).
     lambda_norm : float
-        Weight for the normalization constraint loss  (∫|ψ|²dx = 1).
+        Weight for the normalization constraint loss (∫|ψ|²dx = 1).
+        NOTE: this field is reserved for future use. Currently, normalization
+        must be incorporated directly into the ``physics_loss_fn`` you pass to
+        :class:`QTrainer` (as done in the pipeline presets). Setting this field
+        alone has no effect on the training loss.
     lambda_bc : float
         Weight for boundary condition loss.
     print_every : int

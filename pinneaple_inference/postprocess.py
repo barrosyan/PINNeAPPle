@@ -234,10 +234,10 @@ def compute_isosurface(
 
 
 # ---------------------------------------------------------------------------
-# Feature 17c: plot_streamlines_2d  (model-driven)
+# Feature 17c: plot_streamlines_2d_from_model  (model-driven)
 # ---------------------------------------------------------------------------
 
-def plot_streamlines_2d(
+def plot_streamlines_2d_from_model(
     model: Callable,
     x_range: Tuple[float, float] = (0.0, 1.0),
     y_range: Tuple[float, float] = (0.0, 1.0),

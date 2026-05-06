@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import asdict
 from typing import Any, Dict, List, Optional
 
 from ..models import ExtractedProblemSolution
@@ -27,14 +26,12 @@ def to_problemdesign_dict(x: ExtractedProblemSolution) -> Dict[str, Any]:
         "title": x.title,
     }
 
-    # best-effort enrichment from extracted fields
     benchmark = x.metrics or ""
     strengths = ""
     weaknesses = x.limitations or ""
     alternatives = ""
     future = ""
 
-    # allow agent to place extra structure
     ex = x.extra or {}
     strengths = ex.get("strengths", strengths)
     weaknesses = ex.get("weaknesses", weaknesses)
@@ -58,27 +55,114 @@ def to_problemdesign_dict(x: ExtractedProblemSolution) -> Dict[str, Any]:
     }
 
 
+def _to_partial_problem_spec(x: ExtractedProblemSolution) -> Dict[str, Any]:
+    """Best-effort mapping from researcher findings → partial ProblemSpec dict.
+
+    This is intentionally partial: fields that cannot be reliably inferred from
+    literature extraction are left empty. To get a full spec, run the result
+    through a DesignAgent elicitation session.
+    """
+    return {
+        "title": x.title or "",
+        "goal": x.problem or "",
+        "task_type": "other",
+        "domain_context": x.solution or "",
+        "inputs": [],
+        "outputs": [],
+        "data": {
+            "sources": [],
+            "format": x.data_requirements or "",
+            "variables_observed": [],
+            "target_variables": [],
+        },
+        "physics": {
+            "governing_equations": x.equations or [],
+            "constraints": [],
+            "parameters_known": [],
+            "parameters_unknown": [],
+        },
+        "validation": {
+            "primary_metrics": [x.metrics] if x.metrics else [],
+            "acceptance_criteria": "",
+        },
+        "_researcher_source": {
+            "type": x.source_type,
+            "id": x.source_id,
+        },
+        "_note": (
+            "Partial spec from pinneaple_researcher. Run through DesignAgent to fill gaps "
+            "and call build_pinneaple_spec() to generate runnable code."
+        ),
+    }
+
+
 def export_problemdesign(
     items: List[ExtractedProblemSolution],
     *,
     out_path: str,
 ) -> str:
+    """Write researcher findings to *out_path* (JSON) and, when
+    ``pinneaple_problemdesign`` is available, also write a companion
+    ``*_pinneaple_spec.json`` with partial ``ProblemSpec`` mappings and
+    generated Pinneaple API objects for any item that has enough physics info.
+
+    Parameters
+    ----------
+    items:
+        Researcher-extracted solutions.
+    out_path:
+        Destination path for the main researcher-format JSON.
+
+    Returns
+    -------
+    str
+        The resolved *out_path*.
+    """
     payload = [to_problemdesign_dict(x) for x in items]
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-
-    # Try integrating with pinneaple_problemdesign if there is a known writer.
-    # Fallback always writes JSON.
-    try:
-        import importlib
-
-        pd = importlib.import_module("pinneaple_problemdesign")
-        # Common patterns: save(), write_spec(), registry.add(), etc.
-        # If you have a canonical function, plug it here later.
-        # For now: just write JSON beside it.
-    except Exception:
-        pass
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
 
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
+
+    # ---------------------------------------------------------------------------
+    # Companion spec file — generated when pinneaple_problemdesign is available.
+    # Each item is mapped to a partial ProblemSpec; if enough physics info exists
+    # we also call build_pinneaple_spec() to produce concrete API objects.
+    # ---------------------------------------------------------------------------
+    try:
+        from pinneaple_problemdesign import ProblemSpec, build_pinneaple_spec
+
+        spec_records: List[Dict[str, Any]] = []
+        for x in items:
+            partial = _to_partial_problem_spec(x)
+
+            pinneaple_spec_dict: Optional[Dict[str, Any]] = None
+            if x.equations:
+                # Enough physics info to attempt code generation
+                try:
+                    # Build a minimal ProblemSpec from the partial mapping
+                    ps = ProblemSpec(
+                        title=partial["title"],
+                        goal=partial["goal"],
+                        task_type="pde_solution",
+                        domain_context=partial["domain_context"],
+                    )
+                    ps.physics.governing_equations = list(x.equations or [])
+                    generated = build_pinneaple_spec(ps)
+                    pinneaple_spec_dict = generated.to_dict()
+                except Exception:
+                    pass
+
+            spec_records.append({
+                "partial_problem_spec": partial,
+                "pinneaple_spec": pinneaple_spec_dict,
+            })
+
+        spec_path = out_path.replace(".json", "_pinneaple_spec.json")
+        with open(spec_path, "w", encoding="utf-8") as f:
+            json.dump(spec_records, f, indent=2, ensure_ascii=False)
+
+    except ImportError:
+        pass
 
     return out_path

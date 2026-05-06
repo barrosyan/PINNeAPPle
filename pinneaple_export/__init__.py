@@ -12,8 +12,6 @@ The export methods are also available directly on any PINNBase subclass:
     model.save_checkpoint("model_ckpt.pt")
 """
 
-from pinneaple_models.pinns.base import PINNBase
-
 
 def export_torchscript(model, path: str, example_input=None) -> str:
     """Export any nn.Module to TorchScript."""
@@ -31,18 +29,28 @@ def export_torchscript(model, path: str, example_input=None) -> str:
     return path
 
 
-def export_onnx(model, path: str, example_input, input_names=None, output_names=None, opset_version=17) -> str:
+def export_onnx(
+    model,
+    path: str,
+    example_input,
+    input_names=None,
+    output_names=None,
+    opset_version=17,
+    dynamic_axes=None,
+) -> str:
     """Export any nn.Module to ONNX."""
     import os, torch.onnx
     model.eval()
     os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
     _in = input_names or ["input"]
     _out = output_names or ["output"]
+    if dynamic_axes is None:
+        dynamic_axes = {n: {0: "batch"} for n in _in + _out}
     torch.onnx.export(
         model, example_input, path,
         input_names=_in, output_names=_out,
         opset_version=opset_version,
-        dynamic_axes={n: {0: "batch"} for n in _in + _out},
+        dynamic_axes=dynamic_axes,
     )
     return path
 

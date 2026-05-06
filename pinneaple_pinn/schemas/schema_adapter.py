@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pinneaple_pinn.factory import PINNProblemSpec
@@ -23,8 +23,8 @@ class SchemaAdapterOptions:
           * "boundary" -> sample on lat/lon edges (axis can be specified)
           * "slice" -> sample on coord slice (lev, etc.)
     """
-    # Default loss weights
-    default_loss_weights: Dict[str, float] = None  # set in __post_init__
+    # Default loss weights — None means use built-in defaults (set in __post_init__)
+    default_loss_weights: Optional[Dict[str, float]] = None
     # Default condition weight if missing
     default_condition_weight: float = 1.0
     # Whether to create sampling specs from schema conditions

@@ -1,6 +1,6 @@
 from __future__ import annotations
 """Equivariant graph neural network for symmetry-preserving learning."""
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import torch
 import torch.nn as nn
@@ -208,3 +208,21 @@ class EquivariantGNN(GraphModelBase):
             losses["total"] = losses["mse"]
 
         return GraphOutput(y=y, losses=losses, extras={"h": h, "pos": p})
+
+    def forward_batch(self, batch: Dict[str, Any]) -> GraphOutput:
+        """Dict-based interface used by Arena / GNNAdapter.
+
+        Required keys: ``x`` (or ``node_features``), ``edge_index``, ``pos``.
+        """
+        x          = batch["x"] if "x" in batch else batch.get("node_features")
+        edge_index = batch["edge_index"]
+        pos        = batch.get("pos")
+        edge_attr  = batch.get("edge_attr") if "edge_attr" in batch else batch.get("edge_features")
+        mask       = batch.get("mask")
+        y_true     = batch.get("y_true") if "y_true" in batch else batch.get("y")
+
+        if x is None:
+            raise KeyError("forward_batch: batch must contain 'x' or 'node_features'.")
+
+        g = GraphBatch(x=x, edge_index=edge_index, pos=pos, edge_attr=edge_attr, mask=mask)
+        return self.forward(g, y_true=y_true, return_loss=(y_true is not None))

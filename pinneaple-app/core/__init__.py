@@ -1,1 +1,0 @@
-"""Pinneaple App — core utilities."""

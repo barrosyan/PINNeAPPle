@@ -1,52 +1,127 @@
-"""World foundation model integration for PINNeAPPle physics simulation.
+"""pinneaple_worldmodel — Physics AI World Model Pipeline.
 
-Provides adapters to:
+Generates training datasets for a physics world model (an AGI for physics)
+using all simulation, validation, and modelling tools available in Pinneaple.
 
-1. Use NVIDIA Cosmos as a physics prior / world model for conditioning PINN
-   training with video-generation priors.
-2. Generate synthetic training data from physics-based video generation
-   (advection-diffusion fallback when Cosmos is unavailable).
-3. Bridge the sim-to-real gap via domain randomisation + world-model alignment.
+What is a physics world model?
+-------------------------------
+A model that learns to predict physical system evolution:
 
-Quick start::
+    f_θ(state_t, params) → state_{t+1}
 
-    from pinneaple_worldmodel import CosmosAdapter, WorldModelConfig, PhysicsVideoDataset
+where ``state_t`` is a spatial field (temperature, velocity, pressure, …) and
+``params`` encodes the PDE parameters (diffusivity, Reynolds number, …).
+When trained across many physics domains, the model builds a general prior
+over physical system dynamics — a foundation model for physics AI.
 
-    # Create adapter (uses physics fallback if Cosmos is not installed)
-    adapter = CosmosAdapter(WorldModelConfig(n_frames=8))
+Pipeline overview
+-----------------
+::
 
-    # Generate physics video from an initial state tensor
+    PhysicsScenario (define PDEs + parameter ranges)
+          ↓
+    PhysicsSimulator (generate trajectories via pinneaple_solvers)
+          ↓
+    WorldModelDataset (format as (state_t, params) → state_{t+1})
+          ↓
+    PhysicsWorldModel (FNO-based: learns the state-transition operator)
+          ↓
+    WorldModelTrainer (rollout loss + optional physics consistency)
+          ↓
+    PhysicsCurriculum (staged training: easy → hard physics)
+          ↓
+    WorldModelPipeline (single entry point for the full flow)
+
+Built-in physics scenarios
+--------------------------
+``heat_2d``, ``burgers_1d``, ``wave_1d``, ``advection_2d``,
+``ns2d_cavity``, ``heat_multiscale`` — see :data:`BUILTIN_SCENARIOS`.
+
+Quick start
+-----------
+::
+
+    from pinneaple_worldmodel import WorldModelPipeline, PipelineConfig
+
+    pipeline = WorldModelPipeline(PipelineConfig(
+        scenarios=["heat_2d", "burgers_1d", "advection_2d"],
+        n_samples_per_scenario=500,
+        epochs=100,
+        device="cuda",          # or "cpu"
+        save_dir="./wm_output",
+    ))
+    model, history = pipeline.run()
+
+    # Rollout the trained model on a new initial condition
     import torch
-    initial_state = torch.rand(3, 64, 64)
-    frames = adapter.generate(initial_state, "turbulent channel flow", n_frames=8)
-    # frames: (8, 3, 64, 64)
+    state_0 = torch.randn(1, 1, 64, 64)            # (B, C, H, W)
+    context  = torch.zeros(1, model.config.context_dim)
+    with torch.no_grad():
+        future_states = model.rollout(state_0, context, n_steps=20)
+    # future_states : (1, 20, 1, 64, 64)
 
-    # Extract physical state proxies
-    state = adapter.extract_state(frames)
-    # state: {"velocity_proxy": ..., "pressure_proxy": ...}
+Curriculum training
+-------------------
+::
 
-    # Dataset for PINN training
-    dataset = PhysicsVideoDataset("path/to/videos", field_names=["u", "v", "p"])
+    from pinneaple_worldmodel import PhysicsCurriculum, CurriculumConfig
 
-    # Scene description
-    from pinneaple_worldmodel import PhysicalScene, SceneObject
-    scene = PhysicalScene(description="flow past cylinder")
-    scene.add_object(SceneObject("cylinder", position=(0.5, 0.5, 0.0)))
-    x_col = scene.sample_collocation_points(n=1000)
+    # Staged: heat → burgers/wave → advection 2D → Navier-Stokes → high-res
+    model = PhysicsCurriculum(CurriculumConfig(device="cuda")).run()
+
+Custom scenario
+---------------
+::
+
+    from pinneaple_worldmodel import PhysicsScenario, DatasetBuilder, DatasetConfig
+
+    my_scenario = PhysicsScenario(
+        name="my_ns",
+        pde_kind="ns2d",
+        grid_shape=(128, 128),
+        t_span=(0.0, 10.0),
+        n_steps=100,
+        param_ranges={"Re": (200.0, 2000.0)},
+        bc_type="dirichlet_zero",
+    )
+    dataset = DatasetBuilder(DatasetConfig(
+        scenarios=[my_scenario],
+        n_samples_per_scenario=300,
+    )).build()
 """
+from __future__ import annotations
 
-from .adapter import CosmosAdapter, WorldModelConfig, SimToRealAdapter
-from .data_gen import PhysicsVideoDataset
-from .scene import PhysicalScene, SceneObject
+from .scenario import PhysicsScenario, BUILTIN_SCENARIOS
+from .simulator import PhysicsSimulator, TrajectoryData
+from .dataset import WorldModelDataset, DatasetBuilder, DatasetConfig
+from .model import PhysicsWorldModel, WorldModelConfig
+from .trainer import WorldModelTrainer, WorldModelTrainConfig, WorldModelLoss
+from .curriculum import PhysicsCurriculum, CurriculumConfig, CurriculumStage
+from .pipeline import WorldModelPipeline, PipelineConfig
 
 __all__ = [
-    # Cosmos adapter
-    "CosmosAdapter",
+    # Scenarios
+    "PhysicsScenario",
+    "BUILTIN_SCENARIOS",
+    # Simulator
+    "PhysicsSimulator",
+    "TrajectoryData",
+    # Dataset
+    "WorldModelDataset",
+    "DatasetBuilder",
+    "DatasetConfig",
+    # Model
+    "PhysicsWorldModel",
     "WorldModelConfig",
-    "SimToRealAdapter",
-    # Data generation
-    "PhysicsVideoDataset",
-    # Scene representation
-    "PhysicalScene",
-    "SceneObject",
+    # Trainer
+    "WorldModelTrainer",
+    "WorldModelTrainConfig",
+    "WorldModelLoss",
+    # Curriculum
+    "PhysicsCurriculum",
+    "CurriculumConfig",
+    "CurriculumStage",
+    # Pipeline
+    "WorldModelPipeline",
+    "PipelineConfig",
 ]

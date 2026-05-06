@@ -8,17 +8,8 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import xarray as xr
 
-
-def seconds_since(t: np.ndarray, t0: Optional[np.datetime64] = None) -> np.ndarray:
-    """
-    Convert datetime64 array to float seconds since t0 (defaults to min(t)).
-    """
-    t = np.asarray(t)
-    if t0 is None:
-        t0 = t.min()
-    # convert to ns int then seconds
-    dt_ns = (t.astype("datetime64[ns]") - t0.astype("datetime64[ns]")).astype("timedelta64[ns]").astype(np.int64)
-    return dt_ns.astype(np.float64) / 1e9
+# Single source of truth lives in pinneaple_data; re-export for backwards compat.
+from pinneaple_data.upd_types import seconds_since  # noqa: F401
 
 
 @dataclass

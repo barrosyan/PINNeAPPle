@@ -42,12 +42,7 @@ from ..scales import ScaleSpec
 from ..spec import PDETermSpec, ProblemSpec
 from ..environment_typing import CoordNames
 from .registry import register_preset
-
-
-def _lame(E: float, nu: float):
-    lam = E * nu / ((1 + nu) * (1 - 2 * nu))
-    mu = E / (2 * (1 + nu))
-    return float(lam), float(mu)
+from ._utils import _lame
 
 
 # ══════════════════════════════════════════════════════════════════════════════

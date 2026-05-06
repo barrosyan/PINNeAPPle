@@ -55,7 +55,18 @@ class UQResult:
     mean:
         Point-estimate prediction tensor, shape ``(N, D)`` or ``(N,)``.
     std:
-        Standard deviation (aleatoric + epistemic), same shape as ``mean``.
+        Total predictive standard deviation (aleatoric + epistemic), same
+        shape as ``mean``.
+    aleatoric_std:
+        Standard deviation of the *data* (irreducible) noise component.
+        ``None`` when the UQ method cannot separate uncertainty sources —
+        e.g. plain MCDropout without a variance head.
+        Populated by :class:`~pinneaple_uq.aleatoric.AleatoricHead` and
+        :func:`~pinneaple_uq.decomposition.decompose_uncertainty`.
+    epistemic_std:
+        Standard deviation of the *model* (reducible) uncertainty.
+        ``None`` when the UQ method cannot separate uncertainty sources.
+        Populated by :func:`~pinneaple_uq.decomposition.decompose_uncertainty`.
     samples:
         Optional raw samples used to compute statistics, shape ``(S, N, D)``
         where *S* is the number of stochastic forward passes or ensemble
@@ -67,6 +78,8 @@ class UQResult:
 
     mean: Tensor
     std: Tensor
+    aleatoric_std: Optional[Tensor] = None
+    epistemic_std: Optional[Tensor] = None
     samples: Optional[Tensor] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -142,7 +155,7 @@ class UQResult:
 def uq_predict(
     model: Any,
     x: Tensor,
-    method: Literal["mc_dropout", "ensemble"] = "mc_dropout",
+    method: Literal["mc_dropout", "ensemble", "aleatoric", "decompose"] = "mc_dropout",
     device: Optional[torch.device] = None,
     **kwargs: Any,
 ) -> UQResult:
@@ -225,8 +238,27 @@ def uq_predict(
         ensemble = EnsembleUQ(models, cfg)
         return ensemble.predict_with_uncertainty(x, device=device)
 
+    elif method == "aleatoric":
+        from pinneaple_uq.aleatoric import AleatoricHead
+
+        if not isinstance(model, AleatoricHead):
+            raise TypeError(
+                "uq_predict with method='aleatoric' requires model to be an "
+                "AleatoricHead instance."
+            )
+        return model.predict_with_uncertainty(x, device=device)
+
+    elif method == "decompose":
+        from pinneaple_uq.decomposition import decompose_uncertainty
+
+        n_samples = kwargs.pop("n_samples", 100)
+        has_aleatoric = kwargs.pop("has_aleatoric", True)
+        return decompose_uncertainty(
+            model, x, n_samples=n_samples, has_aleatoric=has_aleatoric, device=device
+        )
+
     else:
         raise ValueError(
             f"Unknown UQ method: {method!r}. "
-            "Supported methods: 'mc_dropout', 'ensemble'."
+            "Supported methods: 'mc_dropout', 'ensemble', 'aleatoric', 'decompose'."
         )

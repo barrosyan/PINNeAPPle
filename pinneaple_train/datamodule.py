@@ -7,8 +7,13 @@ from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 
-from .splits import SplitSpec, split_indices
+from pinneaple_data.splits import SplitSpec, split_indices
 from .preprocess import PreprocessPipeline
+
+try:
+    from pinneaple_data.collate import collate_pinn_batches as _collate_pinn
+except Exception:
+    _collate_pinn = None
 
 
 # ----------------------------
@@ -131,10 +136,7 @@ class DataModule:
         return self._cached
 
     def _collate(self, batch):
-        """
-        Collate list[dict] -> dict of tensors (stacked) + lists for non-tensors.
-        """
-        # If dataset already returns dict, keep it; otherwise adapt here (Subset wraps original ds)
+        """Collate list[dict] → dict; delegates to pinneaple_data.collate when available."""
         items = []
         for b in batch:
             if isinstance(b, dict):
@@ -142,6 +144,10 @@ class DataModule:
             else:
                 items.append(self.adapter(b))
 
+        if _collate_pinn is not None:
+            return _collate_pinn(items)
+
+        # minimal fallback
         out: Dict[str, Any] = {}
         keys = set().union(*[it.keys() for it in items])
         for k in keys:

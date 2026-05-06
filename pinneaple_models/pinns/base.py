@@ -10,6 +10,8 @@ from typing import Any, Dict, List, Optional, Callable, Union, Tuple
 import torch
 import torch.nn as nn
 
+from pinneaple_models.base import BaseModel
+
 
 @dataclass
 class PINNOutput:
@@ -19,7 +21,7 @@ class PINNOutput:
     extras: Dict[str, Any] = field(default_factory=dict)
 
 
-class PINNBase(nn.Module):
+class PINNBase(BaseModel):
     """
     Base class for all PINN-family models.
 
@@ -234,31 +236,13 @@ class PINNBase(nn.Module):
         return {"physics": z0}
 
     # ------------------------------------------------------------------
-    # Model export
+    # Model export (delegates to pinneaple_export)
     # ------------------------------------------------------------------
 
     def export_torchscript(self, path: str, example_input: Optional[torch.Tensor] = None) -> str:
-        """Export model to TorchScript (.pt).
-
-        Parameters
-        ----------
-        path : output file path (should end with .pt)
-        example_input : example input tensor for tracing (required for trace mode)
-
-        Returns path where file was saved.
-        """
-        import os
-        self.eval()
-        if example_input is not None:
-            try:
-                scripted = torch.jit.trace(self, example_input)
-            except Exception:
-                scripted = torch.jit.script(self)
-        else:
-            scripted = torch.jit.script(self)
-        os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
-        scripted.save(path)
-        return path
+        """Export model to TorchScript (.pt). See ``pinneaple_export.export_torchscript``."""
+        from pinneaple_export import export_torchscript as _fn
+        return _fn(self, path, example_input)
 
     def export_onnx(
         self,
@@ -269,66 +253,8 @@ class PINNBase(nn.Module):
         opset_version: int = 17,
         dynamic_axes: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """Export model to ONNX format for deployment in C++, MATLAB, etc.
+        """Export model to ONNX format. See ``pinneaple_export.export_onnx``."""
+        from pinneaple_export import export_onnx as _fn
+        return _fn(self, path, example_input, input_names, output_names, opset_version, dynamic_axes)
 
-        Parameters
-        ----------
-        path : output file path (should end with .onnx)
-        example_input : required for ONNX tracing
-        input_names : names for input tensors (default: ["input"])
-        output_names : names for output tensors (default: ["output"])
-        opset_version : ONNX opset (default: 17)
-        dynamic_axes : dict for dynamic batch axes (default: batch dim 0 dynamic)
-
-        Returns path where file was saved.
-        """
-        import os
-        import torch.onnx
-        self.eval()
-        os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
-        _input_names = input_names or ["input"]
-        _output_names = output_names or ["output"]
-        if dynamic_axes is None:
-            dynamic_axes = {n: {0: "batch"} for n in _input_names + _output_names}
-        torch.onnx.export(
-            self,
-            example_input,
-            path,
-            input_names=_input_names,
-            output_names=_output_names,
-            opset_version=opset_version,
-            dynamic_axes=dynamic_axes,
-        )
-        return path
-
-    def save_checkpoint(self, path: str, metadata: Optional[Dict[str, Any]] = None) -> str:
-        """Save model weights + metadata as a pinneaple checkpoint.
-
-        The checkpoint dict contains:
-          - "state_dict": model weights
-          - "class_name": fully qualified class name
-          - "metadata": user-provided dict
-
-        Returns path where file was saved.
-        """
-        import os
-        os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
-        ckpt = {
-            "state_dict": self.state_dict(),
-            "class_name": f"{self.__class__.__module__}.{self.__class__.__name__}",
-            "metadata": metadata or {},
-        }
-        torch.save(ckpt, path)
-        return path
-
-    @classmethod
-    def load_checkpoint(cls, path: str, **init_kwargs) -> "PINNBase":
-        """Load a model from a pinneaple checkpoint.
-
-        Usage::
-            model = VanillaPINN.load_checkpoint("model.pt", in_dim=2, out_dim=1, hidden=[64,64,64])
-        """
-        ckpt = torch.load(path, map_location="cpu", weights_only=False)
-        model = cls(**init_kwargs)
-        model.load_state_dict(ckpt["state_dict"])
-        return model
+    # save_checkpoint / load_checkpoint inherited from BaseModel

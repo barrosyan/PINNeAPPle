@@ -377,51 +377,10 @@ def run_parallel_sweep(
 
 
 # ---------------------------------------------------------------------------
-# Batched GPU inference helper
+# Batched GPU inference helper — canonical impl lives in pinneaple_inference
 # ---------------------------------------------------------------------------
 
-def batched_inference(
-    model: nn.Module,
-    x: torch.Tensor,
-    *,
-    batch_size: int = 4096,
-    device: Optional[str] = None,
-    use_amp: bool = False,
-    amp_dtype: torch.dtype = torch.float16,
-) -> torch.Tensor:
-    """
-    Run model inference over a large tensor in batches to avoid OOM.
-
-    Parameters
-    ----------
-    model      : nn.Module in eval mode
-    x          : (N, D) input tensor
-    batch_size : points per forward pass
-    device     : device to move chunks to (defaults to model's device)
-    use_amp    : use autocast for faster fp16 inference
-    """
-    model.eval()
-    dev = next(model.parameters()).device if device is None else torch.device(device)
-
-    outputs: List[torch.Tensor] = []
-    N = x.shape[0]
-
-    with torch.no_grad():
-        for start in range(0, N, batch_size):
-            chunk = x[start: start + batch_size].to(dev)
-            if use_amp and dev.type == "cuda":
-                with torch.cuda.amp.autocast(dtype=amp_dtype):
-                    out = model(chunk)
-            else:
-                out = model(chunk)
-
-            # Unwrap PINNOutput / OperatorOutput
-            if hasattr(out, "y"):
-                out = out.y
-
-            outputs.append(out.cpu())
-
-    return torch.cat(outputs, dim=0)
+from pinneaple_inference.infer import batched_inference  # noqa: F401  re-export
 
 
 # ---------------------------------------------------------------------------

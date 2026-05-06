@@ -5,8 +5,9 @@ Covers:
   - SIREN (Sinusoidal Representation Networks)
   - ModifiedMLP (Fourier features + highway U/V gating)
   - HashGridMLP (Instant-NGP style multi-resolution hash encoding)
-  - MeshGraphNet (GNN for unstructured FEM meshes)
   - AFNO (Adaptive Fourier Neural Operator)
+
+Note: MeshGraphNet is registered under the "graphnn" family in graphnn/registry.py.
 """
 
 from dataclasses import dataclass
@@ -17,7 +18,6 @@ import torch.nn as nn
 from .siren import SIREN
 from .modified_mlp import ModifiedMLP
 from .hash_grid import HashGridMLP
-from .mesh_graph_net import MeshGraphNet
 from .afno import AFNO
 
 
@@ -34,10 +34,6 @@ _REGISTRY: Dict[str, Type[nn.Module]] = {
     "hash_grid_mlp": HashGridMLP,
     "instant_ngp_mlp": HashGridMLP,
 
-    # --- MeshGraphNet ----------------------------------------------------
-    "mesh_graph_net": MeshGraphNet,
-    "mgn": MeshGraphNet,
-
     # --- AFNO ------------------------------------------------------------
     "afno": AFNO,
     "adaptive_fourier_neural_operator": AFNO,
@@ -48,7 +44,6 @@ _CAPABILITIES: Dict[str, Dict] = {
     "siren":               {"input_kind": "pointwise_coords", "supports_physics_loss": True},
     "modified_mlp":        {"input_kind": "pointwise_coords", "supports_physics_loss": True},
     "hash_grid_mlp":       {"input_kind": "pointwise_coords", "supports_physics_loss": False},
-    "mesh_graph_net":      {"input_kind": "graph",            "supports_physics_loss": False},
     "afno":                {"input_kind": "grid",             "supports_physics_loss": False},
 }
 

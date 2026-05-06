@@ -13,16 +13,46 @@ import sympy as sp
 from .sympy_backend import SympyTorchCompiler, CompiledEquation
 from .autodiff import DerivativeComputer
 
+# Canonical PINN model — used by NeuralNetwork / PINN shims below.
+from pinneaple_models.pinns.vanilla import VanillaPINN
+
 
 Tensor = torch.Tensor
 
 
-class NeuralNetwork(nn.Module):
-    """
-    A simple fully-connected MLP.
+def _extract_tensor(out: Any) -> Tensor:
+    """Extract a Tensor from a model output (plain Tensor, PINNOutput, or named container).
 
-    forward(*inputs): concatenates along dim=1
+    Attribute search order: y → pred → out → logits.
+    See also: pinneaple_serve.app._extract_tensor (same pattern, no torch.is_tensor guard).
     """
+    if torch.is_tensor(out):
+        return out
+    for attr in ("y", "pred", "out", "logits"):
+        val = getattr(out, attr, None)
+        if val is not None and torch.is_tensor(val):
+            return val
+    raise TypeError(
+        f"Model output must be a Tensor or have a 'y', 'pred', 'out', or 'logits' "
+        f"Tensor attribute, got {type(out)}"
+    )
+
+
+class NeuralNetwork(VanillaPINN):
+    """Backwards-compatible MLP using the ``(num_inputs, num_outputs, num_layers, num_neurons)`` API.
+
+    Delegates to :class:`~pinneaple_models.pinns.vanilla.VanillaPINN` internally.
+    ``forward()`` returns a plain :class:`torch.Tensor` (strips the PINNOutput wrapper)
+    so that existing ``PINNFactory``-based code keeps working unchanged.
+    """
+
+    _ACT_MAP: Dict[type, str] = {
+        nn.Tanh:    "tanh",
+        nn.ReLU:    "relu",
+        nn.GELU:    "gelu",
+        nn.SiLU:    "silu",
+        nn.Sigmoid: "tanh",  # nearest supported; users should pass nn.Tanh() for safety
+    }
 
     def __init__(
         self,
@@ -32,36 +62,53 @@ class NeuralNetwork(nn.Module):
         num_neurons: int,
         activation: nn.Module = nn.Tanh(),
     ):
-        super().__init__()
         if num_layers < 1:
             raise ValueError("num_layers must be >= 1")
-
-        layers: List[nn.Module] = [nn.Linear(num_inputs, num_neurons), activation]
-        for _ in range(num_layers - 1):
-            layers.extend([nn.Linear(num_neurons, num_neurons), activation])
-        layers.append(nn.Linear(num_neurons, num_outputs))
-        self.layers = nn.Sequential(*layers)
+        act_name = self._ACT_MAP.get(type(activation), "tanh")
+        super().__init__(
+            in_dim=num_inputs,
+            out_dim=num_outputs,
+            hidden=[num_neurons] * num_layers,
+            activation=act_name,
+        )
 
     def forward(self, *inputs: Tensor) -> Tensor:
-        """Concatenate inputs along dim=1 and pass through MLP."""
-        x = torch.cat(inputs, dim=1)
-        return self.layers(x)
+        """Concatenate inputs along dim=1, run MLP, return Tensor."""
+        return _extract_tensor(super().forward(*inputs))
 
 
-class PINN(nn.Module):
-    """
-    Wraps a neural network plus trainable inverse parameters.
+class PINN(VanillaPINN):
+    """Backwards-compatible wrapper: ``NeuralNetwork`` + trainable inverse parameters.
+
+    Accepts a pre-built ``NeuralNetwork`` (or any ``VanillaPINN``) as ``neural_network``
+    and copies its ``net`` weights, **or** accepts ``None`` for a blank model to be
+    sub-classed.  ``forward()`` returns a plain Tensor.
+
+    Prefer constructing :class:`~pinneaple_models.pinns.vanilla.VanillaPINN` directly
+    and passing ``inverse_params_names`` — this class exists only for API compatibility.
     """
 
     def __init__(
         self,
-        neural_network: NeuralNetwork,
+        neural_network: nn.Module,
         inverse_params_names: Optional[List[str]] = None,
         initial_guesses: Optional[Dict[str, float]] = None,
         dtype: torch.dtype = torch.float32,
     ):
-        super().__init__()
-        self.net = neural_network
+        # Bypass VanillaPINN.__init__: we adopt the inner network directly.
+        nn.Module.__init__(self)  # type: ignore[misc]
+
+        # Borrow the Sequential net from the wrapped model
+        if isinstance(neural_network, VanillaPINN):
+            self.net = neural_network.net
+            self.in_dim  = neural_network.in_dim
+            self.out_dim = neural_network.out_dim
+        else:
+            # Plain nn.Module: treat as opaque callable
+            self.net = neural_network  # type: ignore[assignment]
+            self.in_dim  = None
+            self.out_dim = None
+
         self.inverse_params = nn.ParameterDict()
         if inverse_params_names:
             initial_guesses = initial_guesses or {}
@@ -70,8 +117,12 @@ class PINN(nn.Module):
                 self.inverse_params[name] = nn.Parameter(torch.tensor(init, dtype=dtype))
 
     def forward(self, *inputs: Tensor) -> Tensor:
-        """Forward pass through wrapped network."""
-        return self.net(*inputs)
+        """Concatenate inputs along dim=1 and return plain Tensor."""
+        if not inputs:
+            raise ValueError("PINN.forward expects at least one input tensor.")
+        x = torch.cat([t.reshape(-1, 1) if t.ndim == 1 else t for t in inputs], dim=1)
+        out = self.net(x)
+        return _extract_tensor(out)
 
 
 @dataclass
@@ -237,7 +288,7 @@ class PINNFactory:
                 inputs, y_true = batch["data"]
                 inputs = tuple(t.to(device=device, dtype=dtype) for t in inputs)
                 y_true = y_true.to(device=device, dtype=dtype)
-                y_pred = model(*inputs)
+                y_pred = _extract_tensor(model(*inputs))
                 losses["data"] = losses["data"] + torch.mean((y_pred - y_true) ** 2)
 
             total = torch.tensor(0.0, device=device, dtype=dtype)

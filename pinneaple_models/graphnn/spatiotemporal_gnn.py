@@ -1,6 +1,6 @@
 from __future__ import annotations
 """Spatiotemporal graph neural network for space-time data."""
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import torch
 import torch.nn as nn
@@ -96,3 +96,21 @@ class SpatiotemporalGNN(GraphModelBase):
             losses["total"] = losses["mse"]
 
         return GraphOutput(y=y, losses=losses, extras={})
+
+    def forward_batch(self, batch: Dict[str, Any]) -> GraphOutput:
+        """Dict-based interface used by Arena / GNNAdapter.
+
+        Required keys: ``x`` (B,T,N,node_in), ``edge_index``.
+        """
+        x          = batch["x"]
+        edge_index = batch["edge_index"]
+        pos        = batch.get("pos")
+        edge_attr  = batch.get("edge_attr") if "edge_attr" in batch else batch.get("edge_features")
+        mask       = batch.get("mask")
+        y_true     = batch.get("y_true") if "y_true" in batch else batch.get("y")
+
+        return self.forward(
+            x, edge_index,
+            pos=pos, edge_attr=edge_attr, mask=mask,
+            y_true=y_true, return_loss=(y_true is not None),
+        )

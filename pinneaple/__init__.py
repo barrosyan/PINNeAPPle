@@ -93,9 +93,9 @@ try:
 except Exception:  # pragma: no cover
     pass
 
-# PDE family knowledge base
+# PDE family knowledge base (lives in pinneaple_environment.capabilities)
 try:
-    from pinneaple_capabilities import (
+    from pinneaple_environment import (
         list_pde_families,
         get_pde_family,
         identify_pde,

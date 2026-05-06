@@ -218,6 +218,137 @@ def _maml_inner_loop(
     return adapted, last_loss
 
 
+def _family_to_sampler_for_maml(
+    family: MetaBenchmarkFamily,
+    cfg: MetaBenchmarkConfig,
+    device: torch.device,
+    rng: "np.random.Generator",
+):
+    """Build a PDETaskSampler for MAMLTrainer from a MetaBenchmarkFamily.
+
+    MAML physics_fn convention: ``physics_fn(forward_or_model, x_col) → scalar``.
+    BC and IC tensors are fixed when physics_fn_factory is invoked per task.
+    """
+    from pinneaple_meta.task_sampler import PDETaskSampler
+
+    def physics_fn_factory(params: Dict[str, float]) -> Callable:
+        task = family.train_task_factory(params)
+        seed = int(rng.integers(0, 100_000))
+        Xb, Yb = task.sample_boundary(cfg.n_bc, seed)
+        X_bc = torch.tensor(Xb, dtype=torch.float32, device=device)
+        Y_bc = torch.tensor(Yb, dtype=torch.float32, device=device)
+        Xi, Yi = task.sample_ic(cfg.n_ic, seed + 1)
+        if Xi.shape[0] > 0:
+            X_ic = torch.tensor(Xi, dtype=torch.float32, device=device)
+            Y_ic = torch.tensor(Yi, dtype=torch.float32, device=device)
+        else:
+            X_ic = Y_ic = None
+
+        def physics_fn(forward_or_model: Any, x_col: torch.Tensor) -> torch.Tensor:
+            x_req = x_col.detach().requires_grad_(True)
+            pde = task.pde_residual(forward_or_model, x_req)
+            pred_bc = forward_or_model(X_bc)
+            if hasattr(pred_bc, "y"):
+                pred_bc = pred_bc.y
+            bc = F.mse_loss(pred_bc, Y_bc)
+            total = cfg.weight_pde * pde + cfg.weight_bc * bc
+            if X_ic is not None:
+                pred_ic = forward_or_model(X_ic)
+                if hasattr(pred_ic, "y"):
+                    pred_ic = pred_ic.y
+                total = total + cfg.weight_ic * F.mse_loss(pred_ic, Y_ic)
+            return total
+
+        return physics_fn
+
+    def data_factory(params: Dict[str, float]) -> Dict[str, torch.Tensor]:
+        task = family.train_task_factory(params)
+        seed = int(rng.integers(0, 100_000))
+        x_col_np = task.sample_collocation(cfg.n_col, seed)
+        return {"x_col": torch.tensor(x_col_np, dtype=torch.float32, device=device)}
+
+    mid = {k: (lo + hi) / 2 for k, (lo, hi) in family.param_ranges.items()}
+    x_probe = family.train_task_factory(mid).sample_collocation(1, 0)
+    input_dim = int(x_probe.shape[1]) if x_probe.ndim > 1 else 1
+
+    return PDETaskSampler(
+        param_ranges=family.param_ranges,
+        physics_fn_factory=physics_fn_factory,
+        data_factory=data_factory,
+        n_support=cfg.n_col,
+        n_query=cfg.n_col,
+        input_dim=input_dim,
+        seed=int(rng.integers(0, 100_000)),
+    )
+
+
+def _family_to_sampler_for_reptile(
+    family: MetaBenchmarkFamily,
+    cfg: MetaBenchmarkConfig,
+    device: torch.device,
+    rng: "np.random.Generator",
+):
+    """Build a PDETaskSampler for ReptileTrainer from a MetaBenchmarkFamily.
+
+    Reptile physics_fn convention:
+        ``physics_fn(model, {"x_col": tensor}) → (scalar, extras_dict)``
+    """
+    from pinneaple_meta.task_sampler import PDETaskSampler
+
+    def physics_fn_factory(params: Dict[str, float]) -> Callable:
+        task = family.train_task_factory(params)
+        seed = int(rng.integers(0, 100_000))
+        Xb, Yb = task.sample_boundary(cfg.n_bc, seed)
+        X_bc = torch.tensor(Xb, dtype=torch.float32, device=device)
+        Y_bc = torch.tensor(Yb, dtype=torch.float32, device=device)
+        Xi, Yi = task.sample_ic(cfg.n_ic, seed + 1)
+        if Xi.shape[0] > 0:
+            X_ic = torch.tensor(Xi, dtype=torch.float32, device=device)
+            Y_ic = torch.tensor(Yi, dtype=torch.float32, device=device)
+        else:
+            X_ic = Y_ic = None
+
+        def physics_fn(
+            model: Any, batch: Any
+        ) -> Tuple[torch.Tensor, Dict]:
+            x_col = batch["x_col"] if isinstance(batch, dict) else batch
+            x_req = x_col.detach().requires_grad_(True)
+            pde = task.pde_residual(model, x_req)
+            pred_bc = model(X_bc)
+            if hasattr(pred_bc, "y"):
+                pred_bc = pred_bc.y
+            bc = F.mse_loss(pred_bc, Y_bc)
+            total = cfg.weight_pde * pde + cfg.weight_bc * bc
+            if X_ic is not None:
+                pred_ic = model(X_ic)
+                if hasattr(pred_ic, "y"):
+                    pred_ic = pred_ic.y
+                total = total + cfg.weight_ic * F.mse_loss(pred_ic, Y_ic)
+            return total, {}
+
+        return physics_fn
+
+    def data_factory(params: Dict[str, float]) -> Dict[str, torch.Tensor]:
+        task = family.train_task_factory(params)
+        seed = int(rng.integers(0, 100_000))
+        x_col_np = task.sample_collocation(cfg.n_col, seed)
+        return {"x_col": torch.tensor(x_col_np, dtype=torch.float32, device=device)}
+
+    mid = {k: (lo + hi) / 2 for k, (lo, hi) in family.param_ranges.items()}
+    x_probe = family.train_task_factory(mid).sample_collocation(1, 0)
+    input_dim = int(x_probe.shape[1]) if x_probe.ndim > 1 else 1
+
+    return PDETaskSampler(
+        param_ranges=family.param_ranges,
+        physics_fn_factory=physics_fn_factory,
+        data_factory=data_factory,
+        n_support=cfg.n_col,
+        n_query=cfg.n_col,
+        input_dim=input_dim,
+        seed=int(rng.integers(0, 100_000)),
+    )
+
+
 def _maml_meta_train(
     model: nn.Module,
     family: MetaBenchmarkFamily,
@@ -225,102 +356,48 @@ def _maml_meta_train(
     device: torch.device,
     verbose: bool = False,
 ) -> Tuple[nn.Module, List[Dict]]:
-    """
-    FOMAML outer loop.
+    """Delegate FOMAML meta-training to pinneaple_meta.MAMLTrainer."""
+    from pinneaple_meta import MAMLTrainer
+    from pinneaple_meta.config import MAMLConfig
 
-    For each meta-epoch:
-      - Sample n_tasks_per_batch tasks from family
-      - Run inner loop on each (n_inner_steps steps)
-      - Compute query loss on adapted copies
-      - Average query gradients, apply to meta-model
-    """
-    torch.manual_seed(cfg.seed)
-    meta_model = copy.deepcopy(model).to(device)
-    meta_opt = torch.optim.Adam(meta_model.parameters(), lr=cfg.outer_lr)
     rng = np.random.default_rng(cfg.seed)
-    history: List[Dict] = []
+    sampler = _family_to_sampler_for_maml(family, cfg, device, rng)
 
-    n_total = cfg.n_meta_epochs * cfg.n_tasks_per_batch * cfg.n_inner_steps
+    maml_cfg = MAMLConfig(
+        n_inner_steps=cfg.n_inner_steps,
+        inner_lr=cfg.inner_lr,
+        outer_lr=cfg.outer_lr,
+        n_tasks_per_batch=cfg.n_tasks_per_batch,
+        n_meta_epochs=cfg.n_meta_epochs,
+        first_order=True,
+        device=str(device),
+        seed=cfg.seed,
+        checkpoint_every=0,
+    )
+
     if verbose:
+        n_total = cfg.n_meta_epochs * cfg.n_tasks_per_batch * cfg.n_inner_steps
         print(f"      MAML: {cfg.n_meta_epochs} meta-epochs x {cfg.n_tasks_per_batch} tasks "
               f"x {cfg.n_inner_steps} inner = {n_total} total steps")
 
-    t0 = time.time()
-    for meta_ep in range(1, cfg.n_meta_epochs + 1):
-        # Sample tasks
-        params_batch = [
-            {k: float(rng.uniform(lo, hi)) for k, (lo, hi) in family.param_ranges.items()}
-            for _ in range(cfg.n_tasks_per_batch)
-        ]
+    trainer = MAMLTrainer(copy.deepcopy(model), maml_cfg, sampler)
+    result = trainer.train()
 
-        query_losses: List[torch.Tensor] = []
-        for params in params_batch:
-            task = family.train_task_factory(params)
-            seed_t = int(rng.integers(0, 100000))
-            X_col, X_bc, Y_bc, X_ic, Y_ic = _sample_task_data(
-                task, cfg.n_col, cfg.n_bc, cfg.n_ic, seed_t, device
-            )
-            # Sample separate query set
-            seed_q = int(rng.integers(0, 100000))
-            X_col_q, X_bc_q, Y_bc_q, X_ic_q, Y_ic_q = _sample_task_data(
-                task, cfg.n_col, cfg.n_bc, cfg.n_ic, seed_q, device
-            )
-
-            # Inner adaptation (FOMAML: stop gradients at adapted params)
-            adapted, _ = _maml_inner_loop(
-                meta_model, task, X_col, X_bc, Y_bc, X_ic, Y_ic,
-                cfg.n_inner_steps, cfg.inner_lr,
-                cfg.weight_pde, cfg.weight_bc, cfg.weight_ic,
-            )
-
-            # Query loss on adapted model (FOMAML: treat adapted as leaf)
-            q_loss = _pinn_loss(
-                adapted, task, X_col_q, X_bc_q, Y_bc_q, X_ic_q, Y_ic_q,
-                cfg.weight_pde, cfg.weight_bc, cfg.weight_ic,
-            )
-            query_losses.append(q_loss)
-
-        # Meta-gradient: average query losses, backprop into meta_model
-        meta_loss = torch.stack(query_losses).mean()
-
-        # FOMAML: manually compute gradients of query loss w.r.t. adapted params,
-        # then assign to meta_model params (first-order approximation)
-        meta_opt.zero_grad()
-        # Sum query losses, backprop through adapted copies
-        # Since adapted = deepcopy + SGD steps, and FOMAML ignores higher-order terms,
-        # we approximate: grad_meta ~ mean(grad_query on adapted)
-        # Implementation: compute loss again on meta_model directly as proxy
-        # (standard FOMAML trick: evaluate query loss on meta_model, not adapted)
-        proxy_losses: List[torch.Tensor] = []
-        for params in params_batch:
-            task = family.train_task_factory(params)
-            seed_p = int(rng.integers(0, 100000))
-            X_col_p, X_bc_p, Y_bc_p, X_ic_p, Y_ic_p = _sample_task_data(
-                task, cfg.n_col, cfg.n_bc, cfg.n_ic, seed_p, device
-            )
-            p_loss = _pinn_loss(
-                meta_model, task, X_col_p, X_bc_p, Y_bc_p, X_ic_p, Y_ic_p,
-                cfg.weight_pde, cfg.weight_bc, cfg.weight_ic,
-            )
-            proxy_losses.append(p_loss)
-        proxy_total = torch.stack(proxy_losses).mean()
-        proxy_total.backward()
-        nn.utils.clip_grad_norm_(meta_model.parameters(), 1.0)
-        meta_opt.step()
-
-        rec = {
-            "meta_epoch": meta_ep,
-            "meta_loss": float(meta_loss.item()),
-            "proxy_loss": float(proxy_total.item()),
-            "elapsed_s": time.time() - t0,
+    history = [
+        {
+            "meta_epoch": r["epoch"],
+            "meta_loss": r["meta_loss"],
+            "elapsed_s": r.get("elapsed", 0.0),
         }
-        history.append(rec)
+        for r in result["history"]
+    ]
 
-        if verbose and meta_ep % cfg.log_interval == 0:
-            print(f"        ep {meta_ep:4d}/{cfg.n_meta_epochs}  "
-                  f"meta_loss={rec['meta_loss']:.3e}  t={rec['elapsed_s']:.1f}s")
+    if verbose and history:
+        last = history[-1]
+        print(f"        ep {last['meta_epoch']:4d}/{cfg.n_meta_epochs}  "
+              f"meta_loss={last['meta_loss']:.3e}  t={last['elapsed_s']:.1f}s")
 
-    return meta_model, history
+    return trainer.model, history
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -334,79 +411,48 @@ def _reptile_meta_train(
     device: torch.device,
     verbose: bool = False,
 ) -> Tuple[nn.Module, List[Dict]]:
-    """
-    Reptile outer loop.
+    """Delegate Reptile meta-training to pinneaple_meta.ReptileTrainer."""
+    from pinneaple_meta import ReptileTrainer
+    from pinneaple_meta.config import ReptileConfig
 
-    For each meta-epoch:
-      - Sample n_tasks_per_batch tasks
-      - For each task: deep-copy model, run n_inner_steps SGD steps
-      - Outer update: theta <- theta + epsilon * mean(theta_task - theta)
-    """
-    torch.manual_seed(cfg.seed)
-    meta_model = copy.deepcopy(model).to(device)
-    # Reptile outer LR / epsilon — typically larger than MAML
-    epsilon = cfg.outer_lr
     rng = np.random.default_rng(cfg.seed)
-    history: List[Dict] = []
+    sampler = _family_to_sampler_for_reptile(family, cfg, device, rng)
 
-    n_total = cfg.n_meta_epochs * cfg.n_tasks_per_batch * cfg.n_inner_steps
+    reptile_cfg = ReptileConfig(
+        n_inner_steps=cfg.n_inner_steps,
+        inner_lr=cfg.inner_lr,
+        outer_lr=cfg.outer_lr,
+        n_tasks_per_batch=cfg.n_tasks_per_batch,
+        n_meta_epochs=cfg.n_meta_epochs,
+        epsilon=min(max(float(cfg.outer_lr), 1e-6), 1.0),
+        device=str(device),
+        seed=cfg.seed,
+        checkpoint_every=0,
+    )
+
     if verbose:
+        n_total = cfg.n_meta_epochs * cfg.n_tasks_per_batch * cfg.n_inner_steps
         print(f"      Reptile: {cfg.n_meta_epochs} meta-epochs x {cfg.n_tasks_per_batch} tasks "
               f"x {cfg.n_inner_steps} inner = {n_total} total steps")
 
-    t0 = time.time()
-    for meta_ep in range(1, cfg.n_meta_epochs + 1):
-        params_batch = [
-            {k: float(rng.uniform(lo, hi)) for k, (lo, hi) in family.param_ranges.items()}
-            for _ in range(cfg.n_tasks_per_batch)
-        ]
+    trainer = ReptileTrainer(copy.deepcopy(model), reptile_cfg, sampler)
+    result = trainer.train()
 
-        task_state_dicts: List[Dict[str, torch.Tensor]] = []
-        task_losses: List[float] = []
-
-        for params in params_batch:
-            task = family.train_task_factory(params)
-            seed_t = int(rng.integers(0, 100000))
-            X_col, X_bc, Y_bc, X_ic, Y_ic = _sample_task_data(
-                task, cfg.n_col, cfg.n_bc, cfg.n_ic, seed_t, device
-            )
-            adapted, last_loss = _maml_inner_loop(
-                meta_model, task, X_col, X_bc, Y_bc, X_ic, Y_ic,
-                cfg.n_inner_steps, cfg.inner_lr,
-                cfg.weight_pde, cfg.weight_bc, cfg.weight_ic,
-            )
-            task_state_dicts.append({k: v.detach().clone() for k, v in adapted.state_dict().items()})
-            task_losses.append(last_loss)
-
-        # Reptile outer update: theta <- theta + epsilon * mean(theta_i - theta)
-        meta_state = meta_model.state_dict()
-        with torch.no_grad():
-            avg_delta: Dict[str, torch.Tensor] = {}
-            for name in meta_state:
-                delta = torch.zeros_like(meta_state[name].float())
-                for sd in task_state_dicts:
-                    if name in sd:
-                        delta = delta + (sd[name].float() - meta_state[name].float())
-                avg_delta[name] = delta / len(task_state_dicts)
-
-            new_state = {
-                name: meta_state[name].float() + epsilon * avg_delta[name]
-                for name in meta_state
-            }
-            meta_model.load_state_dict(new_state)
-
-        rec = {
-            "meta_epoch": meta_ep,
-            "meta_loss": float(np.mean(task_losses)),
-            "elapsed_s": time.time() - t0,
+    history = [
+        {
+            "meta_epoch": r["epoch"],
+            "meta_loss": r["meta_loss"],
+            "elapsed_s": 0.0,
         }
-        history.append(rec)
+        for r in result["history"]
+    ]
 
-        if verbose and meta_ep % cfg.log_interval == 0:
-            print(f"        ep {meta_ep:4d}/{cfg.n_meta_epochs}  "
-                  f"meta_loss={rec['meta_loss']:.3e}  t={rec['elapsed_s']:.1f}s")
+    if verbose and history:
+        last = history[-1]
+        print(f"        ep {last['meta_epoch']:4d}/{cfg.n_meta_epochs}  "
+              f"meta_loss={last['meta_loss']:.3e}")
 
-    return meta_model, history
+    return trainer.model, history
 
 
 # ─────────────────────────────────────────────────────────────────────────────

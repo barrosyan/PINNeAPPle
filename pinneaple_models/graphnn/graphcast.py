@@ -1,6 +1,6 @@
 from __future__ import annotations
 """GraphCast-style mesh-based forecasting architecture (fixed + variable graphs)."""
-from typing import Dict, Optional, List
+from typing import Any, Dict, Optional, List
 
 import torch
 import torch.nn as nn
@@ -254,3 +254,36 @@ class GraphCast(GraphModelBase):
             losses=losses,
             extras={"h_flat": h_flat, "y_list": y_list, "ptr": ptr, "mask": mask},
         )
+
+    def forward_batch(self, batch: Dict[str, Any]) -> GraphOutput:
+        """Dict-based interface used by Arena / GNNAdapter.
+
+        Required keys: ``x`` (or ``node_features``), ``edge_index``.
+        Supports variable-graph mode via ``x_list`` / ``edge_index_list`` keys.
+        """
+        x          = batch["x"] if "x" in batch else batch.get("node_features")
+        edge_index = batch.get("edge_index")
+        edge_attr  = batch.get("edge_attr") if "edge_attr" in batch else batch.get("edge_features")
+        pos        = batch.get("pos")
+        mask       = batch.get("mask")
+        y_true     = batch.get("y_true") if "y_true" in batch else batch.get("y")
+
+        if x is None:
+            raise KeyError("forward_batch: batch must contain 'x' or 'node_features'.")
+
+        g = GraphBatch(x=x, edge_index=edge_index, pos=pos, edge_attr=edge_attr, mask=mask)
+
+        # Variable-graph fields are attached as extra attributes when present
+        x_list         = batch.get("x_list")
+        edge_index_list = batch.get("edge_index_list")
+        if x_list is not None and edge_index_list is not None:
+            g.x_list          = x_list             # type: ignore[attr-defined]
+            g.edge_index_list = edge_index_list    # type: ignore[attr-defined]
+            pos_list  = batch.get("pos_list")
+            ea_list   = batch.get("edge_attr_list")
+            if pos_list is not None:
+                g.pos_list = pos_list              # type: ignore[attr-defined]
+            if ea_list is not None:
+                g.edge_attr_list = ea_list         # type: ignore[attr-defined]
+
+        return self.forward(g, y_true=y_true, return_loss=(y_true is not None))

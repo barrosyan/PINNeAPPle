@@ -3,19 +3,31 @@
 This module provides a unified, PyTorch-native toolkit for estimating and
 evaluating predictive uncertainty in PINNs and related surrogate models.
 
-Supported UQ methods
---------------------
-``MCDropout`` / ``MCDropoutWrapper``
-    Monte Carlo Dropout: runs *n* stochastic forward passes at inference time
-    to approximate the posterior predictive distribution.
+Uncertainty types
+-----------------
+``AleatoricHead`` / ``aleatoric_nll_loss``
+    **Aleatoric (data) uncertainty** — irreducible noise in the data.
+    The model learns both mean μ(x) and log-variance log σ²(x).
+    Optimized via heteroscedastic Gaussian NLL.
 
-``EnsembleUQ``
-    Deep Ensembles: combines predictions from multiple independently-trained
-    models to estimate epistemic uncertainty.
+``MCDropout`` / ``EnsembleUQ``
+    **Epistemic (model) uncertainty** — reducible uncertainty from limited data
+    or model capacity.  MC Dropout runs *n* stochastic forward passes;
+    ensembles aggregate multiple independently-trained models.
+
+``decompose_uncertainty``
+    **Decomposition** — splits total variance into aleatoric + epistemic
+    components from *n* stochastic passes of an AleatoricHead model.
 
 ``ConformalPredictor``
-    Split Conformal Prediction: provides distribution-free, finite-sample
-    coverage guarantees using a held-out calibration set.
+    **Conformal prediction** — distribution-free coverage guarantees via a
+    held-out calibration set.
+
+Quantile regression
+-------------------
+``QuantileHead`` / ``QuantileLoss``
+    Learn conditional quantiles via pinball loss; also accessible from
+    ``pinneaple_timeseries.uncertainty``.
 
 Calibration utilities
 ---------------------
@@ -24,18 +36,23 @@ Calibration utilities
 
 Unified interface
 -----------------
-``uq_predict(model, x, method="mc_dropout", **kwargs) -> UQResult``
-    Single entry-point for uncertainty-aware prediction regardless of the
-    underlying UQ method.
+``uq_predict(model, x, method=...) -> UQResult``
+    Single entry-point for all methods.  Supported *method* values:
+    ``"mc_dropout"``, ``"ensemble"``, ``"aleatoric"``, ``"decompose"``.
 
 Quick start
 -----------
->>> from pinneaple_uq import uq_predict, ConformalPredictor, CalibrationMetrics
->>> result = uq_predict(model, x_test, method="mc_dropout", n_samples=200)
->>> lower, upper = result.confidence_interval(alpha=0.05)
->>> ece = CalibrationMetrics.expected_calibration_error(
-...     result.mean, y_test, result.std
-... )
+>>> from pinneaple_uq import uq_predict, AleatoricHead, decompose_uncertainty
+>>> # Aleatoric-only
+>>> head = AleatoricHead(base_model, out_dim=1)
+>>> result = uq_predict(head, x_test, method="aleatoric")
+>>> print(result.aleatoric_std)
+>>>
+>>> # Full decomposition (aleatoric + epistemic via MC Dropout)
+>>> from pinneaple_uq import MCDropoutWrapper, MCDropoutConfig
+>>> mcd = MCDropoutWrapper(head, MCDropoutConfig(n_samples=50))
+>>> result = decompose_uncertainty(mcd, x_test)
+>>> print(result.aleatoric_std, result.epistemic_std)
 """
 from __future__ import annotations
 
@@ -44,20 +61,33 @@ from pinneaple_uq.mc_dropout import MCDropout, MCDropoutConfig, MCDropoutWrapper
 from pinneaple_uq.ensemble import EnsembleConfig, EnsembleUQ
 from pinneaple_uq.conformal import ConformalPredictor
 from pinneaple_uq.calibration import CalibrationMetrics
+from pinneaple_uq.aleatoric import AleatoricHead, aleatoric_nll_loss
+from pinneaple_uq.decomposition import decompose_uncertainty
+from pinneaple_uq.quantile import QuantileConfig, QuantileHead, QuantileLoss, pinball_loss_torch
 
 __all__ = [
     # Core types and unified interface
     "UQResult",
     "uq_predict",
-    # Monte Carlo Dropout
+    # Aleatoric (data) uncertainty
+    "AleatoricHead",
+    "aleatoric_nll_loss",
+    # Uncertainty decomposition
+    "decompose_uncertainty",
+    # Monte Carlo Dropout (epistemic)
     "MCDropout",
     "MCDropoutConfig",
     "MCDropoutWrapper",
-    # Ensemble UQ
+    # Ensemble UQ (epistemic)
     "EnsembleUQ",
     "EnsembleConfig",
     # Conformal prediction
     "ConformalPredictor",
     # Calibration
     "CalibrationMetrics",
+    # Quantile regression
+    "QuantileConfig",
+    "QuantileHead",
+    "QuantileLoss",
+    "pinball_loss_torch",
 ]

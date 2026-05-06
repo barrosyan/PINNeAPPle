@@ -33,6 +33,7 @@ from .pinn import (
     plot_pinn_prediction,
     plot_pde_residual,
     plot_gradient_magnitude,
+    predict_and_plot,
 )
 
 from .solver import (
@@ -82,6 +83,7 @@ __all__ = [
     # PINN
     "plot_loss_history", "plot_multi_loss", "plot_collocation",
     "plot_pinn_prediction", "plot_pde_residual", "plot_gradient_magnitude",
+    "predict_and_plot",
     # Solvers
     "plot_solver_output", "plot_fem_result", "plot_fvm_result", "plot_residuals",
     # Mesh
