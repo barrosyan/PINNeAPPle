@@ -10,6 +10,7 @@ from .equivariant_gnn import EquivariantGNN
 from .gnn_ode import GraphNeuralODE
 from .spatiotemporal_gnn import SpatiotemporalGNN
 from .graphcast import GraphCast
+from .mesh_graph_net import MeshGraphNet
 
 
 _REGISTRY: Dict[str, Type[GraphModelBase]] = {
@@ -26,6 +27,10 @@ _REGISTRY: Dict[str, Type[GraphModelBase]] = {
     "stgnn": SpatiotemporalGNN,
 
     "graphcast": GraphCast,
+
+    "mesh_graph_net": MeshGraphNet,
+    "mgn": MeshGraphNet,
+    "meshgraphnet": MeshGraphNet,
 }
 
 def register_into_global() -> None:

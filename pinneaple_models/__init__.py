@@ -8,6 +8,10 @@ from .mesh_graph_net import MeshGraphNet
 from .afno import AFNO, AFNOLayer
 from .group_b_registry import GroupBCatalog
 
+# Populate ModelRegistry with all families on import
+from .register_all import register_all as _register_all
+_register_all()
+
 __all__ = [
     "ModelRegistry",
     "ModelSpec",
@@ -22,4 +26,6 @@ __all__ = [
     "AFNO",
     "AFNOLayer",
     "GroupBCatalog",
+    # Registration
+    "register_all",
 ]

@@ -142,8 +142,10 @@ class Burgers1DTask(BenchmarkTaskBase):
             x_right = torch.full_like(t_test, 1.0)
             X_left = torch.cat([x_left, t_test], dim=-1)
             X_right = torch.cat([x_right, t_test], dim=-1)
+            def _uw(out):
+                return out.y if hasattr(out, "y") else out
             bc_err = float(
-                (model(X_left).pow(2).mean() + model(X_right).pow(2).mean()).item() / 2
+                (_uw(model(X_left)).pow(2).mean() + _uw(model(X_right)).pow(2).mean()).item() / 2
             )
         metrics["bc_error"] = bc_err
         return metrics

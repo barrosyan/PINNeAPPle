@@ -1,28 +1,39 @@
-"""PhysicsBenchmarkSpec — declarative physics/PINN benchmark pipeline.
+"""PhysicsPipeline — standard 6-step PINNeAPPle physics pipeline.
+
+Standard flow
+-------------
+  Step 1 – Problem selection   : preset registry, built-in list, or custom ProblemSpec
+  Step 2 – Geometry & mesh     : GeometrySpec / MeshData / STL / None (use domain bounds)
+  Step 3 – Auto-generate       : physics losses compiled + collocation + mesh sampling
+  Step 4 – Solver selection    : auto-picks best numerical solver → synthetic reference data
+  Step 5 – Models              : user list + physics loss auto-attached per architecture
+  Step 6 – Train & export      : auto-metrics, train, visualize, checkpoint (.pt), rank table
 
 Uses:
   - pinneaple_environment.presets  (get_preset, list_presets → ProblemSpec)
   - pinneaple_pinn                 (compile_problem, LossWeights → loss_fn)
   - pinneaple_models               (ModelRegistry.build → any registered model)
   - pinneaple_train.metrics        (MSE, MAE, RMSE, R2, RelL2, MaxError)
-
-Any problem registered in pinneaple_environment can be used directly.
-For custom ProblemSpec objects, compile_problem builds the loss automatically.
-For the built-in fallback problems, a manual residual wrapper is provided.
+  - pinneaple_geom                 (GeometrySpec, MeshData → mesh-based sampling)
+  - pinneaple_solvers              (SolverCatalog → numerical reference data)
 
 Usage
 -----
-    from pinneaple_arena import PhysicsBenchmarkSpec
+    from pinneaple_arena import PhysicsPipeline
 
-    spec = PhysicsBenchmarkSpec(
-        problem  = "burgers_1d_default",   # any pinneaple_environment preset
-        models   = ["vanilla_pinn", "siren", "modified_mlp"],
-        metrics  = ["mse", "l2_rel"],
-        epochs   = 3000,
-        plots    = True,
+    pipeline = PhysicsPipeline(
+        problem = "burgers_1d",
+        models  = ["vanilla_pinn", "siren", "modified_mlp"],
+        epochs  = 3000,
     )
-    report = spec.run()
-    report.save("outputs/physics/burgers_report.json")
+    report = pipeline.run()
+    report.save("outputs/burgers_report.json")
+
+    # Show available problems
+    PhysicsPipeline.list_problems()
+
+# Backward-compatible alias
+PhysicsBenchmarkSpec = PhysicsPipeline
 """
 from __future__ import annotations
 
@@ -187,6 +198,93 @@ _BUILTIN_ALIASES = {
     "kovasznay": "kovasznay_ns", "ns_2d": "kovasznay_ns",
     "helmholtz": "helmholtz_2d", "allen_cahn": "allen_cahn_1d",
 }
+
+# -----------------------------------------------------------------------------
+# Step 4 — Auto-solver selection
+# -----------------------------------------------------------------------------
+
+# Maps problem-id prefix → (solver_tag, human description, solver_family)
+_SOLVER_MAP: List[Tuple[str, str, str]] = [
+    ("burgers",       "FDM explicit (FTCS) — convection-diffusion",       "fdm"),
+    ("heat_1d",       "FDM Crank-Nicolson — 1-D parabolic",               "fdm"),
+    ("heat_2d",       "FDM Alternating-Direction-Implicit — 2-D parabolic","fdm"),
+    ("heat",          "FDM Crank-Nicolson — parabolic",                    "fdm"),
+    ("wave",          "FDM leap-frog — hyperbolic",                        "fdm"),
+    ("poisson",       "FDM Jacobi iteration — elliptic",                   "fdm"),
+    ("helmholtz",     "Spectral (FFT) — Helmholtz",                        "spectral"),
+    ("kovasznay",     "FDM — steady incompressible Navier-Stokes",         "fdm"),
+    ("navier_stokes", "FDM pressure-projection — incompressible NS",        "fdm"),
+    ("allen_cahn",    "FDM Euler-explicit — nonlinear parabolic",           "fdm"),
+    ("elasticity",    "FEM — linear elasticity",                            "fem"),
+    ("lid_driven",    "FDM vorticity-stream — lid-driven cavity",           "fdm"),
+]
+
+
+def _auto_select_solver(prob_id: str) -> Tuple[str, str]:
+    """Return (solver_tag, description) for a problem id."""
+    pid = prob_id.lower()
+    for prefix, description, _ in _SOLVER_MAP:
+        if pid.startswith(prefix) or prefix in pid:
+            return prefix, description
+    return "fdm", "Finite Differences — generic fallback"
+
+
+def _generate_synthetic_data(
+    solver_tag: str,
+    prob_id: str,
+    prob_def: Optional["_ProblemDef"],
+    spec_obj: Optional[Any],
+) -> Optional[Dict[str, np.ndarray]]:
+    """Run the selected solver to produce synthetic reference data.
+
+    Falls back to pinneaple_data.datasets if the solver is unavailable.
+    """
+    # ── Try pinneaple_solvers first ──────────────────────────────────────────
+    try:
+        from pinneaple_solvers import SolverCatalog
+        cat = SolverCatalog()
+        available = cat.list() if hasattr(cat, "list") else []
+        if solver_tag in available:
+            solver = cat.build(solver_tag)
+            out = solver.solve() if hasattr(solver, "solve") else None
+            if out is not None and hasattr(out, "result"):
+                return out.result if isinstance(out.result, dict) else None
+    except Exception:
+        pass
+
+    # ── Try problem_runner (knows preset ProblemSpec) ────────────────────────
+    if spec_obj is not None:
+        try:
+            from pinneaple_solvers.problem_runner import generate_pinn_dataset
+            raw = generate_pinn_dataset(spec_obj)
+            if isinstance(raw, dict) and "x_col" in raw:
+                return raw
+        except Exception:
+            pass
+
+    # ── Fallback: pre-computed dataset from pinneaple_data ───────────────────
+    dataset_id = prob_def.dataset_id if prob_def is not None else prob_id
+    return _load_reference(dataset_id)
+
+
+# -----------------------------------------------------------------------------
+# Step 6 — Auto-metrics per problem type
+# -----------------------------------------------------------------------------
+
+def _auto_select_metrics(prob_id: str, out_dim: int, has_time: bool) -> List[str]:
+    """Return the most informative metrics for a given problem type."""
+    pid = prob_id.lower()
+    base = ["mse", "l2_rel", "max_err"]
+    if any(pid.startswith(p) for p in ("kovasznay", "navier_stokes", "ns")):
+        # Multi-field flow: add R² so we see explained variance per field
+        return base + ["r2"]
+    if any(pid.startswith(p) for p in ("poisson", "helmholtz", "elasticity")):
+        # Steady elliptic: R² is meaningful, drop max_err (smooth field)
+        return ["mse", "l2_rel", "r2"]
+    if has_time:
+        # Transient: max_err reveals worst-case front errors
+        return base
+    return base
 
 
 def _physics_residual(prob: _ProblemDef, model: nn.Module,
@@ -395,18 +493,48 @@ def _batch_from_spec(spec: Any, n_col: int, n_bc: int, n_ic: int,
 def _batch_from_geometry(geometry: Any, fields: List[str],
                           n_col: int, n_bc: int, n_ic: int,
                           strategy: str = "lhs", seed: int = 42) -> Dict[str, Any]:
-    """Generate a training batch from an STL mesh via CollocationSampler.from_mesh."""
-    from pinneaple_data.stl_import import load_stl, STLMesh
+    """Generate a training batch from a geometry/mesh.
+
+    Accepts:
+      - str path to an STL file
+      - pinneaple_geom.GeometrySpec
+      - pinneaple_geom.MeshData
+      - pinneaple_data STLMesh
+      - any object with .sample_collocation() (returns {"x_col", "x_bc", ...})
+    """
+    rng = np.random.default_rng(seed)
+
+    # ── pinneaple_geom.GeometrySpec → build MeshData ─────────────────────────
+    try:
+        from pinneaple_geom import GeometrySpec, MeshData
+        if isinstance(geometry, GeometrySpec):
+            from pinneaple_geom.mesh.mesher_2d import mesh_sdf_2d
+            mesh_data: MeshData = mesh_sdf_2d(geometry)
+            geometry = mesh_data
+        if isinstance(geometry, MeshData):
+            x_int = geometry.sample_interior(n_col, seed=int(seed))
+            x_bnd = geometry.sample_surface(n_bc, seed=int(seed) + 1)
+            x_col = torch.tensor(x_int, dtype=torch.float32)
+            x_bc  = torch.tensor(x_bnd, dtype=torch.float32)
+            y_bc  = torch.zeros(len(x_bc), len(fields))
+            return {"x_col": x_col, "x_bc": x_bc, "y_bc": y_bc, "ctx": {}}
+    except Exception:
+        pass
+
+    # ── STL file path ─────────────────────────────────────────────────────────
+    try:
+        from pinneaple_data.stl_import import load_stl, STLMesh
+        if isinstance(geometry, str):
+            geometry = load_stl(geometry)
+        if hasattr(geometry, "sample_collocation"):
+            raw = geometry.sample_collocation(n_col, n_bc, seed=seed)
+            return _raw_to_batch(raw)
+    except Exception:
+        pass
+
+    # ── CollocationSampler.from_mesh fallback ────────────────────────────────
     from pinneaple_data.collocation import CollocationSampler
-
-    if isinstance(geometry, str):
-        mesh = load_stl(geometry)
-    elif isinstance(geometry, STLMesh):
-        mesh = geometry
-    else:
-        mesh = geometry  # already a compatible mesh object
-
-    sampler = CollocationSampler.from_mesh(mesh, fields=tuple(fields),
+    sampler = CollocationSampler.from_mesh(geometry, fields=tuple(fields),
                                             strategy=strategy, seed=seed)
     raw = sampler.sample(n_col=n_col, n_bc=n_bc, n_ic=n_ic, seed=seed)
     return _raw_to_batch(raw)
@@ -621,40 +749,82 @@ def _train_pinn(model: nn.Module,
 # PhysicsBenchmarkSpec
 # -----------------------------------------------------------------------------
 
-class PhysicsBenchmarkSpec:
-    """Declarative physics benchmark pipeline.
+class PhysicsPipeline:
+    """Standard 6-step PINNeAPPle physics pipeline.
 
     Parameters
     ----------
     problem : str or ProblemSpec
+        Step 1 — problem selection:
         - Name of a pinneaple_environment preset (e.g. "burgers_1d_default").
         - Built-in alias (e.g. "burgers_1d", "heat_1d", "kovasznay_ns").
-        - A ProblemSpec object from pinneaple_environment directly.
+        - A ProblemSpec / custom object from pinneaple_environment.
+        Call ``PhysicsPipeline.list_problems()`` to see all options.
+    geometry : GeometrySpec | MeshData | str | None
+        Step 2 — geometry & mesh:
+        - ``pinneaple_geom.GeometrySpec`` → mesh auto-generated via SDF.
+        - ``pinneaple_geom.MeshData`` → used directly for sampling.
+        - str path to an STL file.
+        - ``None`` → domain bounds from ProblemSpec are used.
     models : list of str
-        Any model name registered in ModelRegistry or PINNCatalog
-        (e.g. "vanilla_pinn", "siren", "modified_mlp", "pinn_lstm",
-        "deeponet", "fno", "hamiltonian_nn", …).
-    metrics : list of str
-        "mse", "rmse", "mae", "l2_rel", "max_err", "r2".
+        Step 5 — architectures to benchmark. Any name in ModelRegistry or
+        PINNCatalog (e.g. "vanilla_pinn", "siren", "modified_mlp", "deeponet").
+    metrics : list of str or "auto"
+        Step 6 — metrics to compute. ``"auto"`` selects the most informative
+        set for the problem type (e.g. steady elliptic → mse, l2_rel, r2;
+        transient → mse, l2_rel, max_err).
     collocation_points : str
-        "sobol" (default), "lhs", "halton", "uniform".
+        Sampling strategy: "sobol" (default), "lhs", "halton", "uniform".
     inverse : bool
-        Enable inverse problem mode.
+        Enable inverse problem mode (parameter identification).
     inverse_variables : list of str
-        Parameter names to identify.
+        Physical parameter names to identify (e.g. ["nu", "Re"]).
     epochs : int
-        Training epochs.
+        Training epochs per model.
     lr : float
-        Initial learning rate.
+        Initial learning rate (cosine-annealed to 1e-6).
     n_col, n_bc, n_ic : int
-        Number of collocation / BC / IC points.
+        Collocation / boundary / initial-condition point counts.
     hidden : list of int
-        Hidden layer widths passed to model constructors.
+        Hidden layer widths for model constructors.
     seed : int
-        Random seed.
+        Global random seed.
     output_dir : str
-        Directory for plots and JSON reports.
+        Directory for plots, checkpoints, and the JSON report.
+    save_checkpoints : bool
+        Save a ``{model_name}.pt`` checkpoint for each trained model.
     """
+
+    # ── Class-level problem catalogue ─────────────────────────────────────────
+
+    @classmethod
+    def list_problems(cls) -> Dict[str, str]:
+        """Return {problem_id: pde_string} for all available problems.
+
+        Includes both the built-in problems and any preset registered in
+        pinneaple_environment.
+        """
+        result: Dict[str, str] = {k: v.pde_str for k, v in _BUILTIN_PROBLEMS.items()}
+        result.update({k: k for k in _BUILTIN_ALIASES})
+        try:
+            from pinneaple_environment.presets.registry import list_presets
+            for pid in list_presets():
+                result.setdefault(pid, "(pinneaple_environment preset)")
+        except Exception:
+            pass
+        return result
+
+    @classmethod
+    def print_problems(cls) -> None:
+        """Pretty-print the list of available problems to stdout."""
+        problems = cls.list_problems()
+        print("\nAvailable problems")
+        print("─" * 55)
+        for pid, pde in sorted(problems.items()):
+            print(f"  {pid:<30s}  {pde}")
+        print("─" * 55)
+
+    # ── Constructor ───────────────────────────────────────────────────────────
 
     def __init__(
         self,
@@ -662,7 +832,7 @@ class PhysicsBenchmarkSpec:
         geometry: Optional[Any] = None,
         load_generate_data: str = "generate",
         source: Optional[str] = None,
-        metrics: Sequence[str] = ("mse", "l2_rel", "max_err"),
+        metrics: Union[Sequence[str], str] = "auto",
         collocation_points: str = "sobol",
         models: Sequence[str] = ("vanilla_pinn",),
         inverse: bool = False,
@@ -676,12 +846,13 @@ class PhysicsBenchmarkSpec:
         hidden: Optional[List[int]] = None,
         seed: int = 42,
         output_dir: str = "outputs",
+        save_checkpoints: bool = True,
     ):
         self.problem = problem
         self.geometry = geometry
         self.load_generate_data = load_generate_data
         self.source = source
-        self.metrics = list(metrics)
+        self.metrics = list(metrics) if metrics != "auto" else "auto"
         self.collocation_points = collocation_points
         self.models = list(models)
         self.inverse = inverse
@@ -695,6 +866,7 @@ class PhysicsBenchmarkSpec:
         self.hidden = hidden if hidden is not None else [64, 64, 64, 64]
         self.seed = seed
         self.output_dir = Path(output_dir)
+        self.save_checkpoints = save_checkpoints
 
     # -------------------------------------------------------------------------
     # Problem resolution: preset → compile_problem; fallback → builtin residual
@@ -831,71 +1003,94 @@ class PhysicsBenchmarkSpec:
         return paths
 
     # -------------------------------------------------------------------------
-    # run()
+    # run() — the 6-step pipeline
     # -------------------------------------------------------------------------
 
     def run(self) -> BenchmarkReport:
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
 
+        _SEP = "=" * 62
+        _sep = "-" * 62
+
         report = BenchmarkReport(
             benchmark_type="physics",
             created_at=BenchmarkReport.now_timestamp(),
         )
 
-        # 1. Resolve problem
+        # ── STEP 1 — Problem selection ────────────────────────────────────────
+        print(f"\n{_SEP}")
+        print("  PINNeAPPle Physics Pipeline")
+        print(_SEP)
+        print("\n  Step 1/6  Problem selection")
+
         prob_obj, prob_kind = self._resolve_problem()
 
-        # Extract metadata depending on kind
         if prob_kind == "preset":
             spec = prob_obj
-            prob_id = getattr(spec, "problem_id", str(spec))
-            pde_str = str(getattr(getattr(spec, "pde", None), "kind", ""))
-            coords = list(spec.coords)
-            fields = list(spec.fields)
-            dom = spec.domain_bounds
-            in_dim = len(coords)
-            out_dim = len(fields)
+            prob_id   = getattr(spec, "problem_id", str(spec))
+            pde_str   = str(getattr(getattr(spec, "pde", None), "kind", ""))
+            coords    = list(spec.coords)
+            fields    = list(spec.fields)
+            dom       = spec.domain_bounds
+            in_dim    = len(coords)
+            out_dim   = len(fields)
+            has_time  = "t" in coords or "time" in coords
+            prob_def  = None
         else:
-            prob_def: _ProblemDef = prob_obj
-            prob_id = prob_def.id
-            pde_str = prob_def.pde_str
-            coords = prob_def.coord_names
-            fields = prob_def.field_names
-            dom = prob_def.domain
-            in_dim = prob_def.in_dim
-            out_dim = prob_def.out_dim
+            prob_def  = prob_obj
+            prob_id   = prob_def.id
+            pde_str   = prob_def.pde_str
+            coords    = prob_def.coord_names
+            fields    = prob_def.field_names
+            dom       = prob_def.domain
+            in_dim    = prob_def.in_dim
+            out_dim   = prob_def.out_dim
+            has_time  = prob_def.has_time
+            spec      = None
 
         self._current_prob_id = prob_id
+        print(f"    Problem  : {prob_id}  [{prob_kind}]")
+        print(f"    PDE      : {pde_str}")
+        print(f"    Domain   : {dom}")
+        print(f"    Fields   : {fields}  (in={in_dim}, out={out_dim})")
 
-        report.problem_info = {
-            "id": prob_id, "pde": pde_str,
-            "in_dim": in_dim, "out_dim": out_dim,
-            "kind": prob_kind,
-            "domain": {k: list(v) for k, v in dom.items()},
-        }
-        report.config = {
-            "collocation_points": self.collocation_points,
-            "n_col": self.n_col, "n_bc": self.n_bc, "n_ic": self.n_ic,
-            "epochs": self.epochs, "lr": self.lr,
-            "metrics": self.metrics, "models": self.models,
-            "inverse": self.inverse,
-        }
-
-        # 2. Build training batch
+        # ── STEP 2 — Geometry & mesh ─────────────────────────────────────────
+        print(f"\n  Step 2/6  Geometry & mesh")
         if self.geometry is not None:
-            # Geometry/STL-based domain: CollocationSampler.from_mesh()
+            geom_type = type(self.geometry).__name__
+            print(f"    Source   : {geom_type}")
+            try:
+                from pinneaple_geom import GeometrySpec, MeshData
+                if isinstance(self.geometry, GeometrySpec):
+                    print(f"    Spec     : {self.geometry}")
+                elif isinstance(self.geometry, MeshData):
+                    print(f"    Mesh     : {self.geometry.n_vertices} vertices, "
+                          f"{self.geometry.n_faces} faces")
+            except Exception:
+                pass
+        else:
+            print("    Source   : domain bounds (no explicit geometry)")
+            print(f"    Bounds   : { {k: list(v) for k, v in dom.items()} }")
+
+        # ── STEP 3 — Auto-generate losses + collocation + mesh ───────────────
+        print(f"\n  Step 3/6  Physics losses + collocation points")
+        print(f"    Strategy : {self.collocation_points}  |  "
+              f"n_col={self.n_col}  n_bc={self.n_bc}  n_ic={self.n_ic}")
+
+        if self.geometry is not None:
             batch = _batch_from_geometry(
                 self.geometry, fields,
                 self.n_col, self.n_bc, self.n_ic,
                 self.collocation_points, self.seed)
             loss_fn_base = _make_compiled_loss(spec) if prob_kind == "preset" else None
+            print("    Loss     : compiled via pinneaple_pinn (geometry domain)")
         elif prob_kind == "preset":
             batch = _batch_from_spec(spec, self.n_col, self.n_bc, self.n_ic,
                                      self.collocation_points, self.seed)
             loss_fn_base = _make_compiled_loss(spec)
+            print("    Loss     : compiled via compile_problem(spec)")
         else:
-            # Builtin problem: CollocationSampler.from_bounds() for interior points
             try:
                 from pinneaple_data.collocation import CollocationSampler
                 bounds_dict = {c: dom[c] for c in coords}
@@ -910,35 +1105,78 @@ class PhysicsBenchmarkSpec:
                 hi = np.array([dom[c][1] for c in coords])
                 x_col_np = rng.uniform(lo, hi, (self.n_col, in_dim)).astype(np.float32)
             x_bc, u_bc, x_ic, u_ic = _make_bc_ic_pts(prob_def, self.n_bc, self.n_ic, self.seed)
-            # Load obs for inverse/data-informed
-            ref_data = _load_reference(prob_def.dataset_id)
-            x_obs, u_obs = self._get_obs_data(coords, fields, ref_data)
+            ref_data_tmp = _load_reference(prob_def.dataset_id)
+            x_obs, u_obs = self._get_obs_data(coords, fields, ref_data_tmp)
             batch = _batch_from_builtin(prob_def, x_col_np, x_bc, u_bc,
                                         x_ic, u_ic, x_obs, u_obs)
-            loss_fn_base = None  # built per model (may wrap inv_params)
+            loss_fn_base = None
+            print("    Loss     : auto-residual via autograd (built-in PDE)")
 
-        # 3. Reference data for metrics/plots
-        ref_data_eval = _load_reference(prob_id)
-        x_eval, u_true = (None, None)
+        print(f"    x_col    : {batch['x_col'].shape}")
+
+        # ── STEP 4 — Solver selection + synthetic data ───────────────────────
+        print(f"\n  Step 4/6  Solver selection + synthetic reference data")
+        solver_tag, solver_desc = _auto_select_solver(prob_id)
+        print(f"    Solver   : {solver_tag}  —  {solver_desc}")
+
+        ref_data_eval = _generate_synthetic_data(
+            solver_tag, prob_id, prob_def, spec
+        )
+        x_eval, u_true = None, None
         if ref_data_eval is not None:
             x_eval, u_true = _make_eval_grid(coords, fields, ref_data_eval)
+            print(f"    Data     : {len(x_eval) if x_eval is not None else 0} reference points")
+        else:
+            print("    Data     : no reference data — training-loss metrics only")
 
+        # ── STEP 5 — Model list + auto physics-loss wiring ───────────────────
+        print(f"\n  Step 5/6  Models ({len(self.models)} selected)")
+        for m in self.models:
+            print(f"    - {m}")
+
+        # ── STEP 6 — Auto-metrics, train, visualize, export, rank ────────────
+        # Resolve metrics (auto-selection or user override)
+        resolved_metrics: List[str]
+        if self.metrics == "auto":
+            resolved_metrics = _auto_select_metrics(prob_id, out_dim, has_time)
+            print(f"\n  Step 6/6  Train + evaluate + export")
+            print(f"    Metrics  : {resolved_metrics}  (auto-selected)")
+        else:
+            resolved_metrics = self.metrics
+            print(f"\n  Step 6/6  Train + evaluate + export")
+            print(f"    Metrics  : {resolved_metrics}")
+
+        print(f"    Epochs   : {self.epochs}  |  lr={self.lr}  |  seed={self.seed}")
+        print(f"    Checkpts : {'enabled' if self.save_checkpoints else 'disabled'}")
+        print(_sep)
+
+        report.problem_info = {
+            "id": prob_id, "pde": pde_str,
+            "in_dim": in_dim, "out_dim": out_dim,
+            "kind": prob_kind, "has_time": has_time,
+            "domain": {k: list(v) for k, v in dom.items()},
+            "solver": solver_tag, "solver_description": solver_desc,
+        }
+        report.config = {
+            "collocation_points": self.collocation_points,
+            "n_col": self.n_col, "n_bc": self.n_bc, "n_ic": self.n_ic,
+            "epochs": self.epochs, "lr": self.lr,
+            "metrics": resolved_metrics, "models": self.models,
+            "inverse": self.inverse,
+        }
+
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         all_plots: List[str] = []
-        print(f"\n{'-'*60}")
-        print(f"  PhysicsBenchmarkSpec  ->  {prob_id}  [{prob_kind}]")
-        print(f"  Models: {self.models}")
-        print(f"  Epochs: {self.epochs}  |  n_col: {self.n_col}  |  seed: {self.seed}")
-        print(f"{'-'*60}")
+        checkpoints: Dict[str, str] = {}
 
-        # 4. Train each model
         for model_name in self.models:
-            print(f"\n  > Model: {model_name}")
+            print(f"\n  > {model_name}")
             t_start = time.time()
             try:
                 base_model = _build_model(model_name, in_dim, out_dim, self.hidden)
                 n_params = sum(p.numel() for p in base_model.parameters())
 
-                # Wrap for inverse problems (builtin only)
+                # Physics-loss wiring (Step 5 logic)
                 if self.inverse and self.inverse_variables and prob_kind == "builtin":
                     init_g = {v: prob_def.params.get(v, 0.1) * 0.5
                               for v in self.inverse_variables}
@@ -949,14 +1187,17 @@ class PhysicsBenchmarkSpec:
                         inv_params_getter=lambda m: m.inv_params
                         if isinstance(m, _InverseWrapper) else None
                     )
+                    print(f"    physics loss: inverse wrapper ({self.inverse_variables})")
                 elif prob_kind == "builtin":
                     model = base_model
                     loss_fn = _make_builtin_loss(prob_def)
+                    print(f"    physics loss: built-in autograd residual")
                 else:
                     model = base_model
                     loss_fn = loss_fn_base
+                    print(f"    physics loss: compile_problem (preset)")
 
-                print(f"    params = {n_params:,}")
+                print(f"    params     : {n_params:,}")
 
                 final_losses, history = _train_pinn(
                     model, loss_fn, batch,
@@ -966,13 +1207,13 @@ class PhysicsBenchmarkSpec:
 
                 elapsed = time.time() - t_start
 
-                # Evaluate metrics
+                # ── Evaluate metrics ─────────────────────────────────────────
                 if x_eval is not None and u_true is not None:
                     with torch.no_grad():
                         u_pred_all = _pred(model, x_eval).cpu().numpy()
                         u_pred_np = (u_pred_all[:, 0].flatten()
                                      if u_pred_all.ndim == 2 else u_pred_all.flatten())
-                    metrics_out = _compute_metrics(u_pred_np, u_true, self.metrics)
+                    metrics_out = _compute_metrics(u_pred_np, u_true, resolved_metrics)
                 else:
                     metrics_out = {"loss_pde": final_losses.get("loss_pde", float("nan"))}
 
@@ -983,10 +1224,27 @@ class PhysicsBenchmarkSpec:
                         true_v = prob_def.params.get(k, float("nan"))
                         metrics_out[f"param_{k}_err_pct"] = (
                             abs(v - true_v) / (abs(true_v) + 1e-12) * 100)
-                    print(f"    identified: {param_est}")
+                    print(f"    identified : {param_est}")
 
-                print(f"    metrics: {metrics_out}")
-                print(f"    time: {elapsed:.1f}s")
+                print(f"    metrics    : {metrics_out}")
+                print(f"    time       : {elapsed:.1f}s")
+
+                # ── Save checkpoint ──────────────────────────────────────────
+                if self.save_checkpoints:
+                    ckpt_name = f"{prob_id}_{model_name}.pt"
+                    ckpt_path = str(self.output_dir / ckpt_name)
+                    torch.save({
+                        "model_state_dict": model.state_dict(),
+                        "model_name": model_name,
+                        "prob_id": prob_id,
+                        "in_dim": in_dim,
+                        "out_dim": out_dim,
+                        "hidden": self.hidden,
+                        "metrics": metrics_out,
+                        "epochs": self.epochs,
+                    }, ckpt_path)
+                    checkpoints[model_name] = ckpt_path
+                    print(f"    checkpoint : {ckpt_path}")
 
                 report.model_results[model_name] = ModelRunResult(
                     model_id=model_name, n_params=n_params,
@@ -1009,8 +1267,8 @@ class PhysicsBenchmarkSpec:
                     history=[], error_message=str(exc),
                 )
 
-        # 5. Leaderboard
-        primary = self.metrics[0] if self.metrics else "mse"
+        # ── Ranking table ─────────────────────────────────────────────────────
+        primary = resolved_metrics[0] if resolved_metrics else "mse"
         scored = [
             (mid, r.metrics.get(primary, float("inf")))
             for mid, r in report.model_results.items()
@@ -1018,13 +1276,24 @@ class PhysicsBenchmarkSpec:
         ]
         scored.sort(key=lambda x: x[1])
         report.leaderboard = [
-            {"rank": i+1, "model": mid, primary: score}
+            {"rank": i+1, "model": mid, primary: score,
+             "time_s": round(report.model_results[mid].training_time_s, 1),
+             "params": report.model_results[mid].n_params,
+             "checkpoint": checkpoints.get(mid, "")}
             for i, (mid, score) in enumerate(scored)
         ]
         for i, (mid, _) in enumerate(scored):
             report.model_results[mid].rank = i + 1
         report.best_model = scored[0][0] if scored else None
         report.plots_saved = all_plots
+        report.config["checkpoints"] = checkpoints
 
         report.print_summary()
         return report
+
+
+# -----------------------------------------------------------------------------
+# Backward-compatible alias
+# -----------------------------------------------------------------------------
+
+PhysicsBenchmarkSpec = PhysicsPipeline

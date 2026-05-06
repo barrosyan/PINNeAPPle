@@ -1,64 +1,31 @@
-
 from __future__ import annotations
 
 from pinneaple_models.registry import ModelRegistry
 from .generic_pinn_models import GenericMLP, GenericFourierMLP, GenericSIREN, GenericResMLP, GenericLinear
 
+_BENCHMARKS = [
+    (GenericMLP,       "bench_mlp",         "Generic MLP baseline (tanh, 4x128).",              False, ["x_data", "y_data"]),
+    (GenericFourierMLP,"bench_fourier_mlp",  "Fourier-features MLP — good for high-freq fields.", True,  ["x_col", "x_bc", "x_ic"]),
+    (GenericSIREN,     "bench_siren",        "SIREN baseline (sine activations, physics loss).",  True,  ["x_col", "x_bc", "x_ic"]),
+    (GenericResMLP,    "bench_res_mlp",      "Residual MLP baseline (GELU, LayerNorm).",          False, ["x_data", "y_data"]),
+    (GenericLinear,    "bench_linear",       "Linear baseline.",                                  False, ["x_data", "y_data"]),
+]
+
 
 def register_into_global() -> None:
-    # 5 benchmark models for Arena sweeps (pointwise coords)
-    ModelRegistry.register(
-        name="bench_mlp",
-        family="benchmarks",
-        model_cls=GenericMLP,
-        description="Generic MLP baseline (supervised only).",
-        tags=["baseline", "mlp"],
-        input_kind="pointwise_coords",
-        supports_physics_loss=False,
-        expects=["x_data", "y_data"],
-        predicts=["u"],
-    )
-    ModelRegistry.register(
-        name="bench_fourier_mlp",
-        family="benchmarks",
-        model_cls=GenericFourierMLP,
-        description="Fourier features MLP (good for PINNs / high-freq).",
-        tags=["fourier", "mlp"],
-        input_kind="pointwise_coords",
-        supports_physics_loss=True,
-        expects=["x_col", "x_bc", "x_ic", "x_data"],
-        predicts=["u"],
-    )
-    ModelRegistry.register(
-        name="bench_siren",
-        family="benchmarks",
-        model_cls=GenericSIREN,
-        description="SIREN baseline (supports physics loss).",
-        tags=["siren", "pinn"],
-        input_kind="pointwise_coords",
-        supports_physics_loss=True,
-        expects=["x_col", "x_bc", "x_ic", "x_data"],
-        predicts=["u"],
-    )
-    ModelRegistry.register(
-        name="bench_res_mlp",
-        family="benchmarks",
-        model_cls=GenericResMLP,
-        description="Residual MLP baseline (supervised).",
-        tags=["residual", "mlp"],
-        input_kind="pointwise_coords",
-        supports_physics_loss=False,
-        expects=["x_data", "y_data"],
-        predicts=["u"],
-    )
-    ModelRegistry.register(
-        name="bench_linear",
-        family="benchmarks",
-        model_cls=GenericLinear,
-        description="Linear baseline (supervised).",
-        tags=["linear", "baseline"],
-        input_kind="pointwise_coords",
-        supports_physics_loss=False,
-        expects=["x_data", "y_data"],
-        predicts=["u"],
-    )
+    """Register benchmark models into the global ModelRegistry.
+
+    Uses the correct decorator-call pattern:
+        ModelRegistry.register(**kwargs)(ModelClass)
+    """
+    for cls, name, desc, phys, expects in _BENCHMARKS:
+        ModelRegistry.register(
+            name=name,
+            family="benchmarks",
+            description=desc,
+            tags=["benchmark"],
+            input_kind="pointwise_coords",
+            supports_physics_loss=phys,
+            expects=expects,
+            predicts=["u"],
+        )(cls)

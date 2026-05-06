@@ -180,8 +180,11 @@ class FlowObstacle2DTask:
             n=min(self.n_boundary_eval, len(bundle.points_boundary)), replace=False, random_state=0
         )
 
+        def _uw(out):
+            return out.y if hasattr(out, "y") else out
+
         xy_col = self._to_torch_xy(col_df, device=device)
-        uvp_col = model(xy_col)
+        uvp_col = _uw(model(xy_col))
         u = uvp_col[:, 0:1]
         v = uvp_col[:, 1:2]
         p = uvp_col[:, 2:3]
@@ -208,7 +211,7 @@ class FlowObstacle2DTask:
 
         with torch.inference_mode():
             xy_b = torch.tensor(bnd_df[["x", "y"]].to_numpy(), dtype=torch.float32, device=device)
-            uvp_b = model(xy_b)
+            uvp_b = _uw(model(xy_b))
             u_b = uvp_b[:, 0:1]
             v_b = uvp_b[:, 1:2]
             p_b = uvp_b[:, 2:3]
@@ -241,7 +244,7 @@ class FlowObstacle2DTask:
                 sen = sen.sample(n=min(self.n_sensors_eval, len(sen)), replace=False, random_state=0)
                 with torch.inference_mode():
                     xy_s = torch.tensor(sen[["x", "y"]].to_numpy(), dtype=torch.float32, device=device)
-                    uvp_s = model(xy_s)
+                    uvp_s = _uw(model(xy_s))
                     u_hat = uvp_s[:, 0].detach().cpu().numpy()
                     v_hat = uvp_s[:, 1].detach().cpu().numpy()
                 u_true = sen["u"].to_numpy()

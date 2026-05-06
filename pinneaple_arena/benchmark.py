@@ -276,6 +276,290 @@ DEFAULT_MODELS: List[ModelSpec] = [
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Problem adapters  (wrap _ProblemDef / ProblemSpec into BenchmarkTaskBase)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class _BuiltinProblemTask(BenchmarkTaskBase):
+    """Adapt a physics_pipeline._ProblemDef to BenchmarkTaskBase."""
+
+    def __init__(self, prob_def: Any) -> None:
+        self._p = prob_def
+        self.task_id = prob_def.id
+        self.in_dim  = prob_def.in_dim
+        self.out_dim = prob_def.out_dim
+
+    def sample_collocation(self, n: int, seed: int) -> np.ndarray:
+        try:
+            from pinneaple_data.collocation import CollocationSampler
+            dom = self._p.domain
+            bounds = {c: dom[c] for c in self._p.coord_names}
+            sampler = CollocationSampler.from_bounds(
+                bounds, fields=tuple(self._p.field_names), seed=seed)
+            return sampler.sample(n_col=n, seed=seed)["x_col"]
+        except Exception:
+            rng = np.random.default_rng(seed)
+            dom = self._p.domain
+            lo = np.array([dom[c][0] for c in self._p.coord_names])
+            hi = np.array([dom[c][1] for c in self._p.coord_names])
+            return rng.uniform(lo, hi, (n, self.in_dim)).astype(np.float32)
+
+    def sample_boundary(self, n: int, seed: int) -> Tuple[np.ndarray, np.ndarray]:
+        from pinneaple_arena.physics_pipeline import _make_bc_ic_pts
+        x_bc, u_bc, _, _ = _make_bc_ic_pts(self._p, n, 0, seed)
+        return x_bc.numpy(), u_bc.numpy()
+
+    def sample_ic(self, n: int, seed: int) -> Tuple[np.ndarray, np.ndarray]:
+        if not self._p.has_time:
+            return np.empty((0, self.in_dim)), np.empty((0, self.out_dim))
+        from pinneaple_arena.physics_pipeline import _make_bc_ic_pts
+        _, _, x_ic, u_ic = _make_bc_ic_pts(self._p, 0, n, seed)
+        if x_ic is None:
+            return np.empty((0, self.in_dim)), np.empty((0, self.out_dim))
+        return x_ic.numpy(), u_ic.numpy()
+
+    def pde_residual(self, model: nn.Module, X: torch.Tensor) -> torch.Tensor:
+        from pinneaple_arena.physics_pipeline import _physics_residual
+        res = _physics_residual(self._p, model, X)
+        return (res ** 2).mean()
+
+    def eval_grid(self, n: int) -> Tuple[np.ndarray, np.ndarray]:
+        from pinneaple_arena.physics_pipeline import (
+            _load_reference, _make_eval_grid,
+        )
+        ref = _load_reference(self._p.dataset_id)
+        if ref is None:
+            # fallback: uniform grid, no ground truth
+            rng = np.random.default_rng(0)
+            dom = self._p.domain
+            lo = np.array([dom[c][0] for c in self._p.coord_names])
+            hi = np.array([dom[c][1] for c in self._p.coord_names])
+            X = rng.uniform(lo, hi, (n, self.in_dim)).astype(np.float32)
+            return X, np.zeros((n, self.out_dim), dtype=np.float32)
+        x_eval, u_true = _make_eval_grid(
+            self._p.coord_names, self._p.field_names, ref)
+        if x_eval is None or u_true is None:
+            return np.zeros((1, self.in_dim), dtype=np.float32), np.zeros((1,), dtype=np.float32)
+        return x_eval.numpy(), u_true.astype(np.float32)
+
+
+class _PresetProblemTask(BenchmarkTaskBase):
+    """Adapt a pinneaple_environment ProblemSpec to BenchmarkTaskBase."""
+
+    def __init__(self, spec: Any, prob_id: str) -> None:
+        self._spec   = spec
+        self.task_id = prob_id
+        self.in_dim  = len(spec.coords)
+        self.out_dim = len(spec.fields)
+        self._has_time = "t" in spec.coords or "time" in spec.coords
+        self._loss_fn: Any = None  # compiled lazily
+
+    def _get_loss_fn(self) -> Any:
+        if self._loss_fn is None:
+            from pinneaple_pinn import compile_problem, LossWeights
+            self._loss_fn = compile_problem(
+                self._spec, weights=LossWeights(w_pde=1.0, w_bc=10.0))
+        return self._loss_fn
+
+    def _sample_batch(self, n_col: int, n_bc: int, seed: int) -> Dict[str, Any]:
+        try:
+            from pinneaple_data.collocation import CollocationSampler
+            sampler = CollocationSampler.from_problem_spec(
+                self._spec, strategy="lhs", seed=seed)
+            raw = sampler.sample(n_col=n_col, n_bc=n_bc, n_ic=0, seed=seed)
+            return {
+                "x_col": torch.tensor(np.asarray(raw["x_col"]), dtype=torch.float32),
+                "x_bc":  torch.tensor(np.asarray(raw.get("x_bc", np.zeros((0, self.in_dim)))),
+                                       dtype=torch.float32),
+                "y_bc":  torch.tensor(np.asarray(raw.get("y_bc", np.zeros((0, self.out_dim)))),
+                                       dtype=torch.float32),
+                "ctx":   raw.get("ctx", {}),
+            }
+        except Exception:
+            dom = self._spec.domain_bounds
+            coords = list(self._spec.coords)
+            rng = np.random.default_rng(seed)
+            lo = np.array([dom[c][0] for c in coords])
+            hi = np.array([dom[c][1] for c in coords])
+            x = rng.uniform(lo, hi, (n_col, self.in_dim)).astype(np.float32)
+            return {
+                "x_col": torch.tensor(x),
+                "x_bc":  torch.zeros(0, self.in_dim),
+                "y_bc":  torch.zeros(0, self.out_dim),
+                "ctx":   {},
+            }
+
+    def sample_collocation(self, n: int, seed: int) -> np.ndarray:
+        return self._sample_batch(n, 0, seed)["x_col"].numpy()
+
+    def sample_boundary(self, n: int, seed: int) -> Tuple[np.ndarray, np.ndarray]:
+        b = self._sample_batch(0, n, seed)
+        return b["x_bc"].numpy(), b["y_bc"].numpy()
+
+    def sample_ic(self, n: int, seed: int) -> Tuple[np.ndarray, np.ndarray]:
+        if not self._has_time:
+            return np.empty((0, self.in_dim)), np.empty((0, self.out_dim))
+        try:
+            from pinneaple_data.collocation import CollocationSampler
+            sampler = CollocationSampler.from_problem_spec(
+                self._spec, strategy="lhs", seed=seed)
+            raw = sampler.sample(n_col=0, n_bc=0, n_ic=n, seed=seed)
+            x_ic = np.asarray(raw.get("x_ic", np.empty((0, self.in_dim))))
+            y_ic = np.asarray(raw.get("y_ic", np.empty((0, self.out_dim))))
+            return x_ic.astype(np.float32), y_ic.astype(np.float32)
+        except Exception:
+            return np.empty((0, self.in_dim)), np.empty((0, self.out_dim))
+
+    def pde_residual(self, model: nn.Module, X: torch.Tensor) -> torch.Tensor:
+        try:
+            loss_fn = self._get_loss_fn()
+            batch = {
+                "x_col": X,
+                "x_bc":  torch.zeros(1, self.in_dim, device=X.device),
+                "y_bc":  torch.zeros(1, self.out_dim, device=X.device),
+                "ctx":   {},
+            }
+            losses = loss_fn(model, None, batch)
+            pde = losses.get("pde", losses.get("total", torch.tensor(float("nan"))))
+            return pde if isinstance(pde, torch.Tensor) else torch.tensor(float(pde))
+        except Exception:
+            return torch.tensor(float("nan"))
+
+    def eval_grid(self, n: int) -> Tuple[np.ndarray, np.ndarray]:
+        # Try pinneaple_data reference first
+        try:
+            from pinneaple_arena.physics_pipeline import _load_reference, _make_eval_grid
+            ref = _load_reference(self.task_id)
+            if ref is not None:
+                coords = list(self._spec.coords)
+                fields = list(self._spec.fields)
+                x_eval, u_true = _make_eval_grid(coords, fields, ref)
+                if x_eval is not None and u_true is not None:
+                    return x_eval.numpy(), u_true.astype(np.float32)
+        except Exception:
+            pass
+        # Fallback: uniform grid, zeros (metrics computed vs loss only)
+        dom = self._spec.domain_bounds
+        coords = list(self._spec.coords)
+        rng = np.random.default_rng(0)
+        lo = np.array([dom[c][0] for c in coords])
+        hi = np.array([dom[c][1] for c in coords])
+        X = rng.uniform(lo, hi, (min(n, 1000), self.in_dim)).astype(np.float32)
+        return X, np.zeros((len(X),), dtype=np.float32)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Dynamic model catalogue  (all pinneaple_models registered architectures)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _make_registry_factory(model_name: str, description: str) -> "ModelSpec":
+    """Create a benchmark ModelSpec for a model in ModelRegistry."""
+    def factory(in_dim: int, out_dim: int, _n: str = model_name) -> nn.Module:
+        from pinneaple_models import ModelRegistry
+        # Pass all plausible kwargs; filter_supported_kwargs in instantiate() drops unknowns
+        attempts = [
+            {"in_dim": in_dim, "out_dim": out_dim, "dim_q": in_dim},
+            {"in_dim": in_dim, "out_dim": out_dim, "dim_q": in_dim, "hidden_dim": 64},
+            {"in_dim": in_dim, "out_dim": out_dim, "dim_q": in_dim,
+             "hidden_dim": 64, "n_layers": 4},
+        ]
+        last_exc: Exception = RuntimeError("no attempts")
+        for kw in attempts:
+            try:
+                return ModelRegistry.build(_n, **kw)
+            except Exception as e:
+                last_exc = e
+        raise last_exc
+    return ModelSpec(name=model_name, factory=factory, description=description)
+
+
+def _make_pinn_factory(model_name: str, pinn_cls: Any) -> "ModelSpec":
+    """Create a benchmark ModelSpec for a model in PINNCatalog."""
+    def factory(in_dim: int, out_dim: int, _cls: Any = pinn_cls) -> nn.Module:
+        for kwargs in [
+            {"in_dim": in_dim, "out_dim": out_dim, "hidden": [64, 64, 64, 64]},
+            {"in_dim": in_dim, "out_dim": out_dim},
+        ]:
+            try:
+                return _cls(**kwargs)
+            except Exception:
+                continue
+        raise RuntimeError(f"Cannot build PINN {_cls.__name__}")
+    return ModelSpec(name=model_name, factory=factory,
+                     description=f"PINNCatalog: {model_name}")
+
+
+def all_model_specs() -> List[ModelSpec]:
+    """Return a ModelSpec for every model in ``pinneaple_models`` that can
+    accept plain ``(N, in_dim)`` coordinate tensors.
+
+    Importing ``pinneaple_models`` triggers ``register_all()`` automatically,
+    so ``ModelRegistry`` is guaranteed to be fully populated here.
+
+    Models with ``input_kind != 'pointwise_coords'`` (graph / grid / sequence
+    architectures such as MeshGraphNet, AFNO, FNO, DeepONet) are excluded
+    because the PINN benchmark loop passes raw coordinate tensors.
+    """
+    # Importing pinneaple_models calls register_all() — registry is now full.
+    try:
+        from pinneaple_models import ModelRegistry
+    except Exception:
+        return list(DEFAULT_MODELS)
+
+    seen_cls: set = set()
+    specs: List[ModelSpec] = []
+
+    for name in ModelRegistry.list():
+        try:
+            reg_spec = ModelRegistry.spec(name)
+        except Exception:
+            continue
+        if reg_spec.input_kind != "pointwise_coords":
+            continue
+        if reg_spec.cls in seen_cls:       # skip aliases (same class, different key)
+            continue
+        seen_cls.add(reg_spec.cls)
+        specs.append(_make_registry_factory(name, reg_spec.description))
+
+    return specs if specs else list(DEFAULT_MODELS)
+
+
+def _filter_model_specs(
+    all_specs: List["ModelSpec"],
+    names: Optional[List[str]],
+) -> List["ModelSpec"]:
+    if names is None:
+        return all_specs
+    by_name = {s.name: s for s in all_specs}
+    result = []
+    for n in names:
+        if n not in by_name:
+            available = list(by_name)
+            raise ValueError(
+                f"Unknown model '{n}'. Available ({len(available)}): "
+                f"{available[:20]}{'...' if len(available) > 20 else ''}"
+            )
+        result.append(by_name[n])
+    return result
+
+
+def _filter_tasks(
+    all_tasks: Dict[str, "BenchmarkTaskBase"],
+    names: Optional[List[str]],
+) -> List["BenchmarkTaskBase"]:
+    if names is None:
+        return list(all_tasks.values())
+    result = []
+    for pid in names:
+        if pid not in all_tasks:
+            raise ValueError(
+                f"Unknown problem '{pid}'. Available ({len(all_tasks)}): "
+                f"{list(all_tasks)[:20]}"
+            )
+        result.append(all_tasks[pid])
+    return result
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Training loop
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -437,11 +721,10 @@ class PINNArenaBenchmark:
                 if verbose:
                     print(f"  [{run_idx:2d}/{total}] {spec.name:<20} | {spec.description}")
 
-                model = spec.factory(task.in_dim, task.out_dim).to(device)
-                n_params = _count_params(model)
-
                 t0 = time.time()
                 try:
+                    model = spec.factory(task.in_dim, task.out_dim).to(device)
+                    n_params = _count_params(model)
                     history, conv_ep = _train_benchmark(
                         task, model, self.config, device, verbose=verbose
                     )
@@ -449,6 +732,7 @@ class PINNArenaBenchmark:
                 except Exception as e:
                     if verbose:
                         print(f"      ERROR: {e}")
+                    n_params = 0
                     history = []
                     conv_ep = -1
                     eval_metrics = {"rel_l2": float("nan"), "l_inf": float("nan"),
@@ -685,52 +969,92 @@ class PINNArenaBenchmark:
         epochs: int = 5000,
         device: str = "auto",
     ) -> "PINNArenaBenchmark":
-        """
-        Create benchmark with standard tasks and model specs.
+        """Create benchmark from ALL available problems and models.
+
+        Problems are loaded from ``pinneaple_environment`` presets + built-in
+        tasks. Models are loaded from ``pinneaple_models`` (ModelRegistry,
+        PINNCatalog, and Group-B catalogue).
 
         Parameters
         ----------
-        problems : subset of ["burgers_1d","poisson_2d","heat_1d","wave_1d","allen_cahn_1d","ns_tgv_2d"]
-        models   : subset of model names from DEFAULT_MODELS
-        epochs   : training epochs per run
-        device   : "auto" | "cpu" | "cuda"
+        problems : list of problem ids to restrict the run, or None for all.
+        models   : list of model names to restrict the run, or None for all.
+        epochs   : training epochs per run.
+        device   : "auto" | "cpu" | "cuda".
         """
-        from pinneaple_arena.tasks.burgers_1d import Burgers1DTask
-        from pinneaple_arena.tasks.poisson_2d import Poisson2DTask
-        from pinneaple_arena.tasks.heat_1d import Heat1DTask
-        from pinneaple_arena.tasks.wave_1d import Wave1DTask
-        from pinneaple_arena.tasks.allen_cahn_1d import AllenCahn1DTask
-        from pinneaple_arena.tasks.navier_stokes_tgv_2d import NavierStokesTGV2DTask
+        # ── Problems ──────────────────────────────────────────────────────────
+        all_tasks: Dict[str, BenchmarkTaskBase] = {}
 
-        all_tasks: Dict[str, BenchmarkTaskBase] = {
-            "burgers_1d": Burgers1DTask(),
-            "poisson_2d": Poisson2DTask(),
-            "heat_1d": Heat1DTask(),
-            "wave_1d": Wave1DTask(),
-            "allen_cahn_1d": AllenCahn1DTask(),
-            "ns_tgv_2d": NavierStokesTGV2DTask(),
-        }
+        # 1. Six original tasks (guaranteed working, own eval grids)
+        try:
+            from pinneaple_arena.tasks.burgers_1d import Burgers1DTask
+            from pinneaple_arena.tasks.poisson_2d import Poisson2DTask
+            from pinneaple_arena.tasks.heat_1d import Heat1DTask
+            from pinneaple_arena.tasks.wave_1d import Wave1DTask
+            from pinneaple_arena.tasks.allen_cahn_1d import AllenCahn1DTask
+            from pinneaple_arena.tasks.navier_stokes_tgv_2d import NavierStokesTGV2DTask
+            all_tasks.update({
+                "burgers_1d": Burgers1DTask(),
+                "poisson_2d": Poisson2DTask(),
+                "heat_1d": Heat1DTask(),
+                "wave_1d": Wave1DTask(),
+                "allen_cahn_1d": AllenCahn1DTask(),
+                "ns_tgv_2d": NavierStokesTGV2DTask(),
+            })
+        except Exception:
+            pass
 
-        selected_tasks: List[BenchmarkTaskBase] = []
-        if problems is None:
-            selected_tasks = list(all_tasks.values())
-        else:
-            for pid in problems:
-                if pid in all_tasks:
-                    selected_tasks.append(all_tasks[pid])
-                else:
-                    raise ValueError(f"Unknown problem '{pid}'. Available: {list(all_tasks)}")
+        # 2. All built-in _ProblemDef problems (from physics_pipeline)
+        try:
+            from pinneaple_arena.physics_pipeline import _BUILTIN_PROBLEMS
+            for pid, prob_def in _BUILTIN_PROBLEMS.items():
+                if pid not in all_tasks:
+                    all_tasks[pid] = _BuiltinProblemTask(prob_def)
+        except Exception:
+            pass
 
-        all_model_specs = {s.name: s for s in DEFAULT_MODELS}
-        if models is None:
-            selected_specs = DEFAULT_MODELS
-        else:
-            selected_specs = []
-            for mname in models:
-                if mname in all_model_specs:
-                    selected_specs.append(all_model_specs[mname])
-                else:
-                    raise ValueError(f"Unknown model '{mname}'. Available: {list(all_model_specs)}")
+        # 3. All pinneaple_environment presets
+        try:
+            from pinneaple_environment.presets.registry import list_presets, get_preset
+            for pid in list_presets():
+                if pid not in all_tasks:
+                    try:
+                        spec = get_preset(pid)
+                        all_tasks[pid] = _PresetProblemTask(spec, pid)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        selected_tasks = _filter_tasks(all_tasks, problems)
+
+        # ── Models ────────────────────────────────────────────────────────────
+        all_specs = all_model_specs()
+        selected_specs = _filter_model_specs(all_specs, models)
 
         cfg = BenchmarkConfig(epochs=epochs, device=device)
         return cls(tasks=selected_tasks, model_specs=selected_specs, config=cfg)
+
+    @classmethod
+    def list_problems(cls) -> List[str]:
+        """Return names of all problems that ``default()`` would load."""
+        names: List[str] = []
+        for src in ("burgers_1d", "poisson_2d", "heat_1d", "wave_1d",
+                    "allen_cahn_1d", "ns_tgv_2d"):
+            names.append(src)
+        try:
+            from pinneaple_arena.physics_pipeline import _BUILTIN_PROBLEMS
+            names += [k for k in _BUILTIN_PROBLEMS if k not in names]
+        except Exception:
+            pass
+        try:
+            from pinneaple_environment.presets.registry import list_presets
+            names += [p for p in list_presets() if p not in names]
+        except Exception:
+            pass
+        return names
+
+    @classmethod
+    def list_models(cls) -> List[str]:
+        """Return names of all models that ``default()`` would load."""
+        return [s.name for s in all_model_specs()]
