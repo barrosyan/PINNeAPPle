@@ -113,13 +113,13 @@ class CollocationSampler:
     Usage examples::
 
         # From ProblemSpec
-        from pinneaple_environment import get_preset
+        from pinneaple_physics.pde_environment import get_preset
         spec = get_preset("burgers_1d", nu=0.01)
         sampler = CollocationSampler.from_problem_spec(spec)
         batch = sampler.sample(n_col=4096, n_bc=512)
 
         # From PhysicsDomain2D
-        from pinneaple_geom.gen.domains import ChannelWithObstacleDomain2D
+        from pinneaple_design.geometry.gen.domains import ChannelWithObstacleDomain2D
         domain = ChannelWithObstacleDomain2D(length=2.0)
         sampler = CollocationSampler.from_domain(domain)
         batch = sampler.sample(n_col=8192, n_bc_per_region=512)
@@ -203,7 +203,7 @@ class CollocationSampler:
 
             if sel_type == "tag" and isinstance(sel, dict):
                 tag = sel.get("tag", "boundary")
-                from pinneaple_solvers.problem_runner import _sample_boundary_tag
+                from pinneaple_simulation.numerical_solvers.problem_runner import _sample_boundary_tag
 
                 def _make_sampler(t, b, cn):
                     def _s(n, rng):
@@ -213,7 +213,7 @@ class CollocationSampler:
                 boundary_samplers[name] = _make_sampler(tag, bounds, coord_names)
 
             elif sel_type == "callable" and callable(sel):
-                from pinneaple_solvers.problem_runner import _sample_callable_condition, _make_ctx
+                from pinneaple_simulation.numerical_solvers.problem_runner import _sample_callable_condition, _make_ctx
                 ctx = _make_ctx(bounds)
 
                 def _make_callable_sampler(sfn, b, cn, c):
@@ -323,7 +323,7 @@ class CollocationSampler:
     ) -> "CollocationSampler":
         """Create from an STL file using pinneaple_geom.sample surface samplers."""
         try:
-            from pinneaple_geom.sample import sample_surface_points
+            from pinneaple_design.geometry.sample import sample_surface_points
             from pinneaple_data.stl_import import load_stl
         except ImportError as e:
             raise ImportError(f"from_stl requires pinneaple_geom and pinneaple_data.stl_import: {e}")
@@ -358,7 +358,7 @@ class CollocationSampler:
             pts = _sample_sobol(self._bounds_arr, n, self.seed)
         elif self.strategy == "lhs":
             try:
-                from pinneaple_geom.sample import sample_latin_hypercube_box
+                from pinneaple_design.geometry.sample import sample_latin_hypercube_box
                 lo = self._bounds_arr[:, 0].tolist()
                 hi = self._bounds_arr[:, 1].tolist()
                 pts = sample_latin_hypercube_box(lo, hi, n, seed=int(rng.integers(0, 2**31))).astype(np.float32)
@@ -366,7 +366,7 @@ class CollocationSampler:
                 pts = _sample_lhs(self._bounds_arr, n, rng)
         else:
             try:
-                from pinneaple_geom.sample import sample_uniform_box
+                from pinneaple_design.geometry.sample import sample_uniform_box
                 lo = self._bounds_arr[:, 0].tolist()
                 hi = self._bounds_arr[:, 1].tolist()
                 pts = sample_uniform_box(lo, hi, n, seed=int(rng.integers(0, 2**31))).astype(np.float32)
@@ -451,7 +451,7 @@ class CollocationSampler:
                     y_bc_parts.append(np.zeros((len(pts), len(self.fields)), dtype=np.float32))
         else:
             # No named regions: sample on all boundaries uniformly
-            from pinneaple_solvers.problem_runner import _sample_boundary_tag
+            from pinneaple_simulation.numerical_solvers.problem_runner import _sample_boundary_tag
             pts = _sample_boundary_tag("boundary", self.bounds, self.coord_names, _n_bc, rng)
             x_bc_parts.append(pts)
             y_bc_parts.append(np.zeros((len(pts), len(self.fields)), dtype=np.float32))
@@ -463,7 +463,7 @@ class CollocationSampler:
         x_ic = np.zeros((0, len(self.coord_names)), dtype=np.float32)
         y_ic = np.zeros((0, len(self.fields)), dtype=np.float32)
         if _n_ic > 0 and "t" in self.coord_names:
-            from pinneaple_solvers.problem_runner import _sample_boundary_tag
+            from pinneaple_simulation.numerical_solvers.problem_runner import _sample_boundary_tag
             x_ic = _sample_boundary_tag("ic", self.bounds, self.coord_names, _n_ic, rng)
             y_ic = np.zeros((len(x_ic), len(self.fields)), dtype=np.float32)
 

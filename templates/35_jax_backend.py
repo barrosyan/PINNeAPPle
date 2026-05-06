@@ -15,7 +15,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_backend import JAXBackend, BackendConfig
+from pinneaple_tools.compute_backends import JAXBackend, BackendConfig
 
 # Detect JAX availability through pinneaple_backend
 _backend = JAXBackend(config=BackendConfig(device="cpu"))
@@ -25,8 +25,8 @@ if _JAX_OK:
     import jax
     import jax.numpy as jnp
     from jax import grad, jit, vmap
-    from pinneaple_backend.jax_pinn import JaxPINN, JaxPINNConfig
-    from pinneaple_backend.jax_trainer import PinnTrainerJAX, TrainerConfigJAX
+    from pinneaple_tools.compute_backends.jax_pinn import JaxPINN, JaxPINNConfig
+    from pinneaple_tools.compute_backends.jax_trainer import PinnTrainerJAX, TrainerConfigJAX
     print("JAX backend available.")
 else:
     print("JAX not installed — running PyTorch baseline only.")

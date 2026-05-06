@@ -15,7 +15,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_inference.postprocess import (
+from pinneaple_neural.predictor.postprocess import (
     FlowVisualizer,
     compute_streamlines,
     plot_streamlines_2d_model,

@@ -183,31 +183,26 @@ pinneaple = "pinneaple_pdb.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = [
+  # ── core ──────────────────────────────────────────────────────────────────
   "pinneaple",
-  "pinneaple_arena",
-  "pinneaple_symbolic",
   "pinneaple_data",
-  "pinneaple_digital_twin",
-  "pinneaple_environment",
-  "pinneaple_export",
-  "pinneaple_geom",
-  "pinneaple_inference",
-  "pinneaple_integrations",
-  "pinneaple_meta",
-  "pinneaple_models",
   "pinneaple_pdb",
-  "pinneaple_pinn",
   "pinneaple_problemdesign",
-  "pinneaple_registry",
-  "pinneaple_researcher",
-  "pinneaple_serve",
-  "pinneaple_solvers",
-  "pinneaple_timeseries",
-  "pinneaple_train",
-  "pinneaple_transfer",
-  "pinneaple_uq",
-  "pinneaple_validate",
-  "pinneaple_viz",
+
+  # ── mega-modules ──────────────────────────────────────────────────────────
+  # Each includes its nested sub-modules automatically.
+  "pinneaple_physics",      # pde_environment + pinn_solver + symbolic_pde
+  "pinneaple_neural",       # architectures + trainer + predictor
+  "pinneaple_analysis",     # uncertainty + validation + inverse_problems
+  "pinneaple_adaptation",   # transfer_learning + meta_learning
+  "pinneaple_simulation",   # numerical_solvers + particle_dynamics + external_solvers
+  "pinneaple_systems",      # time_series + cosimulation + digital_twin
+  "pinneaple_design",       # geometry + design_optimizer
+  "pinneaple_tools",        # visualization + model_export + hpo_experiments + benchmark_suite + compute_backends
+
+  # ── extended packages ─────────────────────────────────────────────────────
+  "pinneaple_worldmodel",
+  "pinneaple_quantum",
 ]
 include = [
   "data/bundles/**/*",

@@ -59,8 +59,8 @@ import torch
 import torch.nn as nn
 
 # ── PINNeAPPle ─────────────────────────────────────────────────────────────
-from pinneaple_environment import get_preset
-from pinneaple_environment.presets.solid_mechanics import lame_analytical
+from pinneaple_physics.pde_environment import get_preset
+from pinneaple_physics.pde_environment.presets.solid_mechanics import lame_analytical
 
 OUTPUT_DIR = Path(__file__).parent / "outputs"
 OUTPUT_DIR.mkdir(exist_ok=True)

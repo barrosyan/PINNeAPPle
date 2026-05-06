@@ -16,9 +16,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_geom.csg import CSGRectangle
-from pinneaple_models.siren import SIREN
-from pinneaple_symbolic.bc import HardBC
+from pinneaple_design.geometry.csg import CSGRectangle
+from pinneaple_neural.architectures.siren import SIREN
+from pinneaple_physics.symbolic_pde.bc import HardBC
 
 
 # ---------------------------------------------------------------------------

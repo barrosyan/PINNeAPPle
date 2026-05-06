@@ -138,6 +138,30 @@ class WorldModelDataset(Dataset):
         mean, std = self._get_norm_stats()
         return state * std + mean
 
+    def _recompute_norm_stats(self) -> None:
+        """Force recompute normalisation stats (call after modifying trajectories)."""
+        self._mean = None
+        self._std = None
+        self._param_keys = self._collect_param_keys()
+        self._pde_kinds = self._collect_pde_kinds()
+
+    def _build_samples(self) -> None:
+        """Rebuild the flat (traj_idx, t) sample index."""
+        self._index = []
+        for ti, traj in enumerate(self.trajectories):
+            T = traj.states.shape[0]
+            for t in range(T - self.horizon):
+                self._index.append((ti, t))
+
+    def _normalize(self) -> None:
+        """Pre-normalise all trajectory states in-place (optional)."""
+        mean, std = self._get_norm_stats()
+        for traj in self.trajectories:
+            traj.states = (traj.states - mean) / std
+        # After in-place normalisation, raw stats become identity
+        self._mean = torch.zeros_like(mean)
+        self._std = torch.ones_like(std)
+
     # ------------------------------------------------------------------
     # Parameter / context encoding
     # ------------------------------------------------------------------

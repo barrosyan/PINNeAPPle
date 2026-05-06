@@ -73,13 +73,13 @@ __author__  = "pinneaple contributors"
 
 # Problem presets
 try:
-    from pinneaple_environment import get_preset, list_presets, register_preset
+    from pinneaple_physics.pde_environment import get_preset, list_presets, register_preset
 except Exception:  # pragma: no cover
     pass
 
 # Model builder
 try:
-    from pinneaple_models import ModelRegistry
+    from pinneaple_neural.architectures import ModelRegistry
 
     def list_models():
         """Return sorted list of all registered model names."""
@@ -97,19 +97,19 @@ except Exception:  # pragma: no cover
 
 # Digital twin
 try:
-    from pinneaple_digital_twin import build_digital_twin, DigitalTwin, DigitalTwinConfig
+    from pinneaple_systems.digital_twin import build_digital_twin, DigitalTwin, DigitalTwinConfig
 except Exception:  # pragma: no cover
     pass
 
 # Inference
 try:
-    from pinneaple_inference import infer_on_grid_1d, infer_on_grid_2d
+    from pinneaple_neural.predictor import infer_on_grid_1d, infer_on_grid_2d
 except Exception:  # pragma: no cover
     pass
 
 # Training
 try:
-    from pinneaple_train import (
+    from pinneaple_neural.trainer import (
         Trainer, TrainConfig,
         best_device, count_gpus, gpu_info,
         maybe_compile, batched_inference,
@@ -132,7 +132,7 @@ except Exception:  # pragma: no cover
 
 # Geometry
 try:
-    from pinneaple_geom import (
+    from pinneaple_design.geometry import (
         circle, rectangle, ellipse, annulus,
         ChannelWithObstacleDomain2D, ChannelDomain2D, LidDrivenCavityDomain2D,
         PhysicsDomain2D,
@@ -142,19 +142,19 @@ except Exception:  # pragma: no cover
 
 # UQ
 try:
-    from pinneaple_uq import MCDropoutWrapper, EnsembleUQ, ConformalPredictor, uq_predict
+    from pinneaple_analysis.uncertainty import MCDropoutWrapper, EnsembleUQ, ConformalPredictor, uq_predict
 except Exception:  # pragma: no cover
     pass
 
 # Validation
 try:
-    from pinneaple_validate import PhysicsValidator, validate_model
+    from pinneaple_analysis.validation import PhysicsValidator, validate_model
 except Exception:  # pragma: no cover
     pass
 
 # Export
 try:
-    from pinneaple_export import export_torchscript, export_onnx
+    from pinneaple_tools.model_export import export_torchscript, export_onnx
 except Exception:  # pragma: no cover
     pass
 
@@ -203,7 +203,7 @@ def quickstart(problem_id: str = "burgers_1d", **problem_kwargs):
     print(border)
     print()
     print("  Next steps:")
-    print(f"  1. from pinneaple_environment import get_preset")
+    print(f"  1. from pinneaple_physics.pde_environment import get_preset")
     print(f"     spec = get_preset('{problem_id}')")
     print(f"  2. from pinneaple_data import CollocationSampler")
     print(f"     sampler = CollocationSampler.from_problem_spec(spec)")

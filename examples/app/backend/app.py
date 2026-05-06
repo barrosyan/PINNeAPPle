@@ -17,9 +17,9 @@ from torch.utils.data import DataLoader, Dataset
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import cg
 
-from pinneaple_models.pinns.vanilla import VanillaPINN
-from pinneaple_train.trainer import Trainer, TrainConfig
-from pinneaple_train.metrics import default_metrics
+from pinneaple_neural.architectures.pinns.vanilla import VanillaPINN
+from pinneaple_neural.trainer.trainer import Trainer, TrainConfig
+from pinneaple_neural.trainer.metrics import default_metrics
 
 import threading
 import hashlib

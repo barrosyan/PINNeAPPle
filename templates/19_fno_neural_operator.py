@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_models.neural_operators.fno import FNO1d
+from pinneaple_neural.architectures.neural_operators.fno import FNO1d
 
 
 # ---------------------------------------------------------------------------

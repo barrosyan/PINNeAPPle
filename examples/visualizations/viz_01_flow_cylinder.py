@@ -34,8 +34,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
-from pinneaple_geom     import CSGRectangle, CSGCircle, CSGDifference
-from pinneaple_validate import compare_to_analytical
+from pinneaple_design.geometry import CSGRectangle, CSGCircle, CSGDifference
+from pinneaple_analysis.validation import compare_to_analytical
 
 U = 1.0
 R = 0.5
@@ -171,7 +171,7 @@ def visualize(net: nn.Module) -> None:
     def exact_fn(xy):
         return psi_exact(xy).reshape(-1, 1)
 
-    from pinneaple_validate import compare_to_analytical
+    from pinneaple_analysis.validation import compare_to_analytical
     met = compare_to_analytical(
         model=net,
         analytical_fn=lambda xy: psi_exact(xy).reshape(-1, 1),

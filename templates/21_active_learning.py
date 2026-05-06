@@ -94,7 +94,7 @@ def main():
     CAND     = 4096     # candidate pool size
 
     # Boundary conditions (Dirichlet u=0)
-    from pinneaple_geom.csg import CSGRectangle
+    from pinneaple_design.geometry.csg import CSGRectangle
     rect = CSGRectangle(x_min=0, y_min=0, x_max=1, y_max=1)
     xy_bc_np = rect.sample_boundary(n=256, seed=0)
     xy_bc = torch.tensor(xy_bc_np, dtype=torch.float32, device=device)

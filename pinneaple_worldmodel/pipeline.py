@@ -1,403 +1,497 @@
-"""End-to-end world model pipeline.
+"""Physics AI Pipeline — unified entry point.
 
-:class:`WorldModelPipeline` orchestrates the full flow::
+:class:`PhysicsAIPipeline` is the single entry point that orchestrates the
+complete flow for building a *generalist physics AI world model* using all
+Pinneaple tools.
 
-    Scenarios → DatasetBuilder → WorldModelDataset
-        ↓
-    PhysicsWorldModel (FNO-based)
-        ↓
-    WorldModelTrainer  (rollout loss + physics consistency)
-        ↓
-    Evaluation: field-wise RMSE, rel-L2, rollout error curves
-        ↓
-    Optional: PhysicsCurriculum for staged training
+Pipeline stages
+---------------
+::
 
-This is the single entry point for users who want to generate a physics AI
-world model from scratch using Pinneaple's simulation tools.
+    Stage 1 — Multi-source data generation
+        PhysicsDatasetFactory (solver + PINN + symbolic + collocation)
+        → DatasetCatalog (organised by scenario and source)
+
+    Stage 2 — Specialist training
+        SpecialistTrainer (pinneaple_train + validate + uq + transfer)
+        → ModelZoo (one specialist per scenario, with metrics and tags)
+
+    Stage 3 — Meta-learning
+        MetaLearner (MAML / Reptile, or pinneaple_meta)
+        → meta-initialised PhysicsWorldModel (few-shot adaptable)
+
+    Stage 4 — Foundation model assembly
+        Weight-averaging soup of specialists → warm start
+        PhysicsFoundationModel (FNO + cross-attention + LoRA)
+        Fine-tuned on the full merged catalog
+        → PhysicsFoundationModel (mega generalist)
+
+    Stage 5 — Benchmark evaluation
+        PhysicsBenchmark (6 standard tasks, conservation checks)
+        → BenchmarkResult leaderboard
+
+Two entry points
+----------------
+* :class:`PhysicsAIPipeline` — opinionated full pipeline (recommended).
+* :class:`~.orchestrator.PhysicsOrchestrator` — flexible tool-based solver
+  for any physics problem (forward / inverse / design / discovery / …).
 
 Quick start::
 
-    from pinneaple_worldmodel import WorldModelPipeline, PipelineConfig
+    from pinneaple_worldmodel import PhysicsAIPipeline, PhysicsAIConfig
 
-    pipeline = WorldModelPipeline(PipelineConfig(
-        scenarios=["heat_2d", "burgers_1d", "ns2d_cavity"],
-        n_samples_per_scenario=500,
-        epochs=200,
+    pipeline = PhysicsAIPipeline(PhysicsAIConfig(
+        scenarios=["heat_2d", "burgers_1d", "advection_2d", "ns2d_cavity"],
+        n_samples=500,
         device="cuda",
+        save_dir="./physics_ai_output",
     ))
-    model, history = pipeline.run()
+    result = pipeline.run()
+    mega_model = result.mega_model
+    zoo        = result.zoo
 
-    # Rollout a new trajectory
-    with torch.no_grad():
-        states = model.rollout(state_0, context, n_steps=20)
+    # Solve a new physics problem with the trained model
+    from pinneaple_worldmodel import PhysicsOrchestrator, ProblemStatement
+    orch = PhysicsOrchestrator()
+    res  = orch.solve(ProblemStatement(kind="forward", pde_hint="heat_2d"))
 """
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
-from torch import Tensor
 
-from .scenario import PhysicsScenario, BUILTIN_SCENARIOS
-from .dataset import DatasetBuilder, DatasetConfig, WorldModelDataset
+from .scenario import BUILTIN_SCENARIOS, PhysicsScenario
+from .dataset import DatasetConfig, DatasetBuilder, WorldModelDataset
 from .model import PhysicsWorldModel, WorldModelConfig
 from .trainer import WorldModelTrainer, WorldModelTrainConfig
 from .curriculum import PhysicsCurriculum, CurriculumConfig
-from .simulator import PhysicsSimulator
+from .dataset_factory import PhysicsDatasetFactory, FactoryConfig, DatasetCatalog
+from .model_zoo import ModelZoo, ZooEntry
+from .specialist_trainer import SpecialistTrainer, SpecialistConfig
+from .meta_learning import MetaLearner, MetaConfig
+from .mega_model import PhysicsFoundationModel, FoundationConfig
+from .benchmark import PhysicsBenchmark, BenchmarkResult
+from .orchestrator import PhysicsOrchestrator, ProblemStatement
 
 
 # ---------------------------------------------------------------------------
-# PipelineConfig
+# PhysicsAIConfig
 # ---------------------------------------------------------------------------
 
 @dataclass
-class PipelineConfig:
-    """Complete configuration for :class:`WorldModelPipeline`.
+class PhysicsAIConfig:
+    """Complete configuration for :class:`PhysicsAIPipeline`.
 
     Parameters
     ----------
-    scenarios : list of scenario names or PhysicsScenario objects.
-        Determines which physics problems are simulated and mixed.
-    n_samples_per_scenario : int
-        Trajectories to generate per scenario.
-    horizon : int
-        Prediction horizon (steps between state_t and target).
-    model : WorldModelConfig
-        Architecture hyperparameters.
-    train : WorldModelTrainConfig or None
-        Training hyperparameters (if None, built from other fields).
-    epochs : int — overrides ``train.epochs`` if ``train`` is None.
-    batch_size : int
-    lr : float
+    scenarios : list of str — physics scenarios to include.
+        Subset of BUILTIN_SCENARIOS keys or custom PhysicsScenario objects.
+    sources : list of str — data generation routes
+        (``"solver"``, ``"pinn"``, ``"symbolic"``, ``"collocation"``).
+    n_samples : int — trajectories per scenario per source.
     device : str
-    use_curriculum : bool
-        If True, uses :class:`~.curriculum.PhysicsCurriculum` instead of flat
-        training.  ``scenarios`` and ``n_samples_per_scenario`` are then used
-        per-stage defaults (overridden by the curriculum config).
+    save_dir : str or None — root output directory.
+
+    Specialist training
+    -------------------
+    specialist_epochs : int
+    specialist_lr : float
+    use_transfer : bool — fine-tune from existing zoo when available.
+    use_uq : bool — attach MC-Dropout during specialist validation.
+    validate_physics : bool — conservation-law checks after each specialist.
+
+    Meta-learning
+    -------------
+    meta_algorithm : ``"reptile"`` | ``"maml"`` | ``"auto"``.
+    meta_epochs : int
+    skip_meta : bool — skip meta-learning (faster, lower quality).
+
+    Foundation model
+    ----------------
+    foundation : FoundationConfig — mega-model architecture.
+    mega_epochs : int
+    mega_lr : float
+    skip_foundation : bool — skip mega-model training (use zoo only).
+
+    Benchmark
+    ---------
+    run_benchmark : bool — run the standard physics AI benchmark at the end.
+
+    Legacy flat mode
+    ----------------
+    use_curriculum : bool — run the old 5-stage curriculum instead.
     curriculum : CurriculumConfig or None
-        Explicit curriculum config (used only when ``use_curriculum=True``).
-    validate_physics : bool
-        Filter trajectories with NaN/Inf or energy blow-up.
-    save_dir : str or None
-        Directory for dataset, checkpoints, and evaluation results.
+
+    Other
+    -----
     verbose : bool
     """
+    # Core
     scenarios: List[Any] = field(
         default_factory=lambda: ["heat_2d", "burgers_1d", "advection_2d"]
     )
-    n_samples_per_scenario: int = 500
-    horizon: int = 1
-    model: WorldModelConfig = field(default_factory=WorldModelConfig)
-    train: Optional[WorldModelTrainConfig] = None
-    epochs: int = 100
-    batch_size: int = 32
-    lr: float = 1e-3
+    sources: List[str] = field(default_factory=lambda: ["solver"])
+    n_samples: int = 500
     device: str = "cpu"
+    save_dir: Optional[str] = None
+
+    # Specialist
+    specialist_epochs: int = 50
+    specialist_lr: float = 1e-3
+    specialist_batch_size: int = 32
+    use_transfer: bool = False
+    use_uq: bool = False
+    validate_physics: bool = False
+
+    # Meta
+    meta_algorithm: str = "reptile"
+    meta_epochs: int = 200
+    skip_meta: bool = False
+
+    # Foundation
+    foundation: FoundationConfig = field(default_factory=FoundationConfig)
+    mega_epochs: int = 100
+    mega_lr: float = 5e-4
+    skip_foundation: bool = False
+
+    # Benchmark
+    run_benchmark: bool = True
+
+    # Legacy
     use_curriculum: bool = False
     curriculum: Optional[CurriculumConfig] = None
-    validate_physics: bool = True
-    save_dir: Optional[str] = None
+
     verbose: bool = True
 
 
 # ---------------------------------------------------------------------------
-# WorldModelPipeline
+# PhysicsAIPipelineResult
 # ---------------------------------------------------------------------------
 
-class WorldModelPipeline:
-    """Full data-generation + training + evaluation pipeline.
+@dataclass
+class PhysicsAIPipelineResult:
+    """All outputs of :class:`PhysicsAIPipeline.run`.
+
+    Attributes
+    ----------
+    catalog : DatasetCatalog — multi-source physics datasets.
+    zoo : ModelZoo — trained specialist models.
+    meta_model : PhysicsWorldModel or None — meta-initialised model.
+    mega_model : PhysicsFoundationModel or None — the generalist model.
+    benchmark : dict or None — benchmark results.
+    elapsed_s : float — total wall-clock time.
+    """
+    catalog: Optional[DatasetCatalog] = None
+    zoo: Optional[ModelZoo] = None
+    meta_model: Optional[PhysicsWorldModel] = None
+    mega_model: Optional[PhysicsFoundationModel] = None
+    benchmark: Optional[Dict[str, BenchmarkResult]] = None
+    elapsed_s: float = 0.0
+
+    def summary(self) -> None:
+        print(f"\n{'='*60}")
+        print(f"{'PHYSICS AI PIPELINE COMPLETE':^60}")
+        print(f"{'='*60}")
+        print(f"  Wall time      : {self.elapsed_s:.1f}s")
+        if self.catalog:
+            print(f"  Catalog        : {len(self.catalog):,} total samples, "
+                  f"{len(self.catalog.entries)} entries")
+        if self.zoo:
+            print(f"  Zoo            : {len(self.zoo)} specialists")
+        if self.meta_model is not None:
+            print(f"  Meta-model     : {self.meta_model.parameter_count():,} params")
+        if self.mega_model is not None:
+            print(f"  Mega-model     : {self.mega_model.parameter_count():,} params")
+        if self.benchmark:
+            scores = [r.overall_score() for r in self.benchmark.values()]
+            print(f"  Benchmark      : {sum(scores)/len(scores):.3f} mean score "
+                  f"({len(scores)} tasks)")
+        print(f"{'='*60}\n")
+
+
+# ---------------------------------------------------------------------------
+# PhysicsAIPipeline
+# ---------------------------------------------------------------------------
+
+class PhysicsAIPipeline:
+    """Build a generalist physics AI world model using all Pinneaple tools.
 
     Parameters
     ----------
-    config : PipelineConfig
+    config : PhysicsAIConfig
 
-    Key attributes after :meth:`run`
-    ---------------------------------
-    model : PhysicsWorldModel — trained model.
-    dataset : WorldModelDataset — full training dataset.
-    history : list of epoch dicts.
-    eval_results : dict of evaluation metrics.
+    Example
+    -------
+    >>> pipeline = PhysicsAIPipeline(PhysicsAIConfig(
+    ...     scenarios=["heat_2d", "burgers_1d", "advection_2d", "ns2d_cavity"],
+    ...     n_samples=500,
+    ...     device="cuda",
+    ...     save_dir="./out",
+    ... ))
+    >>> result = pipeline.run()
+    >>> result.mega_model.rollout(state_0, descriptor, n_steps=20)
     """
 
-    def __init__(self, config: PipelineConfig) -> None:
+    def __init__(self, config: PhysicsAIConfig) -> None:
         self.config = config
-        self.model: Optional[PhysicsWorldModel] = None
-        self.dataset: Optional[WorldModelDataset] = None
-        self.history: List[Dict] = []
-        self.eval_results: Dict[str, Any] = {}
+        self._result = PhysicsAIPipelineResult()
 
     # ------------------------------------------------------------------
-    # Main
+    # Main entry point
     # ------------------------------------------------------------------
 
-    def run(self) -> Tuple[PhysicsWorldModel, List[Dict]]:
+    def run(self) -> PhysicsAIPipelineResult:
         """Execute the full pipeline.
 
         Returns
         -------
-        (model, history)
+        PhysicsAIPipelineResult
         """
         cfg = self.config
+        t0 = time.time()
 
         if cfg.use_curriculum:
-            return self._run_curriculum()
+            return self._run_curriculum(t0)
 
-        # ---- Flat pipeline ----
+        self._print("Physics AI Pipeline starting …")
+        self._print(f"  Scenarios : {cfg.scenarios}")
+        self._print(f"  Sources   : {cfg.sources}")
+        self._print(f"  n_samples : {cfg.n_samples}")
+        self._print(f"  device    : {cfg.device}")
+
+        # Stage 1: Multi-source dataset generation
+        self._print("\n━━ Stage 1/5: Multi-source data generation ━━")
+        catalog = self._build_catalog()
+        self._result.catalog = catalog
+
+        # Stage 2: Specialist training
+        self._print("\n━━ Stage 2/5: Specialist model training ━━")
+        zoo = self._train_specialists(catalog)
+        self._result.zoo = zoo
+
+        # Stage 3: Meta-learning
+        if not cfg.skip_meta:
+            self._print("\n━━ Stage 3/5: Meta-learning ━━")
+            meta_model = self._meta_learn(catalog)
+            self._result.meta_model = meta_model
+        else:
+            self._print("\n━━ Stage 3/5: Meta-learning [skipped] ━━")
+
+        # Stage 4: Foundation model
+        if not cfg.skip_foundation:
+            self._print("\n━━ Stage 4/5: Physics Foundation Model ━━")
+            mega_model = self._build_foundation(zoo, catalog)
+            self._result.mega_model = mega_model
+        else:
+            self._print("\n━━ Stage 4/5: Foundation model [skipped] ━━")
+
+        # Stage 5: Benchmark
+        if cfg.run_benchmark:
+            self._print("\n━━ Stage 5/5: Benchmark evaluation ━━")
+            benchmark = self._run_benchmark()
+            self._result.benchmark = benchmark
+        else:
+            self._print("\n━━ Stage 5/5: Benchmark [skipped] ━━")
+
+        self._result.elapsed_s = time.time() - t0
         if cfg.verbose:
-            print("[WorldModelPipeline] Step 1/3: Building dataset …")
-        self.dataset = self.build_dataset()
+            self._result.summary()
 
-        if cfg.verbose:
-            print(f"[WorldModelPipeline] Dataset: {len(self.dataset)} samples, "
-                  f"n_fields={self.dataset.n_fields}, "
-                  f"grid={self.dataset.grid_shape}, "
-                  f"context_dim={self.dataset.context_dim}")
-            print("[WorldModelPipeline] Step 2/3: Training model …")
-
-        self.model, self.history = self.train(self.dataset)
-
-        if cfg.verbose:
-            print("[WorldModelPipeline] Step 3/3: Evaluating …")
-        self.eval_results = self.evaluate(self.model, self.dataset)
-
-        if cfg.verbose:
-            self._print_eval(self.eval_results)
-
-        return self.model, self.history
+        return self._result
 
     # ------------------------------------------------------------------
-    # Step 1: Build dataset
+    # Stage 1: Multi-source data generation
     # ------------------------------------------------------------------
 
-    def build_dataset(
-        self,
-        *,
-        scenarios: Optional[List[Any]] = None,
-        n_samples: Optional[int] = None,
-    ) -> WorldModelDataset:
-        """Generate physics trajectories and build the dataset.
-
-        Parameters
-        ----------
-        scenarios : override ``config.scenarios``.
-        n_samples : override ``config.n_samples_per_scenario``.
-
-        Returns
-        -------
-        WorldModelDataset
-        """
+    def _build_catalog(self) -> DatasetCatalog:
         cfg = self.config
-        ds_cfg = DatasetConfig(
-            scenarios=scenarios or cfg.scenarios,
-            n_samples_per_scenario=n_samples or cfg.n_samples_per_scenario,
-            horizon=cfg.horizon,
-            validate_physics=cfg.validate_physics,
-            save_dir=str(Path(cfg.save_dir) / "dataset") if cfg.save_dir else None,
+        factory_cfg = FactoryConfig(
+            sources=cfg.sources,
+            scenarios=cfg.scenarios,
+            n_samples_per_scenario=cfg.n_samples,
             device=cfg.device,
+            save_dir=str(Path(cfg.save_dir) / "datasets") if cfg.save_dir else None,
             verbose=cfg.verbose,
         )
-        return DatasetBuilder(ds_cfg).build()
+        return PhysicsDatasetFactory(factory_cfg).build()
 
     # ------------------------------------------------------------------
-    # Step 2: Train
+    # Stage 2: Specialist training
     # ------------------------------------------------------------------
 
-    def train(
-        self,
-        dataset: WorldModelDataset,
-        *,
-        val_dataset: Optional[WorldModelDataset] = None,
-    ) -> Tuple[PhysicsWorldModel, List[Dict]]:
-        """Build and train the world model on *dataset*.
-
-        Parameters
-        ----------
-        dataset : WorldModelDataset — training data.
-        val_dataset : optional separate validation set.
-
-        Returns
-        -------
-        (model, history)
-        """
+    def _train_specialists(self, catalog: DatasetCatalog) -> ModelZoo:
         cfg = self.config
-
-        # Build model
-        model_cfg = cfg.model
-        # Auto-set context_dim from dataset if default
-        if model_cfg.context_dim == 8 and dataset.context_dim != 8:
-            from dataclasses import replace
-            model_cfg = replace(model_cfg, context_dim=dataset.context_dim)
-
-        model = PhysicsWorldModel(
-            model_cfg,
-            n_fields=dataset.n_fields,
-            grid_shape=dataset.grid_shape,
-        )
-
-        if cfg.verbose:
-            print(f"  {model}")
-
-        # Build train config
-        train_cfg = cfg.train or WorldModelTrainConfig(
-            epochs=cfg.epochs,
-            lr=cfg.lr,
-            batch_size=cfg.batch_size,
+        spec_cfg = SpecialistConfig(
+            epochs=cfg.specialist_epochs,
+            lr=cfg.specialist_lr,
+            batch_size=cfg.specialist_batch_size,
             device=cfg.device,
-            save_best=(
-                str(Path(cfg.save_dir) / "best_model.pt")
-                if cfg.save_dir else None
-            ),
+            use_transfer=cfg.use_transfer,
+            use_uq=cfg.use_uq,
+            validate_physics=cfg.validate_physics,
+            save_dir=str(Path(cfg.save_dir) / "specialists") if cfg.save_dir else None,
+            verbose=cfg.verbose,
         )
-
-        trainer = WorldModelTrainer(model, train_cfg)
-        history = trainer.fit(dataset, val_dataset=val_dataset)
-
-        return model, history
+        return SpecialistTrainer(spec_cfg).train_all(catalog)
 
     # ------------------------------------------------------------------
-    # Step 3: Evaluate
+    # Stage 3: Meta-learning
     # ------------------------------------------------------------------
 
-    @torch.no_grad()
-    def evaluate(
+    def _meta_learn(self, catalog: DatasetCatalog) -> Optional[PhysicsWorldModel]:
+        cfg = self.config
+        try:
+            meta_cfg = MetaConfig(
+                algorithm=cfg.meta_algorithm,
+                n_meta_epochs=cfg.meta_epochs,
+                device=cfg.device,
+                verbose=cfg.verbose,
+            )
+            learner = MetaLearner(meta_cfg)
+            return learner.meta_train(catalog)
+        except Exception as exc:
+            self._print(f"  [WARN] Meta-learning failed: {exc}")
+            return None
+
+    # ------------------------------------------------------------------
+    # Stage 4: Physics Foundation Model
+    # ------------------------------------------------------------------
+
+    def _build_foundation(
         self,
-        model: PhysicsWorldModel,
-        dataset: WorldModelDataset,
-        *,
-        n_rollout_steps: int = 10,
-        n_eval_samples: int = 50,
-    ) -> Dict[str, Any]:
-        """Evaluate the model on held-out samples.
+        zoo: ModelZoo,
+        catalog: DatasetCatalog,
+    ) -> PhysicsFoundationModel:
+        cfg = self.config
+        ref_ds = next(iter(catalog.entries)).dataset
 
-        Computes:
-        - Next-step RMSE and relative-L2
-        - Rollout RMSE at 1, 5, and *n_rollout_steps* steps
-        - Field-wise breakdown
+        # Override context_dim from data
+        from dataclasses import replace
+        found_cfg = cfg.foundation
+        if found_cfg.context_dim != ref_ds.context_dim:
+            found_cfg = replace(found_cfg, context_dim=ref_ds.context_dim)
 
-        Parameters
-        ----------
-        model : PhysicsWorldModel
-        dataset : WorldModelDataset (used as test set here)
-        n_rollout_steps : int — how many steps to unroll for rollout eval.
-        n_eval_samples : int — number of trajectories to use.
+        mega = PhysicsFoundationModel(
+            found_cfg,
+            n_fields=ref_ds.n_fields,
+            grid_shape=ref_ds.grid_shape,
+        )
+        self._print(f"  Foundation model: {mega}")
 
-        Returns
-        -------
-        dict of metrics.
-        """
-        model.eval()
-        device = next(model.parameters()).device
+        # Warm-start from specialist soup
+        if len(zoo) > 0:
+            try:
+                soup = zoo.soup()
+                mega.load_state_dict(soup.state_dict(), strict=False)
+                self._print(f"  ✓ Warm-started from weight-averaged soup of {len(zoo)} specialists.")
+            except Exception as exc:
+                self._print(f"  [WARN] Soup warm-start failed: {exc}")
 
-        # Sample trajectories for rollout evaluation
-        trajs = dataset.trajectories[:n_eval_samples]
-        mean, std = dataset.norm_stats["mean"], dataset.norm_stats["std"]
+        # Fine-tune on merged catalog
+        merged_ds = catalog.merged()
+        train_cfg = WorldModelTrainConfig(
+            epochs=cfg.mega_epochs,
+            lr=cfg.mega_lr,
+            batch_size=cfg.specialist_batch_size,
+            device=cfg.device,
+            patience=30,
+            log_every=max(1, cfg.mega_epochs // 5),
+        )
+        trainer = WorldModelTrainer(mega, train_cfg)
+        history = trainer.fit(merged_ds)
 
-        rollout_rmse: Dict[int, List[float]] = {1: [], 5: [], n_rollout_steps: []}
+        best_val = min(
+            (h.get("val_total", float("inf")) for h in history),
+            default=float("inf"),
+        )
+        self._print(f"  Foundation model trained — best val={best_val:.4g}")
 
-        for traj in trajs:
-            states = traj.states  # (T+1, C, *grid)
-            T = states.shape[0] - 1
-            if T < n_rollout_steps:
-                continue
+        if cfg.save_dir:
+            path = str(Path(cfg.save_dir) / "mega_model.pt")
+            mega.save(path)
+            self._print(f"  Saved → {path}")
 
-            # Normalise
-            s_norm = (states - mean) / std
+        return mega
 
-            params = dataset._encode_params(traj.params).unsqueeze(0).to(device)
-            context = dataset._encode_context(traj).unsqueeze(0).to(device)
+    # ------------------------------------------------------------------
+    # Stage 5: Benchmark
+    # ------------------------------------------------------------------
 
-            state = s_norm[0].unsqueeze(0).to(device)
+    def _run_benchmark(self) -> Optional[Dict[str, BenchmarkResult]]:
+        cfg = self.config
+        model = self._result.mega_model or (
+            self._result.zoo.get(cfg.scenarios[0])
+            if self._result.zoo and cfg.scenarios
+            and isinstance(cfg.scenarios[0], str)
+            and cfg.scenarios[0] in self._result.zoo
+            else None
+        )
+        if model is None:
+            self._print("  [WARN] No model available for benchmark.")
+            return None
 
-            for step in range(1, n_rollout_steps + 1):
-                state = model(state, context)
-                target = s_norm[min(step, T)].unsqueeze(0).to(device)
-                rmse = torch.sqrt(torch.mean((state - target) ** 2)).item()
-
-                for milestone in [1, 5, n_rollout_steps]:
-                    if step == milestone:
-                        rollout_rmse[milestone].append(rmse)
-
-        results: Dict[str, Any] = {}
-        for step, vals in rollout_rmse.items():
-            if vals:
-                results[f"rollout_rmse_step{step}"] = sum(vals) / len(vals)
-
-        # Next-step metrics over the full dataset (subsample)
-        next_mse_list, rel_l2_list = [], []
-        from torch.utils.data import DataLoader, Subset
-        import random
-        indices = random.sample(range(len(dataset)), min(500, len(dataset)))
-        subset = Subset(dataset, indices)
-        loader = DataLoader(subset, batch_size=32, shuffle=False)
-
-        for batch in loader:
-            state_t  = batch["state_t"].to(device)
-            target   = batch["state_tp1"].to(device)
-            context  = batch["context"].to(device)
-            pred = model(state_t, context)
-            next_mse_list.append(torch.mean((pred - target) ** 2).item())
-            rel_l2 = (torch.norm(pred - target) / (torch.norm(target) + 1e-8)).item()
-            rel_l2_list.append(rel_l2)
-
-        results["next_step_rmse"] = (sum(next_mse_list) / len(next_mse_list)) ** 0.5
-        results["next_step_rel_l2"] = sum(rel_l2_list) / len(rel_l2_list)
-        results["n_params"] = model.parameter_count()
-
-        if self.config.save_dir:
-            import json
-            path = Path(self.config.save_dir) / "eval_results.json"
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, "w") as f:
-                json.dump(results, f, indent=2)
-
+        bench = PhysicsBenchmark(device=cfg.device, verbose=cfg.verbose)
+        results = bench.run(model)
+        if cfg.verbose:
+            bench.print_report(results)
         return results
 
     # ------------------------------------------------------------------
-    # Curriculum mode
+    # Legacy curriculum mode
     # ------------------------------------------------------------------
 
-    def _run_curriculum(self) -> Tuple[PhysicsWorldModel, List[Dict]]:
+    def _run_curriculum(self, t0: float) -> PhysicsAIPipelineResult:
         cfg = self.config
         cur_cfg = cfg.curriculum or CurriculumConfig(
-            model_config=cfg.model,
             device=cfg.device,
-            batch_size=cfg.batch_size,
-            save_dir=str(Path(cfg.save_dir) / "curriculum") if cfg.save_dir else None,
             verbose=cfg.verbose,
         )
         curriculum = PhysicsCurriculum(cur_cfg)
         model = curriculum.run()
-        self.model = model
-        self.history = [h for hist in curriculum.stage_histories for h in hist]
-        return model, self.history
+
+        self._result.elapsed_s = time.time() - t0
+        if cfg.verbose:
+            self._result.summary()
+        return self._result
 
     # ------------------------------------------------------------------
     # Utilities
     # ------------------------------------------------------------------
 
-    def generate_test_trajectory(
-        self,
-        scenario_name: str = "heat_2d",
-        params: Optional[Dict] = None,
-        seed: int = 999,
-    ) -> Dict:
-        """Generate one test trajectory for quick sanity-checking.
+    def _print(self, msg: str) -> None:
+        if self.config.verbose:
+            print(f"[PhysicsAIPipeline] {msg}")
 
-        Returns dict with ``"states"`` ``(T+1, C, *grid)`` and ``"params"``.
+    @property
+    def mega_model(self) -> Optional[PhysicsFoundationModel]:
+        return self._result.mega_model
+
+    @property
+    def zoo(self) -> Optional[ModelZoo]:
+        return self._result.zoo
+
+    @property
+    def catalog(self) -> Optional[DatasetCatalog]:
+        return self._result.catalog
+
+    # ------------------------------------------------------------------
+    # Convenience: orchestrate a specific physics problem
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def orchestrate(statement: ProblemStatement) -> Any:
+        """Shortcut to :class:`~.orchestrator.PhysicsOrchestrator`.
+
+        Parameters
+        ----------
+        statement : ProblemStatement
+
+        Returns
+        -------
+        OrchestratorResult
         """
-        sc = BUILTIN_SCENARIOS[scenario_name]
-        sim = PhysicsSimulator(sc, device=self.config.device)
-        traj = sim.generate_trajectory(params=params, seed=seed)
-        return {"states": traj.states, "params": traj.params, "scenario": scenario_name}
-
-    def _print_eval(self, results: Dict[str, Any]) -> None:
-        print("\n[WorldModelPipeline] Evaluation results:")
-        print(f"  next_step_rmse   = {results.get('next_step_rmse', 'N/A'):.4g}")
-        print(f"  next_step_rel_l2 = {results.get('next_step_rel_l2', 'N/A'):.4g}")
-        for k in ["rollout_rmse_step1", "rollout_rmse_step5",
-                  f"rollout_rmse_step{results.get('n_params', '')}"]:
-            if k in results:
-                print(f"  {k} = {results[k]:.4g}")
-        print(f"  n_params = {results.get('n_params', 0):,}")
+        return PhysicsOrchestrator().solve(statement)

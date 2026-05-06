@@ -5,10 +5,10 @@ from pathlib import Path
 
 import torch
 
-from pinneaple_environment.presets.industry import steady_heat_conduction_3d_default
-from pinneaple_geom.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig
-from pinneaple_models.pinns.vanilla import VanillaPINN
-from pinneaple_pinn.compiler import LossWeights, compile_problem
+from pinneaple_physics.pde_environment.presets.industry import steady_heat_conduction_3d_default
+from pinneaple_design.geometry.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig
+from pinneaple_neural.architectures.pinns.vanilla import VanillaPINN
+from pinneaple_physics.pinn_solver.compiler import LossWeights, compile_problem
 
 def main():
     ap = argparse.ArgumentParser()

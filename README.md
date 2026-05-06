@@ -18,7 +18,7 @@ PINNeAPPle is an open-source **Physics AI research and experimentation platform*
 
 ---
 
-## 🚀 Why PINNeAPPle?
+## Why PINNeAPPle?
 
 Modern Physics AI ecosystems are powerful — but they assume you already understand:
 
@@ -28,8 +28,6 @@ Modern Physics AI ecosystems are powerful — but they assume you already unders
 - How to benchmark and trust your results
 
 **PINNeAPPle is where you build that foundation.**
-
-Think of it as your experimentation layer:
 
 ```
 Your physics problem
@@ -48,30 +46,106 @@ Your physics problem
 
 ---
 
-## 🧠 Three Tiers of Physics AI Experience
+## Package Structure
 
-### 🌱 Tier 1 — Explorer
-> *"I understand the physics. I want to see what AI can do with it."*
+PINNeAPPle is organized into **8 mega-modules**, each grouping related sub-modules:
 
-```python
-from pinneaple_environment import BurgersPreset
+```
+pinneaple_physics/
+├── pde_environment/    # PDE problem specs, BCs, ICs, presets, RANS
+├── pinn_solver/        # PINN compiler, DoMINO domain decomposition
+└── symbolic_pde/       # SymPy → autograd residual compiler
 
-problem = BurgersPreset(nu=0.01)
-model   = problem.build_model()
-trainer = problem.build_trainer(n_epochs=3000)
-result  = trainer.fit(model)
-result.plot()
+pinneaple_neural/
+├── architectures/      # SIREN, ModifiedMLP, AFNO, HashGridMLP, MeshGraphNet
+├── trainer/            # Trainer, TwoPhase, DDP, Causal, HPC utilities
+└── predictor/          # Batched inference, grid evaluation, FlowVisualizer
+
+pinneaple_analysis/
+├── uncertainty/        # MC-Dropout, Ensemble UQ, conformal, calibration
+├── validation/         # Conservation, BC, symmetry checks vs. reference
+└── inverse_problems/   # Noise models, regularizers, EKI, SINDy discovery
+
+pinneaple_adaptation/
+├── transfer_learning/  # Fine-tuning, layer freezing, progressive unfreezing
+└── meta_learning/      # MAML, Reptile, PDETaskSampler, few-shot adaptation
+
+pinneaple_simulation/
+├── numerical_solvers/  # FEM, FDM, FVM, Spectral, SPH, LBM, OpenFOAM, FEniCS
+├── particle_dynamics/  # MPM, SPH particles, rigid-body (pure PyTorch)
+└── external_solvers/   # OpenFOAM, MATLAB, FMU/Modelica, FEniCS bridges
+
+pinneaple_systems/
+├── time_series/        # LSTM, GRU, NBeats, TFT, TCN, XGBoost, HHT, FFT
+├── cosimulation/       # Graph co-sim engine: PINNNode, CoSimGraph, CoSimTrainer
+└── digital_twin/       # Live twin, sensor streams, EKF/EnKF, anomaly detection
+
+pinneaple_design/
+├── geometry/           # SDF library, CSG, physics domains, mesh, NACA airfoil
+└── design_optimizer/   # Adjoint, Pareto, Bayesian/evolutionary optimization
+
+pinneaple_tools/
+├── visualization/      # CFD-style plots, streamlines, Q-criterion, animations
+├── model_export/       # TorchScript, ONNX, CSV, NPZ
+├── hpo_experiments/    # Paper discovery, knowledge base, HPO
+├── benchmark_suite/    # Arena, leaderboards, transfer/meta benchmark pipelines
+└── compute_backends/   # PyTorch (default) + JAX backend abstraction
+```
+
+Additional packages: `pinneaple_data` (UPD dataset), `pinneaple_pdb` (physics database), `pinneaple_problemdesign` (NLP → PDE agent).
+
+---
+
+## Installation
+
+```bash
+pip install pinneaple
+```
+
+With optional extras:
+
+```bash
+pip install "pinneaple[solvers]"      # numba-accelerated FDM/FEM/LBM
+pip install "pinneaple[pinn]"         # SymPy symbolic PDE compiler
+pip install "pinneaple[geom]"         # trimesh, meshio, gmsh
+pip install "pinneaple[fenics]"       # FEniCS / DOLFINx bridge
+pip install "pinneaple[export]"       # ONNX export
+pip install "pinneaple[all]"          # everything
 ```
 
 ---
 
-### 🔬 Tier 2 — Experimenter
+## Three Tiers of Physics AI Experience
+
+### Tier 1 — Explorer
+> *"I understand the physics. I want to see what AI can do with it."*
+
+```python
+from pinneaple_physics import ProblemSpec, DirichletBC, compile_physics, solve_pde
+from pinneaple_neural import build_model
+
+# Define a 2D Poisson problem
+spec = ProblemSpec(
+    coords=["x", "y"],
+    fields=["u"],
+    domain_bounds={"x": (0.0, 1.0), "y": (0.0, 1.0)},
+)
+
+# Build a SIREN network and train it in one call
+model = build_model("SIREN", in_dim=2, out_dim=1, hidden_dim=64, n_layers=4)
+result = solve_pde(spec, model, epochs=3000)
+result["history"]  # loss history dict
+```
+
+---
+
+### Tier 2 — Experimenter
 > *"I want to test ideas and compare approaches."*
 
 ```python
-from pinneaple_arena import ArenaRunner
+from pinneaple_tools.benchmark_suite import Arena
 
-runner  = ArenaRunner.from_yaml("configs/arena/burgers_benchmark.yaml")
+runner  = Arena.from_yaml("configs/arena/burgers_benchmark.yaml")
 results = runner.run_all()
 results.leaderboard()
 ```
@@ -85,12 +159,25 @@ results.leaderboard()
 
 ---
 
-### 🚀 Tier 3 — Builder
+### Tier 3 — Builder
 > *"I want to turn this into a real system."*
 
 ```python
-from pinneaple_train.distributed import DDPPINNTrainer
-from pinneaple_export.onnx_exporter import ONNXExporter
+from pinneaple_neural.trainer import DDPPINNTrainer, DDPTrainerConfig
+from pinneaple_tools.model_export import export_onnx
+from pinneaple_systems.digital_twin import build_digital_twin
+
+# Distributed training
+cfg     = DDPTrainerConfig(n_epochs=10_000, device="cuda")
+trainer = DDPPINNTrainer(model, losses, cfg)
+trainer.train()
+
+# Export to ONNX
+export_onnx(model, "surrogate.onnx", example_input=x_sample)
+
+# Wrap as a live digital twin
+twin = build_digital_twin(model, field_names=["u", "v", "p"])
+twin.start_stream("mqtt://sensors.local")
 ```
 
 <div align="center">
@@ -102,58 +189,111 @@ from pinneaple_export.onnx_exporter import ONNXExporter
 
 ---
 
-## 🌍 The Bridge to Any Physics AI Stack
+## Key Features
 
-PINNeAPPle is **stack-agnostic**.
-
-It helps you:
-
-1. Validate physics and modeling
-2. Benchmark architectures
-3. Export models
-4. Integrate with:
-   - HPC clusters
-   - Cloud ML pipelines
-   - Simulation frameworks
-   - Internal platforms
-   - Digital twins
+| Mega-module | Sub-modules | What it does |
+|---|---|---|
+| `pinneaple_physics` | `pde_environment` · `pinn_solver` · `symbolic_pde` | Define PDEs, compile PINN losses, SymPy → autograd |
+| `pinneaple_neural` | `architectures` · `trainer` · `predictor` | SIREN/AFNO/MGN models, distributed training, inference |
+| `pinneaple_analysis` | `uncertainty` · `validation` · `inverse_problems` | UQ, physics consistency checks, parameter inversion |
+| `pinneaple_adaptation` | `transfer_learning` · `meta_learning` | Fine-tune across PDEs, MAML/Reptile few-shot |
+| `pinneaple_simulation` | `numerical_solvers` · `particle_dynamics` · `external_solvers` | FEM/FDM/SPH/LBM, OpenFOAM/FEniCS bridges |
+| `pinneaple_systems` | `time_series` · `cosimulation` · `digital_twin` | Forecasting, co-sim graphs, live sensor fusion |
+| `pinneaple_design` | `geometry` · `design_optimizer` | SDF/CSG geometry, adjoint + Bayesian shape opt |
+| `pinneaple_tools` | `visualization` · `model_export` · `benchmark_suite` · `compute_backends` | CFD plots, ONNX export, Arena benchmarks, JAX backend |
 
 ---
 
-## 🔥 Key Features
+## Quick Examples
 
-| Module | Description |
-|--------|-------------|
-| 📦 **Unified Physical Data (UPD)** | State, geometry, equations, metadata |
-| 🌍 **Data Pipeline** | Zarr datasets, active learning |
-| 📐 **Geometry & Mesh** | CAD, meshing, simulation interoperability |
-| 🧠 **Model Zoo** | PINNs, Neural Operators, GNNs, Transformers, ROM, Classical |
-| 🧮 **Physics Loss Factory** | Symbolic PDE → residuals |
-| ⚙️ **Solvers** | FEM, FDM, FVM, Spectral, SPH, LBM |
-| 🏗️ **Training** | Distributed, AMP, deterministic |
-| 📊 **Uncertainty & Validation** | Dropout, ensembles, conservation checks |
-| 🔁 **Transfer & Meta-Learning** | Fine-tuning, cross-PDE adaptation |
-| 🛰️ **Digital Twins** | EnKF, real-time estimation |
-| 🚢 **Deployment** | FastAPI, ONNX, TorchScript |
-| 🤖 **Problem Design** | NLP → PDE |
-| 🏆 **Benchmarking** | YAML, leaderboards |
+```python
+# ── Physics problem definition ──────────────────────────────────────────────
+from pinneaple_physics.pde_environment import ProblemSpec, DirichletBC, get_preset
+from pinneaple_physics.pinn_solver import compile_problem
+
+spec   = get_preset("ns_incompressible_2d")
+losses = compile_problem(spec)
+
+# ── Neural network architectures ────────────────────────────────────────────
+from pinneaple_neural.architectures import ModelRegistry, SIREN, AFNO
+from pinneaple_neural.trainer import Trainer, TrainConfig
+
+model   = ModelRegistry.build("SIREN", in_dim=3, out_dim=2, hidden_dim=128, n_layers=6)
+cfg     = TrainConfig(n_epochs=5000, device="cuda")
+trainer = Trainer(model, losses, cfg)
+result  = trainer.train()
+
+# ── Uncertainty quantification ──────────────────────────────────────────────
+from pinneaple_analysis.uncertainty import uq_predict
+from pinneaple_analysis.validation import validate_model
+
+uq_result  = uq_predict(model, x_test, method="mc_dropout")
+val_report = validate_model(model, spec)
+
+# ── Design optimization ─────────────────────────────────────────────────────
+from pinneaple_design.geometry import get_domain, LidDrivenCavityDomain2D
+from pinneaple_design.design_optimizer import DesignOptLoop, DesignOptConfig
+
+domain = LidDrivenCavityDomain2D(Re=1000)
+x_int  = domain.sample_interior(4096)
+
+# ── Simulation data generation ──────────────────────────────────────────────
+from pinneaple_simulation.numerical_solvers import HeatConduction3D
+
+solver = HeatConduction3D(nx=32, ny=32, nz=32)
+data   = solver.run(t_end=1.0)
+
+# ── Time series forecasting ─────────────────────────────────────────────────
+from pinneaple_systems.time_series import LSTMForecaster
+
+forecaster = LSTMForecaster(horizon=24)
+forecaster.fit(train_df)
+forecast = forecaster.predict(24)
+
+# ── Benchmarking ────────────────────────────────────────────────────────────
+from pinneaple_tools.benchmark_suite import PINNArenaBenchmark, BenchmarkConfig
+
+cfg    = BenchmarkConfig(tasks=["burgers_1d", "heat_2d", "ns_2d"])
+bench  = PINNArenaBenchmark(cfg)
+report = bench.run({"SIREN": siren_model, "AFNO": afno_model})
+report.leaderboard()
+```
 
 ---
 
-## 🎯 Philosophy
+## Examples
+
+| Folder | What it covers |
+|--------|---------------|
+| `examples/pde_environment/` | PDE presets, BCs, problem specs |
+| `examples/pinn_solver/` | PINN compiler, symbolic losses |
+| `examples/architectures/` | Model registry, SIREN, AFNO, GNN, operators |
+| `examples/trainer/` | Training loops, DDP, HPC, AMP |
+| `examples/numerical_solvers/` | FEM, FDM, FVM, SPH, LBM, spectral |
+| `examples/time_series/` | Forecasting, backtesting, uncertainty |
+| `examples/geometry/` | SDF, CSG, mesh, airfoil generation |
+| `examples/benchmark_suite/` | Arena, YAML configs, leaderboards |
+| `examples/hpo_experiments/` | Paper discovery, knowledge base |
+| `examples/data_pipeline/` | UPD datasets, Zarr, active learning |
+| `examples/physics_db/` | Physics database, NASA/Earthdata |
+| `examples/problem_designer/` | NLP → PDE agent |
+
+---
+
+## Philosophy
 
 > *If you can't validate it, you shouldn't deploy it.*
 
 Physics AI is about:
 
-- ✅ Correct formulations
-- ✅ Reliable validation
-- ✅ Understanding failure modes
-- ✅ Making informed decisions
+- Correct formulations
+- Reliable validation
+- Understanding failure modes
+- Making informed decisions
 
 ---
 
-## 🧠 Positioning
+## Positioning
 
 |  | PINNeAPPle |
 |--|------------|
@@ -164,15 +304,11 @@ Physics AI is about:
 
 ---
 
-## ⭐ Support the Project
+## Support the Project
 
 If this project makes sense to you, **give it a star** ⭐
 
-It helps:
-
-- Grow the ecosystem
-- Attract contributors
-- Build a real standard
+It helps grow the ecosystem, attract contributors, and build a real standard.
 
 ---
 

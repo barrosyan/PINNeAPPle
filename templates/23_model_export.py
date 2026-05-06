@@ -13,9 +13,9 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from pinneaple_export.onnx_exporter import ONNXExporter, ONNXExportConfig
-from pinneaple_export.torchscript import TorchScriptExporter, TorchScriptConfig
-from pinneaple_export.validator import ExportValidator
+from pinneaple_tools.model_export.onnx_exporter import ONNXExporter, ONNXExportConfig
+from pinneaple_tools.model_export.torchscript import TorchScriptExporter, TorchScriptConfig
+from pinneaple_tools.model_export.validator import ExportValidator
 
 
 # ---------------------------------------------------------------------------

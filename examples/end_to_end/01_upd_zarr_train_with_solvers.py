@@ -7,10 +7,10 @@ from pinneaple_data.zarr_store import UPDZarrStore
 from pinneaple_data.zarr_iterable import ZarrUPDIterable
 from pinneaple_data.collate import collate_upd_supervised
 
-from pinneaple_train.trainer import Trainer, TrainConfig
-from pinneaple_train.losses import CombinedLoss, SupervisedLoss
-from pinneaple_train.metrics import default_metrics
-from pinneaple_train.preprocess import PreprocessPipeline
+from pinneaple_neural.trainer.trainer import Trainer, TrainConfig
+from pinneaple_neural.trainer.losses import CombinedLoss, SupervisedLoss
+from pinneaple_neural.trainer.metrics import default_metrics
+from pinneaple_neural.trainer.preprocess import PreprocessPipeline
 
 # ----------------------------
 # 1) Build a tiny UPD dataset and write to Zarr

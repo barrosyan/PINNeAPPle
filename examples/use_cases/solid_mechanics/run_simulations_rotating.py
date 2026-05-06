@@ -76,7 +76,7 @@ from dolfinx.fem.petsc import LinearProblem
 
 # ── PINNeAPPle ─────────────────────────────────────────────────────────────
 # O preset fornece os parâmetros físicos validados (E, nu, cargas)
-from pinneaple_environment import get_preset
+from pinneaple_physics.pde_environment import get_preset
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Parâmetros físicos padrão (AISI 4145H steel)

@@ -10,10 +10,10 @@ from sympy import Symbol
 from physicsnemo.sym.geometry.primitives_1d import Line1D
 
 # PINNeAPPle
-from pinneaple_pinn.factory.pinn_factory import PINNProblemSpec, PINNFactory
+from pinneaple_physics.pinn_solver.factory.pinn_factory import PINNProblemSpec, PINNFactory
 
-from pinneaple_models.pinns.vanilla import VanillaPINN
-from pinneaple_models.pinns.inverse import InversePINN
+from pinneaple_neural.architectures.pinns.vanilla import VanillaPINN
+from pinneaple_neural.architectures.pinns.inverse import InversePINN
 
 
 # ---------

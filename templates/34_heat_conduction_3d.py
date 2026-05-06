@@ -15,16 +15,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_environment import Heat3DPreset, HeatPresetConfig
+from pinneaple_physics.pde_environment import Heat3DPreset, HeatPresetConfig
 
 try:
-    from pinneaple_solvers.fem import FEMSolver, FEMConfig
+    from pinneaple_simulation.numerical_solvers.fem import FEMSolver, FEMConfig
     _FEM = True
 except ImportError:
     _FEM = False
     print("[warn] FEniCS not available — FEM comparison will be skipped.")
 
-from pinneaple_solvers.fdm import FDMSolver3D, FDMConfig3D
+from pinneaple_simulation.numerical_solvers.fdm import FDMSolver3D, FDMConfig3D
 
 
 # ---------------------------------------------------------------------------

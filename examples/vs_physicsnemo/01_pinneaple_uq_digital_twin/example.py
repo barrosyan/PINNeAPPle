@@ -41,11 +41,11 @@ import torch.optim as optim
 # ---------------------------------------------------------------------------
 # PINNeAPPle imports
 # ---------------------------------------------------------------------------
-from pinneaple_models.pinns.base import PINNBase, PINNOutput
+from pinneaple_neural.architectures.pinns.base import PINNBase, PINNOutput
 
 # UQ
 try:
-    from pinneaple_uq import MCDropoutWrapper, MCDropoutConfig, CalibrationMetrics, UQResult
+    from pinneaple_analysis.uncertainty import MCDropoutWrapper, MCDropoutConfig, CalibrationMetrics, UQResult
     UQ_AVAILABLE = True
 except ImportError:
     UQ_AVAILABLE = False
@@ -53,9 +53,9 @@ except ImportError:
 
 # Digital Twin
 try:
-    from pinneaple_digital_twin.twin import DigitalTwin, DigitalTwinConfig
-    from pinneaple_digital_twin.io.stream import MockStream
-    from pinneaple_digital_twin.monitoring.anomaly import ThresholdDetector, ZScoreDetector, AnomalyMonitor
+    from pinneaple_systems.digital_twin.twin import DigitalTwin, DigitalTwinConfig
+    from pinneaple_systems.digital_twin.io.stream import MockStream
+    from pinneaple_systems.digital_twin.monitoring.anomaly import ThresholdDetector, ZScoreDetector, AnomalyMonitor
     DT_AVAILABLE = True
 except ImportError:
     DT_AVAILABLE = False

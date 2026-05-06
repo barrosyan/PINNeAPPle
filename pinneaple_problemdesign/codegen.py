@@ -73,7 +73,7 @@ def _identify_pde(design_spec: DesignSpec) -> Dict[str, Any]:
     Falls back gracefully if pinneaple_environment is not installed.
     """
     try:
-        from pinneaple_environment.capabilities import suggest_problem_spec
+        from pinneaple_physics.pde_environment.capabilities import suggest_problem_spec
     except ImportError:
         return {
             "kind": "custom", "fields": ["u"], "coords": ["x", "t"],
@@ -167,10 +167,10 @@ def _pinn_code(ps: PinneapleSpec, design_spec: DesignSpec) -> str:
         # ─────────────────────────────────────────────────────────────────────
 
         import pinneaple as pp
-        from pinneaple_environment import ProblemSpec, PDETermSpec
-        from pinneaple_pinn import compile_problem
+        from pinneaple_physics.pde_environment import ProblemSpec, PDETermSpec
+        from pinneaple_physics.pinn_solver import compile_problem
         from pinneaple_data import CollocationSampler, CollocationConfig
-        from pinneaple_train import Trainer, TrainConfig
+        from pinneaple_neural.trainer import Trainer, TrainConfig
 
         # 1 ── Problem specification
         spec = ProblemSpec(
@@ -226,7 +226,7 @@ def _fno_code(ps: PinneapleSpec, design_spec: DesignSpec) -> str:
     window_hint = ""
     if is_forecasting:
         window_hint = textwrap.dedent("""\
-            # from pinneaple_timeseries import WindowedDataset
+            # from pinneaple_systems.time_series import WindowedDataset
             # dataset = WindowedDataset(your_data, input_window=64, horizon=24)
             # train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
         """)
@@ -238,8 +238,8 @@ def _fno_code(ps: PinneapleSpec, design_spec: DesignSpec) -> str:
         # ─────────────────────────────────────────────────────────────────────
 
         import pinneaple as pp
-        from pinneaple_train import Trainer, TrainConfig
-        from pinneaple_train.losses import SupervisedLoss
+        from pinneaple_neural.trainer import Trainer, TrainConfig
+        from pinneaple_neural.trainer.losses import SupervisedLoss
         from torch.utils.data import DataLoader
 
         # 1 ── Model ({ps.model_name} for {design_spec.task_type})

@@ -16,7 +16,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_dynamics import MPMSimulator, MPMState
+from pinneaple_simulation.particle_dynamics import MPMSimulator, MPMState
 
 
 # ---------------------------------------------------------------------------

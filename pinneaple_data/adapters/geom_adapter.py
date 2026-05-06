@@ -173,7 +173,7 @@ def load_geometry_asset(
         raise TypeError(f"Unsupported geometry input type: {type(geom)}")
 
     try:
-        from pinneaple_geom.core.registry import build_geometry_asset  # type: ignore
+        from pinneaple_design.geometry.core.registry import build_geometry_asset  # type: ignore
     except Exception as e:
         raise ImportError(
             "pinneaple_geom is required to load geometry assets. "
@@ -201,7 +201,7 @@ def stl_to_upd(
     import torch
     import trimesh as _trimesh
 
-    from pinneaple_geom.io.trimesh_bridge import TrimeshBridge
+    from pinneaple_design.geometry.io.trimesh_bridge import TrimeshBridge
     from pinneaple_data.physical_sample import PhysicalSample
 
     path = Path(path).expanduser().resolve()

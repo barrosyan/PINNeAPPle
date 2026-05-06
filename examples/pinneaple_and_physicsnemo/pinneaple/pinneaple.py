@@ -40,11 +40,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # --- PINNeAPPle ---
-from pinneaple_pinn.factory.pinn_factory import PINNProblemSpec, PINNFactory, PINN
-from pinneaple_models.pinns.vanilla import VanillaPINN
-from pinneaple_models.pinns.vpinn import VPINN
-from pinneaple_models.pinns.pinnsformer import PINNsFormer
-from pinneaple_models.pinns.pielm import PIELM
+from pinneaple_physics.pinn_solver.factory.pinn_factory import PINNProblemSpec, PINNFactory, PINN
+from pinneaple_neural.architectures.pinns.vanilla import VanillaPINN
+from pinneaple_neural.architectures.pinns.vpinn import VPINN
+from pinneaple_neural.architectures.pinns.pinnsformer import PINNsFormer
+from pinneaple_neural.architectures.pinns.pielm import PIELM
 
 torch.backends.cuda.enable_flash_sdp(False)
 torch.backends.cuda.enable_mem_efficient_sdp(False)

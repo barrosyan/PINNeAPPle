@@ -97,18 +97,18 @@ def _grad(y: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
 def build_model(arch: str, in_dim: int, out_dim: int) -> nn.Module:
     """Instantiate an architecture by name."""
     if arch == "VanillaPINN":
-        from pinneaple_models.pinns.vanilla import VanillaPINN
+        from pinneaple_neural.architectures.pinns.vanilla import VanillaPINN
         return VanillaPINN(in_dim=in_dim, out_dim=out_dim, hidden=_HIDDEN)
 
     if arch == "SIREN":
-        from pinneaple_models.siren import SIREN
+        from pinneaple_neural.architectures.siren import SIREN
         return SIREN(
             in_dim=in_dim, out_dim=out_dim,
             hidden_dim=_SIREN_DIM, n_layers=4, omega_0=30.0,
         )
 
     if arch == "ModifiedMLP":
-        from pinneaple_models.modified_mlp import ModifiedMLP
+        from pinneaple_neural.architectures.modified_mlp import ModifiedMLP
         return ModifiedMLP(
             in_dim=in_dim, out_dim=out_dim,
             hidden_dim=_MODMLP_DIM, n_layers=4, n_fourier=16, sigma=1.0,

@@ -62,23 +62,23 @@ except ImportError:
 
 # PINNeAPPle UQ
 try:
-    from pinneaple_uq import MCDropoutWrapper, MCDropoutConfig
+    from pinneaple_analysis.uncertainty import MCDropoutWrapper, MCDropoutConfig
     UQ_OK = True
 except ImportError:
     UQ_OK = False
 
 # PINNeAPPle Digital Twin
 try:
-    from pinneaple_digital_twin.twin import DigitalTwin, DigitalTwinConfig
-    from pinneaple_digital_twin.io.stream import MockStream
-    from pinneaple_digital_twin.monitoring.anomaly import ThresholdDetector, AnomalyMonitor
+    from pinneaple_systems.digital_twin.twin import DigitalTwin, DigitalTwinConfig
+    from pinneaple_systems.digital_twin.io.stream import MockStream
+    from pinneaple_systems.digital_twin.monitoring.anomaly import ThresholdDetector, AnomalyMonitor
     DT_OK = True
 except ImportError:
     DT_OK = False
 
 # PINNeAPPle Validate
 try:
-    from pinneaple_validate import validate_against_solver
+    from pinneaple_analysis.validation import validate_against_solver
     VAL_OK = True
 except ImportError:
     VAL_OK = False
