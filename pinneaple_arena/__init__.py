@@ -6,7 +6,7 @@ from .runner.run_arena_yaml import run_arena_experiment
 from .report import BenchmarkReport, ModelRunResult
 
 try:
-    from .physics_pipeline import PhysicsBenchmarkSpec
+    from .physics_pipeline import PhysicsPipeline, PhysicsBenchmarkSpec
 except Exception:
     pass
 
@@ -63,8 +63,9 @@ except Exception:
     pass
 
 __all__ = [
-    # Pipelines (new)
-    "PhysicsBenchmarkSpec",
+    # Pipelines
+    "PhysicsPipeline",
+    "PhysicsBenchmarkSpec",   # backward-compatible alias
     "TimeSeriesBenchmarkSpec",
     "BenchmarkReport",
     "ModelRunResult",
