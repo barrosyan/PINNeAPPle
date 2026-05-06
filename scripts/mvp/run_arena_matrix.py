@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 import json
 
-from pinneaple_arena.runner.run_benchmark import run_benchmark
+from pinneaple_tools.benchmark_suite.runner.run_benchmark import run_benchmark
 
 
 RUNS = [

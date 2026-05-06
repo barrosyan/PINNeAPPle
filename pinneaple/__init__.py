@@ -89,13 +89,13 @@ __author__  = "pinneaple contributors"
 
 # Problem presets
 try:
-    from pinneaple_environment import get_preset, list_presets, register_preset
+    from pinneaple_physics.pde_environment import get_preset, list_presets, register_preset
 except Exception:  # pragma: no cover
     pass
 
 # PDE family knowledge base (lives in pinneaple_environment.capabilities)
 try:
-    from pinneaple_environment import (
+    from pinneaple_physics.pde_environment import (
         list_pde_families,
         get_pde_family,
         identify_pde,
@@ -106,7 +106,7 @@ except Exception:  # pragma: no cover
 
 # Model builder
 try:
-    from pinneaple_models import ModelRegistry
+    from pinneaple_neural.architectures import ModelRegistry
 
     def list_models():
         """Return sorted list of all registered model names."""
@@ -124,19 +124,19 @@ except Exception:  # pragma: no cover
 
 # Digital twin
 try:
-    from pinneaple_digital_twin import build_digital_twin, DigitalTwin, DigitalTwinConfig
+    from pinneaple_systems.digital_twin import build_digital_twin, DigitalTwin, DigitalTwinConfig
 except Exception:  # pragma: no cover
     pass
 
 # Inference
 try:
-    from pinneaple_inference import infer_on_grid_1d, infer_on_grid_2d
+    from pinneaple_neural.predictor import infer_on_grid_1d, infer_on_grid_2d
 except Exception:  # pragma: no cover
     pass
 
 # Training
 try:
-    from pinneaple_train import (
+    from pinneaple_neural.trainer import (
         Trainer, TrainConfig,
         TwoPhaseTrainer, TwoPhaseConfig, TwoPhaseHistory,
         UnnormModel,
@@ -161,7 +161,7 @@ except Exception:  # pragma: no cover
 
 # Geometry
 try:
-    from pinneaple_geom import (
+    from pinneaple_design.geometry import (
         circle, rectangle, ellipse, annulus,
         ChannelWithObstacleDomain2D, ChannelDomain2D, LidDrivenCavityDomain2D,
         PhysicsDomain2D,
@@ -171,25 +171,25 @@ except Exception:  # pragma: no cover
 
 # UQ
 try:
-    from pinneaple_uq import MCDropoutWrapper, EnsembleUQ, ConformalPredictor, uq_predict
+    from pinneaple_analysis.uncertainty import MCDropoutWrapper, EnsembleUQ, ConformalPredictor, uq_predict
 except Exception:  # pragma: no cover
     pass
 
 # Validation
 try:
-    from pinneaple_validate import PhysicsValidator, validate_model
+    from pinneaple_analysis.validation import PhysicsValidator, validate_model
 except Exception:  # pragma: no cover
     pass
 
 # Export
 try:
-    from pinneaple_export import export_torchscript, export_onnx, export_csv, export_npz
+    from pinneaple_tools.model_export import export_torchscript, export_onnx, export_csv, export_npz
 except Exception:  # pragma: no cover
     pass
 
 # Design optimization
 try:
-    from pinneaple_design_opt import (
+    from pinneaple_design.design_optimizer import (
         DesignOptLoop, DesignOptConfig, DesignOptResult,
         PhysicsSurrogate, SurrogateConfig,
         DragObjective, ThermalEfficiencyObjective, StructuralObjective,
@@ -204,7 +204,7 @@ except Exception:  # pragma: no cover
 
 # Inverse problems
 try:
-    from pinneaple_inverse import (
+    from pinneaple_analysis.inverse_problems import (
         # Noise models
         GaussianMisfit, HuberMisfit, CauchyMisfit, StudentTMisfit, HeteroscedasticMisfit,
         # Regularization
@@ -227,7 +227,7 @@ except Exception:  # pragma: no cover
 # New features: Symbolic PDE compiler + BC enforcement (Features 1, 4, 5)
 # ---------------------------------------------------------------------------
 try:
-    from pinneaple_symbolic import (
+    from pinneaple_physics.symbolic_pde import (
         SymbolicPDE, pde_from_sympy, auto_residual,
         HardBC, PeriodicBC, DirichletBC, NeumannBC,
     )
@@ -236,7 +236,7 @@ except Exception:  # pragma: no cover
 
 # New architectures (Features 2, 3, 6, 7, 8)
 try:
-    from pinneaple_models import (
+    from pinneaple_neural.architectures import (
         SIREN, SineLayer,
         ModifiedMLP, FourierFeatureEmbedding,
         HashGridEncoding, HashGridMLP,
@@ -248,7 +248,7 @@ except Exception:  # pragma: no cover
 
 # DoMINO domain decomposition (Feature 9)
 try:
-    from pinneaple_pinn import (
+    from pinneaple_physics.pinn_solver import (
         DoMINO, Subdomain, SubdomainPINN,
     )
 except Exception:  # pragma: no cover
@@ -256,7 +256,7 @@ except Exception:  # pragma: no cover
 
 # Advanced training: time-marching, DDP, causal (Features 11, 13, 14)
 try:
-    from pinneaple_train import (
+    from pinneaple_neural.trainer import (
         TimeMarchingTrainer,
         DDPTrainerConfig, DDPPINNTrainer,
         is_distributed, get_rank, get_world_size,
@@ -267,7 +267,7 @@ except Exception:  # pragma: no cover
 
 # RANS turbulence presets (Feature 10)
 try:
-    from pinneaple_environment import (
+    from pinneaple_physics.pde_environment import (
         KOmegaSSTResiduals, SpalartAllmarasResiduals, get_rans_preset,
     )
 except Exception:  # pragma: no cover
@@ -275,7 +275,7 @@ except Exception:  # pragma: no cover
 
 # CSG geometry (Feature 12)
 try:
-    from pinneaple_geom import (
+    from pinneaple_design.geometry import (
         CSGRectangle, CSGCircle, CSGEllipse, CSGPolygon,
         CSGUnion, CSGIntersection, CSGDifference,
         lshape, csg_annulus, channel_with_hole, t_junction,
@@ -285,7 +285,7 @@ except Exception:  # pragma: no cover
 
 # Streamline / isosurface post-processing (Feature 17)
 try:
-    from pinneaple_inference import (
+    from pinneaple_neural.predictor import (
         FlowVisualizer, compute_streamlines, compute_isosurface,
         plot_streamlines_2d_model, plot_isosurface_3d, plot_volume_slice,
     )
@@ -294,7 +294,7 @@ except Exception:  # pragma: no cover
 
 # Multi-backend JAX support (Feature 15)
 try:
-    from pinneaple_backend import (
+    from pinneaple_tools.compute_backends import (
         get_backend, set_backend, Backend,
         JAXBackend, jit_pinn, vmap_residual,
     )
@@ -303,7 +303,7 @@ except Exception:  # pragma: no cover
 
 # Differentiable dynamics: rigid body, MPM, particles (Feature 18)
 try:
-    from pinneaple_dynamics import (
+    from pinneaple_simulation.particle_dynamics import (
         RigidBody, RigidBodySystem, RigidBodyState,
         MPMSimulator, MPMState,
         SPHParticles, ParticleSystem,
@@ -323,7 +323,7 @@ except Exception:  # pragma: no cover
 
 # Adjoint shape optimization (Feature 16)
 try:
-    from pinneaple_design_opt import (
+    from pinneaple_design.design_optimizer import (
         ContinuousAdjointSolver, ShapeParametrization,
         DragAdjointObjective, naca_parametric,
     )
@@ -332,7 +332,7 @@ except Exception:  # pragma: no cover
 
 # CAD → mesh → NS CFD pipeline (Feature 20)
 try:
-    from pinneaple_solvers import (
+    from pinneaple_simulation.numerical_solvers import (
         CFDMesh, NSFlowSolver, CADToCFDPipeline,
     )
 except Exception:  # pragma: no cover
@@ -342,7 +342,7 @@ except Exception:  # pragma: no cover
 # Benchmark suite
 # ---------------------------------------------------------------------------
 try:
-    from pinneaple_arena import (
+    from pinneaple_tools.benchmark_suite import (
         PINNArenaBenchmark, BenchmarkConfig, BenchmarkResult,
         BenchmarkTaskBase, ModelSpec, DEFAULT_MODELS,
     )
@@ -351,7 +351,7 @@ except Exception:  # pragma: no cover
 
 # Transfer learning benchmark
 try:
-    from pinneaple_arena import (
+    from pinneaple_tools.benchmark_suite import (
         TransferBenchmarkPipeline, TransferBenchmarkConfig,
         TransferBenchmarkResult, TransferScenario,
     )
@@ -360,7 +360,7 @@ except Exception:  # pragma: no cover
 
 # Meta-learning benchmark
 try:
-    from pinneaple_arena import (
+    from pinneaple_tools.benchmark_suite import (
         MetaBenchmarkPipeline, MetaBenchmarkConfig,
         MetaBenchmarkResult, MetaBenchmarkFamily,
     )
@@ -412,7 +412,7 @@ def quickstart(problem_id: str = "burgers_1d", **problem_kwargs):
     print(border)
     print()
     print("  Next steps:")
-    print(f"  1. from pinneaple_environment import get_preset")
+    print(f"  1. from pinneaple_physics.pde_environment import get_preset")
     print(f"     spec = get_preset('{problem_id}')")
     print(f"  2. from pinneaple_data import CollocationSampler")
     print(f"     sampler = CollocationSampler.from_problem_spec(spec)")

@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_train.time_marching import TimeMarchingTrainer
+from pinneaple_neural.trainer.time_marching import TimeMarchingTrainer
 
 
 # ---------------------------------------------------------------------------

@@ -19,7 +19,7 @@ import torch.nn as nn
 import torch.multiprocessing as mp
 import numpy as np
 
-from pinneaple_train.distributed import DDPPINNTrainer, DDPTrainerConfig, get_rank
+from pinneaple_neural.trainer.distributed import DDPPINNTrainer, DDPTrainerConfig, get_rank
 
 
 # ---------------------------------------------------------------------------

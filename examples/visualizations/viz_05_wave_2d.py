@@ -33,7 +33,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
-from pinneaple_validate import compare_to_analytical
+from pinneaple_analysis.validation import compare_to_analytical
 
 C      = 1.0
 OMEGA  = math.pi * math.sqrt(5) * C

@@ -3,9 +3,9 @@ from pathlib import Path
 import json
 import pandas as pd
 
-from pinneaple_integrations.openfoam.case_builder import OpenFOAMCaseTemplate, stage_case_for_scenario
-from pinneaple_integrations.openfoam.runner import OpenFOAMRunConfig, run_openfoam_case
-from pinneaple_integrations.openfoam.sampling import (
+from pinneaple_simulation.external_solvers.openfoam.case_builder import OpenFOAMCaseTemplate, stage_case_for_scenario
+from pinneaple_simulation.external_solvers.openfoam.runner import OpenFOAMRunConfig, run_openfoam_case
+from pinneaple_simulation.external_solvers.openfoam.sampling import (
     write_sample_dict_cloud,
     run_sampling,
     read_sampled_scalar_field,

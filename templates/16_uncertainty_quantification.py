@@ -14,9 +14,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_uq.mc_dropout import MCDropoutEstimator
-from pinneaple_uq.ensemble import DeepEnsemble
-from pinneaple_uq.conformal import ConformalPredictor
+from pinneaple_analysis.uncertainty.mc_dropout import MCDropoutEstimator
+from pinneaple_analysis.uncertainty.ensemble import DeepEnsemble
+from pinneaple_analysis.uncertainty.conformal import ConformalPredictor
 
 
 # ---------------------------------------------------------------------------

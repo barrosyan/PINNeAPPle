@@ -15,9 +15,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_transfer.finetuner import FineTuner, FineTunerConfig
-from pinneaple_transfer.freezer import ParametricFreezer
-from pinneaple_transfer.lr_scheduler import LayerWiseLRScheduler
+from pinneaple_adaptation.transfer_learning.finetuner import FineTuner, FineTunerConfig
+from pinneaple_adaptation.transfer_learning.freezer import ParametricFreezer
+from pinneaple_adaptation.transfer_learning.lr_scheduler import LayerWiseLRScheduler
 
 
 # ---------------------------------------------------------------------------

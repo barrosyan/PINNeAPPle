@@ -1,73 +1,101 @@
-"""pinneaple_worldmodel — Physics AI World Model Pipeline.
+"""pinneaple_worldmodel — Generalist Physics AI World Model.
 
-Generates training datasets for a physics world model (an AGI for physics)
-using all simulation, validation, and modelling tools available in Pinneaple.
+Builds a *Physics Foundation Model* — a generalist AI trained across many
+physics domains — using all simulation, validation, meta-learning, and
+modelling tools available in Pinneaple.
 
-What is a physics world model?
--------------------------------
-A model that learns to predict physical system evolution:
+What is a Physics Foundation Model?
+------------------------------------
+A model that learns to predict physical system evolution::
 
-    f_θ(state_t, params) → state_{t+1}
+    f_θ(state_t, descriptor) → state_{t+1}
 
 where ``state_t`` is a spatial field (temperature, velocity, pressure, …) and
-``params`` encodes the PDE parameters (diffusivity, Reynolds number, …).
-When trained across many physics domains, the model builds a general prior
-over physical system dynamics — a foundation model for physics AI.
+``descriptor`` encodes the PDE parameters, domain shape, and physics context.
+Trained across many physics domains, the model builds a general prior over
+physical system dynamics — a foundation model for physics AI.
 
 Pipeline overview
 -----------------
 ::
 
-    PhysicsScenario (define PDEs + parameter ranges)
-          ↓
-    PhysicsSimulator (generate trajectories via pinneaple_solvers)
-          ↓
-    WorldModelDataset (format as (state_t, params) → state_{t+1})
-          ↓
-    PhysicsWorldModel (FNO-based: learns the state-transition operator)
-          ↓
-    WorldModelTrainer (rollout loss + optional physics consistency)
-          ↓
-    PhysicsCurriculum (staged training: easy → hard physics)
-          ↓
-    WorldModelPipeline (single entry point for the full flow)
+    PhysicsAIPipeline
+    │
+    ├─ Stage 1 — Multi-source dataset generation
+    │     PhysicsDatasetFactory
+    │       ├─ solver  → pinneaple_solvers (FDM / LBM / FEM / SPH)
+    │       ├─ pinn    → pinneaple_pinn (PINN residual data)
+    │       ├─ symbolic→ pinneaple_symbolic (analytical solutions)
+    │       └─ colloc  → pinneaple_data (collocation sampling)
+    │     DatasetCatalog (organised by scenario + source)
+    │
+    ├─ Stage 2 — Specialist training
+    │     SpecialistTrainer
+    │       ├─ pinneaple_train  (AdamW, AMP, cosine LR)
+    │       ├─ pinneaple_validate (conservation checks)
+    │       ├─ pinneaple_uq     (aleatoric + epistemic UQ)
+    │       └─ pinneaple_transfer (domain adaptation)
+    │     ModelZoo (one specialist per scenario)
+    │
+    ├─ Stage 3 — Meta-learning
+    │     MetaLearner (MAML / Reptile, or pinneaple_meta)
+    │     → meta-initialised PhysicsWorldModel
+    │
+    ├─ Stage 4 — Foundation model assembly
+    │     WaMaModel (weight-averaged soup of specialists)
+    │     PhysicsFoundationModel (FNO + cross-attention + LoRA adapters)
+    │     Fine-tuned on merged multi-source catalog
+    │
+    └─ Stage 5 — Benchmark evaluation
+          PhysicsBenchmark (6 standard tasks, conservation checks)
 
-Built-in physics scenarios
---------------------------
-``heat_2d``, ``burgers_1d``, ``wave_1d``, ``advection_2d``,
-``ns2d_cavity``, ``heat_multiscale`` — see :data:`BUILTIN_SCENARIOS`.
+Secondary pipeline — solve any physics problem
+-----------------------------------------------
+::
+
+    PhysicsOrchestrator + ProblemStatement
+
+Treats every Pinneaple capability as a callable tool and chains them
+automatically to solve forward / inverse / design / discovery /
+forecast / digital-twin / uncertainty problems.
 
 Quick start
 -----------
 ::
 
-    from pinneaple_worldmodel import WorldModelPipeline, PipelineConfig
+    from pinneaple_worldmodel import PhysicsAIPipeline, PhysicsAIConfig
 
-    pipeline = WorldModelPipeline(PipelineConfig(
-        scenarios=["heat_2d", "burgers_1d", "advection_2d"],
-        n_samples_per_scenario=500,
-        epochs=100,
-        device="cuda",          # or "cpu"
-        save_dir="./wm_output",
+    pipeline = PhysicsAIPipeline(PhysicsAIConfig(
+        scenarios=["heat_2d", "burgers_1d", "advection_2d", "ns2d_cavity"],
+        sources=["solver", "pinn"],
+        n_samples=500,
+        device="cuda",
+        save_dir="./physics_ai_output",
     ))
-    model, history = pipeline.run()
+    result = pipeline.run()
+    mega_model = result.mega_model
+    zoo        = result.zoo
 
-    # Rollout the trained model on a new initial condition
-    import torch
-    state_0 = torch.randn(1, 1, 64, 64)            # (B, C, H, W)
-    context  = torch.zeros(1, model.config.context_dim)
-    with torch.no_grad():
-        future_states = model.rollout(state_0, context, n_steps=20)
-    # future_states : (1, 20, 1, 64, 64)
-
-Curriculum training
--------------------
+Orchestrator quick start
+------------------------
 ::
 
-    from pinneaple_worldmodel import PhysicsCurriculum, CurriculumConfig
+    from pinneaple_worldmodel import PhysicsOrchestrator, ProblemStatement
 
-    # Staged: heat → burgers/wave → advection 2D → Navier-Stokes → high-res
-    model = PhysicsCurriculum(CurriculumConfig(device="cuda")).run()
+    # Solve an inverse problem
+    result = PhysicsOrchestrator().solve(ProblemStatement(
+        kind="inverse",
+        pde_hint="burgers_1d",
+        observations=my_data,
+        output=["params_estimate", "uncertainty"],
+    ))
+
+    # Discover governing equations from data
+    result = PhysicsOrchestrator().solve(ProblemStatement(
+        kind="discovery",
+        observations=trajectory_data,
+        output=["equations"],
+    ))
 
 Custom scenario
 ---------------
@@ -88,29 +116,140 @@ Custom scenario
         scenarios=[my_scenario],
         n_samples_per_scenario=300,
     )).build()
+
+Tool registry
+-------------
+::
+
+    from pinneaple_worldmodel import PhysicsToolRegistry
+
+    reg = PhysicsToolRegistry()
+    reg.register_all()
+    print(reg.summary())
+    tool = reg.get("simulate_trajectory")
+    traj = tool.call(scenario="heat_2d", n_steps=50)
 """
 from __future__ import annotations
 
+# --- Core scenario & simulation ---
 from .scenario import PhysicsScenario, BUILTIN_SCENARIOS
 from .simulator import PhysicsSimulator, TrajectoryData
+
+# --- Dataset ---
 from .dataset import WorldModelDataset, DatasetBuilder, DatasetConfig
+
+# --- Multi-source dataset factory ---
+from .dataset_factory import (
+    PhysicsDatasetFactory,
+    FactoryConfig,
+    DatasetCatalog,
+    DatasetEntry,
+)
+
+# --- Geometry ---
+from .geometry import (
+    GeometryBase,
+    Rectangle,
+    Circle,
+    Polygon,
+    Box3D,
+    Sphere,
+    Union,
+    Intersection,
+    Difference,
+    BoundaryRegion,
+    PhysicsDomain,
+    make_unit_square,
+    make_cavity,
+    make_channel,
+    make_channel_with_cylinder,
+    make_l_shaped,
+    make_annulus,
+    BUILTIN_DOMAINS,
+)
+
+# --- World model (FNO-based) ---
 from .model import PhysicsWorldModel, WorldModelConfig
+
+# --- Trainer ---
 from .trainer import WorldModelTrainer, WorldModelTrainConfig, WorldModelLoss
+
+# --- Curriculum (legacy) ---
 from .curriculum import PhysicsCurriculum, CurriculumConfig, CurriculumStage
-from .pipeline import WorldModelPipeline, PipelineConfig
+
+# --- Model zoo ---
+from .model_zoo import ModelZoo, ZooEntry, EnsembleModel, WaMaModel
+
+# --- Specialist trainer ---
+from .specialist_trainer import SpecialistTrainer, SpecialistConfig
+
+# --- Meta-learning ---
+from .meta_learning import MetaLearner, MetaConfig, TaskDistribution
+
+# --- Foundation model ---
+from .mega_model import (
+    PhysicsFoundationModel,
+    FoundationConfig,
+    LoRALinear,
+    PhysicsDescriptorEncoder,
+)
+
+# --- Benchmark ---
+from .benchmark import (
+    PhysicsBenchmark,
+    BenchmarkTask,
+    BenchmarkResult,
+    BUILTIN_TASKS,
+)
+
+# --- Tool registry ---
+from .physics_tools import PhysicsToolRegistry, PhysicsTool
+
+# --- Orchestrator ---
+from .orchestrator import PhysicsOrchestrator, ProblemStatement, OrchestratorResult
+
+# --- Pipeline ---
+from .pipeline import PhysicsAIPipeline, PhysicsAIConfig, PhysicsAIPipelineResult
+
+# Legacy pipeline (kept for backwards compatibility)
+from .pipeline import PhysicsAIPipeline as WorldModelPipeline  # noqa: F401
 
 __all__ = [
-    # Scenarios
+    # Scenario
     "PhysicsScenario",
     "BUILTIN_SCENARIOS",
-    # Simulator
+    # Simulation
     "PhysicsSimulator",
     "TrajectoryData",
     # Dataset
     "WorldModelDataset",
     "DatasetBuilder",
     "DatasetConfig",
-    # Model
+    # Dataset factory
+    "PhysicsDatasetFactory",
+    "FactoryConfig",
+    "DatasetCatalog",
+    "DatasetEntry",
+    # Geometry
+    "GeometryBase",
+    "Rectangle",
+    "Circle",
+    "Polygon",
+    "Box3D",
+    "Sphere",
+    "Union",
+    "Intersection",
+    "Difference",
+    "BoundaryRegion",
+    "PhysicsDomain",
+    "make_unit_square",
+    "make_cavity",
+    "make_channel",
+    "make_channel_with_cylinder",
+    "make_l_shaped",
+    "make_annulus",
+    "BUILTIN_DOMAINS",
+    # World model
     "PhysicsWorldModel",
     "WorldModelConfig",
     # Trainer
@@ -121,7 +260,37 @@ __all__ = [
     "PhysicsCurriculum",
     "CurriculumConfig",
     "CurriculumStage",
+    # Model zoo
+    "ModelZoo",
+    "ZooEntry",
+    "EnsembleModel",
+    "WaMaModel",
+    # Specialist trainer
+    "SpecialistTrainer",
+    "SpecialistConfig",
+    # Meta-learning
+    "MetaLearner",
+    "MetaConfig",
+    "TaskDistribution",
+    # Foundation model
+    "PhysicsFoundationModel",
+    "FoundationConfig",
+    "LoRALinear",
+    "PhysicsDescriptorEncoder",
+    # Benchmark
+    "PhysicsBenchmark",
+    "BenchmarkTask",
+    "BenchmarkResult",
+    "BUILTIN_TASKS",
+    # Tool registry
+    "PhysicsToolRegistry",
+    "PhysicsTool",
+    # Orchestrator
+    "PhysicsOrchestrator",
+    "ProblemStatement",
+    "OrchestratorResult",
     # Pipeline
-    "WorldModelPipeline",
-    "PipelineConfig",
+    "PhysicsAIPipeline",
+    "PhysicsAIConfig",
+    "PhysicsAIPipelineResult",
 ]

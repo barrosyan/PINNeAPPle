@@ -184,7 +184,7 @@ class PhysicsSimulator:
 
     def _make_fdm_solver(self, pde: str):
         """Build an FDM-backed solver callable."""
-        from pinneaple_solvers.fdm import FDMSolver  # type: ignore
+        from pinneaple_simulation.numerical_solvers.fdm import FDMSolver  # type: ignore
 
         sc = self.scenario
 
@@ -210,7 +210,7 @@ class PhysicsSimulator:
 
     def _make_lbm_solver(self, pde: str):
         """Build an LBM-backed solver callable."""
-        from pinneaple_solvers.lbm import LBMSolver  # type: ignore
+        from pinneaple_simulation.numerical_solvers.lbm import LBMSolver  # type: ignore
 
         sc = self.scenario
 
@@ -228,7 +228,7 @@ class PhysicsSimulator:
 
     def _make_fem_solver(self, pde: str):
         """Build an FEM-backed solver callable."""
-        from pinneaple_solvers.fem import FEMSolver  # type: ignore
+        from pinneaple_simulation.numerical_solvers.fem import FEMSolver  # type: ignore
 
         sc = self.scenario
 

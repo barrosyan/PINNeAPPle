@@ -14,10 +14,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_models.modified_mlp import ModifiedMLP
+from pinneaple_neural.architectures.modified_mlp import ModifiedMLP
 
 try:
-    from pinneaple_environment import SpalartAllmarasResiduals
+    from pinneaple_physics.pde_environment import SpalartAllmarasResiduals
     _SA_AVAILABLE = True
 except Exception:
     _SA_AVAILABLE = False

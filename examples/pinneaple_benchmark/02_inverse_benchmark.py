@@ -112,7 +112,7 @@ class InversePINNModel(nn.Module):
         true_val:   float,
     ) -> None:
         super().__init__()
-        from pinneaple_models.pinns.vanilla import VanillaPINN
+        from pinneaple_neural.architectures.pinns.vanilla import VanillaPINN
         self.net        = VanillaPINN(in_dim=in_dim, out_dim=out_dim, hidden=hidden)
         self._log_p     = nn.Parameter(torch.tensor(math.log(float(init_guess))))
         self.param_name = param_name

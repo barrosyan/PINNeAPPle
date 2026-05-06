@@ -15,10 +15,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_environment import KOmegaSSTResiduals, KOmegaSSTConfig
+from pinneaple_physics.pde_environment import KOmegaSSTResiduals, KOmegaSSTConfig
 
 try:
-    from pinneaple_environment import SpalartAllmarasResiduals
+    from pinneaple_physics.pde_environment import SpalartAllmarasResiduals
     _SA = True
 except ImportError:
     _SA = False

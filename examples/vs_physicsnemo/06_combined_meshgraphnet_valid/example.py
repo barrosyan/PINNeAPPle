@@ -757,7 +757,7 @@ def main():
     # ── Fase 3: Validação física ──────────────────────────────────────────────
     print("\n[3/4] Validação física (PINNeAPPle PhysicsValidator)...")
     # Em produção:
-    #   from pinneaple_validate import PhysicsValidator, ConservationCheck, BoundaryCheck
+    #   from pinneaple_analysis.validation import PhysicsValidator, ConservationCheck, BoundaryCheck
     #   validator = PhysicsValidator([ConservationCheck("divergence"), BoundaryCheck("noslip")])
     #   report = validator.validate(model, mesh_data)
     val_results = validate_cfd_fields(nodes, u_pred, v_pred, p_pred, node_types, edges)
@@ -766,7 +766,7 @@ def main():
     # ── Fase 4: Export ────────────────────────────────────────────────────────
     print("[4/4] Exportando modelo (PINNeAPPle pinneaple_export)...")
     # Em produção:
-    #   from pinneaple_export import export_torchscript, export_onnx
+    #   from pinneaple_tools.model_export import export_torchscript, export_onnx
     #   export_torchscript(model, example_inputs, path="mgn.pt")
     #   export_onnx(model, example_inputs, path="mgn.onnx")
     export_results = export_model(model, node_t, edge_t, edge_idx_t, output_dir)

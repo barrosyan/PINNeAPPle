@@ -15,10 +15,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_validate.physics_validator import PhysicsValidator, PhysicsValidatorConfig
-from pinneaple_validate.conservation import ConservationLawChecker
-from pinneaple_validate.boundary import BoundaryConsistencyChecker
-from pinneaple_validate.report import ValidationReport
+from pinneaple_analysis.validation.physics_validator import PhysicsValidator, PhysicsValidatorConfig
+from pinneaple_analysis.validation.conservation import ConservationLawChecker
+from pinneaple_analysis.validation.boundary import BoundaryConsistencyChecker
+from pinneaple_analysis.validation.report import ValidationReport
 
 
 # ---------------------------------------------------------------------------
@@ -121,7 +121,7 @@ def main():
           f"({'PASS' if cons_result.passed else 'FAIL'})")
 
     # --- BoundaryConsistencyChecker ------------------------------------------
-    from pinneaple_geom.csg import CSGRectangle
+    from pinneaple_design.geometry.csg import CSGRectangle
     rect = CSGRectangle(0, 0, 1, 1)
     xy_bnd_np = rect.sample_boundary(n=512, seed=7)
     xy_bnd = torch.tensor(xy_bnd_np, dtype=torch.float32, device=device)

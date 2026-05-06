@@ -21,7 +21,7 @@ def main() -> int:
     # sys.path.append("C:/PINNeAPPle")
 
     try:
-        from pinneaple_integrations.omniverse import export_flow_bundle_from_usd
+        from pinneaple_simulation.external_solvers.omniverse import export_flow_bundle_from_usd
     except Exception as e:
         raise RuntimeError(
             "Could not import pinneaple_integrations.omniverse.export_flow_bundle_from_usd.\n"

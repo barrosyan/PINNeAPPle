@@ -19,7 +19,7 @@ from pinneaple_data.upd import UnifiedPhysicalData, UPDSchema
 from pinneaple_data.zarr_store import ZarrDatasetWriter, ZarrDatasetReader
 from pinneaple_data.collocation import CollocationSampler, CollocationConfig
 from pinneaple_data.validation import DataValidator, ValidationConfig
-from pinneaple_geom.csg import CSGRectangle
+from pinneaple_design.geometry.csg import CSGRectangle
 
 
 # ---------------------------------------------------------------------------

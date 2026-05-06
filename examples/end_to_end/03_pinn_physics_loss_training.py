@@ -2,10 +2,10 @@ import os
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from pinneaple_pinn.factory.pinn_factory import PINNFactory, PINNProblemSpec
-from pinneaple_train.trainer import Trainer, TrainConfig
-from pinneaple_train.losses import CombinedLoss, SupervisedLoss, PhysicsLossHook
-from pinneaple_train.metrics import default_metrics
+from pinneaple_physics.pinn_solver.factory.pinn_factory import PINNFactory, PINNProblemSpec
+from pinneaple_neural.trainer.trainer import Trainer, TrainConfig
+from pinneaple_neural.trainer.losses import CombinedLoss, SupervisedLoss, PhysicsLossHook
+from pinneaple_neural.trainer.metrics import default_metrics
 
 # ----------------------------
 # 1) Define a toy PDE: u_t + u = 0  (solution ~ exp(-t))

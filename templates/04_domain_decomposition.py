@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_pinn.domino import DoMINO, Subdomain
+from pinneaple_physics.pinn_solver.domino import DoMINO, Subdomain
 
 
 # ---------------------------------------------------------------------------

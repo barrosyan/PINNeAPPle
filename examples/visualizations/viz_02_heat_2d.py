@@ -30,7 +30,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 
-from pinneaple_validate import compare_to_analytical
+from pinneaple_analysis.validation import compare_to_analytical
 
 ALPHA   = 0.05
 T_MAX   = 0.5

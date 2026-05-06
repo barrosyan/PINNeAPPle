@@ -14,8 +14,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_models.neural_operators.deeponet import DeepONet
-from pinneaple_models.utils import InputNormaliser
+from pinneaple_neural.architectures.neural_operators.deeponet import DeepONet
+from pinneaple_neural.architectures.utils import InputNormaliser
 
 
 # ---------------------------------------------------------------------------

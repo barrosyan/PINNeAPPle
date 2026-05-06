@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Union
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from pinneaple_pinn.io import UPDItem, UPDDataset, SamplingSpec, ConditionSpec, PINNMapping
+from pinneaple_physics.pinn_solver.io import UPDItem, UPDDataset, SamplingSpec, ConditionSpec, PINNMapping
 
 from .collate import collate_pinn_batches
 from .physical_sample import PhysicalSample

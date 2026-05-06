@@ -13,5 +13,5 @@ pip install -e ".[dev]"
 Verify:
 
 ```bash
-python -c "import pinneaple_arena, pinneaple_pinn; print('OK')"
+python -c "import pinneaple_tools.benchmark_suite, pinneaple_physics.pinn_solver; print('OK')"
 ```

@@ -4,9 +4,9 @@ import pandas as pd
 import numpy as np
 import torch
 
-from pinneaple_models.pinns.registry import PINNCatalog
-from pinneaple_models.neural_operators.fno import FourierNeuralOperator
-from pinneaple_train.checkpoint import load_checkpoint
+from pinneaple_neural.architectures.pinns.registry import PINNCatalog
+from pinneaple_neural.architectures.neural_operators.fno import FourierNeuralOperator
+from pinneaple_neural.trainer.checkpoint import load_checkpoint
 
 
 PINN_MODELS = ["vanilla_pinn", "vpinn", "xpinn", "pinnsformer", "xtfc"]

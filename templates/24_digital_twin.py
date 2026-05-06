@@ -19,10 +19,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_digital_twin.runtime import DigitalTwinRuntime, DigitalTwinConfig
-from pinneaple_digital_twin.assimilator import StateAssimilator, AssimilatorConfig
-from pinneaple_digital_twin.anomaly import AnomalyDetector, AnomalyConfig
-from pinneaple_digital_twin.sensors import SyntheticSensorStream
+from pinneaple_systems.digital_twin.runtime import DigitalTwinRuntime, DigitalTwinConfig
+from pinneaple_systems.digital_twin.assimilator import StateAssimilator, AssimilatorConfig
+from pinneaple_systems.digital_twin.anomaly import AnomalyDetector, AnomalyConfig
+from pinneaple_systems.digital_twin.sensors import SyntheticSensorStream
 
 
 # ---------------------------------------------------------------------------
