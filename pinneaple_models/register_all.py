@@ -1,6 +1,11 @@
 from __future__ import annotations
 """Register all model families into the global ModelRegistry."""
 
+import importlib
+import logging
+
+logger = logging.getLogger(__name__)
+
 _REGISTERED = False
 
 
@@ -30,8 +35,9 @@ def register_all() -> None:
 
     for module_path, fn_name in _FAMILIES:
         try:
-            import importlib
             mod = importlib.import_module(module_path)
             getattr(mod, fn_name)()
-        except Exception:
-            pass  # skip families with import errors or duplicate-key conflicts
+        except ImportError as exc:
+            logger.debug("pinneaple_models: skipping %s (missing dependency: %s)", module_path, exc)
+        except KeyError as exc:
+            logger.warning("pinneaple_models: registry collision in %s — %s", module_path, exc)

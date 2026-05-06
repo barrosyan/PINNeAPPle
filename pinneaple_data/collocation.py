@@ -313,14 +313,65 @@ class CollocationSampler:
 
     # ------------------------------------------------------------------ sampling
 
+    @classmethod
+    def from_stl(
+        cls,
+        stl_path: str,
+        fields: Tuple[str, ...] = ("u", "v", "p"),
+        strategy: str = "lhs",
+        seed: int = 0,
+    ) -> "CollocationSampler":
+        """Create from an STL file using pinneaple_geom.sample surface samplers."""
+        try:
+            from pinneaple_geom.sample import sample_surface_points
+            from pinneaple_data.stl_import import load_stl
+        except ImportError as e:
+            raise ImportError(f"from_stl requires pinneaple_geom and pinneaple_data.stl_import: {e}")
+
+        mesh = load_stl(stl_path)
+        verts = mesh.vertices
+        bounds = {
+            "x": (float(verts[:, 0].min()), float(verts[:, 0].max())),
+            "y": (float(verts[:, 1].min()), float(verts[:, 1].max())),
+        }
+        if verts.shape[1] > 2:
+            bounds["z"] = (float(verts[:, 2].min()), float(verts[:, 2].max()))
+
+        coord_names = tuple(bounds.keys())
+
+        def _boundary_fn(n: int, rng: np.random.Generator) -> np.ndarray:
+            pts = sample_surface_points(mesh.vertices, mesh.faces, n, seed=int(rng.integers(0, 2**31)))
+            return pts[:, :len(coord_names)].astype(np.float32)
+
+        return cls(
+            bounds=bounds,
+            coord_names=coord_names,
+            boundary_samplers={"surface": _boundary_fn},
+            fields=fields,
+            strategy=strategy,
+            seed=seed,
+        )
+
     def _interior_points(self, n: int, rng: np.random.Generator) -> np.ndarray:
-        """Sample n interior points using configured strategy."""
+        """Sample n interior points; delegates to pinneaple_geom.sample when available."""
         if self.strategy == "sobol":
             pts = _sample_sobol(self._bounds_arr, n, self.seed)
         elif self.strategy == "lhs":
-            pts = _sample_lhs(self._bounds_arr, n, rng)
+            try:
+                from pinneaple_geom.sample import sample_latin_hypercube_box
+                lo = self._bounds_arr[:, 0].tolist()
+                hi = self._bounds_arr[:, 1].tolist()
+                pts = sample_latin_hypercube_box(lo, hi, n, seed=int(rng.integers(0, 2**31))).astype(np.float32)
+            except ImportError:
+                pts = _sample_lhs(self._bounds_arr, n, rng)
         else:
-            pts = _sample_uniform(self._bounds_arr, n, rng)
+            try:
+                from pinneaple_geom.sample import sample_uniform_box
+                lo = self._bounds_arr[:, 0].tolist()
+                hi = self._bounds_arr[:, 1].tolist()
+                pts = sample_uniform_box(lo, hi, n, seed=int(rng.integers(0, 2**31))).astype(np.float32)
+            except ImportError:
+                pts = _sample_uniform(self._bounds_arr, n, rng)
 
         if self.sdf_fn is not None:
             # Rejection to ensure points are inside

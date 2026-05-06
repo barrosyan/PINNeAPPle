@@ -16,8 +16,9 @@ Models that need different inputs (coords+params, graph objects, sequences,
 fields, etc.) should override ``forward_batch``.
 """
 from __future__ import annotations
+import os
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 import torch
 import torch.nn as nn
 
@@ -54,3 +55,38 @@ class BaseModel(nn.Module):
         if x is None:
             raise KeyError("forward_batch expects batch to include 'x' or 'x_col'.")
         return self.forward(x)
+
+    # ------------------------------------------------------------------
+    # Checkpoint I/O — available to all model families
+    # ------------------------------------------------------------------
+
+    def save_checkpoint(self, path: str, metadata: Optional[Dict[str, Any]] = None) -> str:
+        """Save model weights + metadata as a pinneaple checkpoint.
+
+        The checkpoint dict contains:
+          - ``"state_dict"``: model weights
+          - ``"class_name"``: fully qualified class name
+          - ``"metadata"``: user-provided dict
+
+        Returns the path where the file was saved.
+        """
+        os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
+        ckpt = {
+            "state_dict": self.state_dict(),
+            "class_name": f"{self.__class__.__module__}.{self.__class__.__name__}",
+            "metadata": metadata or {},
+        }
+        torch.save(ckpt, path)
+        return path
+
+    @classmethod
+    def load_checkpoint(cls, path: str, **init_kwargs) -> "BaseModel":
+        """Load a model from a pinneaple checkpoint.
+
+        Usage::
+            model = VanillaPINN.load_checkpoint("model.pt", in_dim=2, out_dim=1, hidden=[64,64,64])
+        """
+        ckpt = torch.load(path, map_location="cpu", weights_only=False)
+        model = cls(**init_kwargs)
+        model.load_state_dict(ckpt["state_dict"])
+        return model

@@ -83,7 +83,13 @@ __all__ = [
     "mesh_sdf_2d",
     "mesh_polygon_2d",
     "mesh_quality_report",
+    # Meshfree
+    "RBFInterpolator",
+    "ImplicitSurfaceRBF",
     # CSG (Feature 12)
+    # Airfoil shapes
+    "naca_parametric",
+    # CSG
     "SDFShape",
     "CSGRectangle",
     "CSGCircle",
@@ -111,6 +117,9 @@ from .ops.pointcloud import PointCloud, mesh_to_pointcloud, sdf2d_to_pointcloud
 
 # Optimization
 from .optimize.loop import ParamSpace, GeometryOptimizer
+
+# Airfoil shapes
+from .gen.airfoil import naca_parametric
 
 # New: rich SDF library
 from .gen.sdf_shapes import (
@@ -159,6 +168,9 @@ from .mesh import (
     mesh_polygon_2d,
     mesh_quality_report,
 )
+
+# Meshfree geometry utilities
+from .ops.meshfree import RBFInterpolator, ImplicitSurfaceRBF
 
 # New: CSG (Feature 12)
 from .csg import (

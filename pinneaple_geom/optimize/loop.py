@@ -1,54 +1,41 @@
-
 """Geometry optimization loop helpers.
 
-This is a lightweight, UI-friendly optimization scaffold:
-
-  - user defines `param_space` (bounds + initial params)
-  - user defines `evaluate(params)` that returns a scalar score (lower is better)
-  - the loop proposes candidates (random / CMA-ES if available)
-  - the UI can visualize geometry at each iteration and let the user intervene
-
-The goal is NOT to enforce a single optimizer, but to provide a common API that
-both the CLI examples and the web app can reuse.
+ParamSpace, OptState: re-exported from pinneaple_design_opt.optimizer (canonical location).
+GeometryOptimizer: UI-friendly loop wrapper that delegates CMA-ES/GA to
+EvolutionaryDesignOptimizer — no duplicate optimizer logic here.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Callable, Dict, Optional, Tuple, Any
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-
-@dataclass
-class ParamSpace:
-    """Box-bounded parameter space."""
-    bounds: Dict[str, Tuple[float, float]]
-    x0: Dict[str, float]
-
-    def clip(self, x: Dict[str, float]) -> Dict[str, float]:
-        out = {}
-        for k, v in x.items():
-            lo, hi = self.bounds[k]
-            out[k] = float(np.clip(v, lo, hi))
-        return out
-
+# Re-export canonical types from pinneaple_design_opt
+from pinneaple_design_opt.optimizer import (  # noqa: F401
+    ParamSpace,
+    OptState,
+    EvolutionaryDesignOptimizer,
+    DesignOptimizerConfig,
+)
 
 EvalFn = Callable[[Dict[str, float]], float]
 
 
-@dataclass
-class OptState:
-    step: int
-    best_x: Dict[str, float]
-    best_y: float
-    last_x: Dict[str, float]
-    last_y: float
-
-
 class GeometryOptimizer:
-    """Simple optimizer with optional CMA-ES.
+    """UI-friendly geometry optimizer backed by EvolutionaryDesignOptimizer.
 
-    If `cma` package is installed, uses CMA-ES, otherwise random-search + local jitter.
+    Converts between the dict-of-params interface used by UI/CLI callers and
+    the numpy-array interface used by EvolutionaryDesignOptimizer internally.
+    No CMA-ES or GA logic lives here — all of that is in EvolutionaryDesignOptimizer.
+
+    Parameters
+    ----------
+    space:
+        ParamSpace defining bounds and initial point.
+    seed:
+        Random seed.
+    sigma0:
+        Initial CMA-ES step size (fraction of parameter range).
     """
 
     def __init__(
@@ -59,53 +46,36 @@ class GeometryOptimizer:
         sigma0: float = 0.2,
     ):
         self.space = space
-        self.rng = np.random.default_rng(int(seed))
-        self.sigma0 = float(sigma0)
+        self._keys = list(space.bounds.keys())
+        self._bounds_arr = np.array(
+            [space.bounds[k] for k in self._keys], dtype=np.float64
+        )
+        cfg = DesignOptimizerConfig(method="evolutionary", sigma0=sigma0)
+        self._opt = EvolutionaryDesignOptimizer(cfg, seed=seed)
 
-        self._use_cma = False
-        self._cma = None
-        try:
-            import cma  # type: ignore
-            self._use_cma = True
-            self._cma = cma
-        except Exception:
-            self._use_cma = False
+    # ------------------------------------------------------------------
+    # Dict ↔ array conversion helpers
+    # ------------------------------------------------------------------
 
-        self._cma_es = None
-        if self._use_cma:
-            x0 = np.array([space.x0[k] for k in space.bounds.keys()], dtype=np.float64)
-            self._cma_es = self._cma.CMAEvolutionStrategy(x0, self.sigma0, {"seed": int(seed)})
+    def _to_dict(self, arr: np.ndarray) -> Dict[str, float]:
+        return self.space.clip({k: float(v) for k, v in zip(self._keys, arr)})
 
-    def ask(self, n: int = 1) -> list[Dict[str, float]]:
-        keys = list(self.space.bounds.keys())
-        if self._use_cma and self._cma_es is not None:
-            xs = self._cma_es.ask(number=n)
-            out = []
-            for xi in xs:
-                d = {k: float(v) for k, v in zip(keys, xi)}
-                out.append(self.space.clip(d))
-            return out
+    def _to_arr(self, d: Dict[str, float]) -> np.ndarray:
+        return np.array([d[k] for k in self._keys], dtype=np.float64)
 
-        # fallback: random around x0 with decaying sigma
-        out = []
-        for _ in range(n):
-            d = {}
-            for k, (lo, hi) in self.space.bounds.items():
-                mu = self.space.x0[k]
-                sig = self.sigma0 * (hi - lo)
-                v = float(mu + self.rng.normal(0.0, sig))
-                d[k] = float(np.clip(v, lo, hi))
-            out.append(d)
-        return out
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
-    def tell(self, xs: list[Dict[str, float]], ys: list[float]) -> None:
-        if self._use_cma and self._cma_es is not None:
-            keys = list(self.space.bounds.keys())
-            X = [np.array([x[k] for k in keys], dtype=np.float64) for x in xs]
-            self._cma_es.tell(X, ys)
-            # update x0 to current best for better UX in fallback mode
-            best = self._cma_es.best.x
-            self.space.x0 = {k: float(v) for k, v in zip(keys, best)}
+    def ask(self, n: int = 1) -> List[Dict[str, float]]:
+        """Return *n* candidate parameter dicts."""
+        candidates_arr = self._opt.ask(self._bounds_arr, n)
+        return [self._to_dict(a) for a in candidates_arr]
+
+    def tell(self, xs: List[Dict[str, float]], ys: List[float]) -> None:
+        """Inform the optimizer of objective values for the last candidates."""
+        xs_arr = [self._to_arr(x) for x in xs]
+        self._opt.tell(xs_arr, ys)
 
     def run(
         self,
@@ -115,6 +85,19 @@ class GeometryOptimizer:
         batch: int = 4,
         on_step: Optional[Callable[[OptState], Any]] = None,
     ) -> OptState:
+        """Run the full optimization loop.
+
+        Parameters
+        ----------
+        evaluate:
+            Callable ``(params: dict) -> float`` (lower is better).
+        iters:
+            Number of iterations.
+        batch:
+            Candidates evaluated per iteration.
+        on_step:
+            Optional callback ``(OptState) -> Any`` called after each iteration.
+        """
         best_x = dict(self.space.x0)
         best_y = float("inf")
         last_x = dict(self.space.x0)
@@ -135,3 +118,6 @@ class GeometryOptimizer:
                 on_step(st)
 
         return OptState(step=int(iters), best_x=best_x, best_y=best_y, last_x=last_x, last_y=last_y)
+
+
+__all__ = ["ParamSpace", "OptState", "GeometryOptimizer"]

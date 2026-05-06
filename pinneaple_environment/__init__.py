@@ -46,6 +46,13 @@ from .turbulence_presets import (
     get_rans_preset,
     SST_CONSTS,
 )
+from .capabilities import (
+    PDEFamily,
+    list_pde_families,
+    get_pde_family,
+    identify_pde,
+    suggest_problem_spec,
+)
 
 __all__ = [
     "PDETermSpec",
@@ -87,4 +94,10 @@ __all__ = [
     "KOmegaSSTResiduals",
     "SpalartAllmarasResiduals",
     "get_rans_preset",
+    # PDE family knowledge base
+    "PDEFamily",
+    "list_pde_families",
+    "get_pde_family",
+    "identify_pde",
+    "suggest_problem_spec",
 ]

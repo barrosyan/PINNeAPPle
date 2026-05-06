@@ -36,6 +36,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+# naca_parametric canonical location is pinneaple_geom.gen.airfoil;
+# re-exported here for backwards compatibility.
+from pinneaple_geom.gen.airfoil import naca_parametric  # noqa: F401
+
 
 # ---------------------------------------------------------------------------
 # Shape parametrisation
@@ -402,78 +406,3 @@ class DragAdjointObjective:
         return drag
 
 
-# ---------------------------------------------------------------------------
-# NACA 4-digit parametric shape
-# ---------------------------------------------------------------------------
-
-
-def naca_parametric(
-    m: float = 0.0,
-    p: float = 0.0,
-    t_c: float = 0.12,
-    n_pts: int = 100,
-) -> torch.Tensor:
-    """Generate a NACA 4-digit airfoil surface as control-point coordinates.
-
-    Uses the standard NACA thickness distribution and camber-line formulae.
-
-    Parameters
-    ----------
-    m:
-        Maximum camber as fraction of chord (0 for symmetric NACA 00xx).
-    p:
-        Position of maximum camber (fraction of chord).
-    t_c:
-        Thickness-to-chord ratio (e.g. 0.12 for NACA 0012).
-    n_pts:
-        Number of surface points (distributed along upper and lower surface).
-
-    Returns
-    -------
-    torch.Tensor
-        Shape ``(n_pts, 2)`` – ``(x, y)`` coordinates along the airfoil.
-    """
-    n_half = n_pts // 2
-    # Cosine spacing for denser clustering near leading/trailing edges
-    beta = torch.linspace(0.0, math.pi, n_half)
-    xc = 0.5 * (1.0 - torch.cos(beta))  # chord-wise positions ∈ [0, 1]
-
-    # Thickness distribution (NACA formula)
-    yt = (t_c / 0.2) * (
-        0.2969 * xc.sqrt()
-        - 0.1260 * xc
-        - 0.3516 * xc ** 2
-        + 0.2843 * xc ** 3
-        - 0.1015 * xc ** 4
-    )
-
-    # Camber line
-    if m == 0 or p == 0:
-        yc = torch.zeros_like(xc)
-        dyc_dx = torch.zeros_like(xc)
-    else:
-        mask_fwd = xc < p
-        yc = torch.where(
-            mask_fwd,
-            (m / p ** 2) * (2 * p * xc - xc ** 2),
-            (m / (1 - p) ** 2) * (1 - 2 * p + 2 * p * xc - xc ** 2),
-        )
-        dyc_dx = torch.where(
-            mask_fwd,
-            (2 * m / p ** 2) * (p - xc),
-            (2 * m / (1 - p) ** 2) * (p - xc),
-        )
-
-    theta = torch.atan(dyc_dx)
-
-    # Upper and lower surface
-    xu = xc - yt * torch.sin(theta)
-    yu = yc + yt * torch.cos(theta)
-    xl = xc + yt * torch.sin(theta)
-    yl = yc - yt * torch.cos(theta)
-
-    # Concatenate upper (forward) + lower (reversed) for a closed loop
-    x_surf = torch.cat([xu, xl.flip(0)])
-    y_surf = torch.cat([yu, yl.flip(0)])
-
-    return torch.stack([x_surf, y_surf], dim=-1)  # (n_pts, 2)

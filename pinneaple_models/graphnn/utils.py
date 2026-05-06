@@ -4,27 +4,19 @@ import torch
 from typing import List, Optional, Tuple
 
 def scatter_add(src: torch.Tensor, index: torch.Tensor, dim_size: int) -> torch.Tensor:
-    """
-    src: (B, E, F)
-    index: (E,) destination indices [0..N-1]
-    returns: (B, N, F) where output[:, index[e], :] += src[:, e, :]
-    """
-    B, E, F = src.shape
-    out = torch.zeros((B, dim_size, F), device=src.device, dtype=src.dtype)
-    out.index_add_(1, index, src)
-    return out
+    """Scatter-add with shared-graph batching.
 
-def scatter_add_batched(src: torch.Tensor, index: torch.Tensor, dim_size: int) -> torch.Tensor:
-    """
-    Fixed/shared-graph batching.
-    src: (B, E, F)
-    index: (E,) destination indices [0..N-1]
+    src: (B, E, F) — batched edge features
+    index: (E,)    — destination node indices [0..N-1], shared across batch
     returns: (B, N, F) where out[:, index[e], :] += src[:, e, :]
     """
     B, E, F = src.shape
     out = torch.zeros((B, dim_size, F), device=src.device, dtype=src.dtype)
     out.index_add_(1, index, src)
     return out
+
+# Alias kept for backward compatibility with existing imports
+scatter_add_batched = scatter_add
 
 
 def scatter_add_flat(src: torch.Tensor, index: torch.Tensor, dim_size: int) -> torch.Tensor:

@@ -19,14 +19,8 @@ try:
 except Exception:
     build_parametric_part = None  # type: ignore
 
-# OpenFOAM adapter (optional)
-try:
-    from .openfoam import export_openfoam_case  # noqa: F401
-except Exception:
-    export_openfoam_case = None  # type: ignore
 
 __all__ = [
     "step_to_mesh",
     "build_parametric_part",
-    "export_openfoam_case",
 ]

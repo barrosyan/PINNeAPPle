@@ -184,6 +184,62 @@ def load_geometry_asset(
     return asset
 
 
+def stl_to_upd(
+    path: Union[str, Path],
+    *,
+    repair: bool = True,
+    compute_normals: bool = True,
+    units: str = "m",
+) -> Any:
+    """Load an STL and package it as a UPD-aligned PhysicalSample.
+
+    Returns a PhysicalSample where:
+      - state contains {"vertices": Tensor[V,3], "faces": Tensor[F,3]}
+      - domain indicates a mesh sample
+      - provenance tracks the source path and geometry id
+    """
+    import torch
+    import trimesh as _trimesh
+
+    from pinneaple_geom.io.trimesh_bridge import TrimeshBridge
+    from pinneaple_data.physical_sample import PhysicalSample
+
+    path = Path(path).expanduser().resolve()
+    if not path.exists():
+        raise FileNotFoundError(path)
+
+    obj = _trimesh.load(str(path), force="mesh")
+    if isinstance(obj, _trimesh.Scene):
+        if not obj.geometry:
+            raise ValueError(f"STL scene has no geometry: {path}")
+        obj = _trimesh.util.concatenate(tuple(obj.geometry.values()))
+    if not isinstance(obj, _trimesh.Trimesh):
+        raise TypeError(f"Loaded object is not a Trimesh: {type(obj).__name__}")
+
+    bridge = TrimeshBridge()
+    if repair:
+        obj = bridge._repair_trimesh(obj)
+    md = bridge.from_trimesh(obj, compute_normals=compute_normals)
+
+    V = torch.as_tensor(md.vertices, dtype=torch.float32)
+    F = torch.as_tensor(md.faces, dtype=torch.long)
+
+    geom_id = None
+    try:
+        geom_id = obj.md5()
+    except Exception:
+        pass
+
+    return PhysicalSample(
+        state={"vertices": V, "faces": F},
+        geometry=None,
+        domain={"type": "mesh"},
+        provenance={"source": "stl", "path": str(path), "geometry_id": geom_id},
+        schema={"units": {"vertices": units}},
+        extras={"meshdata": md},
+    )
+
+
 def attach_geometry(sample: Any, geom_asset: Any) -> Any:
     """
     Attach a GeometryAsset to a PhysicalSample-like structure.

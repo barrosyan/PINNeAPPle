@@ -13,6 +13,7 @@ from .optimizer import (
     DesignOptimizerConfig,
     EvolutionaryDesignOptimizer,
     GradientDesignOptimizer,
+    ParamSpace,
 )
 from .pareto import ParetoFront, compute_pareto_front
 from .refinement import PINNRefinement, RefinementResult

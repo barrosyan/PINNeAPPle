@@ -25,5 +25,10 @@ def render_json_report(report: DesignReport, *, indent: int = 2) -> str:
             ],
             "go_no_go": report.plan.go_no_go,
         },
+        "pinneaple_spec": (
+            report.pinneaple_spec.to_dict()
+            if report.pinneaple_spec is not None
+            else None
+        ),
     }
     return json.dumps(payload, ensure_ascii=False, indent=indent)

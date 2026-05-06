@@ -123,6 +123,17 @@ from .solver import (
     InverseProblemSolver,
 )
 
+# Missing term identification
+from .missing_term import (
+    CandidateLibrary,
+    SINDyResult,
+    SINDyIdentifier,
+    ResidualAnalysisResult,
+    ResidualAnalyzer,
+    NeuralTermConfig,
+    NeuralTermDiscovery,
+)
+
 __version__ = "0.1.0"
 
 __all__ = [
@@ -163,4 +174,12 @@ __all__ = [
     "InverseSolverConfig",
     "InverseSolverResult",
     "InverseProblemSolver",
+    # Missing term identification
+    "CandidateLibrary",
+    "SINDyResult",
+    "SINDyIdentifier",
+    "ResidualAnalysisResult",
+    "ResidualAnalyzer",
+    "NeuralTermConfig",
+    "NeuralTermDiscovery",
 ]

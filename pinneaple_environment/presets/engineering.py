@@ -44,17 +44,12 @@ from ..spec import PDETermSpec, ProblemSpec
 from ..conditions import DirichletBC, NeumannBC
 from ..scales import ScaleSpec
 from .registry import register_preset
+from ._utils import _lame
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _lame(E: float, nu: float):
-    lam = E * nu / ((1 + nu) * (1 - 2 * nu))
-    mu = E / (2 * (1 + nu))
-    return lam, mu
-
 
 def _reynolds(rho: float, U: float, L: float, mu: float) -> float:
     return rho * U * L / mu

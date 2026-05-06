@@ -56,6 +56,8 @@ from .constraints import (
 )
 from .surrogate import SurrogateConfig, PhysicsSurrogate
 from .optimizer import (
+    ParamSpace,
+    OptState,
     DesignOptimizerConfig,
     GradientDesignOptimizer,
     BayesianDesignOptimizer,
@@ -77,6 +79,7 @@ __all__ = [
     "ConstraintBase", "BoxConstraint", "MassConservationConstraint",
     "GeometricConstraint", "ManufacturabilityConstraint", "ConstraintSet",
     "SurrogateConfig", "PhysicsSurrogate",
+    "ParamSpace", "OptState",
     "DesignOptimizerConfig", "GradientDesignOptimizer",
     "BayesianDesignOptimizer", "EvolutionaryDesignOptimizer",
     "RefinementConfig", "PINNRefinement", "RefinementResult",

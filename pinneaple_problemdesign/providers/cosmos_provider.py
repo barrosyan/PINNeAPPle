@@ -4,9 +4,11 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
+
+from pinneaple_problemdesign.protocol import LLMMessage, LLMResponse
 
 
 @dataclass(frozen=True)
@@ -110,7 +112,27 @@ class CosmosProvider:
 
     def generate(
         self,
+        messages: List[LLMMessage],
         *,
+        temperature: float = 0.2,
+        max_tokens: int = 800,
+        json_mode: bool = False,
+    ) -> LLMResponse:
+        """Implement LLMProvider protocol: convert LLMMessage list → Cosmos gateway request."""
+        system = next((m.content for m in messages if m.role == "system"), None)
+        turns = [m.content for m in messages if m.role != "system"]
+        prompt = "\n".join(turns)
+
+        text = self._call_gateway(
+            prompt=prompt,
+            system=system,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        return LLMResponse(text=text, raw={"_provider": "cosmos"})
+
+    def _call_gateway(
+        self,
         prompt: str,
         system: Optional[str] = None,
         schema: Optional[str] = None,
@@ -118,6 +140,7 @@ class CosmosProvider:
         max_tokens: int = 2048,
         extra: Optional[Dict[str, Any]] = None,
     ) -> str:
+        """Low-level HTTP call to the Cosmos gateway. Returns raw text string."""
         payload: Dict[str, Any] = {
             "prompt": str(prompt),
             "system": (str(system) if system is not None else None),
@@ -160,23 +183,4 @@ class CosmosProvider:
         raise RuntimeError(
             "CosmosProvider gateway returned JSON but none of {text, output, content} was a non-empty string.\n"
             f"Keys: {list(data.keys())}"
-        )
-
-    def __call__(
-        self,
-        *,
-        prompt: str,
-        system: Optional[str] = None,
-        schema: Optional[str] = None,
-        temperature: float = 0.2,
-        max_tokens: int = 2048,
-        extra: Optional[Dict[str, Any]] = None,
-    ) -> str:
-        return self.generate(
-            prompt=prompt,
-            system=system,
-            schema=schema,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            extra=extra,
         )

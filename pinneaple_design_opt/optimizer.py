@@ -2,9 +2,43 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
+
+
+# ---------------------------------------------------------------------------
+# Parameter space (canonical location — pinneaple_geom.optimize.loop re-exports)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ParamSpace:
+    """Box-bounded design parameter space."""
+    bounds: Dict[str, Tuple[float, float]]
+    x0: Dict[str, float]
+
+    def clip(self, x: Dict[str, float]) -> Dict[str, float]:
+        out = {}
+        for k, v in x.items():
+            lo, hi = self.bounds[k]
+            out[k] = float(np.clip(v, lo, hi))
+        return out
+
+
+@dataclass
+class OptState:
+    """Snapshot of optimizer state at one iteration."""
+    step: int
+    best_x: Dict[str, float]
+    best_y: float
+    last_x: Dict[str, float]
+    last_y: float
+
+
+# ---------------------------------------------------------------------------
+# Optimizer configuration
+# ---------------------------------------------------------------------------
 
 
 @dataclass

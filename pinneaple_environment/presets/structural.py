@@ -22,12 +22,7 @@ from ..conditions import DirichletBC, NeumannBC
 from ..scales import ScaleSpec
 from ..environment_typing import CoordNames
 from .registry import register_preset
-
-
-def _lame(E: float, nu: float):
-    lam = E * nu / ((1 + nu) * (1 - 2 * nu))
-    mu = E / (2 * (1 + nu))
-    return lam, mu
+from ._utils import _lame
 
 
 @register_preset("plane_stress_2d")

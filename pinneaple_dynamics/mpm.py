@@ -24,6 +24,8 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
+from ._utils import _gravity_tensor
+
 
 # ---------------------------------------------------------------------------
 # MPM State
@@ -133,14 +135,7 @@ class MPMSimulator(nn.Module):
         self.mu_0 = E / (2.0 * (1.0 + nu))
         self.lam_0 = E * nu / ((1.0 + nu) * (1.0 - 2.0 * nu))
 
-        # Gravity
-        if gravity is None:
-            g = [0.0] * dim
-            if dim >= 2:
-                g[1] = -9.81
-        else:
-            g = list(gravity)[:dim]
-        self.register_buffer("gravity", torch.tensor(g, dtype=torch.float32))
+        self.register_buffer("gravity", _gravity_tensor(dim, gravity))
 
         # Volume per particle initialised during first forward call
         self._vol: Optional[float] = None

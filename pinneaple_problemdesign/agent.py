@@ -14,7 +14,8 @@ from .elicitation.stages import STAGES_ORDER
 from .elicitation.questions import build_stage_gaps
 from .elicitation.validators import validate_and_suggest
 
-from .knowledge.mapping import build_plan_fno_first
+from .knowledge.mapping import build_plan
+from .codegen import build_pinneaple_spec
 from .renderers.report_md import render_markdown_report
 
 
@@ -113,10 +114,12 @@ class DesignAgent:
             state.stage = self._next_stage(state.stage)
 
             if state.stage == "finalization":
-                # Build the plan + finalize
-                state.plan = build_plan_fno_first(state.spec, state.gaps)
+                # Build the plan + translate to concrete Pinneaple API objects
+                state.plan = build_plan(state.spec, state.gaps)
+                pinneaple_spec = build_pinneaple_spec(state.spec)
                 state.done = True
                 report = state.to_report()
+                report.pinneaple_spec = pinneaple_spec
                 warnings2, _ = validate_and_suggest(report.spec)
                 md = render_markdown_report(report, warnings2)
                 return {"type": "report", "markdown": md, "report": report}

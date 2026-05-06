@@ -139,17 +139,19 @@ def build_pennylane_circuit(config: QuantumCircuitConfig, backend):
 
 class ClassicalVQC(nn.Module):
     """
-    Variational quantum circuit emulated entirely in PyTorch.
+    Variational quantum circuit **approximated** entirely in PyTorch.
 
     Produces outputs in [-1, 1]^n_observables (bounded like Pauli-Z expectations)
-    using a parameterized network that approximates the circuit's expressibility.
+    using a parameterized MLP that mimics the circuit's expressibility.
     This path is taken automatically when no quantum backend is available.
 
     Notes
     -----
-    This is a *faithful classical simulation*, not a surrogate approximation.
-    For n_qubits ≤ 20, the full state-vector is simulated exactly via matrix
-    operations. The quantum gates are applied as complex unitary matrices.
+    This is a *surrogate approximation*, not a faithful state-vector simulation.
+    It preserves output range and parameter count but does not reproduce exact
+    quantum gate dynamics. For a true state-vector simulation (Rx/Ry/Rz/CNOT
+    gates applied as complex unitaries), see :class:`ClassicalQNode` in
+    ``pinneaple_quantum.backends.backend``.
     """
 
     def __init__(self, config: QuantumCircuitConfig):

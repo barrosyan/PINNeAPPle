@@ -165,8 +165,10 @@ class DigitalTwin:
         )
         self.sensor_registry = SensorRegistry()
 
-        # Assimilation filter
+        # Assimilation filter — auto-build from config if not provided explicitly
         self._filter = assimilation_filter
+        if self._filter is None and self.cfg.assimilation != "none":
+            self._filter = self._build_default_filter()
 
         # Anomaly monitoring
         self.anomaly_monitor = AnomalyMonitor()
@@ -187,6 +189,55 @@ class DigitalTwin:
         self._update_thread: Optional[threading.Thread] = None
         self._step_count: int = 0
         self._last_observations: List[Observation] = []
+
+    # ------------------------------------------------------------------
+    # Default filter construction
+    # ------------------------------------------------------------------
+
+    def _build_default_filter(self) -> Optional[Any]:
+        """Build a default EKF or EnKF from cfg when no filter is supplied.
+
+        Uses an identity state-transition and identity observation model whose
+        dimension equals len(field_names).  This is a sensible starting point;
+        replace with a custom filter for production use.
+        """
+        from .assimilation.kalman import ExtendedKalmanFilter, EnsembleKalmanFilter
+
+        n = len(self.field_names)
+        if n == 0:
+            logger.warning("Cannot build default filter: field_names is empty.")
+            return None
+
+        Q = np.eye(n, dtype=np.float64) * 0.01
+        R = np.eye(n, dtype=np.float64) * 0.1
+
+        def _identity(x: np.ndarray) -> np.ndarray:
+            return x.copy()
+
+        if self.cfg.assimilation == "ekf":
+            filt = ExtendedKalmanFilter(
+                n_state=n, n_obs=n,
+                f=_identity, h=_identity,
+                Q=Q, R=R,
+            )
+            filt.initialize(np.zeros(n))
+            logger.info(f"DigitalTwin: auto-built default EKF (n={n}).")
+            return filt
+
+        if self.cfg.assimilation == "enkf":
+            filt = EnsembleKalmanFilter(
+                n_state=n, n_obs=n,
+                f=_identity, h=_identity,
+                Q=Q, R=R,
+                n_ens=self.cfg.enkf_n_ens,
+                inflation=self.cfg.enkf_inflation,
+            )
+            filt.initialize(np.zeros(n))
+            logger.info(f"DigitalTwin: auto-built default EnKF (n={n}, n_ens={self.cfg.enkf_n_ens}).")
+            return filt
+
+        logger.warning(f"Unknown assimilation method '{self.cfg.assimilation}'; skipping.")
+        return None
 
     # ------------------------------------------------------------------
     # Stream management
@@ -362,27 +413,39 @@ class DigitalTwin:
         self,
         observations: List[Observation],
     ) -> None:
-        """Run data assimilation filter with new observations."""
+        """Run data assimilation filter with new observations.
+
+        All observations received in this tick are averaged per field before
+        the filter step, so no data is silently discarded.
+        """
         if self._filter is None or not observations:
             return
         try:
-            # Build observation vector from latest observations
-            y_vals = []
-            for obs in observations[-1:]:  # Use the most recent obs
+            # Accumulate all readings per field, then average.
+            field_acc: Dict[str, List[float]] = {f: [] for f in self.field_names}
+            for obs in observations:
                 for f in self.field_names:
                     if f in obs.values:
-                        y_vals.append(obs.values[f])
-            if y_vals:
-                y = np.array(y_vals, dtype=np.float64)
-                result = self._filter.step(y)
-                # Update state residuals
-                if "innovation" in result:
-                    inn = result["innovation"]
-                    for i, f in enumerate(self.field_names):
-                        if i < len(inn):
-                            self.state.residuals[f] = float(inn[i])
-                if "P" in result:
-                    self.state.covariance = result["P"]
+                        field_acc[f].append(float(obs.values[f]))
+
+            y_vals = [
+                float(np.mean(field_acc[f])) if field_acc[f] else float("nan")
+                for f in self.field_names
+            ]
+
+            if all(np.isnan(v) for v in y_vals):
+                return
+
+            y = np.array(y_vals, dtype=np.float64)
+            result = self._filter.step(y)
+
+            if "innovation" in result:
+                inn = result["innovation"]
+                for i, f in enumerate(self.field_names):
+                    if i < len(inn):
+                        self.state.residuals[f] = float(inn[i])
+            if "P" in result:
+                self.state.covariance = result["P"]
         except Exception as exc:
             logger.warning(f"Assimilation error: {exc}")
 

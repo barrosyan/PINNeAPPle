@@ -1,6 +1,6 @@
 from __future__ import annotations
 """GNN-ODE hybrid for continuous-time graph dynamics (fixed-step + optional torchdiffeq)."""
-from typing import Dict, Optional, Literal
+from typing import Any, Dict, Optional, Literal
 
 import torch
 import torch.nn as nn
@@ -189,3 +189,24 @@ class GraphNeuralODE(GraphModelBase):
             losses["total"] = losses["mse"]
 
         return GraphOutput(y=y_path, losses=losses, extras={})
+
+    def forward_batch(self, batch: Dict[str, Any]) -> GraphOutput:
+        """Dict-based interface used by Arena / GNNAdapter.
+
+        Required keys: ``x`` (or ``node_features``), ``edge_index``, ``t``.
+        """
+        x          = batch["x"] if "x" in batch else batch.get("node_features")
+        edge_index = batch["edge_index"]
+        edge_attr  = batch.get("edge_attr") if "edge_attr" in batch else batch.get("edge_features")
+        pos        = batch.get("pos")
+        mask       = batch.get("mask")
+        t          = batch.get("t")
+        y_true     = batch.get("y_true") if "y_true" in batch else batch.get("y")
+
+        if x is None:
+            raise KeyError("forward_batch: batch must contain 'x' or 'node_features'.")
+        if t is None:
+            raise KeyError("forward_batch: GraphNeuralODE requires batch['t'] (time-grid tensor).")
+
+        g = GraphBatch(x=x, edge_index=edge_index, pos=pos, edge_attr=edge_attr, mask=mask)
+        return self.forward(g, t, y_true=y_true, return_loss=(y_true is not None))

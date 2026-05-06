@@ -1,8 +1,13 @@
 """Markdown renderer for DesignReport."""
 from __future__ import annotations
 
-from typing import List
+from typing import Any, Dict, List
 from ..schema import DesignReport, Gap
+
+
+def _kwargs_str(d: Dict[str, Any]) -> str:
+    """Format a kwargs dict as a compact inline string for Markdown display."""
+    return ", ".join(f"{k}={v!r}" for k, v in d.items())
 
 
 def _format_gaps(gaps: List[Gap]) -> str:
@@ -102,6 +107,26 @@ def render_markdown_report(report: DesignReport, warnings: List[str]) -> str:
         md.append("\n## 8) Go / No-Go\n")
         for g in p.go_no_go:
             md.append(f"- {g}")
+
+    ps = report.pinneaple_spec
+    if ps is not None:
+        md.append("\n## 9) Pinneaple API objects\n")
+        md.append(f"- **PDE kind:** `{ps.pde_kind}`"
+                  + (f" _(confidence {ps.pde_confidence:.1f})_" if ps.pde_confidence > 0 else ""))
+        md.append(f"- **Coords:** `{ps.coords}`")
+        md.append(f"- **Fields:** `{ps.fields}`")
+        if ps.pde_params:
+            md.append(f"- **PDE params:** `{ps.pde_params}`")
+        md.append(f"- **Model:** `pp.build_model({ps.model_name!r}, {_kwargs_str(ps.model_kwargs)})`")
+        md.append(f"- **TrainConfig:** `{_kwargs_str(ps.train_config_kwargs)}`")
+        if ps.collocation_kwargs.get("n_col"):
+            md.append(f"- **Collocation:** `{_kwargs_str(ps.collocation_kwargs)}`")
+
+        if ps.pipeline_code:
+            md.append("\n## 10) Generated pipeline code\n")
+            md.append("```python")
+            md.append(ps.pipeline_code.rstrip())
+            md.append("```\n")
 
     md.append(f"\n---\n_generated at {report.created_at}_\n")
     return "\n".join(md)

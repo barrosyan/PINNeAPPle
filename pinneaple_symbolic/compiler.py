@@ -2,6 +2,20 @@
 
 Converts SymPy PDE residual expressions into callable PyTorch autograd functions.
 
+Design note — two SymPy→PyTorch compilation paths exist in this codebase:
+
+* **This module** (``SymbolicPDE``): walks the expression tree recursively using
+  ``torch.autograd.grad``.  Gradients flow *through* the evaluation, so you can
+  differentiate the residual loss with respect to model weights.  Use this when
+  you need higher-order autograd or want the symbolic expression to participate
+  directly in the training graph.
+
+* ``pinneaple_pinn.factory.sympy_backend.SympyTorchCompiler``: uses
+  ``sympy.lambdify`` to emit a Python lambda; faster to evaluate but the
+  lambdified call is opaque to autograd (no gradient tape through the symbolic
+  tree).  Use that path when the PDE loss is evaluated at fixed collocation
+  points and speed matters more than differentiability through the expression.
+
 Usage example::
 
     import sympy as sp

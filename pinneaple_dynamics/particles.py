@@ -18,6 +18,8 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
+from ._utils import _gravity_tensor
+
 
 # ---------------------------------------------------------------------------
 # Base particle system
@@ -203,13 +205,7 @@ class SPHParticles(ParticleSystem):
         self.nu = nu
         self.gamma = gamma
 
-        if gravity is None:
-            g = [0.0] * dim
-            if dim >= 2:
-                g[1] = -9.81
-        else:
-            g = list(gravity)[:dim]
-        self.register_buffer("gravity", torch.tensor(g, dtype=torch.float32))
+        self.register_buffer("gravity", _gravity_tensor(dim, gravity))
 
         # Background pressure coefficient B = rho0 * c0^2 / gamma
         self.B = rho0 * c0 ** 2 / gamma
