@@ -39,6 +39,11 @@ try:
 except Exception:
     pass
 
+try:
+    from . import external_sources  # noqa: F401  (optional: requires network / API keys)
+except Exception:
+    pass
+
 
 def load_dataset(dataset_id: str, **kwargs) -> Dict[str, np.ndarray]:
     """Load a pre-built dataset by ID.
@@ -112,4 +117,35 @@ __all__ = [
     "list_datasets",
     "dataset_info",
     "dataset_ids",
+    # External source clients
+    "MaterialsProjectClient",
+    "NOMADClient",
+    "NASAClient",
+    "NOAAClient",
+    "CopernicusClient",
+    "BrazilDataCubeClient",
+    "CPTECClient",
+    "ONSClient",
+    "NRELClient",
+    "DesignSafeClient",
+    "OpenFOAMClient",
+    "SU2Client",
 ]
+
+try:
+    from .external_sources import (
+        MaterialsProjectClient,
+        NOMADClient,
+        NASAClient,
+        NOAAClient,
+        CopernicusClient,
+        BrazilDataCubeClient,
+        CPTECClient,
+        ONSClient,
+        NRELClient,
+        DesignSafeClient,
+        OpenFOAMClient,
+        SU2Client,
+    )
+except Exception:
+    pass

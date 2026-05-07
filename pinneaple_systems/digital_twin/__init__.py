@@ -44,6 +44,21 @@ from .monitoring import (
     AnomalyEvent, AnomalyMonitor,
     ThresholdDetector, ZScoreDetector, MahalanobisDetector,
 )
+from .realtime_pipeline import (
+    RealtimePipeline,
+    RealtimePipelineConfig,
+    LatencyStats,
+    LatencyBudgetExceeded,
+)
+from .signal_reconstruction import (
+    SignalReconstructor,
+    ReconstructionResult,
+    reconstruct_spectral,
+    reconstruct_ssa,
+    reconstruct_wavelet,
+    reconstruct_interpolate,
+    reconstruct_model_based,
+)
 
 __all__ = [
     # Core
@@ -71,4 +86,17 @@ __all__ = [
     "ThresholdDetector",
     "ZScoreDetector",
     "MahalanobisDetector",
+    # Real-time pipeline
+    "RealtimePipeline",
+    "RealtimePipelineConfig",
+    "LatencyStats",
+    "LatencyBudgetExceeded",
+    # Signal reconstruction
+    "SignalReconstructor",
+    "ReconstructionResult",
+    "reconstruct_spectral",
+    "reconstruct_ssa",
+    "reconstruct_wavelet",
+    "reconstruct_interpolate",
+    "reconstruct_model_based",
 ]

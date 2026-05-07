@@ -83,6 +83,22 @@ __all__ = [
     "mesh_sdf_2d",
     "mesh_polygon_2d",
     "mesh_quality_report",
+    # 3D mesher + physics sampling
+    "Mesh3D",
+    "PhysicsPointCloud3D",
+    "mesh_from_surface",
+    "mesh_from_sdf_3d",
+    "sample_physics_points",
+    "surface_from_pointcloud",
+    # Clean mesh pipeline
+    "CleanMeshConfig",
+    "clean_mesh",
+    "smooth_mesh",
+    "remove_outlier_vertices",
+    "keep_largest_component",
+    "decimate_mesh",
+    "remove_self_intersections",
+    "mesh_quality_report_3d",
     # Meshfree
     "RBFInterpolator",
     "ImplicitSurfaceRBF",
@@ -167,6 +183,28 @@ from .mesh import (
     mesh_sdf_2d,
     mesh_polygon_2d,
     mesh_quality_report,
+)
+
+# 3D mesher + physics sampling
+from .mesh import (
+    Mesh3D,
+    PhysicsPointCloud3D,
+    mesh_from_surface,
+    mesh_from_sdf_3d,
+    sample_physics_points,
+    surface_from_pointcloud,
+)
+
+# Clean mesh pipeline
+from .ops import (
+    CleanMeshConfig,
+    clean_mesh,
+    smooth_mesh,
+    remove_outlier_vertices,
+    keep_largest_component,
+    decimate_mesh,
+    remove_self_intersections,
+    mesh_quality_report_3d,
 )
 
 # Meshfree geometry utilities
