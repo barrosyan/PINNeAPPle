@@ -113,17 +113,25 @@ class OperatorInference(ROMBase):
     def _solve_ridge(X: torch.Tensor, Y: torch.Tensor, lam_diag: torch.Tensor) -> torch.Tensor:
         """
         Solve ridge: (X^T X + diag(lam)) W = X^T Y
-        Prefer Cholesky; fallback to solve.
-        """
-        K = X.transpose(0, 1) @ X
-        K = K + torch.diag(lam_diag.to(device=X.device, dtype=X.dtype))
-        RHS = X.transpose(0, 1) @ Y
 
-        try:
-            L = torch.linalg.cholesky(K)
-            return torch.cholesky_solve(RHS, L)
-        except RuntimeError:
-            return torch.linalg.solve(K, RHS)
+        Tries Cholesky first; on failure doubles the diagonal regularisation
+        up to 5 times before falling back to least-squares (lstsq) which never
+        raises on singular input.
+        """
+        K0 = X.transpose(0, 1) @ X
+        RHS = X.transpose(0, 1) @ Y
+        lam = lam_diag.to(device=X.device, dtype=X.dtype)
+
+        for scale in (1.0, 4.0, 16.0, 64.0, 256.0):
+            K = K0 + torch.diag(lam * scale)
+            try:
+                L = torch.linalg.cholesky(K)
+                return torch.cholesky_solve(RHS, L)
+            except RuntimeError:
+                continue
+
+        # Last resort: overdetermined lstsq (no regularisation but numerically stable)
+        return torch.linalg.lstsq(X, Y, driver="gelsd").solution
 
     # ----------------------------
     # Parameter accessors: A, H, b
