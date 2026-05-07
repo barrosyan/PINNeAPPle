@@ -26,6 +26,11 @@ class ExperimentConfig:
     device: str = "cpu"
     batch_size: int = 4096
     seed: int = 42
+    grad_clip: Optional[float] = None       # gradient clipping norm (None = disabled)
+    # Auto-improvement
+    auto_improve: bool = True
+    max_retrain_rounds: int = 2
+    advisor_priority_threshold: int = 3     # apply suggestions up to this priority level
 
 
 @dataclass
@@ -39,6 +44,8 @@ class ModelResult:
     n_params: int
     model_state: Optional[Any] = None       # state_dict (serializable)
     error: Optional[str] = None             # non-None if training failed
+    retrain_rounds: int = 0                 # how many advisor-driven retrains occurred
+    diagnosis: Optional[Dict[str, Any]] = None  # last DiagnosticReport summary
 
 
 @dataclass
@@ -74,9 +81,14 @@ class ExperimentRunner:
         results: Dict[str, ModelResult] = {}
 
         for model_cfg in self.config.models:
-            result = await asyncio.to_thread(
-                self._train_one, model_cfg, progress_cb
-            )
+            if self.config.auto_improve:
+                result = await asyncio.to_thread(
+                    self._train_one_with_autofix, model_cfg, progress_cb
+                )
+            else:
+                result = await asyncio.to_thread(
+                    self._train_one, model_cfg, progress_cb, self.config, 0
+                )
             results[model_cfg.name] = result
 
         from datetime import datetime, timezone
@@ -87,15 +99,115 @@ class ExperimentRunner:
             completed_at=datetime.now(timezone.utc).isoformat(),
         )
 
-    def _train_one(self, model_cfg: ModelRunConfig, progress_cb) -> ModelResult:
-        """Synchronous training of a single model."""
+    # ── Auto-improvement loop ─────────────────────────────────────────────────
+
+    def _train_one_with_autofix(
+        self,
+        model_cfg: ModelRunConfig,
+        progress_cb,
+    ) -> ModelResult:
+        """Train with advisor-driven auto-retraining."""
+        from pinneaple_neural.trainer.advisor import TrainingAdvisor
+
+        advisor = TrainingAdvisor()
+        current_cfg = self.config
+        best_result: Optional[ModelResult] = None
+        round_num = 0
+
+        while True:
+            result = self._train_one(model_cfg, progress_cb, current_cfg, round_num)
+            result.retrain_rounds = round_num
+
+            if best_result is None or _result_is_better(result, best_result):
+                best_result = result
+
+            if result.error or round_num >= self.config.max_retrain_rounds:
+                break
+
+            # Analyse training quality
+            report = advisor.analyse(
+                model_name=model_cfg.name,
+                loss_history=result.loss_history,
+                physics_loss_history=result.physics_loss_history,
+                bc_loss_history=result.bc_loss_history,
+                metrics=result.metrics,
+                current_lr=current_cfg.lr,
+                current_epochs=current_cfg.epochs,
+                current_batch_size=current_cfg.batch_size,
+            )
+
+            # Attach diagnosis to result
+            result.diagnosis = {
+                "signals": report.signals,
+                "suggestions": [
+                    {"code": s.code, "priority": s.priority,
+                     "description": s.description, "patch": s.config_patch}
+                    for s in report.suggestions[:5]
+                ],
+                "text": report.diagnosis_text,
+            }
+
+            if progress_cb:
+                progress_cb({
+                    "type": "advisor",
+                    "model": model_cfg.name,
+                    "round": round_num,
+                    "signals": report.signals,
+                    "top_suggestion": report.suggestions[0].description
+                    if report.suggestions else "No issues found.",
+                })
+
+            high_priority = [
+                s for s in report.suggestions
+                if s.priority <= self.config.advisor_priority_threshold
+            ]
+            if not high_priority:
+                break
+
+            # Build improved config from patches
+            patch = advisor.apply_suggestions(
+                high_priority, _cfg_to_dict(current_cfg),
+                max_priority=self.config.advisor_priority_threshold,
+            )
+            current_cfg = _dict_to_cfg(patch, current_cfg)
+
+            if progress_cb:
+                progress_cb({
+                    "type": "retrain",
+                    "model": model_cfg.name,
+                    "round": round_num + 1,
+                    "patches_applied": patch.get("_advisor_patches", []),
+                    "new_lr": current_cfg.lr,
+                    "new_epochs": current_cfg.epochs,
+                })
+
+            round_num += 1
+
+        return best_result
+
+    # ── Single training run ───────────────────────────────────────────────────
+
+    def _train_one(
+        self,
+        model_cfg: ModelRunConfig,
+        progress_cb,
+        cfg: ExperimentConfig,
+        round_label: int,
+    ) -> ModelResult:
+        """Synchronous training of a single model with a given config."""
         import torch
         from pinneaple_neural.architectures import ModelRegistry
-        from pinneaple_neural.trainer import Trainer, TrainConfig
         from pinneaple_physics.pinn_solver import compile_problem
 
         name = model_cfg.name
         t0 = time.time()
+
+        # Loss weights (default 1.0 each)
+        w_physics = 1.0
+        w_bc = 1.0
+        if model_cfg.weight_override:
+            w_physics = model_cfg.weight_override.get("physics", 1.0)
+            w_bc = model_cfg.weight_override.get("bc", 1.0)
 
         try:
             # ── Build model ───────────────────────────────────────────────
@@ -115,7 +227,7 @@ class ExperimentRunner:
                 physics_fn = None
 
             # ── Prepare tensors ───────────────────────────────────────────
-            dev = torch.device(self.config.device)
+            dev = torch.device(cfg.device)
             x_col = torch.as_tensor(self.data.x_col, dtype=torch.float32, device=dev)
             x_bnd = torch.as_tensor(self.data.x_bnd, dtype=torch.float32, device=dev)
             x_ic  = (torch.as_tensor(self.data.x_ic,  dtype=torch.float32, device=dev)
@@ -126,10 +238,10 @@ class ExperimentRunner:
             model = model.to(dev)
 
             # ── Training loop ─────────────────────────────────────────────
-            optimizer = torch.optim.Adam(model.parameters(), lr=self.config.lr)
+            optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr)
             loss_hist, phys_hist, bc_hist = [], [], []
 
-            for epoch in range(self.config.epochs):
+            for epoch in range(cfg.epochs):
                 optimizer.zero_grad()
 
                 out = model(x_col)
@@ -156,19 +268,24 @@ class ExperimentRunner:
                 if u_ref is not None and len(u_ref) == len(pred):
                     data_loss = ((pred - u_ref) ** 2).mean()
 
-                total = phys_loss + bc_loss + data_loss
+                total = w_physics * phys_loss + w_bc * bc_loss + data_loss
                 total.backward()
+
+                if cfg.grad_clip is not None:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
+
                 optimizer.step()
 
                 loss_hist.append(float(total.detach()))
                 phys_hist.append(float(phys_loss.detach() if hasattr(phys_loss, 'detach') else phys_loss))
                 bc_hist.append(float(bc_loss.detach() if hasattr(bc_loss, 'detach') else bc_loss))
 
-                if progress_cb and epoch % max(1, self.config.epochs // 50) == 0:
+                if progress_cb and epoch % max(1, cfg.epochs // 50) == 0:
                     progress_cb({
                         "model": name,
+                        "round": round_label,
                         "epoch": epoch,
-                        "total_epochs": self.config.epochs,
+                        "total_epochs": cfg.epochs,
                         "loss": float(total),
                         "phys_loss": float(phys_loss),
                         "bc_loss": float(bc_loss),
@@ -209,9 +326,43 @@ class ExperimentRunner:
 
 # ── Helpers ───────────────────────────────────────────────────────────────
 
+def _result_is_better(new: ModelResult, old: ModelResult) -> bool:
+    """Return True if new result has lower final loss or better l2_relative."""
+    if new.error:
+        return False
+    if old.error:
+        return True
+    new_l2 = new.metrics.get("l2_relative", float("inf"))
+    old_l2 = old.metrics.get("l2_relative", float("inf"))
+    import math
+    if math.isfinite(new_l2) and math.isfinite(old_l2):
+        return new_l2 < old_l2
+    # Fallback to final loss
+    new_loss = new.loss_history[-1] if new.loss_history else float("inf")
+    old_loss = old.loss_history[-1] if old.loss_history else float("inf")
+    return new_loss < old_loss
+
+
+def _cfg_to_dict(cfg: ExperimentConfig) -> Dict[str, Any]:
+    return {
+        "epochs": cfg.epochs,
+        "lr": cfg.lr,
+        "batch_size": cfg.batch_size,
+        "grad_clip": cfg.grad_clip,
+        "device": cfg.device,
+    }
+
+
+def _dict_to_cfg(patch: Dict[str, Any], base: ExperimentConfig) -> ExperimentConfig:
+    """Return a copy of base ExperimentConfig with patched fields applied."""
+    from dataclasses import replace
+    allowed = {"epochs", "lr", "batch_size", "grad_clip"}
+    kwargs = {k: v for k, v in patch.items() if k in allowed}
+    return replace(base, **kwargs)
+
+
 def _build_model(name: str, in_dim: int, out_dim: int, extra_kwargs: dict):
     from pinneaple_neural.architectures import ModelRegistry
-    # Common overrides so the registry has what it needs
     kwargs = dict(in_dim=in_dim, out_dim=out_dim)
     kwargs.update(extra_kwargs)
     return ModelRegistry.build(name, **kwargs)
@@ -229,7 +380,7 @@ def _compile_custom(problem):
             else:
                 expr = eq.expression
             residuals.append(expr)
-        # Build a simple combined residual
+
         def _physics_fn(model, x, _):
             import torch
             out = model(x)

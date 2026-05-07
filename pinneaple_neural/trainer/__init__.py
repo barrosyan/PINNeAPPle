@@ -27,6 +27,7 @@ from .callbacks import EarlyStopping, ModelCheckpoint
 from .trainer import Trainer, TrainConfig
 from .datamodule import DataModule, ItemAdapter, FnAdapter, AdaptedSequenceDataset
 from .audit import RunLogger, set_seed, set_deterministic
+from .advisor import TrainingAdvisor, Suggestion, DiagnosticReport
 from .metrics_cfg import build_metrics_from_cfg
 from .weight_scheduler import (
     WeightScheduler,
@@ -55,6 +56,10 @@ from .parallel import (
 )
 
 __all__ = [
+    # Training advisor
+    "TrainingAdvisor",
+    "Suggestion",
+    "DiagnosticReport",
     "TwoPhaseConfig", "TwoPhaseHistory", "TwoPhaseTrainer", "UnnormModel",
     # Time-marching
     "TimeMarchingTrainer",
