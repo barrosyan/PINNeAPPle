@@ -1,0 +1,1 @@
+{"n_trajectories": 20, "horizon": 1, "param_keys": ["nu"], "pde_kinds": ["burgers"], "n_samples": 1280}

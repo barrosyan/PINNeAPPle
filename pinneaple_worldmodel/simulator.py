@@ -292,22 +292,29 @@ class PhysicsSimulator:
         nu = params.get("nu", 0.01)
         dev = self.device
         u = _make_ic(sc, seed).to(dev)  # (1, Nx)
-        dt = sc.dt
+        dt_out = sc.dt
         dx = (sc.domain_bounds[0][1] - sc.domain_bounds[0][0]) / sc.grid_shape[0]
-        states = [u.cpu()]
 
+        # Sub-step count to satisfy CFL and diffusion stability
+        dt_cfl  = 0.5 * dx / 2.0                     # |u| ≤ 2 (conservative)
+        dt_diff = 0.5 * dx ** 2 / max(2.0 * nu, 1e-12)
+        dt_sub  = min(dt_cfl, dt_diff, dt_out)
+        n_sub   = max(1, math.ceil(dt_out / dt_sub))
+        dt_sub  = dt_out / n_sub
+
+        states = [u.cpu()]
         for _ in range(sc.n_steps):
-            # Upwind advection + central diffusion
-            u_right = torch.roll(u, -1, dims=-1)
-            u_left  = torch.roll(u,  1, dims=-1)
-            adv = torch.where(u >= 0,
-                              (u - u_left) / dx,
-                              (u_right - u) / dx)
-            diff = (u_right - 2 * u + u_left) / (dx ** 2)
-            u = u + dt * (-u * adv + nu * diff)
-            if sc.bc_type == "dirichlet_zero":
-                u[..., 0] = 0.0
-                u[..., -1] = 0.0
+            for _ in range(n_sub):
+                u_right = torch.roll(u, -1, dims=-1)
+                u_left  = torch.roll(u,  1, dims=-1)
+                adv = torch.where(u >= 0,
+                                  (u - u_left) / dx,
+                                  (u_right - u) / dx)
+                diff = (u_right - 2 * u + u_left) / (dx ** 2)
+                u = u + dt_sub * (-u * adv + nu * diff)
+                if sc.bc_type == "dirichlet_zero":
+                    u[..., 0] = 0.0
+                    u[..., -1] = 0.0
             states.append(u.cpu())
 
         return torch.stack(states, dim=0)
@@ -321,17 +328,23 @@ class PhysicsSimulator:
         c = params.get("c", 1.0)
         dev = self.device
         u = _make_ic(sc, seed).to(dev)
-        # zero initial velocity
         u_prev = u.clone()
-        dt = sc.dt
-        states = [u.cpu()]
+        dt_out = sc.dt
+        dx = (sc.domain_bounds[0][1] - sc.domain_bounds[0][0]) / sc.grid_shape[0]
 
+        # Leapfrog stability: c*dt/dx <= 1/sqrt(spatial_dim)
+        dt_stable = 0.5 * dx / max(c, 1e-6)
+        n_sub = max(1, math.ceil(dt_out / dt_stable))
+        dt_sub = dt_out / n_sub
+
+        states = [u.cpu()]
         for _ in range(sc.n_steps):
-            lap = _laplacian(u, sc.bc_type)
-            u_next = 2 * u - u_prev + (c * dt) ** 2 * lap
-            u_prev, u = u, u_next
-            if sc.bc_type == "dirichlet_zero":
-                u = _apply_dirichlet_zero(u)
+            for _ in range(n_sub):
+                lap = _laplacian(u, sc.bc_type)
+                u_next = 2 * u - u_prev + (c * dt_sub) ** 2 * lap
+                u_prev, u = u, u_next
+                if sc.bc_type == "dirichlet_zero":
+                    u = _apply_dirichlet_zero(u)
             states.append(u.cpu())
 
         return torch.stack(states, dim=0)
@@ -346,27 +359,34 @@ class PhysicsSimulator:
         vy = params.get("vy", 0.5) if sc.spatial_dim >= 2 else 0.0
         dev = self.device
         u = _make_ic(sc, seed).to(dev)
-        dt = sc.dt
+        dt_out = sc.dt
         Lx = sc.domain_bounds[0][1] - sc.domain_bounds[0][0]
         dx = Lx / sc.grid_shape[0]
+
+        # Upwind stability: CFL = v*dt/dx <= 1
+        v_max = max(abs(vx), abs(vy), 1e-6)
+        dt_stable = 0.9 * dx / v_max
+        n_sub = max(1, math.ceil(dt_out / dt_stable))
+        dt_sub = dt_out / n_sub
+
         states = [u.cpu()]
-
         for _ in range(sc.n_steps):
-            if vx >= 0:
-                flux_x = vx * (u - torch.roll(u, 1, dims=-1)) / dx
-            else:
-                flux_x = vx * (torch.roll(u, -1, dims=-1) - u) / dx
-
-            if sc.spatial_dim >= 2:
-                Ly = sc.domain_bounds[1][1] - sc.domain_bounds[1][0]
-                dy = Ly / sc.grid_shape[1]
-                if vy >= 0:
-                    flux_y = vy * (u - torch.roll(u, 1, dims=-2)) / dy
+            for _ in range(n_sub):
+                if vx >= 0:
+                    flux_x = vx * (u - torch.roll(u, 1, dims=-1)) / dx
                 else:
-                    flux_y = vy * (torch.roll(u, -1, dims=-2) - u) / dy
-                u = u - dt * (flux_x + flux_y)
-            else:
-                u = u - dt * flux_x
+                    flux_x = vx * (torch.roll(u, -1, dims=-1) - u) / dx
+
+                if sc.spatial_dim >= 2:
+                    Ly = sc.domain_bounds[1][1] - sc.domain_bounds[1][0]
+                    dy = Ly / sc.grid_shape[1]
+                    if vy >= 0:
+                        flux_y = vy * (u - torch.roll(u, 1, dims=-2)) / dy
+                    else:
+                        flux_y = vy * (torch.roll(u, -1, dims=-2) - u) / dy
+                    u = u - dt_sub * (flux_x + flux_y)
+                else:
+                    u = u - dt_sub * flux_x
 
             states.append(u.cpu())
 

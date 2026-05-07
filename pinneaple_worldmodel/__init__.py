@@ -214,6 +214,19 @@ from .pipeline import PhysicsAIPipeline, PhysicsAIConfig, PhysicsAIPipelineResul
 # Legacy pipeline (kept for backwards compatibility)
 from .pipeline import PhysicsAIPipeline as WorldModelPipeline  # noqa: F401
 
+# --- Training & dataset generation entry points ---
+from .train import (
+    train_specialist,
+    train_meta,
+    train_foundation,
+    run_pipeline,
+)
+from .generate_datasets import (
+    generate as generate_datasets,
+    generate_via_factory,
+    load_catalog,
+)
+
 __all__ = [
     # Scenario
     "PhysicsScenario",
@@ -293,4 +306,13 @@ __all__ = [
     "PhysicsAIPipeline",
     "PhysicsAIConfig",
     "PhysicsAIPipelineResult",
+    # Training entry points
+    "train_specialist",
+    "train_meta",
+    "train_foundation",
+    "run_pipeline",
+    # Dataset generation entry points
+    "generate_datasets",
+    "generate_via_factory",
+    "load_catalog",
 ]

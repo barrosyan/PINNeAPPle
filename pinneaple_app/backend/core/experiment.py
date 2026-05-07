@@ -79,12 +79,12 @@ class ExperimentRunner:
             )
             results[model_cfg.name] = result
 
-        from datetime import datetime
+        from datetime import datetime, timezone
         return ExperimentResult(
             experiment_id=self.config.experiment_id,
             config=self.config,
             model_results=results,
-            completed_at=datetime.utcnow().isoformat(),
+            completed_at=datetime.now(timezone.utc).isoformat(),
         )
 
     def _train_one(self, model_cfg: ModelRunConfig, progress_cb) -> ModelResult:
@@ -160,9 +160,9 @@ class ExperimentRunner:
                 total.backward()
                 optimizer.step()
 
-                loss_hist.append(float(total))
-                phys_hist.append(float(phys_loss))
-                bc_hist.append(float(bc_loss))
+                loss_hist.append(float(total.detach()))
+                phys_hist.append(float(phys_loss.detach() if hasattr(phys_loss, 'detach') else phys_loss))
+                bc_hist.append(float(bc_loss.detach() if hasattr(bc_loss, 'detach') else bc_loss))
 
                 if progress_cb and epoch % max(1, self.config.epochs // 50) == 0:
                     progress_cb({

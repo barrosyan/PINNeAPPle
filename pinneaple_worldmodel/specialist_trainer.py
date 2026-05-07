@@ -151,7 +151,7 @@ class SpecialistTrainer:
 
         for scenario_name, datasets in scenario_datasets.items():
             if cfg.verbose:
-                print(f"\n{'─'*56}")
+                print(f"\n{'-'*56}")
                 print(f"[SpecialistTrainer] Scenario: {scenario_name}")
 
             # Merge all datasets for this scenario (multiple sources)
