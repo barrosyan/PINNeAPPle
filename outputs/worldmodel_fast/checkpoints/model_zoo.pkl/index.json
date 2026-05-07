@@ -1,0 +1,18 @@
+{
+  "burgers_1d": {
+    "checkpoint": "outputs\\worldmodel_fast\\checkpoints\\model_zoo.pkl\\burgers_1d.pt",
+    "scenario": "burgers_1d",
+    "physics_tags": [],
+    "metrics": {
+      "val_loss": 0.0004380726162101685,
+      "val_rmse": 0.01915849782526493,
+      "val_rel_l2": 0.01995580680668354
+    },
+    "n_params": 3649,
+    "trained_at": 1778111924.561401,
+    "metadata": {
+      "training_time_s": 24.577423095703125,
+      "n_samples": 1280
+    }
+  }
+}

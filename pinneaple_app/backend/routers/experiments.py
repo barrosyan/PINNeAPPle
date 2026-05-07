@@ -71,7 +71,7 @@ async def launch_experiment(req: ExperimentRequest, background_tasks: Background
     from ..core.problem import load_preset, define_custom, EquationSpec, BoundaryConditionSpec
 
     exp_id = _new_id()
-    _EXPERIMENTS[exp_id] = {"status": "queued", "progress": 0.0, "request": req.dict()}
+    _EXPERIMENTS[exp_id] = {"status": "queued", "progress": 0.0, "request": req.model_dump()}
     _PROGRESS[exp_id] = []
 
     # Build objects now so validation errors surface synchronously

@@ -2,7 +2,21 @@
 from __future__ import annotations
 import base64
 import io
+import math
 from typing import Any, Dict, List, Optional
+
+
+def _sanitize(obj: Any) -> Any:
+    """Recursively replace NaN/Infinity with None so the payload is valid JSON."""
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize(v) for v in obj]
+    return obj
 
 
 def build_benchmark_payload(result) -> Dict[str, Any]:
@@ -24,7 +38,7 @@ def build_benchmark_payload(result) -> Dict[str, Any]:
         if r.error
     }
 
-    return {
+    return _sanitize({
         "experiment_id": result.experiment_id,
         "problem_name":  result.config.problem_name,
         "completed_at":  result.completed_at,
@@ -32,7 +46,7 @@ def build_benchmark_payload(result) -> Dict[str, Any]:
         "charts":        charts,
         "summary":       summary,
         "errors":        errors,
-    }
+    })
 
 
 def _build_charts(result) -> Dict[str, str]:

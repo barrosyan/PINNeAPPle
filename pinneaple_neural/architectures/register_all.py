@@ -17,20 +17,20 @@ def register_all() -> None:
     _REGISTERED = True
 
     _FAMILIES = [
-        ("pinneaple_models.autoencoders.registry",        "register_into_global"),
-        ("pinneaple_models.classical_ts.registry",        "register_into_global"),
-        ("pinneaple_models.continuous.registry",          "register_into_global"),
-        ("pinneaple_models.convolutions.registry",        "register_into_global"),
-        ("pinneaple_models.graphnn.registry",             "register_into_global"),
-        ("pinneaple_models.neural_operators.registry",    "register_into_global"),
-        ("pinneaple_models.physics_aware.registry",       "register_into_global"),
-        ("pinneaple_models.pinns.registry",               "register_into_global"),
-        ("pinneaple_models.recurrent.registry",           "register_into_global"),
-        ("pinneaple_models.reservoir_computing.registry", "register_into_global"),
-        ("pinneaple_models.rom.registry",                 "register_into_global"),
-        ("pinneaple_models.transformers.registry",        "register_into_global"),
-        ("pinneaple_models.benchmarks.registry",          "register_into_global"),
-        ("pinneaple_models.group_b_registry",             "register_into_global"),
+        ("pinneaple_neural.architectures.autoencoders.registry",        "register_into_global"),
+        ("pinneaple_neural.architectures.classical_ts.registry",        "register_into_global"),
+        ("pinneaple_neural.architectures.continuous.registry",          "register_into_global"),
+        ("pinneaple_neural.architectures.convolutions.registry",        "register_into_global"),
+        ("pinneaple_neural.architectures.graphnn.registry",             "register_into_global"),
+        ("pinneaple_neural.architectures.neural_operators.registry",    "register_into_global"),
+        ("pinneaple_neural.architectures.physics_aware.registry",       "register_into_global"),
+        ("pinneaple_neural.architectures.pinns.registry",               "register_into_global"),
+        ("pinneaple_neural.architectures.recurrent.registry",           "register_into_global"),
+        ("pinneaple_neural.architectures.reservoir_computing.registry", "register_into_global"),
+        ("pinneaple_neural.architectures.rom.registry",                 "register_into_global"),
+        ("pinneaple_neural.architectures.transformers.registry",        "register_into_global"),
+        ("pinneaple_neural.architectures.benchmarks.registry",          "register_into_global"),
+        ("pinneaple_neural.architectures.group_b_registry",             "register_into_global"),
     ]
 
     for module_path, fn_name in _FAMILIES:
