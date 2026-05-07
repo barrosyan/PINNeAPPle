@@ -1,5 +1,5 @@
 from __future__ import annotations
-"""Registry and catalog for reduced-order model family."""
+"""Registry and catalog for the reduced-order model family."""
 
 from dataclasses import dataclass
 from typing import Dict, Type
@@ -11,28 +11,48 @@ from .havok import HAVOK
 from .opinf import OperatorInference
 from .rom_hybrid import ROMHybrid
 from .deep_uq_rom import DeepUQROM
+from .sindy import SINDy
+from .koopman import KoopmanAutoencoder
+from .neural_rom import NeuralROM
 
 
 _REGISTRY: Dict[str, Type[ROMBase]] = {
-    "pod": POD,
+    # Projection-based
+    "pod":                         POD,
     "proper_orthogonal_decomposition": POD,
 
-    "dmd": DynamicModeDecomposition,
-    "dynamic_mode_decomposition": DynamicModeDecomposition,
+    # Linear dynamics
+    "dmd":                         DynamicModeDecomposition,
+    "dynamic_mode_decomposition":  DynamicModeDecomposition,
+    "havok":                       HAVOK,
 
-    "havok": HAVOK,
+    # Data-driven operators
+    "operator_inference":          OperatorInference,
+    "opinf":                       OperatorInference,
 
-    "operator_inference": OperatorInference,
-    "opinf": OperatorInference,
+    # Sparse identification
+    "sindy":                       SINDy,
+    "sparse_identification":       SINDy,
 
-    "rom_hybrid": ROMHybrid,
+    # Deep learning ROMs
+    "koopman_rom":                 KoopmanAutoencoder,
+    "koopman_autoencoder":         KoopmanAutoencoder,
+    "deep_koopman":                KoopmanAutoencoder,
 
-    "deep_uq_rom": DeepUQROM,
+    "neural_rom":                  NeuralROM,
+    "nrom":                        NeuralROM,
+
+    # Hybrid / UQ
+    "rom_hybrid":                  ROMHybrid,
+    "deep_uq_rom":                 DeepUQROM,
+    "uq_rom":                      DeepUQROM,
 }
+
 
 def register_into_global() -> None:
     from pinneaple_neural.architectures._registry_bridge import register_family_registry
     register_family_registry(_REGISTRY, family="rom")
+
 
 @dataclass
 class ROMCatalog:
