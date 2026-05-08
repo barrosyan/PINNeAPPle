@@ -1006,3 +1006,99 @@ class JointAdaptiveWeights(nn.Module):
 
     def history(self) -> Dict[str, List[float]]:
         return dict(self._history)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AutoPDEWeightCalibrator
+# ─────────────────────────────────────────────────────────────────────────────
+
+class AutoPDEWeightCalibrator:
+    """Automatically calibrates the PDE loss weight relative to BC/data losses.
+
+    In PINN Phase 2, the PDE residual often has a very different magnitude than
+    BC/data losses (especially when the residual is in physical units like Pa/mm).
+    A fixed W_PDE is hard to choose in advance.
+
+    This calibrator estimates W_PDE on the first call so that the PDE
+    contribution is a *target_ratio* of the reference loss:
+
+        W_PDE = (loss_ref / loss_pde) * target_ratio
+
+    After the first call, the calibrated weight is frozen (``once=True``) or
+    recomputed every call (``once=False``).
+
+    Parameters
+    ----------
+    target_ratio  : desired ratio (PDE contribution) / (reference contribution)
+                    Default 0.01 means PDE starts at 1% of the BC/data loss.
+    once          : if True (default), calibrate only on the first non-zero call
+    clip_min/max  : hard bounds on the resulting weight
+
+    Usage
+    -----
+    ::
+
+        cal = AutoPDEWeightCalibrator(target_ratio=0.01)
+
+        for epoch in range(n_epochs):
+            loss_pde = compute_pde_residual(model, pts).pow(2).mean()
+            loss_bc  = compute_bc_loss(model)
+            w_pde    = cal.calibrate(loss_pde, loss_bc)
+            loss     = w_pde * loss_pde + loss_bc
+    """
+
+    def __init__(
+        self,
+        target_ratio: float = 0.01,
+        *,
+        once: bool = True,
+        clip_min: float = 1e-20,
+        clip_max: float = 1e6,
+    ) -> None:
+        self.target_ratio = float(target_ratio)
+        self.once = once
+        self.clip_min = float(clip_min)
+        self.clip_max = float(clip_max)
+        self._weight: Optional[float] = None
+
+    def calibrate(
+        self,
+        loss_pde: torch.Tensor,
+        loss_ref: torch.Tensor,
+    ) -> float:
+        """Compute and (optionally) cache W_PDE.
+
+        Parameters
+        ----------
+        loss_pde : PDE residual loss (scalar tensor)
+        loss_ref : reference loss to balance against (BC, data, or their sum)
+
+        Returns
+        -------
+        Calibrated weight as a Python float.
+        """
+        if self._weight is not None and self.once:
+            return self._weight
+
+        pde_val = float(loss_pde.detach().item())
+        ref_val = float(loss_ref.detach().item())
+
+        if pde_val < 1e-30:
+            w = 1.0
+        else:
+            w = (ref_val / pde_val) * self.target_ratio
+
+        w = float(max(self.clip_min, min(self.clip_max, w)))
+        self._weight = w
+        logger.info(f"AutoPDEWeightCalibrator: W_PDE = {w:.3e}  "
+                    f"(loss_pde={pde_val:.3e}  loss_ref={ref_val:.3e})")
+        return w
+
+    @property
+    def weight(self) -> Optional[float]:
+        """The calibrated weight, or None if not yet calibrated."""
+        return self._weight
+
+    def reset(self) -> None:
+        """Reset so the next call to ``calibrate`` re-estimates the weight."""
+        self._weight = None
