@@ -46,12 +46,19 @@ from .loss_balancer import (
     JointAdaptiveWeights,
     AutoBalancer,
     AutoBalancerConfig,
+    AutoPDEWeightCalibrator,
 )
 from .multistart import (
     MultiRestartTrainer,
     MultiRestartConfig,
     MultiRestartResult,
     RestartResult,
+)
+from .collocation import (
+    AdaptiveCollocationSampler,
+    AdaptiveCollocationConfig,
+    estimate_channel_scales,
+    filter_nan_rows,
 )
 from .parallel import (
     best_device,
@@ -138,11 +145,17 @@ __all__ = [
     "JointAdaptiveWeights",
     "AutoBalancer",
     "AutoBalancerConfig",
+    "AutoPDEWeightCalibrator",
     # Multi-restart training
     "MultiRestartTrainer",
     "MultiRestartConfig",
     "MultiRestartResult",
     "RestartResult",
+    # Adaptive collocation & data utilities
+    "AdaptiveCollocationSampler",
+    "AdaptiveCollocationConfig",
+    "estimate_channel_scales",
+    "filter_nan_rows",
     # Parallel / GPU
     "best_device",
     "count_gpus",
