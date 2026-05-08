@@ -37,6 +37,22 @@ from .weight_scheduler import (
     LossRatioBalancer,
     NTKWeightBalancer,
 )
+from .loss_balancer import (
+    ReLoBRaLo,
+    SoftAdapt,
+    AugmentedLagrangian,
+    InverseDirichlet,
+    PCGrad,
+    JointAdaptiveWeights,
+    AutoBalancer,
+    AutoBalancerConfig,
+)
+from .multistart import (
+    MultiRestartTrainer,
+    MultiRestartConfig,
+    MultiRestartResult,
+    RestartResult,
+)
 from .parallel import (
     best_device,
     count_gpus,
@@ -113,6 +129,20 @@ __all__ = [
     "GradNormBalancer",
     "LossRatioBalancer",
     "NTKWeightBalancer",
+    # Advanced loss balancers
+    "ReLoBRaLo",
+    "SoftAdapt",
+    "AugmentedLagrangian",
+    "InverseDirichlet",
+    "PCGrad",
+    "JointAdaptiveWeights",
+    "AutoBalancer",
+    "AutoBalancerConfig",
+    # Multi-restart training
+    "MultiRestartTrainer",
+    "MultiRestartConfig",
+    "MultiRestartResult",
+    "RestartResult",
     # Parallel / GPU
     "best_device",
     "count_gpus",

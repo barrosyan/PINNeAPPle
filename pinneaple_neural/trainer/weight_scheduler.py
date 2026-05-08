@@ -555,10 +555,77 @@ class WeightScheduler:
             self._impl = NTKWeightBalancer(model, loss_names, config=cfg)
         elif method == "fixed":
             self._impl = None  # use initial_weights directly
+        elif method == "relobralo":
+            from .loss_balancer import ReLoBRaLo
+            self._impl = ReLoBRaLo(
+                loss_names,
+                tau=getattr(cfg, "tau", 0.1),
+                alpha=getattr(cfg, "alpha", 0.999),
+                update_every=cfg.update_every,
+                clip_min=cfg.clip_min,
+                clip_max=cfg.clip_max,
+                initial_weights=cfg.initial_weights,
+            )
+        elif method == "softadapt":
+            from .loss_balancer import SoftAdapt
+            self._impl = SoftAdapt(
+                loss_names,
+                tau=getattr(cfg, "tau", 0.1),
+                update_every=cfg.update_every,
+                clip_min=cfg.clip_min,
+                clip_max=cfg.clip_max,
+                initial_weights=cfg.initial_weights,
+            )
+        elif method == "augmented_lagrangian":
+            from .loss_balancer import AugmentedLagrangian
+            self._impl = AugmentedLagrangian(
+                loss_names,
+                rho=getattr(cfg, "rho", 0.1),
+                lambda_min=cfg.clip_min,
+                lambda_max=cfg.clip_max,
+                update_every=cfg.update_every,
+                initial_weights=cfg.initial_weights,
+            )
+        elif method == "inverse_dirichlet":
+            from .loss_balancer import InverseDirichlet
+            self._impl = InverseDirichlet(
+                model, loss_names,
+                update_every=max(cfg.update_every, 20),
+                alpha=cfg.ema_decay,
+                clip_min=cfg.clip_min,
+                clip_max=cfg.clip_max,
+                initial_weights=cfg.initial_weights,
+            )
+        elif method == "pcgrad":
+            from .loss_balancer import PCGrad
+            self._impl = PCGrad(
+                model, loss_names,
+                update_every=cfg.update_every,
+                weights=cfg.initial_weights,
+            )
+        elif method == "joint_adaptive":
+            from .loss_balancer import JointAdaptiveWeights
+            self._impl = JointAdaptiveWeights(
+                loss_names,
+                initial_weights=cfg.initial_weights,
+                sp_beta=getattr(cfg, "sp_beta", 1.0),
+            )
+        elif method == "auto":
+            from .loss_balancer import AutoBalancer, AutoBalancerConfig
+            ab_cfg = AutoBalancerConfig(
+                method=getattr(cfg, "auto_start_method", "relobralo"),
+                update_every=cfg.update_every,
+                clip_min=cfg.clip_min,
+                clip_max=cfg.clip_max,
+                rho=getattr(cfg, "rho", 0.1),
+            )
+            self._impl = AutoBalancer(model, loss_names, config=ab_cfg)
         else:
             raise ValueError(
                 f"Unknown weight scheduling method: '{method}'. "
-                f"Choose from: self_adaptive, gradnorm, loss_ratio, ntk, fixed."
+                "Choose from: self_adaptive, gradnorm, loss_ratio, ntk, fixed, "
+                "relobralo, softadapt, augmented_lagrangian, inverse_dirichlet, "
+                "pcgrad, joint_adaptive, auto."
             )
 
         # Fixed weights dict for "fixed" method
@@ -568,7 +635,12 @@ class WeightScheduler:
     # Main interface
     # ------------------------------------------------------------------
 
-    def step(self, losses: Dict[str, torch.Tensor], step: Optional[int] = None) -> torch.Tensor:
+    def step(
+        self,
+        losses: Dict[str, torch.Tensor],
+        step: Optional[int] = None,
+        optimizer: Optional[torch.optim.Optimizer] = None,
+    ) -> torch.Tensor:
         """Apply current weights to *losses* and return weighted total.
 
         Also updates weights according to the configured schedule.
@@ -603,6 +675,16 @@ class WeightScheduler:
             # NTK is expensive; apply cached weights, update periodically
             return self._impl.apply(losses)  # type: ignore[union-attr]
 
+        # New-style balancers: all expose .step(losses[, optimizer])
+        if self._method in {
+            "relobralo", "softadapt", "augmented_lagrangian",
+            "inverse_dirichlet", "joint_adaptive", "auto",
+        }:
+            return self._impl.step(losses)  # type: ignore[union-attr]
+
+        if self._method == "pcgrad":
+            return self._impl.step(losses, optimizer)  # type: ignore[union-attr]
+
         return self._apply_fixed(losses)
 
     def _apply_fixed(self, losses: Dict[str, torch.Tensor]) -> torch.Tensor:
@@ -628,6 +710,8 @@ class WeightScheduler:
             return dict(self._fixed_weights)
         if self._method == "self_adaptive":
             return self._impl.weight_dict()  # type: ignore[union-attr]
+        if self._impl is not None and hasattr(self._impl, "current_weights"):
+            return dict(self._impl.current_weights)  # type: ignore[union-attr]
         if hasattr(self._impl, "_weights"):
             return dict(self._impl._weights)  # type: ignore[union-attr]
         return {}
@@ -644,23 +728,35 @@ class WeightScheduler:
 
     @property
     def has_weight_optimizer(self) -> bool:
-        """True if this method uses learnable weights requiring a separate optimiser."""
-        return self._method == "self_adaptive"
+        """True if this method uses learnable weights that need to be in the optimiser.
+
+        For ``self_adaptive``: use a *separate* optimiser with gradient ascent.
+        For ``joint_adaptive``: include in the *same* optimiser as the model.
+        """
+        return self._method in {"self_adaptive", "joint_adaptive"}
+
+    @property
+    def joint_weight_params(self) -> bool:
+        """True when weight params should be added to the model's own optimiser."""
+        return self._method == "joint_adaptive"
 
     def weight_params(self) -> List[nn.Parameter]:
-        """Return learnable weight parameters (SA-PINN only).
+        """Return learnable weight parameters.
 
-        Place in a separate optimiser with gradient *ascent*::
+        * ``self_adaptive``: place in a separate optimiser with gradient ascent::
 
             weight_opt = torch.optim.Adam(sched.weight_params(), lr=1e-3)
-            # After total.backward() and model_opt.step():
-            # Negate gradients for ascent:
             for p in sched.weight_params():
                 if p.grad is not None:
                     p.grad.neg_()
             weight_opt.step()
+
+        * ``joint_adaptive``: add to the model optimiser's param groups::
+
+            optimizer = torch.optim.Adam(
+                list(model.parameters()) + sched.weight_params(), lr=1e-4)
         """
-        if self._method != "self_adaptive":
+        if self._method not in {"self_adaptive", "joint_adaptive"}:
             return []
         return self._impl.weight_params()  # type: ignore[union-attr]
 
