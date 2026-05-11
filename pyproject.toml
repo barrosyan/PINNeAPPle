@@ -77,6 +77,22 @@ fenics = [
   "petsc4py>=3.20",
 ]
 
+# MuJoCo physics simulation (google-deepmind/mujoco)
+mujoco = [
+  "mujoco>=3.0",
+]
+
+# MuJoCo MJX backend — JAX-based GPU/TPU parallel rollouts
+mujoco_mjx = [
+  "mujoco>=3.0",
+  "jax[cuda12]>=0.4.25",
+]
+
+# Genesis AI multi-physics robotics simulation (Genesis-Embodied-AI/Genesis)
+genesis = [
+  "genesis-world>=0.2.0",
+]
+
 # PINN factory (symbolics)
 pinn = [
   "sympy>=1.12",
@@ -145,6 +161,8 @@ all = [
   "paho-mqtt>=2.0",
   "statsmodels>=0.14",
   "requests>=2.31",
+  "mujoco>=3.0",
+  "genesis-world>=0.2.0",
 ]
 
 # Visualisation (CFD-style plots, animations)

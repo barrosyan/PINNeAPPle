@@ -6,6 +6,8 @@ openfoam  — case staging, execution, field sampling, and UPD packaging
 matlab    — MATLAB Engine API wrapper, subprocess runner, .mat I/O
 modelica  — FMU simulation (fmpy) and OpenModelica (OMPython)
 fenics    — workflow layer on top of pinneaple_solvers.fenics_bridge
+mujoco    — MuJoCo (google-deepmind/mujoco) trajectory collection + MJX parallel rollouts
+genesis   — Genesis AI (Genesis-Embodied-AI/Genesis) multi-physics robotics simulation
 
 All subpackages use lazy / optional imports so that the base package remains
 importable even when a specific external tool is not installed.
@@ -76,6 +78,44 @@ except Exception:
     dof_to_upd = None         # type: ignore
     FEniCSWorkflow = None     # type: ignore
 
+# MuJoCo (optional: mujoco >= 3.0)
+try:
+    from .mujoco import (
+        MuJoCoConfig,
+        load_model,
+        make_data,
+        MuJoCoRunner,
+        trajectory_to_upd,
+        trajectories_to_upd,
+        MJXParallelRunner,
+    )
+except Exception:
+    MuJoCoConfig = None           # type: ignore
+    load_model = None             # type: ignore
+    make_data = None              # type: ignore
+    MuJoCoRunner = None           # type: ignore
+    trajectory_to_upd = None      # type: ignore
+    trajectories_to_upd = None    # type: ignore
+    MJXParallelRunner = None      # type: ignore
+
+# Genesis AI (optional: genesis-world)
+try:
+    from .genesis import (
+        GenesisConfig,
+        EntitySpec,
+        build_scene,
+        GenesisRunner,
+        genesis_traj_to_upd,
+        genesis_trajs_to_upd,
+    )
+except Exception:
+    GenesisConfig = None          # type: ignore
+    EntitySpec = None             # type: ignore
+    build_scene = None            # type: ignore
+    GenesisRunner = None          # type: ignore
+    genesis_traj_to_upd = None    # type: ignore
+    genesis_trajs_to_upd = None   # type: ignore
+
 __all__ = [
     # OpenFOAM
     "OpenFOAMCaseTemplate",
@@ -107,4 +147,19 @@ __all__ = [
     "solve_and_package",
     "dof_to_upd",
     "FEniCSWorkflow",
+    # MuJoCo
+    "MuJoCoConfig",
+    "load_model",
+    "make_data",
+    "MuJoCoRunner",
+    "trajectory_to_upd",
+    "trajectories_to_upd",
+    "MJXParallelRunner",
+    # Genesis AI
+    "GenesisConfig",
+    "EntitySpec",
+    "build_scene",
+    "GenesisRunner",
+    "genesis_traj_to_upd",
+    "genesis_trajs_to_upd",
 ]
