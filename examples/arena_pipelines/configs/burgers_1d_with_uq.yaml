@@ -1,0 +1,38 @@
+# Burgers 1D — with Uncertainty Quantification (MC-Dropout)
+# Shows how to enable UQ on any Arena run; uses same PINN but adds
+# mc_dropout forward passes at evaluation to estimate epistemic uncertainty
+problem:
+  name: burgers_1d
+  params:
+    nu: 0.01
+    n_collocation: 10000
+    n_ic: 200
+    n_bc: 200
+    t_end: 1.0
+
+models:
+  - name: VanillaPINN-Dropout
+    type: vanilla_pinn
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+      extra:
+        dropout: 0.1   # must enable dropout in the model for MC-Dropout UQ
+    training:
+      epochs: 8000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+uq:
+  enabled: true
+  method: mc_dropout   # options: mc_dropout, deep_ensemble, bayesian_laplace
+  n_samples: 100
+  dropout_rate: 0.1
+  coverage: 0.95
+
+output:
+  dir: outputs/burgers_1d_uq/
+  prefix: burgers_uq
+  save_figures: true
+  save_csv: true

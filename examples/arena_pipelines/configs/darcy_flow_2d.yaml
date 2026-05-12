@@ -1,0 +1,46 @@
+# Darcy Flow 2D — -∇·(K(x,y)∇u) = f on [0,1]^2
+# Elliptic PDE with heterogeneous permeability; ideal for DeepONet / FNO operator learning
+problem:
+  name: darcy_flow_2d
+  params:
+    n_collocation: 6000
+    n_bc: 400
+
+models:
+  - name: FNO-2D
+    type: fno2d
+    network:
+      modes: 12
+      width: 32
+      layers: 4
+    training:
+      epochs: 600
+      lr: 1.0e-3
+      optimizer: adam
+
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: MeshGraphNet
+    type: meshgraphnet
+    network:
+      hidden_dim: 128
+      n_message_passing: 6
+    training:
+      epochs: 800
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/darcy_flow_2d/
+  prefix: darcy
+  save_figures: true
+  save_csv: true

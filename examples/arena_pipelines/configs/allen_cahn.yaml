@@ -1,0 +1,50 @@
+# Allen-Cahn — u_t - 0.0001 u_xx + 5(u³ - u) = 0 on [-1,1] x [0,1]
+# Phase-field equation with double-well potential; sharp interface dynamics
+# This problem is notoriously hard for standard PINNs (failure mode documented
+# in literature). SIREN and causal training tend to perform better.
+problem:
+  name: allen_cahn
+  params:
+    alpha: 0.0001   # diffusion coefficient
+    n_collocation: 20000
+    n_ic: 512
+    n_bc: 200
+    t_end: 1.0
+
+models:
+  - name: SIREN-Deep
+    type: siren
+    network:
+      hidden: [256, 256, 256, 256]
+      omega_0: 30.0
+    training:
+      epochs: 20000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: VanillaPINN-Wide
+    type: vanilla_pinn
+    network:
+      hidden: [256, 256, 256, 256]
+      activation: tanh
+    training:
+      epochs: 20000
+      lr: 5.0e-4
+      optimizer: adam
+      scheduler: cosine
+
+  - name: ModifiedMLP-Wide
+    type: modified_mlp
+    network:
+      hidden: [256, 256, 256, 256]
+      activation: tanh
+    training:
+      epochs: 20000
+      lr: 5.0e-4
+      optimizer: adam
+
+output:
+  dir: outputs/allen_cahn/
+  prefix: allen_cahn
+  save_figures: true
+  save_csv: true

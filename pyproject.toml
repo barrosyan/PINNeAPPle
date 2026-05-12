@@ -227,6 +227,12 @@ packages = [
   # ── extended packages ─────────────────────────────────────────────────────
   "pinneaple_worldmodel",
   "pinneaple_quantum",
+
+  # ── arena + compatibility shims ───────────────────────────────────────────
+  "pinneaple_arena",     # YAML/JSON-driven multi-model benchmark runner
+  "pinneaple_models",    # shim → pinneaple_neural.architectures
+  "pinneaple_train",     # shim → pinneaple_neural.trainer
+  "pinneaple_solvers",   # shim → pinneaple_simulation.numerical_solvers
 ]
 include = [
   "data/bundles/**/*",

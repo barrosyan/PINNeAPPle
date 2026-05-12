@@ -1,0 +1,47 @@
+# Stokes 2D — creeping flow (Re → 0) on [0,1]^2 with lid-driven cavity BC
+# Fluid mechanics; compare PINN vs MeshGraphNet
+problem:
+  name: stokes_2d
+  params:
+    n_collocation: 5000
+    n_bc: 500
+    mu: 0.01   # dynamic viscosity
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: SIREN
+    type: siren
+    network:
+      hidden: [128, 128, 128, 128]
+      omega_0: 30.0
+    training:
+      epochs: 8000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: MeshGraphNet
+    type: meshgraphnet
+    network:
+      hidden_dim: 128
+      n_message_passing: 6
+      dropout: 0.0
+    training:
+      epochs: 1000
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/stokes_2d/
+  prefix: stokes
+  save_figures: true
+  save_csv: true
