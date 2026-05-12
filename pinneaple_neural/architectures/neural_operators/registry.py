@@ -30,6 +30,13 @@ _REGISTRY: Dict[str, Type[NeuralOperatorBase]] = {
     "universal_operator_network": UniversalUNO,
 }
 
+# Noether (Emmi AI) models — registered lazily so emmiai-noether is optional
+try:
+    from .noether_bridge import NOETHER_REGISTRY
+    _REGISTRY.update(NOETHER_REGISTRY)
+except Exception:
+    pass
+
 def register_into_global() -> None:
     from pinneaple_neural.architectures._registry_bridge import register_family_registry
     register_family_registry(_REGISTRY, family="neural_operators")

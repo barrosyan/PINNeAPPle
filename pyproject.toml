@@ -93,6 +93,11 @@ genesis = [
   "genesis-world>=0.2.0",
 ]
 
+# Noether — Emmi AI neural surrogate framework (UPT, AB-UPT, Transolver)
+noether = [
+  "emmiai-noether>=2026.4.0",
+]
+
 # PINN factory (symbolics)
 pinn = [
   "sympy>=1.12",
@@ -163,6 +168,7 @@ all = [
   "requests>=2.31",
   "mujoco>=3.0",
   "genesis-world>=0.2.0",
+  "emmiai-noether>=2026.4.0",
 ]
 
 # Visualisation (CFD-style plots, animations)
