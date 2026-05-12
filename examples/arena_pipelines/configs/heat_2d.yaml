@@ -1,0 +1,48 @@
+# Heat 2D — u_t = alpha * (u_xx + u_yy) on [0,1]^2 x [0,T]
+# Parabolic PDE in 3D input space (x,y,t); FNO operator learning
+problem:
+  name: heat_2d
+  params:
+    alpha: 0.01
+    n_collocation: 8000
+    n_ic: 400
+    n_bc: 600
+    t_end: 1.0
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: ModifiedMLP
+    type: modified_mlp
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 1.0e-3
+      optimizer: adam
+
+  - name: MeshGraphNet
+    type: meshgraphnet
+    network:
+      hidden_dim: 128
+      n_message_passing: 6
+    training:
+      epochs: 1000
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/heat_2d/
+  prefix: heat2d
+  save_figures: true
+  save_csv: true

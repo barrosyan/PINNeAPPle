@@ -1,0 +1,48 @@
+# NLS 1D — i u_t + 0.5 u_xx + |u|² u = 0 on [-5,5] x [0,π/2]
+# Nonlinear Schrödinger equation; complex-valued (split as Re/Im); soliton solution
+# Model predicts [Re(u), Im(u)] → out_dim = 2
+problem:
+  name: nls_1d
+  params:
+    n_collocation: 20000
+    n_ic: 512
+    n_bc: 200
+    t_end: 1.5708   # ≈ π/2
+
+models:
+  - name: SIREN-Complex
+    type: siren
+    network:
+      hidden: [128, 128, 128, 128]
+      omega_0: 30.0
+    training:
+      epochs: 15000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: VanillaPINN-Deep
+    type: vanilla_pinn
+    network:
+      hidden: [200, 200, 200, 200, 200]
+      activation: tanh
+    training:
+      epochs: 15000
+      lr: 5.0e-4
+      optimizer: adam
+      scheduler: cosine
+
+  - name: ModifiedMLP
+    type: modified_mlp
+    network:
+      hidden: [128, 128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 15000
+      lr: 5.0e-4
+      optimizer: adam
+
+output:
+  dir: outputs/nls_1d/
+  prefix: nls
+  save_figures: true
+  save_csv: true
