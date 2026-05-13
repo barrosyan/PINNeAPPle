@@ -96,6 +96,14 @@ from .visualizer import (
     plot_streamlines,
     plot_uq,
 )
+from .custom_builder import define_problem, EasyArenaProblem
+from .dataset_problems import DatasetProblem
+from .dataset_bench import (
+    DATASET_PRESETS,
+    benchmark_dataset,
+    list_benchmarks,
+    get_benchmark_preset,
+)
 
 __version__ = "0.2.0"
 
@@ -118,4 +126,9 @@ __all__ = [
     # visualisation
     "plot_field_comparison", "plot_loss_curves", "plot_metrics_table",
     "plot_streamlines", "plot_uq",
+    # high-level custom problem builder
+    "define_problem", "EasyArenaProblem",
+    # dataset-backed problems and benchmarks
+    "DatasetProblem",
+    "DATASET_PRESETS", "benchmark_dataset", "list_benchmarks", "get_benchmark_preset",
 ]

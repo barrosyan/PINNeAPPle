@@ -102,6 +102,9 @@ def plot_field_comparison(
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
 
+    is_1d = xy_eval.ndim == 1 or xy_eval.shape[1] == 1
+    x_vals = xy_eval.ravel() if is_1d else xy_eval[:, 0]
+
     n_models = len(eval_results)
     n_fields = len(field_names)
     # columns: Reference + n_models pred + n_models error
@@ -114,67 +117,89 @@ def plot_field_comparison(
     gs = gridspec.GridSpec(n_rows, n_cols, figure=fig,
                            hspace=0.4, wspace=0.3)
 
-    bg = fig.get_facecolor()
+    if not is_1d:
+        xmin, xmax = xy_eval[:, 0].min(), xy_eval[:, 0].max()
+        ymin, ymax = xy_eval[:, 1].min(), xy_eval[:, 1].max()
+        extent = [xmin, xmax, ymin, ymax]
 
-    # infer grid extents from xy_eval
-    xmin, xmax = xy_eval[:, 0].min(), xy_eval[:, 0].max()
-    ymin, ymax = xy_eval[:, 1].min(), xy_eval[:, 1].max()
-    extent = [xmin, xmax, ymin, ymax]
+    sort_idx = np.argsort(x_vals) if is_1d else None
 
     for fi, fname in enumerate(field_names):
         ref_col = eval_results[0]["ref"]
         ref_f = ref_col[:, fi] if ref_col.ndim > 1 else ref_col.ravel()
-        ref_2d = _to_2d(ref_f, grid_n)
 
         cmap = FIELD_CMAPS[fi % len(FIELD_CMAPS)]
         vmin, vmax = ref_f.min(), ref_f.max()
 
         # Reference
         ax_ref = fig.add_subplot(gs[fi, 0])
-        if ref_2d is not None:
-            im = ax_ref.imshow(ref_2d, origin="lower", extent=extent,
-                               cmap=cmap, vmin=vmin, vmax=vmax, aspect="auto")
+        if is_1d:
+            ax_ref.plot(x_vals[sort_idx], ref_f[sort_idx], color="#58a6ff", linewidth=1.5)
+            ax_ref.set_ylabel(fname)
         else:
-            sc = ax_ref.scatter(xy_eval[:, 0], xy_eval[:, 1], c=ref_f,
-                                cmap=cmap, vmin=vmin, vmax=vmax, s=2)
-            im = sc
+            ref_2d = _to_2d(ref_f, grid_n)
+            if ref_2d is not None:
+                im = ax_ref.imshow(ref_2d, origin="lower", extent=extent,
+                                   cmap=cmap, vmin=vmin, vmax=vmax, aspect="auto")
+            else:
+                im = ax_ref.scatter(xy_eval[:, 0], xy_eval[:, 1], c=ref_f,
+                                    cmap=cmap, vmin=vmin, vmax=vmax, s=2)
+            ax_ref.set_ylabel("y")
+            plt.colorbar(im, ax=ax_ref, fraction=0.046, pad=0.04)
         ax_ref.set_title(f"Reference  {fname}", color=ax_ref.title.get_color())
-        ax_ref.set_xlabel("x"); ax_ref.set_ylabel("y")
-        plt.colorbar(im, ax=ax_ref, fraction=0.046, pad=0.04)
+        ax_ref.set_xlabel("x")
 
         for mi, res in enumerate(eval_results):
             pred = res["pred"]
             pred_f = pred[:, fi] if pred.ndim > 1 else pred.ravel()
-            pred_2d = _to_2d(pred_f, grid_n)
-            err_2d  = _to_2d(np.abs(pred_f - ref_f), grid_n)
+            err_f = np.abs(pred_f - ref_f)
 
             model_name = res.get("name", f"Model{mi+1}")
             col_pred = 1 + 2 * mi
             col_err  = 2 + 2 * mi
 
             ax_p = fig.add_subplot(gs[fi, col_pred])
-            if pred_2d is not None:
-                im_p = ax_p.imshow(pred_2d, origin="lower", extent=extent,
-                                   cmap=cmap, vmin=vmin, vmax=vmax, aspect="auto")
+            ax_e = fig.add_subplot(gs[fi, col_err])
+
+            if is_1d:
+                ax_p.plot(x_vals[sort_idx], ref_f[sort_idx],
+                          color="#58a6ff", linewidth=1.5, linestyle="--", label="ref")
+                ax_p.plot(x_vals[sort_idx], pred_f[sort_idx],
+                          color="#3fb950", linewidth=1.5, label="pred")
+                ax_p.legend(fontsize=7)
+                ax_p.set_ylabel(fname)
+
+                emax = err_f.max() or 1.0
+                ax_e.plot(x_vals[sort_idx], err_f[sort_idx],
+                          color="#ff7b72", linewidth=1.5)
+                ax_e.set_ylim(0, emax * 1.1)
+                ax_e.set_ylabel("|error|")
             else:
-                im_p = ax_p.scatter(xy_eval[:, 0], xy_eval[:, 1], c=pred_f,
-                                    cmap=cmap, vmin=vmin, vmax=vmax, s=2)
+                pred_2d = _to_2d(pred_f, grid_n)
+                err_2d  = _to_2d(err_f, grid_n)
+                emax = err_f.max()
+
+                if pred_2d is not None:
+                    im_p = ax_p.imshow(pred_2d, origin="lower", extent=extent,
+                                       cmap=cmap, vmin=vmin, vmax=vmax, aspect="auto")
+                else:
+                    im_p = ax_p.scatter(xy_eval[:, 0], xy_eval[:, 1], c=pred_f,
+                                        cmap=cmap, vmin=vmin, vmax=vmax, s=2)
+                plt.colorbar(im_p, ax=ax_p, fraction=0.046, pad=0.04)
+
+                if err_2d is not None:
+                    im_e = ax_e.imshow(err_2d, origin="lower", extent=extent,
+                                       cmap=ERROR_CMAP, vmin=0, vmax=emax, aspect="auto")
+                else:
+                    im_e = ax_e.scatter(xy_eval[:, 0], xy_eval[:, 1], c=err_f,
+                                        cmap=ERROR_CMAP, vmin=0, vmax=emax, s=2)
+                ax_e.set_ylabel("y")
+                plt.colorbar(im_e, ax=ax_e, fraction=0.046, pad=0.04)
+
             ax_p.set_title(f"{model_name}  {fname}")
             ax_p.set_xlabel("x")
-            plt.colorbar(im_p, ax=ax_p, fraction=0.046, pad=0.04)
-
-            ax_e = fig.add_subplot(gs[fi, col_err])
-            emax = np.abs(pred_f - ref_f).max()
-            if err_2d is not None:
-                im_e = ax_e.imshow(err_2d, origin="lower", extent=extent,
-                                   cmap=ERROR_CMAP, vmin=0, vmax=emax, aspect="auto")
-            else:
-                im_e = ax_e.scatter(xy_eval[:, 0], xy_eval[:, 1],
-                                    c=np.abs(pred_f - ref_f),
-                                    cmap=ERROR_CMAP, vmin=0, vmax=emax, s=2)
             ax_e.set_title(f"|Error|  {model_name}  {fname}")
             ax_e.set_xlabel("x")
-            plt.colorbar(im_e, ax=ax_e, fraction=0.046, pad=0.04)
 
     fig.suptitle(f"Arena Benchmark — {problem_name}", fontsize=15, y=1.01)
 
