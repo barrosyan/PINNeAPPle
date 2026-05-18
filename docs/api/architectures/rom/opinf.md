@@ -1,3 +1,3 @@
-# pinneaple_neural.architectures.rom.opinf
+# pinneapple_neural.architectures.rom.opinf
 
-::: pinneaple_neural.architectures.rom.opinf
+::: pinneapple_neural.architectures.rom.opinf

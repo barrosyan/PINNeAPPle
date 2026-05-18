@@ -7,7 +7,7 @@ What this demonstrates:
 - Saving run artifacts + updating leaderboard
 
 Run from repo root:
-    python examples/pinneaple_arena/01_quickstart_native.py
+    python examples/pinneapple_arena/01_quickstart_native.py
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from pinneaple_arena.runner.run_benchmark import run_benchmark
+from pinneapple_arena.runner.run_benchmark import run_benchmark
 
 
 def _write_parquet(df: pd.DataFrame, path: Path) -> None:
@@ -254,8 +254,8 @@ def main() -> None:
 
     out = run_benchmark(
         artifacts_dir=artifacts_dir,
-        task_cfg_path=repo_root / "examples" / "pinneaple_arena" / "configs" / "task_flow_obstacle_2d.yaml",
-        run_cfg_path=repo_root / "examples" / "pinneaple_arena" / "configs" / "run_native_fast.yaml",
+        task_cfg_path=repo_root / "examples" / "pinneapple_arena" / "configs" / "task_flow_obstacle_2d.yaml",
+        run_cfg_path=repo_root / "examples" / "pinneapple_arena" / "configs" / "run_native_fast.yaml",
         bundle_schema_path=repo_root / "configs" / "data" / "bundle_schema.yaml",
     )
 

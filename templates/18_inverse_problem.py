@@ -14,8 +14,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_analysis.inverse_problems.eki import EKISolver, EKIConfig
-from pinneaple_analysis.inverse_problems.sensitivity import SensitivityAnalyser
+from pinneapple_analysis.inverse_problems.eki import EKISolver, EKIConfig
+from pinneapple_analysis.inverse_problems.sensitivity import SensitivityAnalyser
 
 
 # ---------------------------------------------------------------------------

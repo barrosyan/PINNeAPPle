@@ -16,9 +16,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_adaptation.meta_learning.task_sampler import PDETaskSampler
-from pinneaple_adaptation.meta_learning.reptile import ReptileTrainer
-from pinneaple_adaptation.meta_learning.config import ReptileConfig
+from pinneapple_adaptation.meta_learning.task_sampler import PDETaskSampler
+from pinneapple_adaptation.meta_learning.reptile import ReptileTrainer
+from pinneapple_adaptation.meta_learning.config import ReptileConfig
 
 
 # ---------------------------------------------------------------------------

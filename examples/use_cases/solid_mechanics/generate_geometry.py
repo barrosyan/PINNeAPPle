@@ -47,7 +47,7 @@ from typing import List, Optional, Tuple
 
 # ── PINNeAPPle ─────────────────────────────────────────────────────────────
 # Importa os parâmetros base do preset em vez de duplicar aqui
-from pinneaple_physics.pde_environment import get_preset
+from pinneapple_physics.pde_environment import get_preset
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Parâmetros TC50 base

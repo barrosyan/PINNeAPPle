@@ -3,11 +3,11 @@
 We train a small `VanillaTransformer` to predict y_{t+1} from a window x_{t-T+1:t}.
 
 This demonstrates:
-- transformer family inside `pinneaple_models`
+- transformer family inside `pinneapple_models`
 - a minimal training loop on CPU
 
 Run:
-  python examples/pinneaple_models_showcase/50_timeseries_transformer_forecast_toy.py
+  python examples/pinneapple_models_showcase/50_timeseries_transformer_forecast_toy.py
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ import math
 
 import torch
 
-from pinneaple_models.transformers.transformer import VanillaTransformer
+from pinneapple_models.transformers.transformer import VanillaTransformer
 
 
 def make_batch(B: int, T: int, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:

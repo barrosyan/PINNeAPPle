@@ -17,7 +17,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from pinneaple_data.datasets import list_datasets, load_dataset, dataset_ids
+from pinneapple_data.datasets import list_datasets, load_dataset, dataset_ids
 
 # ── List all datasets ────────────────────────────────────────────────────────
 list_datasets()

@@ -1,4 +1,4 @@
-# pinneaple Use Case Template
+# pinneapple Use Case Template
 
 > **This is the standard scaffold for new use cases.**
 > Copy this directory, rename it, and work through each section top to bottom.
@@ -107,7 +107,7 @@ Choose based on your problem structure, not preference.
 
 ```bash
 # Core (always required)
-pip install pinneaple            # or: pip install -e .  from repo root
+pip install pinneapple            # or: pip install -e .  from repo root
 
 # Reference solver — uncomment the one you need
 # pip install fenics              # FEniCS legacy
@@ -129,13 +129,13 @@ pip install pinneaple            # or: pip install -e .  from repo root
 
 ## Step 1 — Define the Problem Spec
 
-pinneaple's `pinneaple_environment` module holds problem presets. Either use an
+pinneapple's `pinneapple_environment` module holds problem presets. Either use an
 existing preset and override parameters, or define a custom spec from scratch.
 
 ### Option A — Use a registered preset
 
 ```python
-from pinneaple_environment import get_preset, list_presets
+from pinneapple_environment import get_preset, list_presets
 
 # List all available presets:
 print(list_presets())
@@ -158,8 +158,8 @@ print(f"Domain     : {spec.domain_bounds}")
 ### Option B — Build a custom spec
 
 ```python
-from pinneaple_environment.spec import ProblemSpec, PDESpec
-from pinneaple_environment.conditions import DirichletBC, NeumannBC, PeriodicBC
+from pinneapple_environment.spec import ProblemSpec, PDESpec
+from pinneapple_environment.conditions import DirichletBC, NeumannBC, PeriodicBC
 
 spec = ProblemSpec(
     problem_id="{{ YOUR_PROBLEM_ID }}",
@@ -280,7 +280,7 @@ Choose one backend. The outputs are always `SolverOutput` objects with `.fields`
 ### Backend A — Built-in FDM (simplest, 1D/2D)
 
 ```python
-from pinneaple_solvers import SolverRegistry
+from pinneapple_solvers import SolverRegistry
 
 solver = SolverRegistry.build(
     "builtin",
@@ -297,8 +297,8 @@ result = solver.forward(spec)
 ### Backend B — OpenFOAM (3D CFD, turbulence, multiphase)
 
 ```python
-from pinneaple_solvers import OpenFOAMBridge
-from pinneaple_solvers.openfoam_bridge import generate_case, run_openfoam, openfoam_to_dataset
+from pinneapple_solvers import OpenFOAMBridge
+from pinneapple_solvers.openfoam_bridge import generate_case, run_openfoam, openfoam_to_dataset
 
 # 1. Generate case directory from spec
 case_dir = generate_case(
@@ -332,7 +332,7 @@ data = openfoam_to_dataset(
 ### Backend C — FEniCS / dolfinx (structural, heat, coupled physics)
 
 ```python
-from pinneaple_solvers import FEnicsBridge, SolverOutput
+from pinneapple_solvers import FEnicsBridge, SolverOutput
 
 bridge = FEnicsBridge(
     mesh_nx={{ MESH_NX }},         # e.g. 40
@@ -377,7 +377,7 @@ print(f"Generated {len(dataset)} solver runs")
 
 ```python
 import numpy as np
-from pinneaple_environment.sampling import CollocationSampler
+from pinneapple_environment.sampling import CollocationSampler
 
 rng = np.random.default_rng({{ SEED }})   # e.g. 42
 
@@ -464,8 +464,8 @@ df.to_parquet("data/{{ USE_CASE_NAME }}/dataset.parquet", index=False)
 
 ```python
 import torch
-from pinneaple_models.pinns.vanilla import VanillaPINN
-from pinneaple_train import best_device, maybe_compile
+from pinneapple_models.pinns.vanilla import VanillaPINN
+from pinneapple_train import best_device, maybe_compile
 
 DEVICE = best_device()
 
@@ -483,7 +483,7 @@ print(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
 ### XtFC (exact BC enforcement — 1D/simple-domain problems)
 
 ```python
-from pinneaple_models.pinns.xtfc import build_xtfc, tfc_available
+from pinneapple_models.pinns.xtfc import build_xtfc, tfc_available
 
 # g(x): particular solution satisfying BCs exactly
 # B(x): multiplier that vanishes on all boundaries
@@ -516,7 +516,7 @@ model = build_xtfc(
 ### DeepONet (parametric operator learning)
 
 ```python
-from pinneaple_models.neural_operators.deeponet import DeepONet
+from pinneapple_models.neural_operators.deeponet import DeepONet
 
 model = DeepONet(
     branch_dim={{ N_SENSOR_POINTS }},    # number of sensor/parameter inputs
@@ -530,7 +530,7 @@ model = DeepONet(
 ### FNO (Fourier Neural Operator — grid-structured data)
 
 ```python
-from pinneaple_models.neural_operators.fno import FourierNeuralOperator
+from pinneapple_models.neural_operators.fno import FourierNeuralOperator
 
 model = FourierNeuralOperator(
     in_channels={{ N_INPUT_CHANNELS }},
@@ -545,7 +545,7 @@ model = FourierNeuralOperator(
 ### InversePINN (identify unknown PDE parameters)
 
 ```python
-from pinneaple_models.pinns.inverse import InversePINN
+from pinneapple_models.pinns.inverse import InversePINN
 
 # Unknown parameters become nn.Parameter — trained jointly with the network
 model = InversePINN(
@@ -658,7 +658,7 @@ def pde_residual_elasticity(model, X_col):
 
     # Compute strain tensor epsilon_ij = 0.5*(u_i,j + u_j,i)
     # Use torch.autograd.grad for each displacement component...
-    # (See pinneaple_models/pinns for built-in elasticity residual helpers)
+    # (See pinneapple_models/pinns for built-in elasticity residual helpers)
     pass
 ```
 
@@ -671,7 +671,7 @@ def pde_residual_elasticity(model, X_col):
 ```python
 import torch
 from torch.utils.data import TensorDataset, DataLoader
-from pinneaple_train import Trainer, TrainConfig, best_device, AMPContext
+from pinneapple_train import Trainer, TrainConfig, best_device, AMPContext
 
 DEVICE = best_device()
 
@@ -734,7 +734,7 @@ for epoch in range(EPOCHS):
 ### Using `Trainer` + `TrainConfig` (preferred for production)
 
 ```python
-from pinneaple_train import Trainer, TrainConfig
+from pinneapple_train import Trainer, TrainConfig
 
 cfg = TrainConfig(
     epochs={{ N_EPOCHS }},
@@ -788,7 +788,7 @@ print(f"Saved: {ckpt_dir / 'model.pt'}")
 ### Compute metrics
 
 ```python
-from pinneaple_train import build_metrics_from_cfg
+from pinneapple_train import build_metrics_from_cfg
 import numpy as np
 
 metrics = build_metrics_from_cfg(["mse", "rmse", "rel_l2", "r2", "max_error"])
@@ -806,7 +806,7 @@ for name, fn in metrics.items():
 ### Inference on a dense evaluation grid
 
 ```python
-from pinneaple_inference import infer_on_grid_2d
+from pinneapple_inference import infer_on_grid_2d
 import numpy as np
 
 # 1D case
@@ -815,7 +815,7 @@ with torch.no_grad():
     u_pred = model(torch.from_numpy(x_eval).to(DEVICE)).cpu().numpy()
 
 # 2D case — use batched_inference for memory-safe large grids
-from pinneaple_train import batched_inference
+from pinneapple_train import batched_inference
 
 nx_eval, ny_eval = {{ NX_EVAL }}, {{ NY_EVAL }}    # e.g. 200, 200
 x_eval = np.linspace({{ X_MIN }}, {{ X_MAX }}, nx_eval, dtype=np.float32)
@@ -896,13 +896,13 @@ Add this section when you need real-time monitoring, data assimilation from
 live sensors, or anomaly detection.
 
 ```python
-from pinneaple_digital_twin import (
+from pinneapple_digital_twin import (
     build_digital_twin, DigitalTwinConfig,
     MockStream, Sensor, SensorRegistry,
     ThresholdDetector, ZScoreDetector,
     EnsembleKalmanFilter,
 )
-from pinneaple_digital_twin.monitoring import AnomalyMonitor
+from pinneapple_digital_twin.monitoring import AnomalyMonitor
 
 # --- 9.1 Wrap trained surrogate as a digital twin ---
 dt = build_digital_twin(
@@ -1042,10 +1042,10 @@ report:
 Run with:
 
 ```bash
-python -m pinneaple_arena.runner.run_pipeline \
+python -m pinneapple_arena.runner.run_pipeline \
     --config examples/use_cases/{{ USE_CASE_NAME }}/configs/{{ USE_CASE_NAME }}.yaml
 # or:
-python examples/pinneaple_arena/09_full_pipeline_yaml.py \
+python examples/pinneapple_arena/09_full_pipeline_yaml.py \
     --config examples/use_cases/{{ USE_CASE_NAME }}/configs/{{ USE_CASE_NAME }}.yaml
 ```
 
@@ -1073,21 +1073,21 @@ examples/use_cases/{{ USE_CASE_NAME }}/
 
 ---
 
-## What Is Already in pinneaple vs. What You Implement
+## What Is Already in pinneapple vs. What You Implement
 
-| Component | pinneaple module | Status |
+| Component | pinneapple module | Status |
 |-----------|-----------------|--------|
-| Problem presets | `pinneaple_environment.presets` | Ready — use `list_presets()` |
-| Built-in FDM solver | `pinneaple_solvers` (`builtin`) | Ready |
-| OpenFOAM bridge | `pinneaple_solvers.openfoam_bridge` | Ready — needs OF installed |
-| FEniCS bridge | `pinneaple_solvers.fenics_bridge` | Ready — needs dolfinx/fenics |
-| VanillaPINN, XtFC, VPINN, XPINN | `pinneaple_models.pinns` | Ready |
-| InversePINN | `pinneaple_models.pinns.inverse` | Ready |
-| DeepONet, FNO, GNO, PINO | `pinneaple_models.neural_operators` | Ready |
-| Trainer, AMP, compile, grad accum | `pinneaple_train` | Ready |
-| Digital twin, EnKF, anomaly | `pinneaple_digital_twin` | Ready |
-| Metrics (MSE, RMSE, rel L2, R2) | `pinneaple_train` | Ready |
-| Grid inference, batch inference | `pinneaple_inference` | Ready |
+| Problem presets | `pinneapple_environment.presets` | Ready — use `list_presets()` |
+| Built-in FDM solver | `pinneapple_solvers` (`builtin`) | Ready |
+| OpenFOAM bridge | `pinneapple_solvers.openfoam_bridge` | Ready — needs OF installed |
+| FEniCS bridge | `pinneapple_solvers.fenics_bridge` | Ready — needs dolfinx/fenics |
+| VanillaPINN, XtFC, VPINN, XPINN | `pinneapple_models.pinns` | Ready |
+| InversePINN | `pinneapple_models.pinns.inverse` | Ready |
+| DeepONet, FNO, GNO, PINO | `pinneapple_models.neural_operators` | Ready |
+| Trainer, AMP, compile, grad accum | `pinneapple_train` | Ready |
+| Digital twin, EnKF, anomaly | `pinneapple_digital_twin` | Ready |
+| Metrics (MSE, RMSE, rel L2, R2) | `pinneapple_train` | Ready |
+| Grid inference, batch inference | `pinneapple_inference` | Ready |
 
 **You implement:**
 
@@ -1110,5 +1110,5 @@ examples/use_cases/{{ USE_CASE_NAME }}/
 - Lu, L. et al. (2021). "Learning nonlinear operators via DeepONet." *Nature Machine Intelligence.*
 - Li, Z. et al. (2021). "Fourier Neural Operator for Parametric PDEs." *ICLR 2021.*
 - Leake, C. & Mortari, D. (2020). "Deep Theory of Functional Connections." arXiv:2005.01219.
-- pinneaple docs: `QUICKSTART.md`
-- pinneaple examples: `examples/pinneaple_arena/`
+- pinneapple docs: `QUICKSTART.md`
+- pinneapple examples: `examples/pinneapple_arena/`

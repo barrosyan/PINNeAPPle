@@ -3,10 +3,10 @@
 This shows how to:
   - Avoid vendor lock-in (Gemini/OpenAI/local gateway/etc)
   - Run the full DesignAgent flow in unit tests / CI
-  - Customize behavior without changing pinneaple_problemdesign internals
+  - Customize behavior without changing pinneapple_problemdesign internals
 
 Run:
-  python examples/pinneaple_problemdesign/04_custom_provider_mock_end_to_end.py
+  python examples/pinneapple_problemdesign/04_custom_provider_mock_end_to_end.py
 """
 
 from __future__ import annotations
@@ -16,8 +16,8 @@ import re
 from dataclasses import dataclass
 from typing import List
 
-from pinneaple_problemdesign import DesignAgent
-from pinneaple_problemdesign.protocol import LLMProvider, LLMMessage, LLMResponse
+from pinneapple_problemdesign import DesignAgent
+from pinneapple_problemdesign.protocol import LLMProvider, LLMMessage, LLMResponse
 
 
 @dataclass

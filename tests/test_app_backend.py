@@ -1,7 +1,7 @@
-"""Backend integration tests for pinneaple_app.
+"""Backend integration tests for pinneapple_app.
 
 Run with:
-    pytest tests/pinneaple_app/test_backend.py -v
+    pytest tests/pinneapple_app/test_backend.py -v
 
 Requires:
     pip install httpx pytest pytest-asyncio
@@ -23,7 +23,7 @@ import pytest
 @pytest.fixture(scope="module")
 def client():
     from fastapi.testclient import TestClient
-    from pinneaple_app.backend.main import app
+    from pinneapple_app.backend.main import app
     with TestClient(app) as c:
         yield c
 
@@ -38,7 +38,7 @@ class TestHealthInfo:
         assert r.status_code == 200
         body = r.json()
         assert body["status"] == "ok"
-        assert body["service"] == "pinneaple_app"
+        assert body["service"] == "pinneapple_app"
 
     def test_info_structure(self, client):
         r = client.get("/api/info")

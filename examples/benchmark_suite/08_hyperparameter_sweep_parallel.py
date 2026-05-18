@@ -10,7 +10,7 @@ What this demonstrates
 - Using ThroughputMonitor to track training speed
 
 Run from repo root:
-    python examples/pinneaple_arena/08_hyperparameter_sweep_parallel.py
+    python examples/pinneapple_arena/08_hyperparameter_sweep_parallel.py
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ sys.path.insert(0, str(REPO_ROOT))
 import torch
 import torch.nn as nn
 
-from pinneaple_train import (
+from pinneapple_train import (
     best_device, run_parallel_sweep, SweepConfig, ThroughputMonitor,
 )
 

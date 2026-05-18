@@ -9,7 +9,7 @@ Shows the complete workflow:
   6. Demonstrate the adjoint shape optimisation (Feature 16)
 
 Run::
-    python examples/pinneaple_solvers/11_cad_cfd_pipeline_demo.py
+    python examples/pinneapple_solvers/11_cad_cfd_pipeline_demo.py
 """
 
 import sys
@@ -22,13 +22,13 @@ import torch.nn as nn
 # ------------------------------------------------------------------
 # Feature 20: CAD-to-CFD pipeline
 # ------------------------------------------------------------------
-from pinneaple_solvers import CADToCFDPipeline, CFDMesh, NSFlowSolver
-from pinneaple_solvers.cfd_pipeline import _gmsh_available
+from pinneapple_solvers import CADToCFDPipeline, CFDMesh, NSFlowSolver
+from pinneapple_solvers.cfd_pipeline import _gmsh_available
 
 # ------------------------------------------------------------------
 # Feature 16: Adjoint shape optimisation
 # ------------------------------------------------------------------
-from pinneaple_design_opt.adjoint import (
+from pinneapple_design_opt.adjoint import (
     ShapeParametrization,
     ContinuousAdjointSolver,
     naca_parametric,
@@ -37,17 +37,17 @@ from pinneaple_design_opt.adjoint import (
 # ------------------------------------------------------------------
 # Optional: Feature 15 backend check
 # ------------------------------------------------------------------
-from pinneaple_backend import get_backend, set_backend, jax_available
+from pinneapple_backend import get_backend, set_backend, jax_available
 
 # ------------------------------------------------------------------
 # Optional: Feature 18 dynamics
 # ------------------------------------------------------------------
-from pinneaple_dynamics import RigidBody, RigidBodyState, MPMSimulator, MPMState, SPHParticles
+from pinneapple_dynamics import RigidBody, RigidBodyState, MPMSimulator, MPMState, SPHParticles
 
 # ------------------------------------------------------------------
 # Optional: Feature 19 world model
 # ------------------------------------------------------------------
-from pinneaple_worldmodel import CosmosAdapter, WorldModelConfig
+from pinneapple_worldmodel import CosmosAdapter, WorldModelConfig
 
 
 # =====================================================================

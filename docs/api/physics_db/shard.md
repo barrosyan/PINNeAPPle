@@ -1,3 +1,3 @@
-# pinneaple_pdb.shard
+# pinneapple_pdb.shard
 
-::: pinneaple_pdb.shard
+::: pinneapple_pdb.shard

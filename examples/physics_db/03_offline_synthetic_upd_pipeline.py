@@ -1,4 +1,4 @@
-"""Offline demo: exercise pinneaple_pdb sharding/derived/validation on a synthetic xarray Dataset.
+"""Offline demo: exercise pinneapple_pdb sharding/derived/validation on a synthetic xarray Dataset.
 
 This script is runnable without Earthdata credentials and shows the *core mechanics*
 behind the builder:
@@ -25,10 +25,10 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from pinneaple_pdb.builder import PhysicalDatasetBuilder
-from pinneaple_pdb.shard import ShardSpec, iter_time_windows, subset_time, iter_tiles, subset_tile, regime_tags_for
-from pinneaple_pdb.validate import ValidationSpec, standardize_dims, validate_dataset
-from pinneaple_pdb.derived import DerivedSpec, apply_derived
+from pinneapple_pdb.builder import PhysicalDatasetBuilder
+from pinneapple_pdb.shard import ShardSpec, iter_time_windows, subset_time, iter_tiles, subset_tile, regime_tags_for
+from pinneapple_pdb.validate import ValidationSpec, standardize_dims, validate_dataset
+from pinneapple_pdb.derived import DerivedSpec, apply_derived
 
 
 def make_synthetic_ds() -> xr.Dataset:
@@ -65,7 +65,7 @@ def make_synthetic_ds() -> xr.Dataset:
 
 
 def main():
-    out_root = Path("examples/_out/pinneaple_pdb/synthetic_build")
+    out_root = Path("examples/_out/pinneapple_pdb/synthetic_build")
     out_dir = out_root / "shards"
     catalog_path = out_root / "catalog.parquet"
     out_dir.mkdir(parents=True, exist_ok=True)

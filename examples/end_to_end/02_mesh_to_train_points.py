@@ -3,15 +3,15 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from pinneaple_design.geometry.io.stl import load_stl
-from pinneaple_design.geometry.ops.repair import repair_mesh
-from pinneaple_design.geometry.ops.simplify import simplify_mesh
-from pinneaple_design.geometry.sample.points import sample_surface_points
+from pinneapple_design.geometry.io.stl import load_stl
+from pinneapple_design.geometry.ops.repair import repair_mesh
+from pinneapple_design.geometry.ops.simplify import simplify_mesh
+from pinneapple_design.geometry.sample.points import sample_surface_points
 
-from pinneaple_data.physical_sample import PhysicalSample
-from pinneaple_neural.trainer.trainer import Trainer, TrainConfig
-from pinneaple_neural.trainer.losses import CombinedLoss, SupervisedLoss
-from pinneaple_neural.trainer.metrics import default_metrics
+from pinneapple_data.physical_sample import PhysicalSample
+from pinneapple_neural.trainer.trainer import Trainer, TrainConfig
+from pinneapple_neural.trainer.losses import CombinedLoss, SupervisedLoss
+from pinneapple_neural.trainer.metrics import default_metrics
 
 # ----------------------------
 # 1) Load mesh (STL) -> repair -> simplify

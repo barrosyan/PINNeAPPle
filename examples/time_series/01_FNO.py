@@ -1,11 +1,11 @@
 import os
 import torch
 import matplotlib.pyplot as plt
-from pinneaple_timeseries import TimeSeriesSpec, TSDataModule, TSModelCatalog
+from pinneapple_timeseries import TimeSeriesSpec, TSDataModule, TSModelCatalog
 
-from pinneaple_train.trainer import Trainer, TrainConfig
-from pinneaple_train.losses import CombinedLoss, SupervisedLoss
-from pinneaple_train.metrics import default_metrics
+from pinneapple_train.trainer import Trainer, TrainConfig
+from pinneapple_train.losses import CombinedLoss, SupervisedLoss
+from pinneapple_train.metrics import default_metrics
 
 series = torch.randn(5000, 8)  # (T,F)
 

@@ -1,3 +1,3 @@
-# pinneaple_neural.architectures.catalog
+# pinneapple_neural.architectures.catalog
 
-::: pinneaple_neural.architectures.catalog
+::: pinneapple_neural.architectures.catalog

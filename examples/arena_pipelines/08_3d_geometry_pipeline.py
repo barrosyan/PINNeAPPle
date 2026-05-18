@@ -2,7 +2,7 @@
 
 Shows how to run the full Arena benchmark pipeline on 3D physics problems
 by combining:
-  - ``pinneaple_design`` geometry domains (LidDrivenCavity, Channel, Pipe, Box, Sphere)
+  - ``pinneapple_design`` geometry domains (LidDrivenCavity, Channel, Pipe, Box, Sphere)
   - ``define_problem()`` for equation specification
   - ``ArenaProblem`` subclassing with geometry-aware data generation
   - Standard Arena training (VanillaPINN, SIREN, ModifiedMLP on 3D input)
@@ -10,7 +10,7 @@ by combining:
 
 The ``geometry`` key in the config (or the constructor) selects:
   - Built-in domains: "lid_driven_cavity_3d", "channel_3d", "pipe_flow_3d"
-  - Parametric primitives: "box", "sphere", "cylinder" (via pinneaple_design)
+  - Parametric primitives: "box", "sphere", "cylinder" (via pinneapple_design)
   - External STL: "stl" + a path
 
 Cases
@@ -46,7 +46,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 import torch
-from pinneaple_arena import Arena, ArenaConfig, ArenaProblem, register_problem
+from pinneapple_arena import Arena, ArenaConfig, ArenaProblem, register_problem
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -341,11 +341,11 @@ register_problem(HeatChannel3D())
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Case 4 — 3D Lid-Driven Cavity (Stokes) using pinneaple_design geometry
+# Case 4 — 3D Lid-Driven Cavity (Stokes) using pinneapple_design geometry
 # ══════════════════════════════════════════════════════════════════════════════
 
 class LidDrivenCavity3DPINN(ArenaProblem):
-    """3D Stokes lid-driven cavity using geometry from pinneaple_design.
+    """3D Stokes lid-driven cavity using geometry from pinneapple_design.
 
     The domain [0,1]³ is sampled via ``LidDrivenCavityDomain3D`` which provides
     structured interior/boundary sampling with named BC regions.
@@ -354,7 +354,7 @@ class LidDrivenCavity3DPINN(ArenaProblem):
     PDE: steady incompressible Stokes (Re→0 limit).
     """
     name = "lid_driven_cavity_3d_pinn"
-    description = "3D Stokes lid-driven cavity — geometry from pinneaple_design"
+    description = "3D Stokes lid-driven cavity — geometry from pinneapple_design"
     domain = "Fluid Mechanics 3D"
     input_dim = 3
     output_dim = 4   # u, v, w, p
@@ -391,7 +391,7 @@ class LidDrivenCavity3DPINN(ArenaProblem):
         return pde_loss, bc_loss
 
     def supervised_data(self, n_train=800, n_bc=800, grid_n=15, **kw):
-        from pinneaple_design.geometry.gen.domains3d import LidDrivenCavityDomain3D
+        from pinneapple_design.geometry.gen.domains3d import LidDrivenCavityDomain3D
 
         domain = LidDrivenCavityDomain3D(
             size=self.size, lid_velocity=self.lid_velocity
@@ -533,7 +533,7 @@ def run_define_problem_3d(epochs: int = 2000):
     Laplace equation Δu=0 on [0,1]³ with u=0 on all faces
     except the top z=1 face where u = sin(πx)·sin(πy).
     """
-    from pinneaple_arena import define_problem
+    from pinneapple_arena import define_problem
 
     print("\n" + "=" * 60)
     print("  Bonus: 3D Laplace via define_problem()")

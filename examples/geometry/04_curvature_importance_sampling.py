@@ -9,16 +9,16 @@ What this shows
 
 Run
 ---
-python examples/pinneaple_geom/04_curvature_importance_sampling.py
+python examples/pinneapple_geom/04_curvature_importance_sampling.py
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from pinneaple_geom.gen.primitives import build_primitive
-from pinneaple_geom.ops.features import compute_face_areas, compute_curvature_proxy
-from pinneaple_geom.sample.points import sample_surface_points, sample_surface_points_weighted
+from pinneapple_geom.gen.primitives import build_primitive
+from pinneapple_geom.ops.features import compute_face_areas, compute_curvature_proxy
+from pinneapple_geom.sample.points import sample_surface_points, sample_surface_points_weighted
 
 
 def main() -> None:

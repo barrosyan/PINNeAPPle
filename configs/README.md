@@ -18,7 +18,7 @@ Você precisa de um bundle em `data/bundles/flow_obstacle_2d/v0/` com:
 A validação do bundle segue:
 - `configs/data/bundle_schema.yaml`
 
-> Geração do bundle: via Omniverse export (se usar USD) ou via pipeline STL/mesh no seu `pinneaple_geom`.
+> Geração do bundle: via Omniverse export (se usar USD) ou via pipeline STL/mesh no seu `pinneapple_geom`.
 > Isso não é gerado por configs; é gerado por scripts/integrações.
 
 ### 2) Arena (benchmark)
@@ -28,7 +28,7 @@ A validação do bundle segue:
 
 Rodando:
 ```python
-from pinneaple_arena.runner import run_benchmark
+from pinneapple_arena.runner import run_benchmark
 
 res = run_benchmark(
   artifacts_dir="data/artifacts",
@@ -180,11 +180,11 @@ A3) Exportar bundle + derived points dentro do Omniverse
 
 No Script Editor do Omniverse, rode o export (o seu pipeline):
 
-Copie seu script export (o que você já tem no repo pinneaple_integrations/omniverse/export_bundle_from_usd.py).
+Copie seu script export (o que você já tem no repo pinneapple_integrations/omniverse/export_bundle_from_usd.py).
 
 Rode com:
 
-from pinneaple_integrations.omniverse import export_flow_bundle_from_usd
+from pinneapple_integrations.omniverse import export_flow_bundle_from_usd
 
 export_flow_bundle_from_usd(
     usd_path="C:/cenas/flow_obstacle_2d.usd",

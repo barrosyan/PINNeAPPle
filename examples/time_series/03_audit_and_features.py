@@ -6,7 +6,7 @@ Shows:
   - keeping things safe if optional deps aren't installed (statsmodels/ruptures)
 
 Run:
-  python examples/pinneaple_timeseries/03_audit_and_features.py
+  python examples/pinneapple_timeseries/03_audit_and_features.py
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 import numpy as np
 
-from pinneaple_timeseries import TSAuditor, TSFeatureEngineer, ForecastProblemSpec
+from pinneapple_timeseries import TSAuditor, TSFeatureEngineer, ForecastProblemSpec
 
 
 def make_series(T: int = 2000, seed: int = 0) -> np.ndarray:

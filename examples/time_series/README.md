@@ -1,6 +1,6 @@
 # PINNeAPPle Time Series Examples
 
-This folder contains runnable scripts that demonstrate **forecasting workflows** supported by `pinneaple_timeseries`.
+This folder contains runnable scripts that demonstrate **forecasting workflows** supported by `pinneapple_timeseries`.
 
 ## Recommended order
 
@@ -8,7 +8,7 @@ This folder contains runnable scripts that demonstrate **forecasting workflows**
    - Create a window spec, build deterministic loaders, benchmark strong baselines.
 
 2. **01_FNO.py**
-   - Train the default Fourier Neural Operator (FNO) forecaster using `pinneaple_train`.
+   - Train the default Fourier Neural Operator (FNO) forecaster using `pinneapple_train`.
 
 3. **02_full_pipeline.py**
    - End-to-end: formal problem spec, audit report, splitters, baselines, a deep model, and fold-safe preprocessing.
@@ -23,7 +23,7 @@ This folder contains runnable scripts that demonstrate **forecasting workflows**
    - Probabilistic forecasts (quantiles) using `QuantileHead` + pinball loss.
 
 7. **06_custom_model_registry.py**
-   - Register your own model in `pinneaple_models.registry.ModelRegistry` and build it via `TSModelCatalog`.
+   - Register your own model in `pinneapple_models.registry.ModelRegistry` and build it via `TSModelCatalog`.
 
 ## Optional deps
 

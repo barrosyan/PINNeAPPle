@@ -16,9 +16,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_physics.symbolic_pde.compiler import SymbolicPDE
-from pinneaple_physics.symbolic_pde.bc import HardBC, NeumannBC
-from pinneaple_neural.architectures.modified_mlp import ModifiedMLP
+from pinneapple_physics.symbolic_pde.compiler import SymbolicPDE
+from pinneapple_physics.symbolic_pde.bc import HardBC, NeumannBC
+from pinneapple_neural.architectures.modified_mlp import ModifiedMLP
 
 
 # ---------------------------------------------------------------------------

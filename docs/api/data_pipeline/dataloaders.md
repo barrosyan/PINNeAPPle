@@ -1,3 +1,3 @@
-# pinneaple_data.dataloaders
+# pinneapple_data.dataloaders
 
-::: pinneaple_data.dataloaders
+::: pinneapple_data.dataloaders

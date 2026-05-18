@@ -13,7 +13,7 @@ By default it tries Gemini (if installed + GOOGLE_API_KEY is set).
 If not available, it falls back to a deterministic mock provider.
 
 Run:
-  python examples/pinneaple_problemdesign/05_batch_generate_reports.py
+  python examples/pinneapple_problemdesign/05_batch_generate_reports.py
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ import re
 from pathlib import Path
 from typing import List
 
-from pinneaple_problemdesign import DesignAgent
+from pinneapple_problemdesign import DesignAgent
 
 
 def _slug(s: str) -> str:
@@ -34,7 +34,7 @@ def _slug(s: str) -> str:
 def _build_agent() -> DesignAgent:
     # Try Gemini first.
     try:
-        from pinneaple_problemdesign import GeminiProvider
+        from pinneapple_problemdesign import GeminiProvider
 
         llm = GeminiProvider(model="gemini-2.0-flash")
         return DesignAgent(llm=llm)
@@ -44,7 +44,7 @@ def _build_agent() -> DesignAgent:
         from dataclasses import dataclass
         from typing import List
 
-        from pinneaple_problemdesign.protocol import LLMProvider, LLMMessage, LLMResponse
+        from pinneapple_problemdesign.protocol import LLMProvider, LLMMessage, LLMResponse
 
         @dataclass
         class _FallbackMock(LLMProvider):
@@ -116,7 +116,7 @@ def main() -> None:
                 title = out["report"].spec.title or title
                 md = out["markdown"]
                 # JSON renderer is available via report object
-                from pinneaple_problemdesign.renderers.report_json import render_json_report
+                from pinneapple_problemdesign.renderers.report_json import render_json_report
 
                 js = render_json_report(out["report"])
                 break

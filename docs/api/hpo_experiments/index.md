@@ -1,4 +1,4 @@
-# pinneaple_tools.hpo_experiments
+# pinneapple_tools.hpo_experiments
 
 ## Overview
 
@@ -32,4 +32,4 @@ Experiment management, metrics and reproducible comparisons.
 
 ## Package API
 
-::: pinneaple_tools.hpo_experiments
+::: pinneapple_tools.hpo_experiments

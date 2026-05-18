@@ -1,3 +1,3 @@
-# pinneaple_data.upd_dataset
+# pinneapple_data.upd_dataset
 
-::: pinneaple_data.upd_dataset
+::: pinneapple_data.upd_dataset

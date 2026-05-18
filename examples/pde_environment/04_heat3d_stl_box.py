@@ -8,10 +8,10 @@ from _utils import ensure_repo_on_path
 
 ensure_repo_on_path()
 
-from pinneaple_environment import steady_heat_conduction_3d_default
-from pinneaple_geom.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig
-from pinneaple_pinn.compiler import LossWeights, compile_problem
-from pinneaple_models.pinns.vanilla import VanillaPINN
+from pinneapple_environment import steady_heat_conduction_3d_default
+from pinneapple_geom.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig
+from pinneapple_pinn.compiler import LossWeights, compile_problem
+from pinneapple_models.pinns.vanilla import VanillaPINN
 
 
 def make_box_stl(path: Path, *, extents=(1.0, 0.5, 0.25)) -> Path:
@@ -43,7 +43,7 @@ def main():
     loss_fn = compile_problem(spec, weights=LossWeights(w_pde=1.0, w_bc=10.0, w_ic=10.0, w_data=1.0))
 
     # 3) Geometry -> batch
-    stl_path = make_box_stl(Path("/tmp/pinneaple_box.stl"))
+    stl_path = make_box_stl(Path("/tmp/pinneapple_box.stl"))
 
     builder = STLDomainBatchBuilder(
         STLDomainBatchConfig(

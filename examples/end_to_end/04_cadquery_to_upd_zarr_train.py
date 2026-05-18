@@ -3,17 +3,17 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from pinneaple_design.geometry.gen.cadquery_gen import build_mesh_from_cadquery_object
-from pinneaple_design.geometry.sample.points import sample_surface_points
+from pinneapple_design.geometry.gen.cadquery_gen import build_mesh_from_cadquery_object
+from pinneapple_design.geometry.sample.points import sample_surface_points
 
-from pinneaple_data.physical_sample import PhysicalSample
-from pinneaple_data.zarr_store import UPDZarrStore
-from pinneaple_data.zarr_iterable import ZarrUPDIterable
-from pinneaple_data.collate import collate_upd_supervised
+from pinneapple_data.physical_sample import PhysicalSample
+from pinneapple_data.zarr_store import UPDZarrStore
+from pinneapple_data.zarr_iterable import ZarrUPDIterable
+from pinneapple_data.collate import collate_upd_supervised
 
-from pinneaple_neural.trainer.trainer import Trainer, TrainConfig
-from pinneaple_neural.trainer.losses import CombinedLoss, SupervisedLoss
-from pinneaple_neural.trainer.metrics import default_metrics
+from pinneapple_neural.trainer.trainer import Trainer, TrainConfig
+from pinneapple_neural.trainer.losses import CombinedLoss, SupervisedLoss
+from pinneapple_neural.trainer.metrics import default_metrics
 
 
 # ----------------------------

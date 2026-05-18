@@ -15,12 +15,12 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_systems.time_series.arima import ARIMAModel
-from pinneaple_systems.time_series.exponential_smoothing import ExponentialSmoothing
-from pinneaple_neural.architectures.recurrent.tcn import TCNModel
+from pinneapple_systems.time_series.arima import ARIMAModel
+from pinneapple_systems.time_series.exponential_smoothing import ExponentialSmoothing
+from pinneapple_neural.architectures.recurrent.tcn import TCNModel
 
 try:
-    from pinneaple_neural.architectures.transformers.informer import InformerModel
+    from pinneapple_neural.architectures.transformers.informer import InformerModel
     _INFORMER = True
 except ImportError:
     _INFORMER = False

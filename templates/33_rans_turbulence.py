@@ -1,7 +1,7 @@
 """33_rans_turbulence.py — RANS turbulence modelling with k-ω SST PINN.
 
 Demonstrates:
-- KOmegaSSTResiduals: prebuilt k-ω SST turbulence closure from pinneaple_environment
+- KOmegaSSTResiduals: prebuilt k-ω SST turbulence closure from pinneapple_environment
 - SpalartAllmarasResiduals: SA-model residuals (alternative)
 - Channel flow benchmark: log-law recovery in a turbulent plane channel
 - Reynolds stress prediction and friction velocity estimation
@@ -15,10 +15,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_physics.pde_environment import KOmegaSSTResiduals, KOmegaSSTConfig
+from pinneapple_physics.pde_environment import KOmegaSSTResiduals, KOmegaSSTConfig
 
 try:
-    from pinneaple_physics.pde_environment import SpalartAllmarasResiduals
+    from pinneapple_physics.pde_environment import SpalartAllmarasResiduals
     _SA = True
 except ImportError:
     _SA = False

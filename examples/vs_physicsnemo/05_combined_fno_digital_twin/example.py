@@ -62,23 +62,23 @@ except ImportError:
 
 # PINNeAPPle UQ
 try:
-    from pinneaple_analysis.uncertainty import MCDropoutWrapper, MCDropoutConfig
+    from pinneapple_analysis.uncertainty import MCDropoutWrapper, MCDropoutConfig
     UQ_OK = True
 except ImportError:
     UQ_OK = False
 
 # PINNeAPPle Digital Twin
 try:
-    from pinneaple_systems.digital_twin.twin import DigitalTwin, DigitalTwinConfig
-    from pinneaple_systems.digital_twin.io.stream import MockStream
-    from pinneaple_systems.digital_twin.monitoring.anomaly import ThresholdDetector, AnomalyMonitor
+    from pinneapple_systems.digital_twin.twin import DigitalTwin, DigitalTwinConfig
+    from pinneapple_systems.digital_twin.io.stream import MockStream
+    from pinneapple_systems.digital_twin.monitoring.anomaly import ThresholdDetector, AnomalyMonitor
     DT_OK = True
 except ImportError:
     DT_OK = False
 
 # PINNeAPPle Validate
 try:
-    from pinneaple_analysis.validation import validate_against_solver
+    from pinneapple_analysis.validation import validate_against_solver
     VAL_OK = True
 except ImportError:
     VAL_OK = False
@@ -212,7 +212,7 @@ def add_uq(model: nn.Module, x_test: torch.Tensor, device: str):
     print("=" * 55)
 
     if not UQ_OK:
-        print("  [SKIP] pinneaple_uq não disponível")
+        print("  [SKIP] pinneapple_uq não disponível")
         return None
 
     uq = MCDropoutWrapper(model, MCDropoutConfig(n_samples=50, dropout_p=0.05))
@@ -240,7 +240,7 @@ def run_digital_twin(model: nn.Module, device: str):
     print("=" * 55)
 
     if not DT_OK:
-        print("  [SKIP] pinneaple_digital_twin não disponível")
+        print("  [SKIP] pinneapple_digital_twin não disponível")
         return []
 
     anomaly_count = [0]
@@ -427,7 +427,7 @@ def make_plots(model, uq_result, val_result, anomaly_log, XX, YY, device,
         ax.set_xlabel("Observação")
         ax.legend(fontsize=9)
     else:
-        ax.text(0.5, 0.5, "Digital Twin não disponível\n(pinneaple_digital_twin opcional)",
+        ax.text(0.5, 0.5, "Digital Twin não disponível\n(pinneapple_digital_twin opcional)",
                 ha="center", va="center", transform=ax.transAxes, fontsize=10,
                 bbox=dict(boxstyle="round", facecolor="lightyellow"))
         ax.set_title("F — Timeline de anomalias (Fase 3)")
@@ -440,9 +440,9 @@ def make_plots(model, uq_result, val_result, anomaly_log, XX, YY, device,
         "RESUMO DO PIPELINE COMBINADO",
         "",
         "  FASE 1 (PhysicsNeMo FNO)   : surrogate treinado, mapeando (Re, x, y) → (u, v, p)",
-        f"  FASE 2 (PINNeAPPle UQ)     : {'✅ incerteza quantificada por MC Dropout' if uq_result else '⚠️ pinneaple_uq não disponível'}",
-        f"  FASE 3 (PINNeAPPle DT)     : {'✅ digital twin rodando, anomalias detectadas' if anomaly_log is not None else '⚠️ pinneaple_digital_twin não disponível'}",
-        f"  FASE 4 (PINNeAPPle Val)    : {'✅ |∇·u| = %.4f — campo fisicamente consistente' % val_result['max_div'] if val_result else '⚠️ pinneaple_validate não disponível'}",
+        f"  FASE 2 (PINNeAPPle UQ)     : {'✅ incerteza quantificada por MC Dropout' if uq_result else '⚠️ pinneapple_uq não disponível'}",
+        f"  FASE 3 (PINNeAPPle DT)     : {'✅ digital twin rodando, anomalias detectadas' if anomaly_log is not None else '⚠️ pinneapple_digital_twin não disponível'}",
+        f"  FASE 4 (PINNeAPPle Val)    : {'✅ |∇·u| = %.4f — campo fisicamente consistente' % val_result['max_div'] if val_result else '⚠️ pinneapple_validate não disponível'}",
         "",
         "  MENSAGEM CHAVE: PhysicsNeMo e PINNeAPPle são COMPLEMENTARES.",
         "  PhysicsNeMo: velocidade e escala na GPU.",

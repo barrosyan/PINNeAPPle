@@ -16,7 +16,7 @@ This is a standard PINN benchmark (exact solution exists but is a bit long);
 here we focus on showing how to wire the losses and train.
 
 Run:
-  python examples/pinneaple_pinn/03_compiler_burgers_1d.py
+  python examples/pinneapple_pinn/03_compiler_burgers_1d.py
 """
 
 from __future__ import annotations
@@ -26,9 +26,9 @@ import math
 import numpy as np
 import torch
 
-from pinneaple_environment.conditions import DirichletBC, InitialCondition
-from pinneaple_environment.spec import PDETermSpec, ProblemSpec
-from pinneaple_pinn import LossWeights, compile_problem
+from pinneapple_environment.conditions import DirichletBC, InitialCondition
+from pinneapple_environment.spec import PDETermSpec, ProblemSpec
+from pinneapple_pinn import LossWeights, compile_problem
 
 
 class MLP(torch.nn.Module):

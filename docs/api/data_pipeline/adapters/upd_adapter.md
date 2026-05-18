@@ -1,3 +1,3 @@
-# pinneaple_data.adapters.upd_adapter
+# pinneapple_data.adapters.upd_adapter
 
-::: pinneaple_data.adapters.upd_adapter
+::: pinneapple_data.adapters.upd_adapter

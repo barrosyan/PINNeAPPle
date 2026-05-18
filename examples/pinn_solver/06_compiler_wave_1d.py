@@ -20,7 +20,7 @@ Analytic solution:
 With c = 1 this gives a standing wave with frequency pi.
 
 Run:
-  python examples/pinneaple_pinn/06_compiler_wave_1d.py
+  python examples/pinneapple_pinn/06_compiler_wave_1d.py
 """
 
 from __future__ import annotations
@@ -30,9 +30,9 @@ import math
 import numpy as np
 import torch
 
-from pinneaple_environment.conditions import DirichletBC, InitialCondition
-from pinneaple_environment.spec import PDETermSpec, ProblemSpec
-from pinneaple_pinn import LossWeights, compile_problem
+from pinneapple_environment.conditions import DirichletBC, InitialCondition
+from pinneapple_environment.spec import PDETermSpec, ProblemSpec
+from pinneapple_pinn import LossWeights, compile_problem
 
 
 # ---------------------------------------------------------------------------

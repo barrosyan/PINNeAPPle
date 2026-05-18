@@ -1,3 +1,3 @@
-# pinneaple_data.cache
+# pinneapple_data.cache
 
-::: pinneaple_data.cache
+::: pinneapple_data.cache

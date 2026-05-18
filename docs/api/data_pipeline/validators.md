@@ -1,3 +1,3 @@
-# pinneaple_data.validators
+# pinneapple_data.validators
 
-::: pinneaple_data.validators
+::: pinneapple_data.validators

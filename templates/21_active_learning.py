@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_data.active_learning import (
+from pinneapple_data.active_learning import (
     ResidualActiveSampler,
     VarianceActiveSampler,
     CombinedActiveSampler,
@@ -94,7 +94,7 @@ def main():
     CAND     = 4096     # candidate pool size
 
     # Boundary conditions (Dirichlet u=0)
-    from pinneaple_design.geometry.csg import CSGRectangle
+    from pinneapple_design.geometry.csg import CSGRectangle
     rect = CSGRectangle(x_min=0, y_min=0, x_max=1, y_max=1)
     xy_bc_np = rect.sample_boundary(n=256, seed=0)
     xy_bc = torch.tensor(xy_bc_np, dtype=torch.float32, device=device)

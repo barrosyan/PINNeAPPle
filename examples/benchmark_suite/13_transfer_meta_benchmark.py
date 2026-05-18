@@ -60,7 +60,7 @@ def parse_args():
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_transfer_benchmark(args):
-    from pinneaple_arena.transfer_benchmark import TransferBenchmarkPipeline, TransferBenchmarkConfig
+    from pinneapple_arena.transfer_benchmark import TransferBenchmarkPipeline, TransferBenchmarkConfig
 
     if args.fast:
         cfg_overrides = dict(n_source_epochs=100, n_finetune_epochs=50)
@@ -113,7 +113,7 @@ def run_transfer_benchmark(args):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_meta_benchmark(args):
-    from pinneaple_arena.meta_benchmark import MetaBenchmarkPipeline, MetaBenchmarkConfig
+    from pinneapple_arena.meta_benchmark import MetaBenchmarkPipeline, MetaBenchmarkConfig
 
     if args.fast:
         n_meta_epochs = 30
@@ -180,7 +180,7 @@ def print_combined_summary(transfer_results, meta_results):
 
     if transfer_results:
         import math
-        from pinneaple_arena.transfer_benchmark import TransferBenchmarkResult
+        from pinneapple_arena.transfer_benchmark import TransferBenchmarkResult
 
         best_transfer: dict = {}
         for r in transfer_results:
@@ -196,7 +196,7 @@ def print_combined_summary(transfer_results, meta_results):
 
     if meta_results:
         import math, numpy as np
-        from pinneaple_arena.meta_benchmark import MetaBenchmarkResult
+        from pinneapple_arena.meta_benchmark import MetaBenchmarkResult
 
         max_k = max((r.k_shot for r in meta_results if r.algorithm not in ("scratch_full",)), default=0)
 

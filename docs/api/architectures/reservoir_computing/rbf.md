@@ -1,3 +1,3 @@
-# pinneaple_neural.architectures.reservoir_computing.rbf
+# pinneapple_neural.architectures.reservoir_computing.rbf
 
-::: pinneaple_neural.architectures.reservoir_computing.rbf
+::: pinneapple_neural.architectures.reservoir_computing.rbf

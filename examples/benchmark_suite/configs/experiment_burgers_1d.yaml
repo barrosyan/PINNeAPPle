@@ -1,15 +1,15 @@
 # Arena experiment: 1D Burgers equation PINN comparison
 # Run with:
-#   python examples/pinneaple_arena/02_arena_from_yaml.py
+#   python examples/pinneapple_arena/02_arena_from_yaml.py
 #   or:
-#   python -m pinneaple_arena.runner.run_arena_yaml --config examples/pinneaple_arena/configs/experiment_burgers_1d.yaml
+#   python -m pinneapple_arena.runner.run_arena_yaml --config examples/pinneapple_arena/configs/experiment_burgers_1d.yaml
 
 experiment:
   name: burgers_1d_pinn_comparison
   description: "Compare MLP sizes on viscous Burgers 1D (u_t + u*u_x = nu*u_xx)"
 
 problem:
-  id: burgers_1d         # registered preset in pinneaple_environment
+  id: burgers_1d         # registered preset in pinneapple_environment
   params:
     nu: 0.01             # viscosity — overrides preset default
   data_source: solver    # 'solver' | 'bundle' | 'real'

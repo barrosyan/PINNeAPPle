@@ -41,7 +41,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 import torch
-from pinneaple_arena import Arena, ArenaConfig, ArenaProblem, register_problem
+from pinneapple_arena import Arena, ArenaConfig, ArenaProblem, register_problem
 
 
 # ── helpers (same as in the built-in problems) ────────────────────────────────

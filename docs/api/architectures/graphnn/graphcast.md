@@ -1,3 +1,3 @@
-# pinneaple_neural.architectures.graphnn.graphcast
+# pinneapple_neural.architectures.graphnn.graphcast
 
-::: pinneaple_neural.architectures.graphnn.graphcast
+::: pinneapple_neural.architectures.graphnn.graphcast

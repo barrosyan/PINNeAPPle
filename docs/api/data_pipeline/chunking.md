@@ -1,3 +1,3 @@
-# pinneaple_data.chunking
+# pinneapple_data.chunking
 
-::: pinneaple_data.chunking
+::: pinneapple_data.chunking

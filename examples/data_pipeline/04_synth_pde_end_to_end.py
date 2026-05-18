@@ -4,13 +4,13 @@ Showcase: generate synthetic PDE/ODE trajectories -> convert to PhysicalSample -
 store as UPD Zarr -> stream back for training.
 
 Demonstrates:
-  - Synthetic generator: pinneaple_data.synth.pde.PDESynthGenerator
-  - Conversion: pinneaple_data.synth.sample_adapter.to_physical_sample
-  - Storage: pinneaple_data.zarr_store.UPDZarrStore
-  - Streaming: pinneaple_data.zarr_iterable.ZarrUPDIterable
+  - Synthetic generator: pinneapple_data.synth.pde.PDESynthGenerator
+  - Conversion: pinneapple_data.synth.sample_adapter.to_physical_sample
+  - Storage: pinneapple_data.zarr_store.UPDZarrStore
+  - Streaming: pinneapple_data.zarr_iterable.ZarrUPDIterable
 
 Run:
-  python examples/pinneaple_data/04_synth_pde_end_to_end.py
+  python examples/pinneapple_data/04_synth_pde_end_to_end.py
 """
 
 from __future__ import annotations
@@ -20,11 +20,11 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from pinneaple_data.physical_sample import PhysicalSample
-from pinneaple_data.synth.pde import PDESynthGenerator
-from pinneaple_data.synth.sample_adapter import to_physical_sample
-from pinneaple_data.zarr_store import UPDZarrStore
-from pinneaple_data.zarr_iterable import ZarrUPDIterable
+from pinneapple_data.physical_sample import PhysicalSample
+from pinneapple_data.synth.pde import PDESynthGenerator
+from pinneapple_data.synth.sample_adapter import to_physical_sample
+from pinneapple_data.zarr_store import UPDZarrStore
+from pinneapple_data.zarr_iterable import ZarrUPDIterable
 
 
 def _as_ps(sample_like: object, *, kind: str) -> PhysicalSample:
@@ -35,7 +35,7 @@ def _as_ps(sample_like: object, *, kind: str) -> PhysicalSample:
     if isinstance(ps, PhysicalSample):
         ps.domain = {"type": "grid"}
         ps.schema = {"governing": {"type": "PDE/ODE", "name": kind}}
-        ps.provenance = {"source": "pinneaple_data.synth", "kind": kind}
+        ps.provenance = {"source": "pinneapple_data.synth", "kind": kind}
         return ps
 
     # Fallback: treat it as duck-typed with fields/coords/meta.
@@ -45,7 +45,7 @@ def _as_ps(sample_like: object, *, kind: str) -> PhysicalSample:
         state=state,
         domain={"type": "grid"},
         schema={"governing": {"type": "PDE/ODE", "name": kind}},
-        provenance={"source": "pinneaple_data.synth", "kind": kind},
+        provenance={"source": "pinneapple_data.synth", "kind": kind},
         extras={"meta": dict(ps.meta)},  # type: ignore[attr-defined]
     )
 

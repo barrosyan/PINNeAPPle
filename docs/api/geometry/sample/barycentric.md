@@ -1,3 +1,3 @@
-# pinneaple_design.geometry.sample.barycentric
+# pinneapple_design.geometry.sample.barycentric
 
-::: pinneaple_design.geometry.sample.barycentric
+::: pinneapple_design.geometry.sample.barycentric

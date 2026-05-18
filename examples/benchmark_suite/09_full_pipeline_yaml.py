@@ -5,18 +5,18 @@ Runs the complete workflow in a single call:
 
 What this demonstrates
 ----------------------
-- pinneaple_arena.run_full_pipeline() as single entry point
+- pinneapple_arena.run_full_pipeline() as single entry point
 - Reading all settings from a YAML config file
 - Multi-model training with comparison metrics
 - Automatic report generation (loss curves, field plots, error maps)
 - GPU-ready config (switch device: cuda + amp: true for GPU)
 
 Run from repo root:
-    python examples/pinneaple_arena/09_full_pipeline_yaml.py
+    python examples/pinneapple_arena/09_full_pipeline_yaml.py
 
 Or point to any custom YAML:
-    python examples/pinneaple_arena/09_full_pipeline_yaml.py \\
-        --config examples/pinneaple_arena/configs/pipeline_burgers_full.yaml
+    python examples/pinneapple_arena/09_full_pipeline_yaml.py \\
+        --config examples/pinneapple_arena/configs/pipeline_burgers_full.yaml
 """
 
 from __future__ import annotations
@@ -28,14 +28,14 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from pinneaple_arena import run_full_pipeline
+from pinneapple_arena import run_full_pipeline
 
 
 def main():
-    parser = argparse.ArgumentParser(description="pinneaple full pipeline")
+    parser = argparse.ArgumentParser(description="pinneapple full pipeline")
     parser.add_argument(
         "--config",
-        default=str(REPO_ROOT / "examples" / "pinneaple_arena" / "configs" / "pipeline_burgers_full.yaml"),
+        default=str(REPO_ROOT / "examples" / "pinneapple_arena" / "configs" / "pipeline_burgers_full.yaml"),
         help="Path to pipeline YAML config",
     )
     parser.add_argument(
@@ -45,8 +45,8 @@ def main():
     )
     args = parser.parse_args()
 
-    print(f"[pinneaple] Running full pipeline from: {args.config}")
-    print(f"[pinneaple] Output dir: {args.out_dir or '(from config)'}")
+    print(f"[pinneapple] Running full pipeline from: {args.config}")
+    print(f"[pinneapple] Output dir: {args.out_dir or '(from config)'}")
     print()
 
     summary = run_full_pipeline(args.config, out_dir=args.out_dir)

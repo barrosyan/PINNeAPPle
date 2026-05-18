@@ -1,4 +1,4 @@
-# pinneaple_neural.architectures
+# pinneapple_neural.architectures
 
 ## Overview
 
@@ -110,4 +110,4 @@ Physics-agnostic models (e.g., MLPs). Constraints live in the PINN layer.
 
 ## Package API
 
-::: pinneaple_neural.architectures
+::: pinneapple_neural.architectures

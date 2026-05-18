@@ -1,4 +1,4 @@
-# pinneaple_tools.benchmark_suite
+# pinneapple_tools.benchmark_suite
 
 ## Overview
 
@@ -22,4 +22,4 @@ Provides backends for running training and evaluation workflows. Decouples solve
 
 ## Package API
 
-::: pinneaple_tools.benchmark_suite
+::: pinneapple_tools.benchmark_suite

@@ -21,7 +21,7 @@ For this demo we use a simplified linear ODE:
   Exact: u(x) = sin(pi*x)
 
 Run from repo root:
-    python examples/pinneaple_arena/07_xtfc_1d_ode.py
+    python examples/pinneapple_arena/07_xtfc_1d_ode.py
 """
 
 from __future__ import annotations
@@ -37,9 +37,9 @@ sys.path.insert(0, str(REPO_ROOT))
 import torch
 import torch.nn as nn
 
-from pinneaple_models.pinns.xtfc import XTFC, XTFCConfig, build_xtfc, tfc_available
-from pinneaple_models.pinns.vanilla import VanillaPINN
-from pinneaple_train import best_device
+from pinneapple_models.pinns.xtfc import XTFC, XTFCConfig, build_xtfc, tfc_available
+from pinneapple_models.pinns.vanilla import VanillaPINN
+from pinneapple_train import best_device
 
 
 DEVICE = best_device()

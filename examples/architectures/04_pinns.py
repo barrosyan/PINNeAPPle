@@ -5,15 +5,15 @@ import torch.optim as optim
 
 import matplotlib.pyplot as plt
 
-from pinneaple_pinn.factory.pinn_factory import PINNProblemSpec, PINNFactory, PINN
-from pinneaple_models.pinns.inverse import InversePINN
-from pinneaple_models.pinns.pielm import PIELM, PIELMFactoryAdapter
-from pinneaple_models.pinns.pinn_lstm import PINNLSTM
-from pinneaple_models.pinns.pinnsformer import PINNsFormer
-from pinneaple_models.pinns.vanilla import VanillaPINN
-from pinneaple_models.pinns.vpinn import VPINN, pinn_factory_adapter
-from pinneaple_models.pinns.xpinn import XPINN
-from pinneaple_models.pinns.xtfc import XTFC, XTFCFactoryModel, XTFCConfig
+from pinneapple_pinn.factory.pinn_factory import PINNProblemSpec, PINNFactory, PINN
+from pinneapple_models.pinns.inverse import InversePINN
+from pinneapple_models.pinns.pielm import PIELM, PIELMFactoryAdapter
+from pinneapple_models.pinns.pinn_lstm import PINNLSTM
+from pinneapple_models.pinns.pinnsformer import PINNsFormer
+from pinneapple_models.pinns.vanilla import VanillaPINN
+from pinneapple_models.pinns.vpinn import VPINN, pinn_factory_adapter
+from pinneapple_models.pinns.xpinn import XPINN
+from pinneapple_models.pinns.xtfc import XTFC, XTFCFactoryModel, XTFCConfig
 
 from typing import Dict, Any, List, Tuple
 

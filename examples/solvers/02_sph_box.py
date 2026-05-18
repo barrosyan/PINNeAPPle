@@ -6,8 +6,8 @@ Run:
 
 import torch
 
-from pinneaple_design.geometry.sample import sample_box_particles
-from pinneaple_simulation.numerical_solvers import SolverRegistry, register_all
+from pinneapple_design.geometry.sample import sample_box_particles
+from pinneapple_simulation.numerical_solvers import SolverRegistry, register_all
 
 
 def main():

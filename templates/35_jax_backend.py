@@ -1,7 +1,7 @@
 """35_jax_backend.py — JAX backend for PINN training.
 
 Demonstrates:
-- JAXBackend: enable JAX-based computation via pinneaple_backend
+- JAXBackend: enable JAX-based computation via pinneapple_backend
 - JaxPINN: Haiku/Flax-style PINN with jit-compiled training step
 - PinnTrainerJAX: drop-in trainer compatible with JAX arrays
 - Speed comparison: PyTorch CPU vs. JAX CPU vs. JAX JIT
@@ -15,9 +15,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_tools.compute_backends import JAXBackend, BackendConfig
+from pinneapple_tools.compute_backends import JAXBackend, BackendConfig
 
-# Detect JAX availability through pinneaple_backend
+# Detect JAX availability through pinneapple_backend
 _backend = JAXBackend(config=BackendConfig(device="cpu"))
 _JAX_OK  = _backend.is_available()
 
@@ -25,8 +25,8 @@ if _JAX_OK:
     import jax
     import jax.numpy as jnp
     from jax import grad, jit, vmap
-    from pinneaple_tools.compute_backends.jax_pinn import JaxPINN, JaxPINNConfig
-    from pinneaple_tools.compute_backends.jax_trainer import PinnTrainerJAX, TrainerConfigJAX
+    from pinneapple_tools.compute_backends.jax_pinn import JaxPINN, JaxPINNConfig
+    from pinneapple_tools.compute_backends.jax_trainer import PinnTrainerJAX, TrainerConfigJAX
     print("JAX backend available.")
 else:
     print("JAX not installed — running PyTorch baseline only.")

@@ -1,6 +1,6 @@
 {
   "attributes": {
-    "format": "pinneaple.upd.zarr",
+    "format": "pinneapple.upd.zarr",
     "version": "0.1",
     "num_samples": 6,
     "fields": [

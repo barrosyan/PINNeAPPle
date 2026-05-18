@@ -72,7 +72,7 @@ def main():
 
     # ── Load-only mode ────────────────────────────────────────────────────────
     if args.load:
-        from pinneaple_arena.benchmark import PINNArenaBenchmark
+        from pinneapple_arena.benchmark import PINNArenaBenchmark
         import json
 
         print(f"\nLoading results from {args.load}")
@@ -88,7 +88,7 @@ def main():
         return
 
     # ── Build benchmark ───────────────────────────────────────────────────────
-    from pinneaple_arena.benchmark import PINNArenaBenchmark, BenchmarkConfig
+    from pinneapple_arena.benchmark import PINNArenaBenchmark, BenchmarkConfig
 
     epochs = args.epochs or (100 if args.fast else 5000)
 

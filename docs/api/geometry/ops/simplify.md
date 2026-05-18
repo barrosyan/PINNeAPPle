@@ -1,3 +1,3 @@
-# pinneaple_design.geometry.ops.simplify
+# pinneapple_design.geometry.ops.simplify
 
-::: pinneaple_design.geometry.ops.simplify
+::: pinneapple_design.geometry.ops.simplify

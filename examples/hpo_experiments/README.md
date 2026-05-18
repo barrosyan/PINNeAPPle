@@ -1,4 +1,4 @@
-# pinneaple_researcher examples
+# pinneapple_researcher examples
 
 These examples are designed to show the full workflow:
 
@@ -18,7 +18,7 @@ export GITHUB_TOKEN="..."
 export GEMINI_API_KEY="..."
 # export GEMINI_MODEL="models/gemini-2.0-flash"
 
-python examples/pinneaple_researcher/00_quickstart_end_to_end.py \
+python examples/pinneapple_researcher/00_quickstart_end_to_end.py \
   --topic "physics-informed neural networks boundary conditions" \
   --k-papers 6 --k-repos 6 --min-stars 50
 ```
@@ -48,4 +48,4 @@ runs/researcher/<slug_topic>/<timestamp>/
   reproductions/<...>/                         # if reproduce ran
 ```
 
-If you want: a CLI wrapper (`pinneaple-research`) that calls these pipelines, or an embedding-backed retrieval option (Chroma/FAISS), we can add that next.
+If you want: a CLI wrapper (`pinneapple-research`) that calls these pipelines, or an embedding-backed retrieval option (Chroma/FAISS), we can add that next.

@@ -2,14 +2,14 @@
 
 What this demonstrates
 ----------------------
-- Loading pre-defined engineering problems from pinneaple_environment
+- Loading pre-defined engineering problems from pinneapple_environment
 - Inspecting problem conditions, PDE parameters, domain bounds, solver spec
 - Generating collocation points from domain bounds
 - Training a lightweight PINN surrogate for the CPU heatsink thermal problem
 - Listing all available presets in the library
 
 Run from repo root:
-    python examples/pinneaple_arena/06_engineering_presets_showcase.py
+    python examples/pinneapple_arena/06_engineering_presets_showcase.py
 """
 
 from __future__ import annotations
@@ -22,14 +22,14 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from pinneaple_environment import list_presets, get_preset
+from pinneapple_environment import list_presets, get_preset
 
 
 # ------------------------------------------------------------------
 # 1. List all available presets
 # ------------------------------------------------------------------
 print("=" * 60)
-print("Available problem presets in pinneaple_environment:")
+print("Available problem presets in pinneapple_environment:")
 print("=" * 60)
 all_presets = list_presets()
 for name in all_presets:
@@ -82,7 +82,7 @@ try:
 
     import torch
     import torch.nn as nn
-    from pinneaple_train import best_device
+    from pinneapple_train import best_device
 
     DEVICE = best_device()
 
@@ -177,7 +177,7 @@ try:
     print(f"  Solver: {dc_spec.solver_spec['name']} / {dc_spec.solver_spec['solver']}")
     print()
     print("  To use with DigitalTwin:")
-    print("    from pinneaple_digital_twin import build_digital_twin")
+    print("    from pinneapple_digital_twin import build_digital_twin")
     print("    dt = build_digital_twin(model, field_names=dc_spec.meta['digital_twin_fields'])")
     print("    dt.anomaly_monitor.add_detector(")
     print(f"      ThresholdDetector({{'T': {dc_spec.meta.get('alert_T_max', 318.0)}}})")

@@ -65,17 +65,17 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from pinneaple_timeseries.csv_loader import generate_synthetic_csv, load_timeseries_csv
-from pinneaple_timeseries.decomposition.hht_lstm import HHTLSTMPipeline
-from pinneaple_timeseries.datamodule import TSDataModule
-from pinneaple_timeseries.spec import TimeSeriesSpec
-from pinneaple_timeseries.metrics_ext.point import mae as np_mae, rmse as np_rmse, smape as np_smape
+from pinneapple_timeseries.csv_loader import generate_synthetic_csv, load_timeseries_csv
+from pinneapple_timeseries.decomposition.hht_lstm import HHTLSTMPipeline
+from pinneapple_timeseries.datamodule import TSDataModule
+from pinneapple_timeseries.spec import TimeSeriesSpec
+from pinneapple_timeseries.metrics_ext.point import mae as np_mae, rmse as np_rmse, smape as np_smape
 
-from pinneaple_train.trainer import Trainer, TrainConfig
-from pinneaple_train.losses import CombinedLoss, SupervisedLoss
-from pinneaple_train.metrics import regression_metrics_bundle
-from pinneaple_train.callbacks import EarlyStopping, ModelCheckpoint
-from pinneaple_train.preprocess import (
+from pinneapple_train.trainer import Trainer, TrainConfig
+from pinneapple_train.losses import CombinedLoss, SupervisedLoss
+from pinneapple_train.metrics import regression_metrics_bundle
+from pinneapple_train.callbacks import EarlyStopping, ModelCheckpoint
+from pinneapple_train.preprocess import (
     PreprocessPipeline,
     MissingValueStep,
     RobustScaleStep,

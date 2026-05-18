@@ -45,22 +45,22 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-# --- Pinneaple imports
-from pinneaple_environment.spec import ProblemSpec, PDETermSpec
-from pinneaple_environment.conditions import DirichletBC, InitialCondition, DataConstraint
+# --- Pinneapple imports
+from pinneapple_environment.spec import ProblemSpec, PDETermSpec
+from pinneapple_environment.conditions import DirichletBC, InitialCondition, DataConstraint
 
-from pinneaple_arena.pipeline.dataset_builder import build_from_solver, build_from_real_data
-from pinneaple_arena.runner.compare import compare_runs
+from pinneapple_arena.pipeline.dataset_builder import build_from_solver, build_from_real_data
+from pinneapple_arena.runner.compare import compare_runs
 
-from pinneaple_models.registry import ModelRegistry
-from pinneaple_models.register_all import register_all
+from pinneapple_models.registry import ModelRegistry
+from pinneapple_models.register_all import register_all
 
-from pinneaple_pinn.compiler.compile import compile_problem
-from pinneaple_pinn.compiler.loss import LossWeights
-from pinneaple_pinn.compiler.dataset import SingleBatchDataset, dict_collate
+from pinneapple_pinn.compiler.compile import compile_problem
+from pinneapple_pinn.compiler.loss import LossWeights
+from pinneapple_pinn.compiler.dataset import SingleBatchDataset, dict_collate
 
-from pinneaple_train.trainer import Trainer, TrainConfig
-from pinneaple_train.losses import build_loss
+from pinneapple_train.trainer import Trainer, TrainConfig
+from pinneapple_train.losses import build_loss
 
 
 # -----------------------------

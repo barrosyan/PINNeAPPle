@@ -235,7 +235,7 @@
 `climate_atmosphere_2d` · `climate_ocean_gyre` · `crystal_phonon` · `material_fracture_2d` · `black_scholes_1d` · `heston_pde_2d` · `pk_two_compartment` · `drug_diffusion_tissue` · `sir_epidemic` · `opinion_dynamics_2d`
 
 ```python
-from pinneaple_environment import list_presets
+from pinneapple_environment import list_presets
 print(list_presets())  # lista todos os presets disponíveis
 ```
 
@@ -249,7 +249,7 @@ Dados CFD → PhysicsNeMo FNO (throughput, GPU) → checkpoint
          → PINNeAPPle carrega → MCDropoutWrapper (UQ)
          → DigitalTwin + MockStream (sensores)
          → Anomaly detection + EKF assimilation
-         → REST API via pinneaple_serve
+         → REST API via pinneapple_serve
 ```
 **Melhor para**: surrogate de alta fidelidade + digital twin em produção.
 
@@ -275,9 +275,9 @@ Malha STL → PhysicsNeMo MeshGraphNet (inferência em malha não-estruturada)
 
 | # | Diretório | O que mostra | Ferramentas |
 |---|---|---|---|
-| 01 | `01_pinneaple_uq_digital_twin/` | UQ + Digital Twin em equação do calor | PINNeAPPle **only** |
-| 02 | `02_pinneaple_meta_transfer/` | Meta-aprendizado Reptile + Transfer Learning em Burgers | PINNeAPPle **only** |
-| 03 | `03_pinneaple_active_weight_sched/` | Active collocation RAD + SA-PINN em Laplace 2D | PINNeAPPle **only** |
+| 01 | `01_pinneapple_uq_digital_twin/` | UQ + Digital Twin em equação do calor | PINNeAPPle **only** |
+| 02 | `02_pinneapple_meta_transfer/` | Meta-aprendizado Reptile + Transfer Learning em Burgers | PINNeAPPle **only** |
+| 03 | `03_pinneapple_active_weight_sched/` | Active collocation RAD + SA-PINN em Laplace 2D | PINNeAPPle **only** |
 | 04 | `04_physicsnemo_fno_operator/` | FNO operator learning + multi-GPU | PhysicsNeMo (+ fallback) |
 | 05 | `05_combined_fno_digital_twin/` | PhysicsNeMo FNO surrogate → PINNeAPPle UQ + DT | **Combined** |
 | 06 | `06_combined_meshgraphnet_valid/` | PhysicsNeMo GNN → PINNeAPPle validação + export | **Combined** |

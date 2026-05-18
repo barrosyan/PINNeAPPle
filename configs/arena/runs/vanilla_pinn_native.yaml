@@ -1,7 +1,7 @@
 run_name: vanilla_pinn_native_mvp
 
 backend:
-  name: pinneaple_native
+  name: pinneapple_native
 
 train:
   device: cpu

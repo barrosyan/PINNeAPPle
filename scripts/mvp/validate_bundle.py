@@ -5,8 +5,8 @@ from pathlib import Path
 
 import yaml
 
-from pinneaple_tools.benchmark_suite.bundle.schema import load_bundle_schema
-from pinneaple_tools.benchmark_suite.bundle.loader import load_bundle
+from pinneapple_tools.benchmark_suite.bundle.schema import load_bundle_schema
+from pinneapple_tools.benchmark_suite.bundle.loader import load_bundle
 
 
 def main() -> int:

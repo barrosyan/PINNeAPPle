@@ -37,7 +37,7 @@ This is 0 on all four sides and strictly positive inside, so u_net
 satisfies u=0 on the boundary for *any* network weights.
 
 Run:
-    python examples/pinneaple_pinn/03_symbolic_pde_hard_bc.py
+    python examples/pinneapple_pinn/03_symbolic_pde_hard_bc.py
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ try:
 except ImportError:
     HAS_MPL = False
 
-from pinneaple_symbolic import HardBC, SymbolicPDE
+from pinneapple_symbolic import HardBC, SymbolicPDE
 
 
 # ---------------------------------------------------------------------------

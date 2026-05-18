@@ -1,6 +1,6 @@
 """
 NASA POWER (Daily) -> UPD (PhysicalSample) -> Zarr
-(+ optional pinneaple_pdb ingestion if available)
+(+ optional pinneapple_pdb ingestion if available)
 
 Ref:
   /api/temporal/daily/point?parameters=...&community=...&longitude=...&latitude=...&start=...&end=...&format=JSON
@@ -16,8 +16,8 @@ from typing import Dict, Any, List
 
 import torch
 
-from pinneaple_data.physical_sample import PhysicalSample
-from pinneaple_data.zarr_store import UPDZarrStore
+from pinneapple_data.physical_sample import PhysicalSample
+from pinneapple_data.zarr_store import UPDZarrStore
 
 
 def fetch_power_daily(

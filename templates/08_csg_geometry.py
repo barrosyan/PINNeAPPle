@@ -13,7 +13,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 
-from pinneaple_design.geometry.csg import (
+from pinneapple_design.geometry.csg import (
     CSGRectangle, CSGCircle,
     lshape, csg_annulus, channel_with_hole,
     CSGUnion, CSGDifference,

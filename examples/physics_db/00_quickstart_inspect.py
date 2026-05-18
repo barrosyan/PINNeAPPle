@@ -1,6 +1,6 @@
 """Quickstart: discover a dataset via CMR/earthaccess and inspect variables.
 
-This demonstrates the *discovery* workflow of pinneaple_pdb:
+This demonstrates the *discovery* workflow of pinneapple_pdb:
 
   1) login() (NASA Earthdata)
   2) list_collections() to find dataset short_name/provider
@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 from pprint import pprint
 
-from pinneaple_pdb import PhysicalDatasetBuilder
+from pinneapple_pdb import PhysicalDatasetBuilder
 
 
 def main():
@@ -64,7 +64,7 @@ def main():
     pprint(info["suggested_packs"])
 
     # Save to file for later browsing
-    out = "examples/_out/pinneaple_pdb"
+    out = "examples/_out/pinneapple_pdb"
     import os
     os.makedirs(out, exist_ok=True)
     with open(f"{out}/inspect.json", "w", encoding="utf-8") as f:

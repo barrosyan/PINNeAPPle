@@ -7,7 +7,7 @@ Even with a simple lexical scorer, you can:
   - feed top chunks into an agent/prompt elsewhere
 
 Usage:
-  python examples/pinneaple_researcher/05_local_search_over_chunks.py \
+  python examples/pinneapple_researcher/05_local_search_over_chunks.py \
       --chunks runs/researcher/<topic>/<timestamp>/kb_index/chunks.jsonl \
       --query "how do they enforce boundary conditions?" --topk 8
 """

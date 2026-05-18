@@ -1,4 +1,4 @@
-# pinneaple_data
+# pinneapple_data
 
 ## Overview
 
@@ -45,4 +45,4 @@ Unified containers for fields, coordinates and metadata, plus dataset utilities.
 
 ## Package API
 
-::: pinneaple_data
+::: pinneapple_data

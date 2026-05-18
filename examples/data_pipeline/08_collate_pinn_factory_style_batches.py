@@ -7,11 +7,11 @@ Many PINN workflows want a single batch that contains multiple components:
   - boundary/initial conditions (multiple condition sets)
   - supervised data (x,y) pairs
 
-pinneaple_data.collate.collate_pinn_batches merges a list of per-item dicts into a
+pinneapple_data.collate.collate_pinn_batches merges a list of per-item dicts into a
 single dict where tensors are concatenated along dim=0.
 
 Run:
-  python examples/pinneaple_data/08_collate_pinn_factory_style_batches.py
+  python examples/pinneapple_data/08_collate_pinn_factory_style_batches.py
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Tuple
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from pinneaple_data.collate import collate_pinn_batches
+from pinneapple_data.collate import collate_pinn_batches
 
 
 @dataclass

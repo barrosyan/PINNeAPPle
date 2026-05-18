@@ -24,18 +24,18 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from pinneaple_timeseries.problem import ForecastProblemSpec
-from pinneaple_timeseries.datamodule import TSDataModule
-from pinneaple_timeseries.audit.tests import TSAuditor
-from pinneaple_timeseries.validation.splitters import ExpandingWindowSplitter, RollingWindowSplitter, Split
-from pinneaple_timeseries.validation.backtest import BacktestRunner, BacktestConfig
+from pinneapple_timeseries.problem import ForecastProblemSpec
+from pinneapple_timeseries.datamodule import TSDataModule
+from pinneapple_timeseries.audit.tests import TSAuditor
+from pinneapple_timeseries.validation.splitters import ExpandingWindowSplitter, RollingWindowSplitter, Split
+from pinneapple_timeseries.validation.backtest import BacktestRunner, BacktestConfig
 
-from pinneaple_timeseries.metrics_ext.point import mae as np_mae, rmse as np_rmse, smape as np_smape
+from pinneapple_timeseries.metrics_ext.point import mae as np_mae, rmse as np_rmse, smape as np_smape
 
-from pinneaple_train.trainer import Trainer, TrainConfig
-from pinneaple_train.losses import CombinedLoss, SupervisedLoss
-from pinneaple_train.metrics import regression_metrics_bundle
-from pinneaple_train.preprocess import (
+from pinneapple_train.trainer import Trainer, TrainConfig
+from pinneapple_train.losses import CombinedLoss, SupervisedLoss
+from pinneapple_train.metrics import regression_metrics_bundle
+from pinneapple_train.preprocess import (
     PreprocessPipeline,
     MissingValueStep,
     WinsorizeStep,

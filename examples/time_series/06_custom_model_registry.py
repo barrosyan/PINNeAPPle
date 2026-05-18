@@ -6,7 +6,7 @@ The goal:
   - Once registered, TSModelCatalog can build it by name.
 
 Run:
-  python examples/pinneaple_timeseries/06_custom_model_registry.py
+  python examples/pinneapple_timeseries/06_custom_model_registry.py
 """
 
 from __future__ import annotations
@@ -14,8 +14,8 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-from pinneaple_models.registry import ModelRegistry
-from pinneaple_timeseries import TimeSeriesSpec, TSDataModule, TSModelCatalog
+from pinneapple_models.registry import ModelRegistry
+from pinneapple_timeseries import TimeSeriesSpec, TSDataModule, TSModelCatalog
 
 
 # 1) Define and register a model
@@ -62,7 +62,7 @@ def main() -> None:
     yhat = model(x)
     print("x:", tuple(x.shape), "y:", tuple(y.shape), "yhat:", tuple(yhat.shape))
 
-    print("\nNext step: integrate with pinneaple_train.Trainer + CombinedLoss + BacktestRunner.")
+    print("\nNext step: integrate with pinneapple_train.Trainer + CombinedLoss + BacktestRunner.")
 
 
 if __name__ == "__main__":

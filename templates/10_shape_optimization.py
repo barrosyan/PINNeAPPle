@@ -14,14 +14,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_design.design_optimizer.adjoint import (
+from pinneapple_design.design_optimizer.adjoint import (
     ContinuousAdjointSolver,
     ShapeParametrization,
     naca_parametric,
 )
 
 try:
-    from pinneaple_design.design_optimizer.adjoint import DragAdjointObjective
+    from pinneapple_design.design_optimizer.adjoint import DragAdjointObjective
     _DRAG_OBJ_AVAILABLE = True
 except ImportError:
     _DRAG_OBJ_AVAILABLE = False

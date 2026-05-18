@@ -13,7 +13,7 @@ This example:
   3) Streams back with ShardAwareZarrUPDIterable using multiple workers
 
 Run:
-  python examples/pinneaple_data/06_sharded_zarr_balanced_workers.py
+  python examples/pinneapple_data/06_sharded_zarr_balanced_workers.py
 
 Env knobs:
   TARGET_DEVICE=cpu|cuda
@@ -27,12 +27,12 @@ from collections import Counter
 
 from torch.utils.data import DataLoader
 
-from pinneaple_data.physical_sample import PhysicalSample
-from pinneaple_data.synth.pde import PDESynthGenerator
-from pinneaple_data.synth.sample_adapter import to_physical_sample
-from pinneaple_data.zarr_shards import ShardSpec, UPDZarrShardedWriter
-from pinneaple_data.zarr_shard_iterable import ShardAwareConfig, ShardAwareZarrUPDIterable
-from pinneaple_data.zarr_cached_store_bytes import ZarrByteCacheConfig
+from pinneapple_data.physical_sample import PhysicalSample
+from pinneapple_data.synth.pde import PDESynthGenerator
+from pinneapple_data.synth.sample_adapter import to_physical_sample
+from pinneapple_data.zarr_shards import ShardSpec, UPDZarrShardedWriter
+from pinneapple_data.zarr_shard_iterable import ShardAwareConfig, ShardAwareZarrUPDIterable
+from pinneapple_data.zarr_cached_store_bytes import ZarrByteCacheConfig
 
 
 def _as_ps(sample_like: object, *, kind: str) -> PhysicalSample:
@@ -40,13 +40,13 @@ def _as_ps(sample_like: object, *, kind: str) -> PhysicalSample:
     if isinstance(ps, PhysicalSample):
         ps.domain = {"type": "grid"}
         ps.schema = {"governing": {"type": "PDE/ODE", "name": kind}}
-        ps.provenance = {"source": "pinneaple_data.synth", "kind": kind}
+        ps.provenance = {"source": "pinneapple_data.synth", "kind": kind}
         return ps
     return PhysicalSample(
         state={"fields": dict(ps.fields), "coords": dict(ps.coords)},  # type: ignore[attr-defined]
         domain={"type": "grid"},
         schema={"governing": {"type": "PDE/ODE", "name": kind}},
-        provenance={"source": "pinneaple_data.synth", "kind": kind},
+        provenance={"source": "pinneapple_data.synth", "kind": kind},
         extras={"meta": dict(ps.meta)},  # type: ignore[attr-defined]
     )
 

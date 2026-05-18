@@ -1,7 +1,7 @@
 """Classic PINN benchmarks — Burgers 1D, Heat 2D, Poisson 2D.
 
 Each problem has an exact reference solution.
-Outputs saved to  examples/pinneaple_arena/_out/common_pinns/
+Outputs saved to  examples/pinneapple_arena/_out/common_pinns/
 """
 from __future__ import annotations
 

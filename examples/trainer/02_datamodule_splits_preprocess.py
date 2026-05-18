@@ -1,8 +1,8 @@
-"""pinneaple_train example 02: DataModule + robust preprocessing.
+"""pinneapple_train example 02: DataModule + robust preprocessing.
 
 What this shows
 --------------
-- Building loaders with pinneaple_train.DataModule (train/val/test split).
+- Building loaders with pinneapple_train.DataModule (train/val/test split).
 - Leakage-safe *time* split (no shuffle across the time axis).
 - A preprocessing pipeline that:
   - fills missing values (NaNs)
@@ -11,7 +11,7 @@ What this shows
 
 Run
 ---
-python examples/pinneaple_train/02_datamodule_splits_preprocess.py
+python examples/pinneapple_train/02_datamodule_splits_preprocess.py
 
 Artifacts
 ---------
@@ -29,7 +29,7 @@ from typing import Dict, Any, List
 import torch
 from torch import nn
 
-from pinneaple_train import (
+from pinneapple_train import (
     DataModule,
     SplitSpec,
     Trainer,
@@ -38,7 +38,7 @@ from pinneaple_train import (
     SupervisedLoss,
     default_metrics,
 )
-from pinneaple_train.preprocess import PreprocessPipeline, MissingValueStep, NormalizeStep
+from pinneapple_train.preprocess import PreprocessPipeline, MissingValueStep, NormalizeStep
 
 
 # -----------------------------
@@ -54,7 +54,7 @@ class WindowItem:
 def make_windows(*, n_series: int = 12, T: int = 64, D: int = 3, window: int = 24) -> List[Dict[str, Any]]:
     """Create windowed samples from multiple synthetic series.
 
-    Each item is a dict compatible with pinneaple_train.ItemAdapter.
+    Each item is a dict compatible with pinneapple_train.ItemAdapter.
     """
     g = torch.Generator().manual_seed(123)
     items: List[Dict[str, Any]] = []

@@ -1,4 +1,4 @@
-from pinneaple_tools.benchmark_suite.benchmark import PINNArenaBenchmark, all_model_specs
+from pinneapple_tools.benchmark_suite.benchmark import PINNArenaBenchmark, all_model_specs
 
 specs = all_model_specs()
 print(f"Total models: {len(specs)}")

@@ -20,7 +20,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_worldmodel.adapter import (
+from pinneapple_worldmodel.adapter import (
     CosmosAdapter,
     WorldModelConfig,
     PhysicsVideoDataset,

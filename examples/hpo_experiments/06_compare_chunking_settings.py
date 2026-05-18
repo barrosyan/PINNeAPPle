@@ -5,7 +5,7 @@ Why it matters:
   - Larger chunks can preserve context but may dilute retrieval.
 
 Usage:
-  python examples/pinneaple_researcher/06_compare_chunking_settings.py \
+  python examples/pinneapple_researcher/06_compare_chunking_settings.py \
       --run-dir runs/researcher/<topic>/<timestamp> \
       --chunk-chars 1200 1800 2600 \
       --overlap 150 200
@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from pinneaple_researcher.kb.chunking import chunk_text
+from pinneapple_researcher.kb.chunking import chunk_text
 
 
 def _iter_artifact_markdown(run_dir: Path) -> List[Path]:

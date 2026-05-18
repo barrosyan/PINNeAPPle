@@ -1,3 +1,3 @@
-# pinneaple_pdb.validate
+# pinneapple_pdb.validate
 
-::: pinneaple_pdb.validate
+::: pinneapple_pdb.validate

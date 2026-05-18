@@ -6,9 +6,9 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-from pinneaple_neural.architectures.neural_operators.fno import FourierNeuralOperator
-from pinneaple_neural.architectures.neural_operators.pino import pino_physics_fn, GridSpec, ResidualSpec
-from pinneaple_neural.trainer.trainer import Trainer, TrainConfig
+from pinneapple_neural.architectures.neural_operators.fno import FourierNeuralOperator
+from pinneapple_neural.architectures.neural_operators.pino import pino_physics_fn, GridSpec, ResidualSpec
+from pinneapple_neural.trainer.trainer import Trainer, TrainConfig
 
 
 class LineOperatorDataset(Dataset):

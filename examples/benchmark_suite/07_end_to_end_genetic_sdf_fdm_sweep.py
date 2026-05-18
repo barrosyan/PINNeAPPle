@@ -22,8 +22,8 @@ from pathlib import Path
 
 import torch
 
-from pinneaple_arena.runner.run_sweep import run_sweep
-from pinneaple_arena.runner.compare import compare_runs
+from pinneapple_arena.runner.run_sweep import run_sweep
+from pinneapple_arena.runner.compare import compare_runs
 
 
 def main():
@@ -80,7 +80,7 @@ def main():
     # Base run config (shared)
     # ---------------------------
     base_run_cfg = {
-        "backend": {"name": "pinneaple_models"},
+        "backend": {"name": "pinneapple_models"},
         "arena": {
             "data_source": "solver",
             "geometry_cfg": geometry_cfg,
@@ -104,7 +104,7 @@ def main():
 
     # ---------------------------
     # 5 models in the sweep (all pointwise coords -> scalar u)
-    # These are registered by pinneaple_models.benchmarks.registry via register_all().
+    # These are registered by pinneapple_models.benchmarks.registry via register_all().
     # ---------------------------
     models = [
         {"name": "bench_linear", "model": {"kwargs": {"in_dim": 3, "out_dim": 1}}},

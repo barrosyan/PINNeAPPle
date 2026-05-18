@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 from typing import List
 
-from pinneaple_tools.benchmark_suite.runner.run_benchmark import run_benchmark
+from pinneapple_tools.benchmark_suite.runner.run_benchmark import run_benchmark
 
 
 def _p(path: str) -> Path:
@@ -14,7 +14,7 @@ def _p(path: str) -> Path:
 def main() -> None:
     ap = argparse.ArgumentParser(
         prog="run_sweep",
-        description="Run pinneaple_arena for one task against multiple run configs (backends) and store comparable artifacts.",
+        description="Run pinneapple_arena for one task against multiple run configs (backends) and store comparable artifacts.",
     )
     ap.add_argument("--artifacts-dir", default="artifacts", help="Output dir for arena artifacts (default: artifacts)")
     ap.add_argument("--task", required=True, help="Path to task YAML (e.g., configs/arena/tasks/flow_obstacle_2d.yaml)")

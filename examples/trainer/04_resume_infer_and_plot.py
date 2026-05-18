@@ -1,15 +1,15 @@
-"""pinneaple_train example 04: Resume / inference / plotting.
+"""pinneapple_train example 04: Resume / inference / plotting.
 
 This script demonstrates the *full* training lifecycle:
 
 1) Train a tiny model (fast) with audit logs + best checkpoint
-2) Load the best checkpoint with pinneaple_train.inference.load_checkpoint
-3) Run inference with pinneaple_train.inference.predict
-4) Plot training curves with pinneaple_train.viz.plot_history
+2) Load the best checkpoint with pinneapple_train.inference.load_checkpoint
+3) Run inference with pinneapple_train.inference.predict
+4) Plot training curves with pinneapple_train.viz.plot_history
 
 Run
 ---
-python examples/pinneaple_train/04_resume_infer_and_plot.py
+python examples/pinneapple_train/04_resume_infer_and_plot.py
 
 Notes
 -----
@@ -27,9 +27,9 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from pinneaple_train import Trainer, TrainConfig, CombinedLoss, SupervisedLoss
-from pinneaple_train.inference import load_checkpoint, predict
-from pinneaple_train.viz import plot_history
+from pinneapple_train import Trainer, TrainConfig, CombinedLoss, SupervisedLoss
+from pinneapple_train.inference import load_checkpoint, predict
+from pinneapple_train.viz import plot_history
 
 
 class TinyMLP(nn.Module):

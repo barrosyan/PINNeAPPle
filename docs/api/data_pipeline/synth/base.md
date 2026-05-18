@@ -1,3 +1,3 @@
-# pinneaple_data.synth.base
+# pinneapple_data.synth.base
 
-::: pinneaple_data.synth.base
+::: pinneapple_data.synth.base

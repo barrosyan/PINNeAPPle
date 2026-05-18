@@ -2,9 +2,9 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from pinneaple_data.physical_sample import PhysicalSample
-from pinneaple_data.zarr_store import UPDZarrStore
-from pinneaple_data.zarr_iterable import ZarrUPDIterable
+from pinneapple_data.physical_sample import PhysicalSample
+from pinneapple_data.zarr_store import UPDZarrStore
+from pinneapple_data.zarr_iterable import ZarrUPDIterable
 
 out_dir = "examples/_out"
 os.makedirs(out_dir, exist_ok=True)

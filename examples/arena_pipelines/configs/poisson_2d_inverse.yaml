@@ -1,5 +1,5 @@
 # Poisson 2D — Inverse Problem: recover source term magnitude from observations
-# Demonstrates InverseConfig; pinneaple_analysis.invert() is called post-training
+# Demonstrates InverseConfig; pinneapple_analysis.invert() is called post-training
 problem:
   name: poisson_2d
   params:

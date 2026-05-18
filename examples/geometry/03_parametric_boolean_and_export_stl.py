@@ -2,19 +2,19 @@
 
 What this shows
 --------------
-- Procedural geometry generation via `pinneaple_geom.gen.primitives`.
+- Procedural geometry generation via `pinneapple_geom.gen.primitives`.
 - Optional boolean cut/union/intersection (with robust fallback if no boolean engine is installed).
 - Packaging into a `GeometryAsset` for consistent downstream use.
 - Exporting to STL and loading back.
 
 Run
 ---
-python examples/pinneaple_geom/03_parametric_boolean_and_export_stl.py
+python examples/pinneapple_geom/03_parametric_boolean_and_export_stl.py
 
 Notes
 -----
 Trimesh booleans require a boolean backend (e.g. manifold3d / blender / cork).
-If none is available, Pinneaple falls back to concatenation (not watertight).
+If none is available, Pinneapple falls back to concatenation (not watertight).
 """
 
 from __future__ import annotations
@@ -23,8 +23,8 @@ from pathlib import Path
 
 import numpy as np
 
-from pinneaple_geom.core.registry import build_geometry_asset
-from pinneaple_geom.core.geometry import GeometrySpec
+from pinneapple_geom.core.registry import build_geometry_asset
+from pinneapple_geom.core.geometry import GeometrySpec
 
 
 def _to_trimesh(asset):
@@ -35,7 +35,7 @@ def _to_trimesh(asset):
 
 
 def main() -> None:
-    out_dir = Path("examples/pinneaple_geom/_out")
+    out_dir = Path("examples/pinneapple_geom/_out")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # A box with a cylindrical hole (boolean cut).

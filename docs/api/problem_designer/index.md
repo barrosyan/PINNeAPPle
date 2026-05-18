@@ -1,4 +1,4 @@
-# pinneaple_design.problem_designer
+# pinneapple_design.problem_designer
 
 ## Overview
 
@@ -15,7 +15,7 @@ Encodes equations, BC/IC and metadata into reusable definitions.
 - [elicitation.validators](elicitation/validators.md)
 - [extractor](extractor.md)
 - [knowledge.mapping](knowledge/mapping.md)
-- [knowledge.pinneaple_capabilities](knowledge/pinneaple_capabilities.md)
+- [knowledge.pinneapple_capabilities](knowledge/pinneapple_capabilities.md)
 - [merge](merge.md)
 - [policy](policy.md)
 - [protocol](protocol.md)
@@ -28,4 +28,4 @@ Encodes equations, BC/IC and metadata into reusable definitions.
 
 ## Package API
 
-::: pinneaple_design.problem_designer
+::: pinneapple_design.problem_designer

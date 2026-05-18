@@ -1,3 +1,3 @@
-# pinneaple_design.geometry.io.stl
+# pinneapple_design.geometry.io.stl
 
-::: pinneaple_design.geometry.io.stl
+::: pinneapple_design.geometry.io.stl

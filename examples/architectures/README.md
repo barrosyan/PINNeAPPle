@@ -1,6 +1,6 @@
-# Pinneaple Models — Showcase Examples
+# Pinneapple Models — Showcase Examples
 
-These examples are **curated demos** focused on the full breadth of `pinneaple_models`: registry/catalog usage, neural operators, PINNs (including inverse parameters), ROMs, GNNs, and time-series transformers.
+These examples are **curated demos** focused on the full breadth of `pinneapple_models`: registry/catalog usage, neural operators, PINNs (including inverse parameters), ROMs, GNNs, and time-series transformers.
 
 ## How to run
 
@@ -11,12 +11,12 @@ python -m pip install -e .
 # or, without editable install:
 # set PYTHONPATH to repo root
 
-python examples/pinneaple_models_showcase/00_registry_tour.py
-python examples/pinneaple_models_showcase/10_operator_learning_fno_toy.py
-python examples/pinneaple_models_showcase/20_pinn_inverse_parameter_ode.py
-python examples/pinneaple_models_showcase/30_rom_pod_dmd.py
-python examples/pinneaple_models_showcase/40_graph_gnn_message_passing.py
-python examples/pinneaple_models_showcase/50_timeseries_transformer_forecast_toy.py
+python examples/pinneapple_models_showcase/00_registry_tour.py
+python examples/pinneapple_models_showcase/10_operator_learning_fno_toy.py
+python examples/pinneapple_models_showcase/20_pinn_inverse_parameter_ode.py
+python examples/pinneapple_models_showcase/30_rom_pod_dmd.py
+python examples/pinneapple_models_showcase/40_graph_gnn_message_passing.py
+python examples/pinneapple_models_showcase/50_timeseries_transformer_forecast_toy.py
 ```
 
 All scripts are designed to run in **seconds to a couple minutes** on CPU.

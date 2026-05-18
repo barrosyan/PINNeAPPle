@@ -1,3 +1,3 @@
-# pinneaple_data.synth.registry
+# pinneapple_data.synth.registry
 
-::: pinneaple_data.synth.registry
+::: pinneapple_data.synth.registry

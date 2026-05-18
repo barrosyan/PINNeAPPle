@@ -6,12 +6,12 @@ from torch.utils.data import Dataset, DataLoader, TensorDataset
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pinneaple_models.autoencoders.ae_2d import Autoencoder2D
-from pinneaple_models.autoencoders.ae_rom_hybrid import AEROMHybrid
-from pinneaple_models.autoencoders.dense_ae import DenseAutoencoder
-from pinneaple_models.autoencoders.kae import KAEAutoencoder
-from pinneaple_models.autoencoders.koopman_pi_ae import PhysicsInformedKoopmanAutoencoder
-from pinneaple_models.autoencoders.vae import VariationalAutoencoder
+from pinneapple_models.autoencoders.ae_2d import Autoencoder2D
+from pinneapple_models.autoencoders.ae_rom_hybrid import AEROMHybrid
+from pinneapple_models.autoencoders.dense_ae import DenseAutoencoder
+from pinneapple_models.autoencoders.kae import KAEAutoencoder
+from pinneapple_models.autoencoders.koopman_pi_ae import PhysicsInformedKoopmanAutoencoder
+from pinneapple_models.autoencoders.vae import VariationalAutoencoder
 
 # Autoencoder 2D
 

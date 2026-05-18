@@ -15,8 +15,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_neural.architectures.autoencoders.koopman_ae import KoopmanAutoencoder
-from pinneaple_neural.architectures.autoencoders.koopman_ae import LinearisedPrediction
+from pinneapple_neural.architectures.autoencoders.koopman_ae import KoopmanAutoencoder
+from pinneapple_neural.architectures.autoencoders.koopman_ae import LinearisedPrediction
 
 
 # ---------------------------------------------------------------------------

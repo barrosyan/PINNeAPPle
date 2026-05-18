@@ -6,7 +6,7 @@ Showcase: high-throughput streaming from a Zarr-backed UPD store with:
   - optional pinned-memory + async CPU->GPU transfer
 
 Run:
-  python examples/pinneaple_data/03_prefetch_streaming_gpu.py
+  python examples/pinneapple_data/03_prefetch_streaming_gpu.py
 
 Env knobs:
   TARGET_DEVICE=cpu|cuda
@@ -22,10 +22,10 @@ import time
 import torch
 from torch.utils.data import DataLoader
 
-from pinneaple_data.physical_sample import PhysicalSample
-from pinneaple_data.zarr_store import UPDZarrStore
-from pinneaple_data.zarr_prefetch import PrefetchConfig, PrefetchZarrUPDIterable
-from pinneaple_data.zarr_cached_store import ZarrCacheConfig
+from pinneapple_data.physical_sample import PhysicalSample
+from pinneapple_data.zarr_store import UPDZarrStore
+from pinneapple_data.zarr_prefetch import PrefetchConfig, PrefetchZarrUPDIterable
+from pinneapple_data.zarr_cached_store import ZarrCacheConfig
 
 
 def _maybe_make_store(zarr_path: str, *, n_samples: int = 2000) -> None:

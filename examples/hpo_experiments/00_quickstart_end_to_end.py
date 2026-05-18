@@ -1,6 +1,6 @@
 """Example 00: end-to-end researcher quickstart (discover -> build KB -> optional extract).
 
-This is the best single-file demo of what ``pinneaple_researcher`` can do.
+This is the best single-file demo of what ``pinneapple_researcher`` can do.
 
 What you get at the end:
   - a persisted run folder (runs/researcher/<topic>/<timestamp>/...)
@@ -10,7 +10,7 @@ What you get at the end:
   - (optional) extracted problem/solution pairs + a problemdesign_export.json
 
 Usage:
-  python examples/pinneaple_researcher/00_quickstart_end_to_end.py \
+  python examples/pinneapple_researcher/00_quickstart_end_to_end.py \
       --topic "physics-informed neural networks boundary conditions" \
       --k-papers 6 --k-repos 6 --min-stars 50
 
@@ -26,10 +26,10 @@ import json
 import os
 from pathlib import Path
 
-from pinneaple_researcher import ResearcherConfig
-from pinneaple_researcher.pipelines.build_kb import build_kb
-from pinneaple_researcher.pipelines.discover import discover
-from pinneaple_researcher.pipelines.extract_problem_solutions import extract_problem_solutions
+from pinneapple_researcher import ResearcherConfig
+from pinneapple_researcher.pipelines.build_kb import build_kb
+from pinneapple_researcher.pipelines.discover import discover
+from pinneapple_researcher.pipelines.extract_problem_solutions import extract_problem_solutions
 
 
 def main() -> None:

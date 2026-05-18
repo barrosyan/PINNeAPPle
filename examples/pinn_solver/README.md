@@ -1,18 +1,18 @@
-# pinneaple_pinn examples
+# pinneapple_pinn examples
 
 This folder focuses on the **PINN-specific** layer of PINNeAPPle.
 
 ## Quickstart
 
 ```bash
-python examples/pinneaple_pinn/01_symbolic_loss_basic.py
+python examples/pinneapple_pinn/01_symbolic_loss_basic.py
 ```
 
 ## Compiler API (autograd PDEs)
 
 - `02_compiler_poisson_2d.py`
   - Poisson (2D) on a unit square with Dirichlet BC
-  - Uses `pinneaple_environment.ProblemSpec` + `pinneaple_pinn.compile_problem()`
+  - Uses `pinneapple_environment.ProblemSpec` + `pinneapple_pinn.compile_problem()`
 
 - `03_compiler_burgers_1d.py`
   - Viscous Burgers (1D + time) with initial and boundary conditions

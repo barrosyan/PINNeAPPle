@@ -1,7 +1,7 @@
 run_name: native_pinn_flow_obstacle_2d
 
 backend:
-  name: pinneaple_native
+  name: pinneapple_native
 
 train:
   device: cpu         # ou cuda

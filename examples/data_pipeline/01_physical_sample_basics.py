@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 
-from pinneaple_data.physical_sample import PhysicalSample
+from pinneapple_data.physical_sample import PhysicalSample
 
 ds = xr.Dataset(
     data_vars=dict(

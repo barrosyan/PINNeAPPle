@@ -1,4 +1,4 @@
-# pinneaple — Quickstart Guide
+# pinneapple — Quickstart Guide
 
 ## Installation
 
@@ -12,7 +12,7 @@ pip install gmsh triangle                    # advanced meshing
 ## 5-minute tour
 
 ```python
-import pinneaple as pp
+import pinneapple as pp
 
 # 1. See what's available
 pp.info()               # device, GPU count, presets, models
@@ -27,14 +27,14 @@ pp.quickstart("cpu_heatsink_thermal")   # prints summary + next steps
 model = pp.build_model("VanillaPINN", in_dim=2, out_dim=1, hidden=[64,64,64])
 
 # 4. Train with GPU + AMP
-from pinneaple_train import Trainer, TrainConfig, best_device
+from pinneapple_train import Trainer, TrainConfig, best_device
 cfg = TrainConfig(epochs=1000, lr=1e-3, device=str(pp.best_device()), amp=True)
 trainer = Trainer(model, loss_fn=my_pinn_loss)
 result = trainer.fit(train_loader, val_loader, cfg)
 
 # 5. Create a digital twin
 dt = pp.build_digital_twin(model, field_names=["u", "v", "p"])
-from pinneaple_digital_twin import MockStream
+from pinneapple_digital_twin import MockStream
 dt.add_stream(MockStream("inlet", ["u"], lambda t: {"u": 1.0 + 0.1*t}))
 with dt:
     import time; time.sleep(5)
@@ -78,14 +78,14 @@ print(dt.state.fields["u"].mean())
 
 ### 2. Surrogate with solver data (OpenFOAM / FEniCS)
 ```python
-# See examples/pinneaple_arena/configs/experiment_burgers_1d.yaml
+# See examples/pinneapple_arena/configs/experiment_burgers_1d.yaml
 # pp.arena.run_full_pipeline("my_config.yaml")
 ```
 
 ### 3. Digital twin with real sensor data
 ```python
 # See examples/04_digital_twin_flow.py
-from pinneaple_digital_twin import MQTTStream
+from pinneapple_digital_twin import MQTTStream
 stream = MQTTStream("broker.local", "sensors/inlet", "inlet", ["u","v","p"])
 dt.add_stream(stream)
 ```
@@ -97,7 +97,7 @@ dt.add_stream(stream)
 
 ### 5. Hyperparameter search
 ```python
-from pinneaple_train import run_parallel_sweep, SweepConfig
+from pinneapple_train import run_parallel_sweep, SweepConfig
 results = run_parallel_sweep(
     trial_fn,
     SweepConfig({"lr": [1e-3, 1e-4], "hidden": [64, 128]}, n_jobs=4)
@@ -108,9 +108,9 @@ results = run_parallel_sweep(
 
 ### Add a new problem preset
 ```python
-from pinneaple_environment.presets.registry import register_preset
-from pinneaple_environment.spec import PDETermSpec, ProblemSpec
-from pinneaple_environment.conditions import DirichletBC
+from pinneapple_environment.presets.registry import register_preset
+from pinneapple_environment.spec import PDETermSpec, ProblemSpec
+from pinneapple_environment.conditions import DirichletBC
 
 @register_preset("my_problem")
 def my_problem(nu=0.01) -> ProblemSpec:
@@ -126,7 +126,7 @@ def my_problem(nu=0.01) -> ProblemSpec:
 
 ### Register a new model
 ```python
-from pinneaple_models.registry import ModelRegistry
+from pinneapple_models.registry import ModelRegistry
 @ModelRegistry.register(name="my_model", family="pinn")
 class MyModel(nn.Module):
     ...
@@ -135,4 +135,4 @@ class MyModel(nn.Module):
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-Issues: https://github.com/your-org/pinneaple/issues
+Issues: https://github.com/your-org/pinneapple/issues

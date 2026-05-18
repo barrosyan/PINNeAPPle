@@ -1,7 +1,7 @@
 """19_fno_neural_operator.py — Fourier Neural Operator (FNO) for 1D Burgers.
 
 Demonstrates:
-- FNO1d architecture from pinneaple_models.neural_operators
+- FNO1d architecture from pinneapple_models.neural_operators
 - Operator learning: map initial condition u0(x) → solution u(x,T)
 - Training on a dataset of (u0, u_T) pairs generated from a simple solver
 - Evaluation: relative L2 error over test trajectories
@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_neural.architectures.neural_operators.fno import FNO1d
+from pinneapple_neural.architectures.neural_operators.fno import FNO1d
 
 
 # ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 RUN INSIDE OMNIVERSE KIT.
 
 Exports a bundle for the MVP. It calls your integration function:
-  pinneaple_integrations.omniverse.export_flow_bundle_from_usd
+  pinneapple_integrations.omniverse.export_flow_bundle_from_usd
 
 If that integration is not present yet, this script will fail with a clear error.
 """
@@ -21,11 +21,11 @@ def main() -> int:
     # sys.path.append("C:/PINNeAPPle")
 
     try:
-        from pinneaple_simulation.external_solvers.omniverse import export_flow_bundle_from_usd
+        from pinneapple_simulation.external_solvers.omniverse import export_flow_bundle_from_usd
     except Exception as e:
         raise RuntimeError(
-            "Could not import pinneaple_integrations.omniverse.export_flow_bundle_from_usd.\n"
-            "You must implement this integration in your repo under pinneaple_integrations/omniverse.\n"
+            "Could not import pinneapple_integrations.omniverse.export_flow_bundle_from_usd.\n"
+            "You must implement this integration in your repo under pinneapple_integrations/omniverse.\n"
             f"Import error: {e}"
         )
 

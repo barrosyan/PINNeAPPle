@@ -4,7 +4,7 @@ Demo: Spectral / pseudo-spectral (burgers1d, ks1d)
 
 import torch
 
-from pinneaple_solvers.registry import SolverCatalog
+from pinneapple_solvers.registry import SolverCatalog
 
 
 def main():

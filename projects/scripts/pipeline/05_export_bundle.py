@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from pinneaple_simulation.external_solvers.openfoam.export_bundle import export_bundle
+from pinneapple_simulation.external_solvers.openfoam.export_bundle import export_bundle
 
 def main():
     ap = argparse.ArgumentParser()

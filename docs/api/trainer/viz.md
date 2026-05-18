@@ -1,3 +1,3 @@
-# pinneaple_neural.trainer.viz
+# pinneapple_neural.trainer.viz
 
-::: pinneaple_neural.trainer.viz
+::: pinneapple_neural.trainer.viz

@@ -11,7 +11,7 @@ What this shows
 
 Run
 ---
-python examples/pinneaple_geom/05_stl_domain_batchbuilder_inlet_outlet_wall.py
+python examples/pinneapple_geom/05_stl_domain_batchbuilder_inlet_outlet_wall.py
 """
 
 from __future__ import annotations
@@ -20,11 +20,11 @@ from pathlib import Path
 
 import numpy as np
 
-from pinneaple_environment.conditions import DirichletBC
-from pinneaple_environment.spec import PDETermSpec, ProblemSpec
+from pinneapple_environment.conditions import DirichletBC
+from pinneapple_environment.spec import PDETermSpec, ProblemSpec
 
-from pinneaple_geom.gen.primitives import build_primitive
-from pinneaple_geom.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig
+from pinneapple_geom.gen.primitives import build_primitive
+from pinneapple_geom.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig
 
 
 def _write_stl(mesh, path: Path) -> None:
@@ -36,7 +36,7 @@ def _write_stl(mesh, path: Path) -> None:
 
 
 def main() -> None:
-    out_dir = Path("examples/pinneaple_geom/_out")
+    out_dir = Path("examples/pinneapple_geom/_out")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # A rectangular channel aligned with x-axis.

@@ -1,5 +1,5 @@
 """
-pinneaple_solvers: FVMSolver demo (1D linear advection, periodic)
+pinneapple_solvers: FVMSolver demo (1D linear advection, periodic)
 
 PDE
 ---
@@ -13,7 +13,7 @@ What this shows
 
 Run
 ---
-python examples/pinneaple_solvers/04_solvers_fvm_advection_1d.py
+python examples/pinneapple_solvers/04_solvers_fvm_advection_1d.py
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from typing import Dict, Any
 
 import torch
 
-from pinneaple_solvers.fvm import FVMSolver
+from pinneapple_solvers.fvm import FVMSolver
 
 
 def make_periodic_topology(Nc: int, dx: float, device=None, dtype=None) -> Dict[str, Any]:

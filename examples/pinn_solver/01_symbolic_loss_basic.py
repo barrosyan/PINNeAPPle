@@ -1,6 +1,6 @@
 import torch
 
-from pinneaple_pinn.factory.pinn_factory import PINNFactory, PINNProblemSpec
+from pinneapple_pinn.factory.pinn_factory import PINNFactory, PINNProblemSpec
 
 spec = PINNProblemSpec(
     pde_residuals=["Derivative(u(t,x), t) + u(t,x)"],

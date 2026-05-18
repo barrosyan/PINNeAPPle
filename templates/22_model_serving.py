@@ -1,4 +1,4 @@
-"""22_model_serving.py — REST inference server with pinneaple_serve.
+"""22_model_serving.py — REST inference server with pinneapple_serve.
 
 Demonstrates:
 - ModelServer: FastAPI wrapper around a trained PINN
@@ -17,9 +17,9 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from pinneaple_serve.server import ModelServer
-from pinneaple_serve.config import ServeConfig
-from pinneaple_serve.endpoint import InferenceEndpoint
+from pinneapple_serve.server import ModelServer
+from pinneapple_serve.config import ServeConfig
+from pinneapple_serve.endpoint import InferenceEndpoint
 
 
 # ---------------------------------------------------------------------------

@@ -300,7 +300,7 @@ def train_mgn(model, node_t, edge_t, edge_idx_t, target_t, epochs=300):
 def validate_cfd_fields(nodes, u_pred, v_pred, p_pred, node_types, edges):
     """
     Validação física dos campos preditos pelo GNN.
-    Em produção: usar pinneaple_validate.PhysicsValidator
+    Em produção: usar pinneapple_validate.PhysicsValidator
 
     Verificações:
       1. Conservação de massa: divergência ∇·u ≈ 0 (incompressível)
@@ -398,7 +398,7 @@ def validate_cfd_fields(nodes, u_pred, v_pred, p_pred, node_types, edges):
 def print_validation_report(results):
     """Imprime relatório de validação estilo PINNeAPPle PhysicsValidator."""
     print("\n" + "═" * 55)
-    print("  RELATÓRIO DE VALIDAÇÃO FÍSICA  (pinneaple_validate)")
+    print("  RELATÓRIO DE VALIDAÇÃO FÍSICA  (pinneapple_validate)")
     print("═" * 55)
 
     checks = [
@@ -430,7 +430,7 @@ def print_validation_report(results):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PARTE 4 — EXPORT (PINNeAPPle pinneaple_export)
+# PARTE 4 — EXPORT (PINNeAPPle pinneapple_export)
 # ══════════════════════════════════════════════════════════════════════════════
 
 class ExportableGNN(nn.Module):
@@ -473,7 +473,7 @@ class ExportableGNN(nn.Module):
 def export_model(model, node_t, edge_t, edge_idx_t, output_dir: Path):
     """
     Exporta modelo para TorchScript e ONNX.
-    Em produção: usar pinneaple_export.export_torchscript() e export_onnx()
+    Em produção: usar pinneapple_export.export_torchscript() e export_onnx()
     """
     results = {}
     export_model_wrap = ExportableGNN(model)
@@ -650,7 +650,7 @@ def plot_results(nodes, node_types, u_true, v_true, p_true,
     ax12.set_xlim(0, 10)
     ax12.set_ylim(0, 10)
     ax12.axis("off")
-    ax12.set_title("Export (pinneaple_export)", color="white", fontsize=10)
+    ax12.set_title("Export (pinneapple_export)", color="white", fontsize=10)
 
     export_info = [
         ("TorchScript", export_results.get("torchscript", {})),
@@ -688,7 +688,7 @@ def plot_results(nodes, node_types, u_true, v_true, p_true,
         "  [PINNeAPPle]  PhysicsValidator  ──►  ∇·u≈0 · no-slip BC · inlet BC · simetria p · stagnação\n"
         "        │\n"
         "        ▼\n"
-        "  [PINNeAPPle]  pinneaple_export  ──►  TorchScript (.pt) + ONNX (.onnx)  →  deploy C++ / ONNX Runtime\n"
+        "  [PINNeAPPle]  pinneapple_export  ──►  TorchScript (.pt) + ONNX (.onnx)  →  deploy C++ / ONNX Runtime\n"
     )
     ax13.text(0.02, 0.85, pipeline_text, transform=ax13.transAxes,
               color="white", fontsize=10, va="top", fontfamily="monospace",
@@ -757,16 +757,16 @@ def main():
     # ── Fase 3: Validação física ──────────────────────────────────────────────
     print("\n[3/4] Validação física (PINNeAPPle PhysicsValidator)...")
     # Em produção:
-    #   from pinneaple_analysis.validation import PhysicsValidator, ConservationCheck, BoundaryCheck
+    #   from pinneapple_analysis.validation import PhysicsValidator, ConservationCheck, BoundaryCheck
     #   validator = PhysicsValidator([ConservationCheck("divergence"), BoundaryCheck("noslip")])
     #   report = validator.validate(model, mesh_data)
     val_results = validate_cfd_fields(nodes, u_pred, v_pred, p_pred, node_types, edges)
     print_validation_report(val_results)
 
     # ── Fase 4: Export ────────────────────────────────────────────────────────
-    print("[4/4] Exportando modelo (PINNeAPPle pinneaple_export)...")
+    print("[4/4] Exportando modelo (PINNeAPPle pinneapple_export)...")
     # Em produção:
-    #   from pinneaple_tools.model_export import export_torchscript, export_onnx
+    #   from pinneapple_tools.model_export import export_torchscript, export_onnx
     #   export_torchscript(model, example_inputs, path="mgn.pt")
     #   export_onnx(model, example_inputs, path="mgn.onnx")
     export_results = export_model(model, node_t, edge_t, edge_idx_t, output_dir)

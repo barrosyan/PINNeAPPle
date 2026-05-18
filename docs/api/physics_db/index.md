@@ -1,4 +1,4 @@
-# pinneaple_pdb
+# pinneapple_pdb
 
 ## Overview
 
@@ -17,4 +17,4 @@ Stores/retrieves problems, benchmarks and experiment specs.
 
 ## Package API
 
-::: pinneaple_pdb
+::: pinneapple_pdb

@@ -1,8 +1,8 @@
 """Load a UPD catalog, open one shard, and convert it to PhysicalSample.
 
 This bridges:
-  pinneaple_pdb (writes shard zarr+json+catalog)
-    -> pinneaple_data.adapters.upd_adapter (converts to PhysicalSample)
+  pinneapple_pdb (writes shard zarr+json+catalog)
+    -> pinneapple_data.adapters.upd_adapter (converts to PhysicalSample)
 
 Run after:
   - 03_offline_synthetic_upd_pipeline.py  (offline)
@@ -18,13 +18,13 @@ from __future__ import annotations
 import os
 import pandas as pd
 
-from pinneaple_data.adapters.upd_adapter import upd_to_physical_sample
+from pinneapple_data.adapters.upd_adapter import upd_to_physical_sample
 
 
 def main():
     # Choose one:
-    catalog_path = "examples/_out/pinneaple_pdb/synthetic_build/catalog.parquet"
-    # catalog_path = "examples/_out/pinneaple_pdb/earthaccess_build/catalog.parquet"
+    catalog_path = "examples/_out/pinneapple_pdb/synthetic_build/catalog.parquet"
+    # catalog_path = "examples/_out/pinneapple_pdb/earthaccess_build/catalog.parquet"
 
     if not os.path.exists(catalog_path):
         raise FileNotFoundError(f"Catalog not found: {catalog_path}. Run the build example first.")

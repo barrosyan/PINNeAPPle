@@ -19,8 +19,8 @@ import os
 import pandas as pd
 import torch
 
-from pinneaple_physics.pinn_solver.io.upd_dataset import UPDItem, UPDDataset, SamplingSpec
-from pinneaple_physics.pinn_solver.io.mappings import CoordMapping, VarMapping, PINNMapping
+from pinneapple_physics.pinn_solver.io.upd_dataset import UPDItem, UPDDataset, SamplingSpec
+from pinneapple_physics.pinn_solver.io.mappings import CoordMapping, VarMapping, PINNMapping
 
 
 class MLP(torch.nn.Module):
@@ -39,7 +39,7 @@ class MLP(torch.nn.Module):
 
 
 def main():
-    catalog_path = "examples/_out/pinneaple_pdb/synthetic_build/catalog.parquet"
+    catalog_path = "examples/_out/pinneapple_pdb/synthetic_build/catalog.parquet"
     if not os.path.exists(catalog_path):
         raise FileNotFoundError("Run 03_offline_synthetic_upd_pipeline.py first.")
 

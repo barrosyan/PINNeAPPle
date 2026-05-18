@@ -6,7 +6,7 @@ We create a synthetic linear dynamical system in a high-dimensional space, then:
 3) Roll out future states and measure reconstruction error
 
 Run:
-  python examples/pinneaple_models_showcase/30_rom_pod_dmd.py
+  python examples/pinneapple_models_showcase/30_rom_pod_dmd.py
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ sys.path.insert(0, str(ROOT))
 
 import torch
 
-from pinneaple_models.rom.pod import POD
-from pinneaple_models.rom.dmd import DynamicModeDecomposition
+from pinneapple_models.rom.pod import POD
+from pinneapple_models.rom.dmd import DynamicModeDecomposition
 
 
 def make_linear_system(D: int, seed: int = 0) -> torch.Tensor:

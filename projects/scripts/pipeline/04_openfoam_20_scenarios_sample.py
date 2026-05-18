@@ -3,9 +3,9 @@ from pathlib import Path
 import json
 import pandas as pd
 
-from pinneaple_simulation.external_solvers.openfoam.case_builder import OpenFOAMCaseTemplate, stage_case_for_scenario
-from pinneaple_simulation.external_solvers.openfoam.runner import OpenFOAMRunConfig, run_openfoam_case
-from pinneaple_simulation.external_solvers.openfoam.sampling import (
+from pinneapple_simulation.external_solvers.openfoam.case_builder import OpenFOAMCaseTemplate, stage_case_for_scenario
+from pinneapple_simulation.external_solvers.openfoam.runner import OpenFOAMRunConfig, run_openfoam_case
+from pinneapple_simulation.external_solvers.openfoam.sampling import (
     write_sample_dict_cloud,
     run_sampling,
     read_sampled_scalar_field,
@@ -61,19 +61,19 @@ def main():
         # sampleDict with TWO sets: we will overwrite sampleDict twice and sample twice
         # (simple and robust; if you want 2 sets in one file, you can extend helper)
         # 1) Cloud
-        write_sample_dict_cloud(case_dir, set_name="pinneapleCloud", points=sensors_points, fields=["T"])
+        write_sample_dict_cloud(case_dir, set_name="pinneappleCloud", points=sensors_points, fields=["T"])
         run_openfoam_case(case_dir, cfg)
         run_sampling(case_dir, args.foam_env)
 
-        dfT = read_sampled_scalar_field(case_dir, set_name="pinneapleCloud", field="T")
+        dfT = read_sampled_scalar_field(case_dir, set_name="pinneappleCloud", field="T")
         dfT["scenario_id"] = sid
         dfT["split"] = split_from_scenario_id(sid)
         all_cloud.append(dfT)
 
         # 2) Line (same case, just resample)
-        write_sample_dict_cloud(case_dir, set_name="pinneapleLine", points=line_points, fields=["T"])
+        write_sample_dict_cloud(case_dir, set_name="pinneappleLine", points=line_points, fields=["T"])
         run_sampling(case_dir, args.foam_env)
-        dfl = read_sampled_scalar_field(case_dir, set_name="pinneapleLine", field="T")
+        dfl = read_sampled_scalar_field(case_dir, set_name="pinneappleLine", field="T")
         dfl["scenario_id"] = sid
         dfl["split"] = split_from_scenario_id(sid)
         all_line.append(dfl)

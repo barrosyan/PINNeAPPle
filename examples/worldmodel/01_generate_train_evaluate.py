@@ -78,10 +78,10 @@ def step_generate(cfg: dict):
     print("  STEP 1 — Dataset generation")
     print("=" * 60)
 
-    from pinneaple_worldmodel import generate_datasets
-    from pinneaple_worldmodel.scenario import BUILTIN_SCENARIOS
-    from pinneaple_worldmodel.simulator import PhysicsSimulator
-    from pinneaple_worldmodel.dataset import WorldModelDataset
+    from pinneapple_worldmodel import generate_datasets
+    from pinneapple_worldmodel.scenario import BUILTIN_SCENARIOS
+    from pinneapple_worldmodel.simulator import PhysicsSimulator
+    from pinneapple_worldmodel.dataset import WorldModelDataset
 
     t0 = time.perf_counter()
 
@@ -118,7 +118,7 @@ def step_train(catalog, cfg: dict):
     print("  STEP 2 — Specialist training")
     print("=" * 60)
 
-    from pinneaple_worldmodel import train_specialist
+    from pinneapple_worldmodel import train_specialist
 
     t0 = time.perf_counter()
     zoo = train_specialist(
@@ -149,7 +149,7 @@ def step_evaluate(zoo, catalog, test_sets: dict, cfg: dict) -> dict:
     print("  STEP 3 — Evaluation")
     print("=" * 60)
 
-    from pinneaple_worldmodel.model_zoo import ModelZoo
+    from pinneapple_worldmodel.model_zoo import ModelZoo
 
     results: dict[str, dict] = {}
 
@@ -391,7 +391,7 @@ def step_benchmark(zoo, catalog, cfg: dict) -> None:
     print("=" * 60)
 
     try:
-        from pinneaple_worldmodel.benchmark import PhysicsBenchmark, BUILTIN_TASKS
+        from pinneapple_worldmodel.benchmark import PhysicsBenchmark, BUILTIN_TASKS
 
         # Keep only tasks whose scenario we trained on
         tasks = {

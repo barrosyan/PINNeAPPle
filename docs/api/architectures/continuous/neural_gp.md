@@ -1,3 +1,3 @@
-# pinneaple_neural.architectures.continuous.neural_gp
+# pinneapple_neural.architectures.continuous.neural_gp
 
-::: pinneaple_neural.architectures.continuous.neural_gp
+::: pinneapple_neural.architectures.continuous.neural_gp
