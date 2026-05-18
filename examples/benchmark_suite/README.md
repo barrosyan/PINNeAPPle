@@ -1,6 +1,6 @@
 # PINNeAPPle Arena — Examples
 
-These examples are meant to **show the full potential of `pinneaple_arena`**:
+These examples are meant to **show the full potential of `pinneapple_arena`**:
 
 - Run an end-to-end benchmark (bundle → backend → metrics → artifacts → leaderboard)
 - Swap backends (native / DeepXDE / JAX / PhysicsNeMo) without changing the task

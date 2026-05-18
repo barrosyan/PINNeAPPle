@@ -1,14 +1,14 @@
 """CSG domain demo for PINN collocation point generation.
 
 Demonstrates L-shape, annulus, and channel-with-hole domains built with
-the pinneaple_geom CSG module.  Each domain is sampled for interior
+the pinneapple_geom CSG module.  Each domain is sampled for interior
 collocation points and boundary points, then visualised with matplotlib.
 
 Run::
 
-    python examples/pinneaple_geom/07_csg_domain_demo.py
+    python examples/pinneapple_geom/07_csg_domain_demo.py
 
-Output images are written to examples/pinneaple_geom/_out/.
+Output images are written to examples/pinneapple_geom/_out/.
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ import matplotlib.patches as mpatches
 # ---------------------------------------------------------------------------
 # Import CSG API
 # ---------------------------------------------------------------------------
-from pinneaple_geom.csg import (
+from pinneapple_geom.csg import (
     CSGRectangle,
     CSGCircle,
     CSGEllipse,

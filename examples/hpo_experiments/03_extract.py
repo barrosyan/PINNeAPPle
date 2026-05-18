@@ -1,6 +1,6 @@
 """Example 03: extract Problem/Solution pairs from a built KB index.
 
-This step uses an LLM provider (Gemini) through ``pinneaple_researcher.providers``.
+This step uses an LLM provider (Gemini) through ``pinneapple_researcher.providers``.
 
 Prereqs (env vars):
   - GEMINI_API_KEY
@@ -9,7 +9,7 @@ Optional:
   - GEMINI_MODEL (default is provider-defined)
 
 Usage:
-  python examples/pinneaple_researcher/03_extract.py --run-dir runs/researcher/<topic>/<timestamp> --max-items 30
+  python examples/pinneapple_researcher/03_extract.py --run-dir runs/researcher/<topic>/<timestamp> --max-items 30
 """
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ import json
 import os
 from pathlib import Path
 
-from pinneaple_researcher.models import KBIndex
-from pinneaple_researcher.pipelines.extract_problem_solutions import extract_problem_solutions
+from pinneapple_researcher.models import KBIndex
+from pinneapple_researcher.pipelines.extract_problem_solutions import extract_problem_solutions
 
 
 def main() -> None:

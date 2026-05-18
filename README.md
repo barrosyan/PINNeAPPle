@@ -51,40 +51,40 @@ Your physics problem
 PINNeAPPle is organized into **8 mega-modules**, each grouping related sub-modules:
 
 ```
-pinneaple_physics/
+pinneapple_physics/
 ├── pde_environment/    # PDE problem specs, BCs, ICs, presets, RANS
 ├── pinn_solver/        # PINN compiler, DoMINO domain decomposition
 └── symbolic_pde/       # SymPy → autograd residual compiler
 
-pinneaple_neural/
+pinneapple_neural/
 ├── architectures/      # SIREN, ModifiedMLP, AFNO, HashGridMLP, MeshGraphNet
 ├── trainer/            # Trainer, TwoPhase, DDP, Causal, HPC utilities
 └── predictor/          # Batched inference, grid evaluation, FlowVisualizer
 
-pinneaple_analysis/
+pinneapple_analysis/
 ├── uncertainty/        # MC-Dropout, Ensemble UQ, conformal, calibration
 ├── validation/         # Conservation, BC, symmetry checks vs. reference
 └── inverse_problems/   # Noise models, regularizers, EKI, SINDy discovery
 
-pinneaple_adaptation/
+pinneapple_adaptation/
 ├── transfer_learning/  # Fine-tuning, layer freezing, progressive unfreezing
 └── meta_learning/      # MAML, Reptile, PDETaskSampler, few-shot adaptation
 
-pinneaple_simulation/
+pinneapple_simulation/
 ├── numerical_solvers/  # FEM, FDM, FVM, Spectral, SPH, LBM, OpenFOAM, FEniCS
 ├── particle_dynamics/  # MPM, SPH particles, rigid-body (pure PyTorch)
 └── external_solvers/   # OpenFOAM, MATLAB, FMU/Modelica, FEniCS bridges
 
-pinneaple_systems/
+pinneapple_systems/
 ├── time_series/        # LSTM, GRU, NBeats, TFT, TCN, XGBoost, HHT, FFT
 ├── cosimulation/       # Graph co-sim engine: PINNNode, CoSimGraph, CoSimTrainer
 └── digital_twin/       # Live twin, sensor streams, EKF/EnKF, anomaly detection
 
-pinneaple_design/
+pinneapple_design/
 ├── geometry/           # SDF library, CSG, physics domains, mesh, NACA airfoil
 └── design_optimizer/   # Adjoint, Pareto, Bayesian/evolutionary optimization
 
-pinneaple_tools/
+pinneapple_tools/
 ├── visualization/      # CFD-style plots, streamlines, Q-criterion, animations
 ├── model_export/       # TorchScript, ONNX, CSV, NPZ
 ├── hpo_experiments/    # Paper discovery, knowledge base, HPO
@@ -92,25 +92,25 @@ pinneaple_tools/
 └── compute_backends/   # PyTorch (default) + JAX backend abstraction
 ```
 
-Additional packages: `pinneaple_data` (UPD dataset), `pinneaple_pdb` (physics database), `pinneaple_problemdesign` (NLP → PDE agent).
+Additional packages: `pinneapple_data` (UPD dataset), `pinneapple_pdb` (physics database), `pinneapple_problemdesign` (NLP → PDE agent).
 
 ---
 
 ## Installation
 
 ```bash
-pip install pinneaple
+pip install pinneapple
 ```
 
 With optional extras:
 
 ```bash
-pip install "pinneaple[solvers]"      # numba-accelerated FDM/FEM/LBM
-pip install "pinneaple[pinn]"         # SymPy symbolic PDE compiler
-pip install "pinneaple[geom]"         # trimesh, meshio, gmsh
-pip install "pinneaple[fenics]"       # FEniCS / DOLFINx bridge
-pip install "pinneaple[export]"       # ONNX export
-pip install "pinneaple[all]"          # everything
+pip install "pinneapple[solvers]"      # numba-accelerated FDM/FEM/LBM
+pip install "pinneapple[pinn]"         # SymPy symbolic PDE compiler
+pip install "pinneapple[geom]"         # trimesh, meshio, gmsh
+pip install "pinneapple[fenics]"       # FEniCS / DOLFINx bridge
+pip install "pinneapple[export]"       # ONNX export
+pip install "pinneapple[all]"          # everything
 ```
 
 ---
@@ -121,8 +121,8 @@ pip install "pinneaple[all]"          # everything
 > *"I understand the physics. I want to see what AI can do with it."*
 
 ```python
-from pinneaple_physics import ProblemSpec, DirichletBC, compile_physics, solve_pde
-from pinneaple_neural import build_model
+from pinneapple_physics import ProblemSpec, DirichletBC, compile_physics, solve_pde
+from pinneapple_neural import build_model
 
 # Define a 2D Poisson problem
 spec = ProblemSpec(
@@ -143,7 +143,7 @@ result["history"]  # loss history dict
 > *"I want to test ideas and compare approaches."*
 
 ```python
-from pinneaple_tools.benchmark_suite import Arena
+from pinneapple_tools.benchmark_suite import Arena
 
 runner  = Arena.from_yaml("configs/arena/burgers_benchmark.yaml")
 results = runner.run_all()
@@ -163,9 +163,9 @@ results.leaderboard()
 > *"I want to turn this into a real system."*
 
 ```python
-from pinneaple_neural.trainer import DDPPINNTrainer, DDPTrainerConfig
-from pinneaple_tools.model_export import export_onnx
-from pinneaple_systems.digital_twin import build_digital_twin
+from pinneapple_neural.trainer import DDPPINNTrainer, DDPTrainerConfig
+from pinneapple_tools.model_export import export_onnx
+from pinneapple_systems.digital_twin import build_digital_twin
 
 # Distributed training
 cfg     = DDPTrainerConfig(n_epochs=10_000, device="cuda")
@@ -193,14 +193,14 @@ twin.start_stream("mqtt://sensors.local")
 
 | Mega-module | Sub-modules | What it does |
 |---|---|---|
-| `pinneaple_physics` | `pde_environment` · `pinn_solver` · `symbolic_pde` | Define PDEs, compile PINN losses, SymPy → autograd |
-| `pinneaple_neural` | `architectures` · `trainer` · `predictor` | SIREN/AFNO/MGN models, distributed training, inference |
-| `pinneaple_analysis` | `uncertainty` · `validation` · `inverse_problems` | UQ, physics consistency checks, parameter inversion |
-| `pinneaple_adaptation` | `transfer_learning` · `meta_learning` | Fine-tune across PDEs, MAML/Reptile few-shot |
-| `pinneaple_simulation` | `numerical_solvers` · `particle_dynamics` · `external_solvers` | FEM/FDM/SPH/LBM, OpenFOAM/FEniCS bridges |
-| `pinneaple_systems` | `time_series` · `cosimulation` · `digital_twin` | Forecasting, co-sim graphs, live sensor fusion |
-| `pinneaple_design` | `geometry` · `design_optimizer` | SDF/CSG geometry, adjoint + Bayesian shape opt |
-| `pinneaple_tools` | `visualization` · `model_export` · `benchmark_suite` · `compute_backends` | CFD plots, ONNX export, Arena benchmarks, JAX backend |
+| `pinneapple_physics` | `pde_environment` · `pinn_solver` · `symbolic_pde` | Define PDEs, compile PINN losses, SymPy → autograd |
+| `pinneapple_neural` | `architectures` · `trainer` · `predictor` | SIREN/AFNO/MGN models, distributed training, inference |
+| `pinneapple_analysis` | `uncertainty` · `validation` · `inverse_problems` | UQ, physics consistency checks, parameter inversion |
+| `pinneapple_adaptation` | `transfer_learning` · `meta_learning` | Fine-tune across PDEs, MAML/Reptile few-shot |
+| `pinneapple_simulation` | `numerical_solvers` · `particle_dynamics` · `external_solvers` | FEM/FDM/SPH/LBM, OpenFOAM/FEniCS bridges |
+| `pinneapple_systems` | `time_series` · `cosimulation` · `digital_twin` | Forecasting, co-sim graphs, live sensor fusion |
+| `pinneapple_design` | `geometry` · `design_optimizer` | SDF/CSG geometry, adjoint + Bayesian shape opt |
+| `pinneapple_tools` | `visualization` · `model_export` · `benchmark_suite` · `compute_backends` | CFD plots, ONNX export, Arena benchmarks, JAX backend |
 
 ---
 
@@ -208,15 +208,15 @@ twin.start_stream("mqtt://sensors.local")
 
 ```python
 # ── Physics problem definition ──────────────────────────────────────────────
-from pinneaple_physics.pde_environment import ProblemSpec, DirichletBC, get_preset
-from pinneaple_physics.pinn_solver import compile_problem
+from pinneapple_physics.pde_environment import ProblemSpec, DirichletBC, get_preset
+from pinneapple_physics.pinn_solver import compile_problem
 
 spec   = get_preset("ns_incompressible_2d")
 losses = compile_problem(spec)
 
 # ── Neural network architectures ────────────────────────────────────────────
-from pinneaple_neural.architectures import ModelRegistry, SIREN, AFNO
-from pinneaple_neural.trainer import Trainer, TrainConfig
+from pinneapple_neural.architectures import ModelRegistry, SIREN, AFNO
+from pinneapple_neural.trainer import Trainer, TrainConfig
 
 model   = ModelRegistry.build("SIREN", in_dim=3, out_dim=2, hidden_dim=128, n_layers=6)
 cfg     = TrainConfig(n_epochs=5000, device="cuda")
@@ -224,34 +224,34 @@ trainer = Trainer(model, losses, cfg)
 result  = trainer.train()
 
 # ── Uncertainty quantification ──────────────────────────────────────────────
-from pinneaple_analysis.uncertainty import uq_predict
-from pinneaple_analysis.validation import validate_model
+from pinneapple_analysis.uncertainty import uq_predict
+from pinneapple_analysis.validation import validate_model
 
 uq_result  = uq_predict(model, x_test, method="mc_dropout")
 val_report = validate_model(model, spec)
 
 # ── Design optimization ─────────────────────────────────────────────────────
-from pinneaple_design.geometry import get_domain, LidDrivenCavityDomain2D
-from pinneaple_design.design_optimizer import DesignOptLoop, DesignOptConfig
+from pinneapple_design.geometry import get_domain, LidDrivenCavityDomain2D
+from pinneapple_design.design_optimizer import DesignOptLoop, DesignOptConfig
 
 domain = LidDrivenCavityDomain2D(Re=1000)
 x_int  = domain.sample_interior(4096)
 
 # ── Simulation data generation ──────────────────────────────────────────────
-from pinneaple_simulation.numerical_solvers import HeatConduction3D
+from pinneapple_simulation.numerical_solvers import HeatConduction3D
 
 solver = HeatConduction3D(nx=32, ny=32, nz=32)
 data   = solver.run(t_end=1.0)
 
 # ── Time series forecasting ─────────────────────────────────────────────────
-from pinneaple_systems.time_series import LSTMForecaster
+from pinneapple_systems.time_series import LSTMForecaster
 
 forecaster = LSTMForecaster(horizon=24)
 forecaster.fit(train_df)
 forecast = forecaster.predict(24)
 
 # ── Benchmarking ────────────────────────────────────────────────────────────
-from pinneaple_tools.benchmark_suite import PINNArenaBenchmark, BenchmarkConfig
+from pinneapple_tools.benchmark_suite import PINNArenaBenchmark, BenchmarkConfig
 
 cfg    = BenchmarkConfig(tasks=["burgers_1d", "heat_2d", "ns_2d"])
 bench  = PINNArenaBenchmark(cfg)

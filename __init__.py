@@ -1,12 +1,12 @@
 """
-pinneaple — Physics-Informed Neural Networks for Engineering and Research.
+pinneapple — Physics-Informed Neural Networks for Engineering and Research.
 
 A unified library for building, training, and deploying physics-informed
 surrogate models and digital twins at research and industrial scale.
 
 Quick start
 -----------
->>> import pinneaple as pp
+>>> import pinneapple as pp
 
 >>> # List all available problem presets
 >>> pp.list_presets()
@@ -29,28 +29,28 @@ Quick start
 Submodules
 ----------
 Core:
-- pinneaple_environment   problem presets, PDE specs, BCs
-- pinneaple_models        PINN, DeepONet, FNO, GNO, GNN, autoencoders, ...
-- pinneaple_train         Trainer, metrics, AMP, parallelization, sweeps
-- pinneaple_pinn          physics loss compiler (PINNFactory)
-- pinneaple_solvers       FDM, FEM, FVM, SPH, OpenFOAM, FEniCS bridges
-- pinneaple_data          collocation samplers, active learning, dataset builders
-- pinneaple_geom          geometry generation, SDF, mesh, domains
-- pinneaple_inference     grid inference, error maps, visualization
-- pinneaple_digital_twin  digital twin runtime, sensor streams, anomaly detection
-- pinneaple_arena         benchmark runner, YAML experiments, end-to-end pipeline
+- pinneapple_environment   problem presets, PDE specs, BCs
+- pinneapple_models        PINN, DeepONet, FNO, GNO, GNN, autoencoders, ...
+- pinneapple_train         Trainer, metrics, AMP, parallelization, sweeps
+- pinneapple_pinn          physics loss compiler (PINNFactory)
+- pinneapple_solvers       FDM, FEM, FVM, SPH, OpenFOAM, FEniCS bridges
+- pinneapple_data          collocation samplers, active learning, dataset builders
+- pinneapple_geom          geometry generation, SDF, mesh, domains
+- pinneapple_inference     grid inference, error maps, visualization
+- pinneapple_digital_twin  digital twin runtime, sensor streams, anomaly detection
+- pinneapple_arena         benchmark runner, YAML experiments, end-to-end pipeline
 
 Advanced:
-- pinneaple_uq            uncertainty quantification (MC Dropout, ensemble, conformal)
-- pinneaple_transfer      transfer learning and parametric fine-tuning
-- pinneaple_meta          meta-learning: MAML and Reptile for PDE families
-- pinneaple_validate      physical consistency validation (conservation, BCs, symmetry)
-- pinneaple_serve         REST API inference server (FastAPI)
-- pinneaple_export        model export to ONNX and TorchScript
+- pinneapple_uq            uncertainty quantification (MC Dropout, ensemble, conformal)
+- pinneapple_transfer      transfer learning and parametric fine-tuning
+- pinneapple_meta          meta-learning: MAML and Reptile for PDE families
+- pinneapple_validate      physical consistency validation (conservation, BCs, symmetry)
+- pinneapple_serve         REST API inference server (FastAPI)
+- pinneapple_export        model export to ONNX and TorchScript
 
 Examples
 --------
-See examples/pinneaple_arena/ for ready-to-run scripts:
+See examples/pinneapple_arena/ for ready-to-run scripts:
   01_quickstart_native.py           — Basic benchmark run
   03_pinn_burgers_full_pipeline.py  — Full PINN training with GPU + viz
   04_digital_twin_flow.py           — Live digital twin with anomaly detection
@@ -65,7 +65,7 @@ See examples/pinneaple_arena/ for ready-to-run scripts:
 from __future__ import annotations
 
 __version__ = "0.4.0"
-__author__  = "pinneaple contributors"
+__author__  = "pinneapple contributors"
 
 # ---------------------------------------------------------------------------
 # Convenience top-level imports
@@ -73,13 +73,13 @@ __author__  = "pinneaple contributors"
 
 # Problem presets
 try:
-    from pinneaple_physics.pde_environment import get_preset, list_presets, register_preset
+    from pinneapple_physics.pde_environment import get_preset, list_presets, register_preset
 except Exception:  # pragma: no cover
     pass
 
 # Model builder
 try:
-    from pinneaple_neural.architectures import ModelRegistry
+    from pinneapple_neural.architectures import ModelRegistry
 
     def list_models():
         """Return sorted list of all registered model names."""
@@ -93,23 +93,23 @@ except Exception:  # pragma: no cover
     def list_models():
         return []
     def build_model(name, **kwargs):
-        raise ImportError("pinneaple_models not available")
+        raise ImportError("pinneapple_models not available")
 
 # Digital twin
 try:
-    from pinneaple_systems.digital_twin import build_digital_twin, DigitalTwin, DigitalTwinConfig
+    from pinneapple_systems.digital_twin import build_digital_twin, DigitalTwin, DigitalTwinConfig
 except Exception:  # pragma: no cover
     pass
 
 # Inference
 try:
-    from pinneaple_neural.predictor import infer_on_grid_1d, infer_on_grid_2d
+    from pinneapple_neural.predictor import infer_on_grid_1d, infer_on_grid_2d
 except Exception:  # pragma: no cover
     pass
 
 # Training
 try:
-    from pinneaple_neural.trainer import (
+    from pinneapple_neural.trainer import (
         Trainer, TrainConfig,
         best_device, count_gpus, gpu_info,
         maybe_compile, batched_inference,
@@ -123,7 +123,7 @@ except Exception:  # pragma: no cover
 
 # Data + Collocation + Active Learning
 try:
-    from pinneaple_data import (
+    from pinneapple_data import (
         CollocationSampler, CollocationConfig,
         ActiveLearningConfig, ResidualBasedAL, AdaptiveCollocationTrainer,
     )
@@ -132,7 +132,7 @@ except Exception:  # pragma: no cover
 
 # Geometry
 try:
-    from pinneaple_design.geometry import (
+    from pinneapple_design.geometry import (
         circle, rectangle, ellipse, annulus,
         ChannelWithObstacleDomain2D, ChannelDomain2D, LidDrivenCavityDomain2D,
         PhysicsDomain2D,
@@ -142,19 +142,19 @@ except Exception:  # pragma: no cover
 
 # UQ
 try:
-    from pinneaple_analysis.uncertainty import MCDropoutWrapper, EnsembleUQ, ConformalPredictor, uq_predict
+    from pinneapple_analysis.uncertainty import MCDropoutWrapper, EnsembleUQ, ConformalPredictor, uq_predict
 except Exception:  # pragma: no cover
     pass
 
 # Validation
 try:
-    from pinneaple_analysis.validation import PhysicsValidator, validate_model
+    from pinneapple_analysis.validation import PhysicsValidator, validate_model
 except Exception:  # pragma: no cover
     pass
 
 # Export
 try:
-    from pinneaple_tools.model_export import export_torchscript, export_onnx
+    from pinneapple_tools.model_export import export_torchscript, export_onnx
 except Exception:  # pragma: no cover
     pass
 
@@ -176,19 +176,19 @@ def quickstart(problem_id: str = "burgers_1d", **problem_kwargs):
 
     Example
     -------
-    >>> import pinneaple as pp
+    >>> import pinneapple as pp
     >>> pp.quickstart("cpu_heatsink_thermal", q_cpu=200.0)
     """
     try:
         spec = get_preset(problem_id, **problem_kwargs)
     except Exception as e:
-        print(f"[pinneaple] Could not load preset '{problem_id}': {e}")
+        print(f"[pinneapple] Could not load preset '{problem_id}': {e}")
         print(f"  Available presets: {list_presets()}")
         return
 
     border = "=" * 60
     print(border)
-    print(f"  pinneaple — Quickstart: {spec.problem_id}")
+    print(f"  pinneapple — Quickstart: {spec.problem_id}")
     print(border)
     print(f"  PDE kind    : {spec.pde.kind}")
     print(f"  Fields      : {spec.fields}")
@@ -203,20 +203,20 @@ def quickstart(problem_id: str = "burgers_1d", **problem_kwargs):
     print(border)
     print()
     print("  Next steps:")
-    print(f"  1. from pinneaple_physics.pde_environment import get_preset")
+    print(f"  1. from pinneapple_physics.pde_environment import get_preset")
     print(f"     spec = get_preset('{problem_id}')")
-    print(f"  2. from pinneaple_data import CollocationSampler")
+    print(f"  2. from pinneapple_data import CollocationSampler")
     print(f"     sampler = CollocationSampler.from_problem_spec(spec)")
     print(f"     batch = sampler.sample(n_col=8000, n_bc=1000)")
     print(f"  3. model = pp.build_model('VanillaPINN', in_dim={len(spec.coord_names)}, out_dim={len(spec.fields)})")
-    print(f"  4. See examples/pinneaple_arena/03_pinn_burgers_full_pipeline.py")
+    print(f"  4. See examples/pinneapple_arena/03_pinn_burgers_full_pipeline.py")
     print(border)
     return spec
 
 
 def info():
     """Print library version, device info, and available presets/models."""
-    print(f"pinneaple v{__version__}")
+    print(f"pinneapple v{__version__}")
     try:
         d = best_device()
         print(f"  Best device  : {d}")
@@ -241,13 +241,13 @@ def info():
 
     # New modules status
     new_modules = {
-        "pinneaple_uq":       "Uncertainty quantification",
-        "pinneaple_transfer": "Transfer learning",
-        "pinneaple_meta":     "Meta-learning (MAML/Reptile)",
-        "pinneaple_validate": "Physical validation",
-        "pinneaple_serve":    "REST inference server",
-        "pinneaple_export":   "Model export (ONNX/TorchScript)",
-        "pinneaple_quantum":  "Hybrid classical–quantum ML (PQM)",
+        "pinneapple_uq":       "Uncertainty quantification",
+        "pinneapple_transfer": "Transfer learning",
+        "pinneapple_meta":     "Meta-learning (MAML/Reptile)",
+        "pinneapple_validate": "Physical validation",
+        "pinneapple_serve":    "REST inference server",
+        "pinneapple_export":   "Model export (ONNX/TorchScript)",
+        "pinneapple_quantum":  "Hybrid classical–quantum ML (PQM)",
     }
     import importlib
     print()
@@ -264,7 +264,7 @@ def info():
 
 
 # ---------------------------------------------------------------------------
-# Lazy submodule access (pinneaple.train, pinneaple.models, etc.)
+# Lazy submodule access (pinneapple.train, pinneapple.models, etc.)
 # ---------------------------------------------------------------------------
 
 import importlib as _importlib
@@ -272,35 +272,35 @@ import sys as _sys
 
 _SUBMODULES = {
     # core
-    "env":       "pinneaple_environment",
-    "models":    "pinneaple_models",
-    "train":     "pinneaple_train",
-    "solvers":   "pinneaple_solvers",
-    "data":      "pinneaple_data",
-    "geom":      "pinneaple_geom",
-    "inference": "pinneaple_inference",
-    "pinn":      "pinneaple_pinn",
-    "dt":        "pinneaple_digital_twin",
-    "arena":     "pinneaple_arena",
+    "env":       "pinneapple_environment",
+    "models":    "pinneapple_models",
+    "train":     "pinneapple_train",
+    "solvers":   "pinneapple_solvers",
+    "data":      "pinneapple_data",
+    "geom":      "pinneapple_geom",
+    "inference": "pinneapple_inference",
+    "pinn":      "pinneapple_pinn",
+    "dt":        "pinneapple_digital_twin",
+    "arena":     "pinneapple_arena",
     # advanced
-    "uq":        "pinneaple_uq",
-    "transfer":  "pinneaple_transfer",
-    "meta":      "pinneaple_meta",
-    "validate":  "pinneaple_validate",
-    "serve":     "pinneaple_serve",
-    "export":    "pinneaple_export",
+    "uq":        "pinneapple_uq",
+    "transfer":  "pinneapple_transfer",
+    "meta":      "pinneapple_meta",
+    "validate":  "pinneapple_validate",
+    "serve":     "pinneapple_serve",
+    "export":    "pinneapple_export",
     # quantum
-    "quantum":   "pinneaple_quantum",
+    "quantum":   "pinneapple_quantum",
 }
 
 
 def __getattr__(name: str):
-    """Enable lazy access: ``pinneaple.train`` → pinneaple_train."""
+    """Enable lazy access: ``pinneapple.train`` → pinneapple_train."""
     if name in _SUBMODULES:
         mod = _importlib.import_module(_SUBMODULES[name])
         globals()[name] = mod
         return mod
-    raise AttributeError(f"module 'pinneaple' has no attribute '{name}'")
+    raise AttributeError(f"module 'pinneapple' has no attribute '{name}'")
 
 
 __all__ = [

@@ -1,3 +1,3 @@
-# pinneaple_data.synth.distributions
+# pinneapple_data.synth.distributions
 
-::: pinneaple_data.synth.distributions
+::: pinneapple_data.synth.distributions

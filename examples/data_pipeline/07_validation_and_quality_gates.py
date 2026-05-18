@@ -2,7 +2,7 @@
 
 Showcase: lightweight validation / quality gates for PhysicalSample-like objects.
 
-The validator in pinneaple_data.validators is intentionally small/fast, so you can
+The validator in pinneapple_data.validators is intentionally small/fast, so you can
 run it:
   - during data generation
   - before writing to disk
@@ -14,13 +14,13 @@ It operates on a PhysicalSample-like interface with:
   - meta: Dict[str, Any]
 
 Run:
-  python examples/pinneaple_data/07_validation_and_quality_gates.py
+  python examples/pinneapple_data/07_validation_and_quality_gates.py
 """
 
 from __future__ import annotations
 
-from pinneaple_data.synth.pde import PDESynthGenerator
-from pinneaple_data.validators import assert_valid_physical_sample, validate_physical_sample
+from pinneapple_data.synth.pde import PDESynthGenerator
+from pinneapple_data.validators import assert_valid_physical_sample, validate_physical_sample
 
 
 def main() -> None:

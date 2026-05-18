@@ -1,3 +1,3 @@
-# pinneaple_neural.trainer.normalizers
+# pinneapple_neural.trainer.normalizers
 
-::: pinneaple_neural.trainer.normalizers
+::: pinneapple_neural.trainer.normalizers

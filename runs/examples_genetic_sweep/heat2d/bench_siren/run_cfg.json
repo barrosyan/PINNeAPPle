@@ -53,7 +53,7 @@
     "supervised_kind": "mse"
   },
   "backend": {
-    "name": "pinneaple_models"
+    "name": "pinneapple_models"
   },
   "model": {
     "kwargs": {

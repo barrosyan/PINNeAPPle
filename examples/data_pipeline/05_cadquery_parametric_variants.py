@@ -26,9 +26,9 @@ except Exception as e:  # pragma: no cover
         )
     )
 
-from pinneaple_design.geometry.gen.cadquery_gen import cadquery_to_trimesh
-from pinneaple_design.geometry.io.trimesh_bridge import TrimeshBridge
-from pinneaple_design.geometry.sample.points import sample_surface_points
+from pinneapple_design.geometry.gen.cadquery_gen import cadquery_to_trimesh
+from pinneapple_design.geometry.io.trimesh_bridge import TrimeshBridge
+from pinneapple_design.geometry.sample.points import sample_surface_points
 
 
 def make_part(width: float, height: float, thickness: float):
@@ -51,7 +51,7 @@ def main():
         # CADQuery -> trimesh.Trimesh
         tm = cadquery_to_trimesh(solid)
 
-        # trimesh.Trimesh -> MeshData (Pinneaple internal)
+        # trimesh.Trimesh -> MeshData (Pinneapple internal)
         mesh = bridge.from_trimesh(tm, compute_normals=True)
 
         # Sample surface points + normals

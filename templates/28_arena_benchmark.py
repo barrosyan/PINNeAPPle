@@ -18,10 +18,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_tools.benchmark_suite.runner import ArenaRunner
-from pinneaple_tools.benchmark_suite.task import NativeBenchmarkTask, TaskSpec
-from pinneaple_tools.benchmark_suite.results import BenchmarkResult
-from pinneaple_tools.benchmark_suite.leaderboard import Leaderboard
+from pinneapple_tools.benchmark_suite.runner import ArenaRunner
+from pinneapple_tools.benchmark_suite.task import NativeBenchmarkTask, TaskSpec
+from pinneapple_tools.benchmark_suite.results import BenchmarkResult
+from pinneapple_tools.benchmark_suite.leaderboard import Leaderboard
 
 
 # ---------------------------------------------------------------------------

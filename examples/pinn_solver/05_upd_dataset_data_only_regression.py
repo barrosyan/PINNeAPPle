@@ -1,6 +1,6 @@
 """UPDDataset -> PINNFactory (data-only) end-to-end on a synthetic Zarr shard.
 
-This example showcases the "I/O" side of pinneaple_pinn:
+This example showcases the "I/O" side of pinneapple_pinn:
   - build a tiny xarray Dataset with coords (time, lat, lon)
   - write to Zarr + JSON meta, wrap as UPDItem
   - use PINNMapping + UPDDataset to sample batches
@@ -11,7 +11,7 @@ Once your UPD pipeline is in place, you can add PDE residuals + conditions
 via SchemaAdapter or directly in PINNProblemSpec.
 
 Run:
-  python examples/pinneaple_pinn/05_upd_dataset_data_only_regression.py
+  python examples/pinneapple_pinn/05_upd_dataset_data_only_regression.py
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ import numpy as np
 import torch
 import xarray as xr
 
-from pinneaple_pinn.factory.pinn_factory import NeuralNetwork, PINN, PINNFactory, PINNProblemSpec
-from pinneaple_pinn.io import UPDItem, UPDDataset, build_default_mapping_atmosphere, SamplingSpec
+from pinneapple_pinn.factory.pinn_factory import NeuralNetwork, PINN, PINNFactory, PINNProblemSpec
+from pinneapple_pinn.io import UPDItem, UPDDataset, build_default_mapping_atmosphere, SamplingSpec
 
 
 def make_synthetic_atmosphere_ds() -> xr.Dataset:

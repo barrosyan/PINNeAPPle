@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 
-from pinneaple_tools.benchmark_suite.runner.run_benchmark import run_benchmark
+from pinneapple_tools.benchmark_suite.runner.run_benchmark import run_benchmark
 
 
 def main() -> int:

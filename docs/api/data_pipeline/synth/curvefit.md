@@ -1,3 +1,3 @@
-# pinneaple_data.synth.curvefit
+# pinneapple_data.synth.curvefit
 
-::: pinneaple_data.synth.curvefit
+::: pinneapple_data.synth.curvefit

@@ -1,7 +1,7 @@
 """Example 01: discovery only (papers + repos) with ranking metadata.
 
 Usage:
-  python examples/pinneaple_researcher/01_discover.py \
+  python examples/pinneapple_researcher/01_discover.py \
       --topic "pinn thermal instability virtual sensor" \
       --k-papers 8 --k-repos 8 --min-stars 50
 
@@ -13,8 +13,8 @@ from __future__ import annotations
 import argparse
 import json
 
-from pinneaple_researcher import ResearcherConfig
-from pinneaple_researcher.pipelines.discover import discover
+from pinneapple_researcher import ResearcherConfig
+from pinneapple_researcher.pipelines.discover import discover
 
 
 def main() -> None:

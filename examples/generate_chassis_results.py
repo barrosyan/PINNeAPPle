@@ -42,11 +42,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from pinneaple_physics.pde_environment.conditions import DirichletBC
-from pinneaple_physics.pde_environment.presets import get_preset
-from pinneaple_neural.architectures.siren import SIREN
-from pinneaple_physics.pinn_solver.compiler import LossWeights, compile_problem
-from pinneaple_tools.visualization import (
+from pinneapple_physics.pde_environment.conditions import DirichletBC
+from pinneapple_physics.pde_environment.presets import get_preset
+from pinneapple_neural.architectures.siren import SIREN
+from pinneapple_physics.pinn_solver.compiler import LossWeights, compile_problem
+from pinneapple_tools.visualization import (
     plot_multi_loss,
     plot_scalar,
     use_cfd_style,

@@ -1,7 +1,7 @@
 """04 — Custom task + custom backend + synthetic bundle (Poisson2D).
 
 This is the "maximum flexibility" example:
-- Create a new task *without touching* pinneaple_arena core
+- Create a new task *without touching* pinneapple_arena core
 - Create a new backend for that task
 - Define a custom bundle schema and generate a minimal on-disk bundle
 
@@ -31,10 +31,10 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
-from pinneaple_arena.bundle.loader import BundleData, load_bundle
-from pinneaple_arena.bundle.schema import load_bundle_schema
-from pinneaple_arena.registry import register_backend, register_task
-from pinneaple_arena.runner.run_benchmark import run_benchmark
+from pinneapple_arena.bundle.loader import BundleData, load_bundle
+from pinneapple_arena.bundle.schema import load_bundle_schema
+from pinneapple_arena.registry import register_backend, register_task
+from pinneapple_arena.runner.run_benchmark import run_benchmark
 
 
 def _require_pyarrow() -> None:

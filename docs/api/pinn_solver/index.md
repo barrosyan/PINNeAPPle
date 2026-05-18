@@ -1,4 +1,4 @@
-# pinneaple_physics.pinn_solver
+# pinneapple_physics.pinn_solver
 
 ## Overview
 
@@ -18,4 +18,4 @@ Residual construction, autograd utilities and constraint composition.
 
 ## Package API
 
-::: pinneaple_physics.pinn_solver
+::: pinneapple_physics.pinn_solver

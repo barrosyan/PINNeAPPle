@@ -44,11 +44,11 @@ import torch
 import torch.nn as nn
 
 # ── PINNeAPPle imports ────────────────────────────────────────────────────────
-from pinneaple_neural.architectures.pinns.vanilla import VanillaPINN
-from pinneaple_neural.architectures.neural_operators.fno import FNO2d
-from pinneaple_neural.architectures.graphnn.mesh_graph_net import MeshGraphNet
-from pinneaple_neural.architectures.graphnn.base import GraphBatch
-from pinneaple_tools.visualization.fields import plot_streamlines, plot_scalar
+from pinneapple_neural.architectures.pinns.vanilla import VanillaPINN
+from pinneapple_neural.architectures.neural_operators.fno import FNO2d
+from pinneapple_neural.architectures.graphnn.mesh_graph_net import MeshGraphNet
+from pinneapple_neural.architectures.graphnn.base import GraphBatch
+from pinneapple_tools.visualization.fields import plot_streamlines, plot_scalar
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 RE           = 40.0          # Reynolds number

@@ -1,4 +1,4 @@
-"""23_model_export.py — ONNX and TorchScript export with pinneaple_export.
+"""23_model_export.py — ONNX and TorchScript export with pinneapple_export.
 
 Demonstrates:
 - ONNXExporter: export a trained PINN to ONNX with shape verification
@@ -13,9 +13,9 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from pinneaple_tools.model_export.onnx_exporter import ONNXExporter, ONNXExportConfig
-from pinneaple_tools.model_export.torchscript import TorchScriptExporter, TorchScriptConfig
-from pinneaple_tools.model_export.validator import ExportValidator
+from pinneapple_tools.model_export.onnx_exporter import ONNXExporter, ONNXExportConfig
+from pinneapple_tools.model_export.torchscript import TorchScriptExporter, TorchScriptConfig
+from pinneapple_tools.model_export.validator import ExportValidator
 
 
 # ---------------------------------------------------------------------------

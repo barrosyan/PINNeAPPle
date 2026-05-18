@@ -5,13 +5,13 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pinneaple_models.classical_ts.arima import ARIMA
-from pinneaple_models.classical_ts.ekf import ExtendedKalmanFilter
-from pinneaple_models.classical_ts.enkf import EnsembleKalmanFilter
-from pinneaple_models.classical_ts.kalman import KalmanFilter
-from pinneaple_models.classical_ts.tcn import TCN
-from pinneaple_models.classical_ts.ukf import UnscentedKalmanFilter
-from pinneaple_models.classical_ts.var import VAR
+from pinneapple_models.classical_ts.arima import ARIMA
+from pinneapple_models.classical_ts.ekf import ExtendedKalmanFilter
+from pinneapple_models.classical_ts.enkf import EnsembleKalmanFilter
+from pinneapple_models.classical_ts.kalman import KalmanFilter
+from pinneapple_models.classical_ts.tcn import TCN
+from pinneapple_models.classical_ts.ukf import UnscentedKalmanFilter
+from pinneapple_models.classical_ts.var import VAR
 
 # ARIMA
 

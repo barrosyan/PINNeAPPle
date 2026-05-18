@@ -1,4 +1,4 @@
-# pinneaple_design.geometry
+# pinneapple_design.geometry
 
 ## Overview
 
@@ -29,4 +29,4 @@ Domain definitions, boundary handling and sampling utilities.
 
 ## Package API
 
-::: pinneaple_design.geometry
+::: pinneapple_design.geometry

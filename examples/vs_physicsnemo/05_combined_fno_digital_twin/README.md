@@ -49,7 +49,7 @@ Dados CFD (simulações, experimentos)
 | Monitorar sensores de campo | PINNeAPPle | DigitalTwin, streams |
 | Detectar comportamento anômalo | PINNeAPPle | AnomalyMonitor |
 | Validar conservação de massa | PINNeAPPle | PhysicsValidator |
-| Deploy REST API | PINNeAPPle | pinneaple_serve (FastAPI) |
+| Deploy REST API | PINNeAPPle | pinneapple_serve (FastAPI) |
 
 ## A chave: ambos usam `nn.Module`
 
@@ -63,13 +63,13 @@ train(model, cfd_data)                    # PhysicsNeMo faz isso bem
 torch.save(model.state_dict(), "fno.pt")
 
 # Fase 2: PINNeAPPle adiciona UQ
-from pinneaple_uq import MCDropoutWrapper
+from pinneapple_uq import MCDropoutWrapper
 uq_model = MCDropoutWrapper(model)        # 1 linha
 result = uq_model.predict_with_uncertainty(x_test)
 lower, upper = result.confidence_interval(alpha=0.05)
 
 # Fase 3: PINNeAPPle digital twin
-from pinneaple_digital_twin import DigitalTwin
+from pinneapple_digital_twin import DigitalTwin
 dt = DigitalTwin(model=model, field_names=["u","v","p"])
 dt.add_stream(mqtt_stream)
 with dt:

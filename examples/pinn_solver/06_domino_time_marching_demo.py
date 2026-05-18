@@ -24,7 +24,7 @@ We demonstrate two solvers in sequence:
 
 Run::
 
-    python examples/pinneaple_pinn/06_domino_time_marching_demo.py
+    python examples/pinneapple_pinn/06_domino_time_marching_demo.py
 """
 from __future__ import annotations
 
@@ -34,8 +34,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from pinneaple_pinn import DoMINO
-from pinneaple_train import TimeMarchingTrainer
+from pinneapple_pinn import DoMINO
+from pinneapple_train import TimeMarchingTrainer
 
 
 # ---------------------------------------------------------------------------

@@ -13,11 +13,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_neural.architectures.rom.pod import PODReducedModel
-from pinneaple_neural.architectures.rom.dmd import DMDModel
+from pinneapple_neural.architectures.rom.pod import PODReducedModel
+from pinneapple_neural.architectures.rom.dmd import DMDModel
 
 try:
-    from pinneaple_neural.architectures.rom.havok import HAVOKModel
+    from pinneapple_neural.architectures.rom.havok import HAVOKModel
     _HAVOK = True
 except ImportError:
     _HAVOK = False

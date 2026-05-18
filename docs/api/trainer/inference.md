@@ -1,3 +1,3 @@
-# pinneaple_neural.trainer.inference
+# pinneapple_neural.trainer.inference
 
-::: pinneaple_neural.trainer.inference
+::: pinneapple_neural.trainer.inference

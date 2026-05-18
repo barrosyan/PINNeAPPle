@@ -1,3 +1,3 @@
-# pinneaple_neural.architectures.classical_ts.base
+# pinneapple_neural.architectures.classical_ts.base
 
-::: pinneaple_neural.architectures.classical_ts.base
+::: pinneapple_neural.architectures.classical_ts.base

@@ -4,7 +4,7 @@ Demo: FDM (heat1d / wave1d / heat2d)
 
 import torch
 
-from pinneaple_solvers.registry import SolverCatalog
+from pinneapple_solvers.registry import SolverCatalog
 
 
 def main():

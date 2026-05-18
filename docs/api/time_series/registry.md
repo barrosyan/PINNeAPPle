@@ -1,3 +1,3 @@
-# pinneaple_systems.time_series.registry
+# pinneapple_systems.time_series.registry
 
-::: pinneaple_systems.time_series.registry
+::: pinneapple_systems.time_series.registry

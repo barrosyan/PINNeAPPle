@@ -13,7 +13,7 @@ Architectures demonstrated
 
 Run
 ---
-    python examples/pinneaple_models/60_new_architectures_demo.py
+    python examples/pinneapple_models/60_new_architectures_demo.py
 """
 
 import torch
@@ -21,7 +21,7 @@ import torch
 # ---------------------------------------------------------------------------
 # 1. SIREN
 # ---------------------------------------------------------------------------
-from pinneaple_models.siren import SIREN
+from pinneapple_models.siren import SIREN
 
 print("=" * 60)
 print("1. SIREN (Sinusoidal Representation Network)")
@@ -55,7 +55,7 @@ print()
 # ---------------------------------------------------------------------------
 # 2. Modified MLP
 # ---------------------------------------------------------------------------
-from pinneaple_models.modified_mlp import ModifiedMLP, FourierFeatureEmbedding
+from pinneapple_models.modified_mlp import ModifiedMLP, FourierFeatureEmbedding
 
 print("=" * 60)
 print("2. ModifiedMLP (Fourier features + highway U/V gating)")
@@ -87,7 +87,7 @@ print()
 # ---------------------------------------------------------------------------
 # 3. HashGridMLP
 # ---------------------------------------------------------------------------
-from pinneaple_models.hash_grid import HashGridMLP, HashGridEncoding
+from pinneapple_models.hash_grid import HashGridMLP, HashGridEncoding
 
 print("=" * 60)
 print("3. HashGridMLP (Instant-NGP style multi-resolution hash encoding)")
@@ -124,8 +124,8 @@ print()
 # ---------------------------------------------------------------------------
 # 4. MeshGraphNet
 # ---------------------------------------------------------------------------
-from pinneaple_models.graphnn.mesh_graph_net import MeshGraphNet
-from pinneaple_models.graphnn.base import GraphBatch
+from pinneapple_models.graphnn.mesh_graph_net import MeshGraphNet
+from pinneapple_models.graphnn.base import GraphBatch
 
 print("=" * 60)
 print("4. MeshGraphNet (GNN for unstructured FEM meshes)")
@@ -194,7 +194,7 @@ print()
 # ---------------------------------------------------------------------------
 # 5. AFNO
 # ---------------------------------------------------------------------------
-from pinneaple_models.afno import AFNO, AFNOLayer
+from pinneapple_models.afno import AFNO, AFNOLayer
 
 print("=" * 60)
 print("5. AFNO (Adaptive Fourier Neural Operator)")
@@ -232,8 +232,8 @@ print()
 # ---------------------------------------------------------------------------
 # 6. Registry check
 # ---------------------------------------------------------------------------
-from pinneaple_models.register_all import register_all
-from pinneaple_models.registry import ModelRegistry
+from pinneapple_models.register_all import register_all
+from pinneapple_models.registry import ModelRegistry
 
 print("=" * 60)
 print("6. ModelRegistry — Group B models")

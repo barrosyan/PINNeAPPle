@@ -1,6 +1,6 @@
 """Sample PINN-ready collocation/condition/data points from a UPD shard.
 
-This uses pinneaple_pinn.io.UPDDataset and a PINNMapping that maps:
+This uses pinneapple_pinn.io.UPDDataset and a PINNMapping that maps:
   inputs:  t, lat, lon
   targets: one UPD variable (e.g. T2M)
 
@@ -16,12 +16,12 @@ from __future__ import annotations
 import os
 import pandas as pd
 
-from pinneaple_physics.pinn_solver.io.upd_dataset import UPDItem, UPDDataset, SamplingSpec, ConditionSpec
-from pinneaple_physics.pinn_solver.io.mappings import CoordMapping, VarMapping, PINNMapping
+from pinneapple_physics.pinn_solver.io.upd_dataset import UPDItem, UPDDataset, SamplingSpec, ConditionSpec
+from pinneapple_physics.pinn_solver.io.mappings import CoordMapping, VarMapping, PINNMapping
 
 
 def main():
-    catalog_path = "examples/_out/pinneaple_pdb/synthetic_build/catalog.parquet"
+    catalog_path = "examples/_out/pinneapple_pdb/synthetic_build/catalog.parquet"
     if not os.path.exists(catalog_path):
         raise FileNotFoundError("Run 03_offline_synthetic_upd_pipeline.py first.")
 

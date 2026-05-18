@@ -1,3 +1,3 @@
-# pinneaple_data.zarr_shards
+# pinneapple_data.zarr_shards
 
-::: pinneaple_data.zarr_shards
+::: pinneapple_data.zarr_shards

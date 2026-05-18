@@ -1,8 +1,8 @@
 import trimesh
 
-from pinneaple_geom.io.trimesh_bridge import TrimeshBridge
-from pinneaple_geom.ops.repair import repair_mesh
-from pinneaple_geom.ops.simplify import simplify_mesh
+from pinneapple_geom.io.trimesh_bridge import TrimeshBridge
+from pinneapple_geom.ops.repair import repair_mesh
+from pinneapple_geom.ops.simplify import simplify_mesh
 
 mesh = trimesh.creation.icosphere(subdivisions=4, radius=1.0)
 mesh.vertices[0] = mesh.vertices[1]  # introduce a tiny issue

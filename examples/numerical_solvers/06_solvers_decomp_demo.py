@@ -15,7 +15,7 @@ Outputs a few tensor shapes + simple diagnostics.
 
 import torch
 
-from pinneaple_solvers.registry import SolverCatalog
+from pinneapple_solvers.registry import SolverCatalog
 
 
 def make_signal(T: int = 2048, dt: float = 1.0) -> torch.Tensor:

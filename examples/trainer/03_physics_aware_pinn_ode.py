@@ -1,4 +1,4 @@
-"""pinneaple_train example 03: Physics-aware training (PINN-style).
+"""pinneapple_train example 03: Physics-aware training (PINN-style).
 
 We learn y(x) ~ sin(x) on [-pi, pi] while enforcing the ODE:
 
@@ -11,7 +11,7 @@ This demonstrates:
 
 Run
 ---
-python examples/pinneaple_train/03_physics_aware_pinn_ode.py
+python examples/pinneapple_train/03_physics_aware_pinn_ode.py
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
-from pinneaple_train import (
+from pinneapple_train import (
     Trainer,
     TrainConfig,
     CombinedLoss,

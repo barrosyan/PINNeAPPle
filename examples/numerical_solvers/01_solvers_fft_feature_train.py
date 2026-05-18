@@ -1,5 +1,5 @@
 """
-pinneaple_solvers -> feature engineering -> pinneaple_train Trainer
+pinneapple_solvers -> feature engineering -> pinneapple_train Trainer
 
 Goal:
   - compute a solver-derived feature (FFT magnitude) from x
@@ -17,14 +17,14 @@ from typing import Dict, Any, Tuple
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from pinneaple_train.trainer import Trainer, TrainConfig
-from pinneaple_train.losses import CombinedLoss, SupervisedLoss
-from pinneaple_train.metrics import default_metrics
+from pinneapple_train.trainer import Trainer, TrainConfig
+from pinneapple_train.losses import CombinedLoss, SupervisedLoss
+from pinneapple_train.metrics import default_metrics
 
 
 # ---- solver import (adjust if your module path differs)
-from pinneaple_solvers.fft import FFTSolver
-from pinneaple_train.preprocess import PreprocessPipeline, SolverFeatureStep
+from pinneapple_solvers.fft import FFTSolver
+from pinneapple_train.preprocess import PreprocessPipeline, SolverFeatureStep
 
 
 class M(torch.nn.Module):

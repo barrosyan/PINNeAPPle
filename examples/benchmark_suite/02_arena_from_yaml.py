@@ -1,25 +1,25 @@
 """02 — Arena experiment from YAML config.
 
 Demonstrates the full Arena workflow:
-- Load a problem preset from pinneaple_environment (Burgers 1D)
+- Load a problem preset from pinneapple_environment (Burgers 1D)
 - Generate training data via a built-in FDM solver
 - Train multiple MLP-PINN models with different sizes
 - Evaluate metrics and produce visualizations
 
 Run from repo root:
-    python examples/pinneaple_arena/02_arena_from_yaml.py
+    python examples/pinneapple_arena/02_arena_from_yaml.py
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from pinneaple_arena.runner.run_arena_yaml import run_arena_experiment
+from pinneapple_arena.runner.run_arena_yaml import run_arena_experiment
 
 
 def main() -> None:
     repo_root = Path(__file__).resolve().parents[2]
-    config_path = repo_root / "examples" / "pinneaple_arena" / "configs" / "experiment_burgers_1d.yaml"
+    config_path = repo_root / "examples" / "pinneapple_arena" / "configs" / "experiment_burgers_1d.yaml"
     out_dir = repo_root / "data" / "artifacts" / "experiments" / "burgers_1d"
 
     print("=" * 60)

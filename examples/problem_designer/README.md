@@ -1,8 +1,8 @@
-## pinneaple_problemdesign examples
+## pinneapple_problemdesign examples
 
 This folder showcases **problem elicitation + specification + planning**.
 
-There are two main ways to use `pinneaple_problemdesign`:
+There are two main ways to use `pinneapple_problemdesign`:
 
 1) **LLM-assisted, conversational** (Gemini / your own provider)
 2) **Offline / deterministic** (you already have a spec, just want a plan + report)
@@ -27,8 +27,8 @@ export GOOGLE_API_KEY=...   # Linux/macOS
 Run:
 
 ```bash
-python examples/pinneaple_problemdesign/01_SimpleUseCase.py
-python examples/pinneaple_problemdesign/02_Api.py
+python examples/pinneapple_problemdesign/01_SimpleUseCase.py
+python examples/pinneapple_problemdesign/02_Api.py
 ```
 
 ### 2) Offline / no LLM required
@@ -36,7 +36,7 @@ python examples/pinneaple_problemdesign/02_Api.py
 Generate a full report from a manually-filled `ProblemSpec`:
 
 ```bash
-python examples/pinneaple_problemdesign/03_offline_spec_to_report.py
+python examples/pinneapple_problemdesign/03_offline_spec_to_report.py
 ```
 
 ### 3) Plug your own provider (no vendor lock-in)
@@ -45,13 +45,13 @@ This example shows a minimal adapter that implements the internal `LLMProvider` 
 It uses a deterministic "mock" provider so you can run without API keys:
 
 ```bash
-python examples/pinneaple_problemdesign/04_custom_provider_mock_end_to_end.py
+python examples/pinneapple_problemdesign/04_custom_provider_mock_end_to_end.py
 ```
 
 ### 4) Batch mode (generate multiple reports)
 
 ```bash
-python examples/pinneaple_problemdesign/05_batch_generate_reports.py
+python examples/pinneapple_problemdesign/05_batch_generate_reports.py
 ```
 
 It writes Markdown + JSON reports to:

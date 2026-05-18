@@ -1,8 +1,8 @@
 """Poisson equation (2D) with the *compiler* API.
 
 This example showcases:
-  - pinneaple_environment.ProblemSpec + ConditionSpec
-  - pinneaple_pinn.compile_problem() (autograd-based PDE residuals)
+  - pinneapple_environment.ProblemSpec + ConditionSpec
+  - pinneapple_pinn.compile_problem() (autograd-based PDE residuals)
   - a minimal training loop with a vanilla MLP
 
 Problem (unit square):
@@ -15,7 +15,7 @@ Analytic solution we target:
   => f(x,y) = -2*pi^2 * sin(pi x) sin(pi y)
 
 Run:
-  python examples/pinneaple_pinn/02_compiler_poisson_2d.py
+  python examples/pinneapple_pinn/02_compiler_poisson_2d.py
 """
 
 from __future__ import annotations
@@ -25,9 +25,9 @@ import math
 import numpy as np
 import torch
 
-from pinneaple_environment.conditions import DirichletBC
-from pinneaple_environment.spec import PDETermSpec, ProblemSpec
-from pinneaple_pinn import LossWeights, compile_problem
+from pinneapple_environment.conditions import DirichletBC
+from pinneapple_environment.spec import PDETermSpec, ProblemSpec
+from pinneapple_pinn import LossWeights, compile_problem
 
 
 class MLP(torch.nn.Module):

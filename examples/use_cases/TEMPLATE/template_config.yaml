@@ -1,5 +1,5 @@
 # ============================================================
-# pinneaple Use Case Pipeline — Fully-Annotated YAML Template
+# pinneapple Use Case Pipeline — Fully-Annotated YAML Template
 # ============================================================
 #
 # HOW TO USE THIS FILE
@@ -9,9 +9,9 @@
 # 2. Replace every UPPER_CASE placeholder with a real value.
 # 3. Delete or comment out sections/options you do not need.
 # 4. Run with:
-#      python -m pinneaple_arena.runner.run_pipeline --config path/to/config.yaml
+#      python -m pinneapple_arena.runner.run_pipeline --config path/to/config.yaml
 #    or:
-#      python examples/pinneaple_arena/09_full_pipeline_yaml.py --config path/to/config.yaml
+#      python examples/pinneapple_arena/09_full_pipeline_yaml.py --config path/to/config.yaml
 #
 # All keys are optional unless marked (REQUIRED).
 # ============================================================
@@ -36,8 +36,8 @@ pipeline:
 # PROBLEM DEFINITION
 # ------------------------------------------------------------
 problem:
-  # (REQUIRED) Preset ID registered in pinneaple_environment.
-  # Run `from pinneaple_environment import list_presets; print(list_presets())`
+  # (REQUIRED) Preset ID registered in pinneapple_environment.
+  # Run `from pinneapple_environment import list_presets; print(list_presets())`
   # to see all available presets.
   #
   # Common presets:
@@ -110,7 +110,7 @@ geometry:
 solver:
   # Which solver backend to use.
   #
-  # builtin    — pinneaple's own finite-difference solvers (FTCS, BTCS, Crank-Nicolson)
+  # builtin    — pinneapple's own finite-difference solvers (FTCS, BTCS, Crank-Nicolson)
   #              Best for: 1D/2D parabolic/hyperbolic PDEs, quick prototyping
   # openfoam   — OpenFOAM CFD solver (3D CFD, turbulence, multiphase)
   #              Best for: Navier-Stokes, compressible flow, heat+fluid coupling
@@ -683,8 +683,8 @@ digital_twin:
 # Use for custom logging, early stopping strategies, model checkpointing.
 # ------------------------------------------------------------
 # callbacks:
-#   - pinneaple_train.callbacks.WandBLogger
-#   - pinneaple_train.callbacks.MLFlowLogger
+#   - pinneapple_train.callbacks.WandBLogger
+#   - pinneapple_train.callbacks.MLFlowLogger
 #   - my_use_case.callbacks.CustomPlotter
 
 

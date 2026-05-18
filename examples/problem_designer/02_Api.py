@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 
-from pinneaple_problemdesign import GeminiProvider, DesignAgent
+from pinneapple_problemdesign import GeminiProvider, DesignAgent
 
 app = Flask(__name__)
 
@@ -75,7 +75,7 @@ def design_chat():
                         "title": s.title,
                         "why": s.why,
                         "actions": s.actions,
-                        "pinneaple_modules": s.pinneaple_modules,
+                        "pinneapple_modules": s.pinneapple_modules,
                         "exit_criteria": s.exit_criteria,
                     }
                     for s in out["report"].plan.steps

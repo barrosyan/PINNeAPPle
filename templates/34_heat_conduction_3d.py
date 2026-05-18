@@ -1,7 +1,7 @@
 """34_heat_conduction_3d.py — 3D heat conduction PINN with FEM comparison.
 
 Demonstrates:
-- Heat3DPreset: preconfigured 3D heat conduction problem from pinneaple_environment
+- Heat3DPreset: preconfigured 3D heat conduction problem from pinneapple_environment
 - FEMSolver (FEniCS bridge): solve the same problem with a FEM reference
 - FDMSolver: finite difference reference on a regular 3D grid
 - Error map comparison: PINN vs FEM, PINN vs FDM on a cross-section plane
@@ -15,16 +15,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_physics.pde_environment import Heat3DPreset, HeatPresetConfig
+from pinneapple_physics.pde_environment import Heat3DPreset, HeatPresetConfig
 
 try:
-    from pinneaple_simulation.numerical_solvers.fem import FEMSolver, FEMConfig
+    from pinneapple_simulation.numerical_solvers.fem import FEMSolver, FEMConfig
     _FEM = True
 except ImportError:
     _FEM = False
     print("[warn] FEniCS not available — FEM comparison will be skipped.")
 
-from pinneaple_simulation.numerical_solvers.fdm import FDMSolver3D, FDMConfig3D
+from pinneapple_simulation.numerical_solvers.fdm import FDMSolver3D, FDMConfig3D
 
 
 # ---------------------------------------------------------------------------

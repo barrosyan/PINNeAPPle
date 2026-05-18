@@ -3,7 +3,7 @@
 This uses the LLM-backed Reproducer+Verifier agents to:
   - scaffold a small project folder from the selected item + KB snippet
   - try to `python -m py_compile` the project
-  - run a simple smoke command (see pinneaple_researcher.utils.verify_runtime)
+  - run a simple smoke command (see pinneapple_researcher.utils.verify_runtime)
   - iterate patches when needed
 
 Prereqs (env vars):
@@ -11,10 +11,10 @@ Prereqs (env vars):
 
 Usage:
   # Reproduce by reading an item from a manifest.json
-  python examples/pinneaple_researcher/04_reproduce.py --kb-run runs/researcher/<topic>/<timestamp> --type repo --id owner/repo
+  python examples/pinneapple_researcher/04_reproduce.py --kb-run runs/researcher/<topic>/<timestamp> --type repo --id owner/repo
 
   # Or reproduce an ad-hoc item
-  python examples/pinneaple_researcher/04_reproduce.py --kb-run runs/researcher/<topic>/<timestamp> --type paper --id 1105.3778v1 \
+  python examples/pinneapple_researcher/04_reproduce.py --kb-run runs/researcher/<topic>/<timestamp> --type paper --id 1105.3778v1 \
       --title "Oscillatory thermal instability" --url https://arxiv.org/abs/1105.3778v1
 """
 
@@ -26,8 +26,8 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
-from pinneaple_researcher.models import RankedItem
-from pinneaple_researcher.pipelines.reproduce import reproduce
+from pinneapple_researcher.models import RankedItem
+from pinneapple_researcher.pipelines.reproduce import reproduce
 
 
 def _load_from_manifest(manifest_path: Path, *, type_: str, id_: str) -> RankedItem | None:

@@ -4,7 +4,7 @@
 (2) Sphere heat — 1D radial PINN (d²T/dr² + 2/r dT/dr = 0), T(1)=0, T(0)=1
     Exact: T(r) = 1 − r. Visualised as 3D midplane contour.
 
-Outputs saved to  examples/pinneaple_arena/_out/3d_pinn/
+Outputs saved to  examples/pinneapple_arena/_out/3d_pinn/
 """
 from __future__ import annotations
 

@@ -15,11 +15,11 @@ import numpy as np
 import tempfile
 import shutil
 
-from pinneaple_data.upd import UnifiedPhysicalData, UPDSchema
-from pinneaple_data.zarr_store import ZarrDatasetWriter, ZarrDatasetReader
-from pinneaple_data.collocation import CollocationSampler, CollocationConfig
-from pinneaple_data.validation import DataValidator, ValidationConfig
-from pinneaple_design.geometry.csg import CSGRectangle
+from pinneapple_data.upd import UnifiedPhysicalData, UPDSchema
+from pinneapple_data.zarr_store import ZarrDatasetWriter, ZarrDatasetReader
+from pinneapple_data.collocation import CollocationSampler, CollocationConfig
+from pinneapple_data.validation import DataValidator, ValidationConfig
+from pinneapple_design.geometry.csg import CSGRectangle
 
 
 # ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ def analytic_temp(xy: np.ndarray, T_top: float, T_bot: float) -> np.ndarray:
 
 def main():
     rng   = np.random.default_rng(42)
-    store = tempfile.mkdtemp(prefix="pinneaple_zarr_")
+    store = tempfile.mkdtemp(prefix="pinneapple_zarr_")
     print(f"Zarr store at: {store}")
 
     # --- Geometry & collocation sampler ------------------------------------

@@ -1,5 +1,5 @@
-from pinneaple_models.register_all import register_all
-from pinneaple_models.registry import ModelRegistry
+from pinneapple_models.register_all import register_all
+from pinneapple_models.registry import ModelRegistry
 
 register_all()
 

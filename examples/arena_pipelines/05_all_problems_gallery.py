@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from pinneaple_arena import Arena, ArenaConfig
+from pinneapple_arena import Arena, ArenaConfig
 
 # ── per-problem config dicts ──────────────────────────────────────────────────
 
@@ -367,7 +367,7 @@ def run_problem(name: str, epochs: int | None = None) -> None:
 
 
 def list_all() -> None:
-    from pinneaple_arena import list_problems_by_domain
+    from pinneapple_arena import list_problems_by_domain
     print("\nAvailable problems by domain:")
     for domain, names in list_problems_by_domain().items():
         print(f"\n  {domain}:")

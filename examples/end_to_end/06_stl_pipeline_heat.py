@@ -5,10 +5,10 @@ from pathlib import Path
 
 import torch
 
-from pinneaple_physics.pde_environment.presets.industry import steady_heat_conduction_3d_default
-from pinneaple_design.geometry.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig
-from pinneaple_neural.architectures.pinns.vanilla import VanillaPINN
-from pinneaple_physics.pinn_solver.compiler import LossWeights, compile_problem
+from pinneapple_physics.pde_environment.presets.industry import steady_heat_conduction_3d_default
+from pinneapple_design.geometry.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig
+from pinneapple_neural.architectures.pinns.vanilla import VanillaPINN
+from pinneapple_physics.pinn_solver.compiler import LossWeights, compile_problem
 
 def main():
     ap = argparse.ArgumentParser()
@@ -59,7 +59,7 @@ def main():
     print("total:", float(out["total"].detach().cpu()))
 
     # 6) Minimal training loop example (optional)
-    # You can plug this batch into pinneaple_train.Trainer by creating a Dataset/DataLoader.
+    # You can plug this batch into pinneapple_train.Trainer by creating a Dataset/DataLoader.
     print("ctx warnings (first 5):", batch["ctx"].get("warnings", [])[:5])
 
 

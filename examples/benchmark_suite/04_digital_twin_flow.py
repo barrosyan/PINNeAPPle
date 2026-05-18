@@ -10,7 +10,7 @@ What this demonstrates
 - Accessing live state history and exporting to DataFrame
 
 Run from repo root:
-    python examples/pinneaple_arena/04_digital_twin_flow.py
+    python examples/pinneapple_arena/04_digital_twin_flow.py
 """
 
 from __future__ import annotations
@@ -27,14 +27,14 @@ sys.path.insert(0, str(REPO_ROOT))
 import torch
 import torch.nn as nn
 
-from pinneaple_digital_twin import (
+from pinneapple_digital_twin import (
     DigitalTwin, DigitalTwinConfig, build_digital_twin,
     MockStream, Sensor, SensorRegistry,
     ThresholdDetector, ZScoreDetector,
     EnsembleKalmanFilter,
 )
-from pinneaple_digital_twin.monitoring import AnomalyMonitor
-from pinneaple_train import best_device, batched_inference
+from pinneapple_digital_twin.monitoring import AnomalyMonitor
+from pinneapple_train import best_device, batched_inference
 
 
 # ------------------------------------------------------------------

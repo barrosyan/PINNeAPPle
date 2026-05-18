@@ -1,5 +1,5 @@
 """
-pinneaple_solvers: SolverCatalog + UPD adapters demo
+pinneapple_solvers: SolverCatalog + UPD adapters demo
 
 What this shows
 --------------
@@ -10,7 +10,7 @@ What this shows
 
 Run
 ---
-python examples/pinneaple_solvers/05_solvers_catalog_and_adapters.py
+python examples/pinneapple_solvers/05_solvers_catalog_and_adapters.py
 
 Why duck-typed?
 -------------
@@ -26,8 +26,8 @@ from typing import Dict, Any
 
 import torch
 
-from pinneaple_solvers.registry import SolverCatalog
-from pinneaple_solvers.adapters.upd_signal import extract_1d_signal
+from pinneapple_solvers.registry import SolverCatalog
+from pinneapple_solvers.adapters.upd_signal import extract_1d_signal
 
 
 @dataclass

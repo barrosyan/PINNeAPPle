@@ -25,9 +25,9 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 # ── imports principais ─────────────────────────────────────────────────────────
-from pinneaple_environment import ProblemBuilder, ProblemSpec, PDETermSpec
-from pinneaple_environment import get_preset, list_presets
-from pinneaple_arena.api import Arena, ArenaResult
+from pinneapple_environment import ProblemBuilder, ProblemSpec, PDETermSpec
+from pinneapple_environment import get_preset, list_presets
+from pinneapple_arena.api import Arena, ArenaResult
 
 OUTPUT_DIR = Path(__file__).parent / "outputs"
 OUTPUT_DIR.mkdir(exist_ok=True)
@@ -371,14 +371,14 @@ def main():
     print("  RESUMO — Contratos da integração")
     print("=" * 60)
     print("""
-  PROBLEM DESIGN  (pinneaple_environment)
+  PROBLEM DESIGN  (pinneapple_environment)
   ────────────────────────────────────────
   ProblemBuilder  → fluent API para pesquisadores
        ↓ .build()
   ProblemSpec     → contrato frozen (dim, coords, fields, pde,
                     conditions, domain_bounds, sample_defaults)
        ↓
-  RESOLUTION PIPELINE  (pinneaple_arena)
+  RESOLUTION PIPELINE  (pinneapple_arena)
   ────────────────────────────────────────
   Arena.from_spec(spec)   ← entrada principal
   Arena.from_preset(id)   ← presets registrados

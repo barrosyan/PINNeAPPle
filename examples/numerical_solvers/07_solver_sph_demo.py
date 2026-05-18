@@ -7,9 +7,9 @@ This is an MVP sanity test (not a physically-perfect fluid sim).
 
 import torch
 
-from pinneaple_solvers.registry import SolverCatalog
-from pinneaple_geom.sample.particles import sample_box_particles
-from pinneaple_solvers.sph_boundaries import reflect_box
+from pinneapple_solvers.registry import SolverCatalog
+from pinneapple_geom.sample.particles import sample_box_particles
+from pinneapple_solvers.sph_boundaries import reflect_box
 
 
 def main():

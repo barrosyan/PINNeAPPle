@@ -1,4 +1,4 @@
-# pinneaple_neural.trainer
+# pinneapple_neural.trainer
 
 ## Overview
 
@@ -24,4 +24,4 @@ High-level APIs wiring problem, data, model, physics, solver and backend.
 
 ## Package API
 
-::: pinneaple_neural.trainer
+::: pinneapple_neural.trainer

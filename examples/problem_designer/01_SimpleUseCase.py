@@ -1,6 +1,6 @@
 import os
 
-from pinneaple_problemdesign import GeminiProvider, DesignAgent
+from pinneapple_problemdesign import GeminiProvider, DesignAgent
 
 
 def _build_agent() -> DesignAgent:

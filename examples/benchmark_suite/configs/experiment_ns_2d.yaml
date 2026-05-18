@@ -6,7 +6,7 @@ experiment:
   description: "2D incompressible Navier-Stokes PINN on channel flow"
 
 problem:
-  id: ns_incompressible_2d   # preset from pinneaple_environment
+  id: ns_incompressible_2d   # preset from pinneapple_environment
   params:
     Re: 100.0
     Umax: 1.0

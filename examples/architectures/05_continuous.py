@@ -7,17 +7,17 @@ import torch.optim as optim
 
 import matplotlib.pyplot as plt
 
-from pinneaple_models.continuous.bayesian_rnn import BayesianRNN
-from pinneaple_models.continuous.deep_state_space import DeepStateSpaceModel
-from pinneaple_models.continuous.hamiltonian import HamiltonianNeuralNetwork
-from pinneaple_models.continuous.latent_ode import LatentODE
-from pinneaple_models.continuous.neural_cde import NeuralCDE
-from pinneaple_models.continuous.neural_gp import NeuralGaussianProcess
-from pinneaple_models.continuous.neural_ode import NeuralODE
-from pinneaple_models.continuous.neural_sde import NeuralSDE
-from pinneaple_models.continuous.ode_rnn import ODERNN
-from pinneaple_models.continuous.symplectic_ode import SymplecticODENet
-from pinneaple_models.continuous.symplectic_rnn import SymplecticRNN
+from pinneapple_models.continuous.bayesian_rnn import BayesianRNN
+from pinneapple_models.continuous.deep_state_space import DeepStateSpaceModel
+from pinneapple_models.continuous.hamiltonian import HamiltonianNeuralNetwork
+from pinneapple_models.continuous.latent_ode import LatentODE
+from pinneapple_models.continuous.neural_cde import NeuralCDE
+from pinneapple_models.continuous.neural_gp import NeuralGaussianProcess
+from pinneapple_models.continuous.neural_ode import NeuralODE
+from pinneapple_models.continuous.neural_sde import NeuralSDE
+from pinneapple_models.continuous.ode_rnn import ODERNN
+from pinneapple_models.continuous.symplectic_ode import SymplecticODENet
+from pinneapple_models.continuous.symplectic_rnn import SymplecticRNN
 
 # Bayesian RNN
 

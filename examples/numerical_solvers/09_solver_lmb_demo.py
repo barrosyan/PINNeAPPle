@@ -6,7 +6,7 @@ Simulates a small 2D flow field with constant force.
 
 import torch
 
-from pinneaple_solvers.registry import SolverCatalog
+from pinneapple_solvers.registry import SolverCatalog
 
 
 def main():

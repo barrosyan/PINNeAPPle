@@ -1,7 +1,7 @@
-# Rotary Coupling Wear Surrogate Model with pinneaple + FEniCS
+# Rotary Coupling Wear Surrogate Model with pinneapple + FEniCS
 
 This use case shows how to build a surrogate model for rotary coupling wear analysis
-using pinneaple and FEniCS as the reference solver.
+using pinneapple and FEniCS as the reference solver.
 
 Two scenarios are covered:
 1. **Both pin and box rotating** — torsional wear on both mating surfaces
@@ -28,20 +28,20 @@ to identify wear-prone regions.  Wear rate is proportional to σ_vm × relative 
 ## Pipeline
 
 ```
-Geometry (pinneaple_geom)
+Geometry (pinneapple_geom)
         ↓
-FEniCS solver (pinneaple_solvers.FEnicsBridge)
+FEniCS solver (pinneapple_solvers.FEnicsBridge)
   → stress fields (σ_ij) for multiple load cases
         ↓
 Dataset (N load cases × M spatial points)
         ↓
-PINN / DeepONet surrogate (pinneaple_models)
+PINN / DeepONet surrogate (pinneapple_models)
   → predicts σ_vm(r, z, F, T) at any point
         ↓
-Wear visualization (pinneaple_inference)
+Wear visualization (pinneapple_inference)
   → von Mises map + wear zone highlighting
         ↓
-Digital twin (pinneaple_digital_twin)
+Digital twin (pinneapple_digital_twin)
   → live monitoring of in-service loads
 ```
 
@@ -50,7 +50,7 @@ Digital twin (pinneaple_digital_twin)
 ## Prerequisites
 
 ```bash
-pip install pinneaple          # or: pip install -e .
+pip install pinneapple          # or: pip install -e .
 pip install fenics              # or: conda install -c conda-forge fenics
 # Optional for 3D geometry:
 pip install gmsh pygmsh
@@ -61,10 +61,10 @@ pip install pyvista             # 3D visualization
 
 ## Step 1 — Define the problem preset
 
-pinneaple ships a `rotary_coupling_torsion` preset. Extend it for the two scenarios:
+pinneapple ships a `rotary_coupling_torsion` preset. Extend it for the two scenarios:
 
 ```python
-from pinneaple_environment import get_preset
+from pinneapple_environment import get_preset
 
 # Scenario A: both pin and box rotating (symmetric torsion)
 spec_both = get_preset(
@@ -90,7 +90,7 @@ spec_pin = get_preset(
     length=0.12,
 )
 # Modify boundary condition: box face is fixed (no rotation)
-from pinneaple_environment.conditions import DirichletBC
+from pinneapple_environment.conditions import DirichletBC
 spec_pin.conditions["box_face"] = DirichletBC({"ux": 0.0, "uy": 0.0, "uz": 0.0})
 ```
 
@@ -99,7 +99,7 @@ spec_pin.conditions["box_face"] = DirichletBC({"ux": 0.0, "uy": 0.0, "uz": 0.0})
 ## Step 2 — Run FEniCS solver for multiple load cases
 
 ```python
-from pinneaple_solvers import FEnicsBridge, SolverOutput
+from pinneapple_solvers import FEnicsBridge, SolverOutput
 import numpy as np
 
 bridge = FEnicsBridge(
@@ -148,7 +148,7 @@ print(f"Generated {len(dataset_both)} FEniCS solutions per scenario")
 
 ```python
 import pandas as pd
-from pinneaple_data import CollocationSampler
+from pinneapple_data import CollocationSampler
 
 # Flatten FEniCS solutions into (r, z, F, T) → σ_vm arrays
 rows = []
@@ -197,7 +197,7 @@ y_train, y_val = y[idx[:n_train]], y[idx[n_train:]]
 import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
-from pinneaple_train import Trainer, TrainConfig, best_device, maybe_compile
+from pinneapple_train import Trainer, TrainConfig, best_device, maybe_compile
 
 DEVICE = best_device()
 
@@ -231,7 +231,7 @@ print(f"Best val loss: {result['best_val']:.4e}")
 ### Option B — DeepONet (operator: load case → stress field)
 
 ```python
-from pinneaple_models.neural_operators.deeponet import DeepONet
+from pinneapple_models.neural_operators.deeponet import DeepONet
 
 # Branch: encodes load parameters [T, F] → modes
 # Trunk: encodes spatial coords (r, z) → basis functions
@@ -359,7 +359,7 @@ plt.savefig("coupling_scenario_comparison.png", dpi=200)
 ## Step 7 — Digital twin for real-time monitoring
 
 ```python
-from pinneaple_digital_twin import build_digital_twin, MockStream, ThresholdDetector
+from pinneapple_digital_twin import build_digital_twin, MockStream, ThresholdDetector
 
 # Wrap the trained surrogate as a digital twin
 dt = build_digital_twin(
@@ -402,15 +402,15 @@ print(f"Monitoring complete. Alerts: {len(dt.anomaly_monitor.all_events)}")
 
 ## What needs to be implemented
 
-The following components are **already in pinneaple** and work out-of-the-box:
+The following components are **already in pinneapple** and work out-of-the-box:
 
 | Component | Module | Status |
 |-----------|--------|--------|
-| `rotary_coupling_torsion` preset | `pinneaple_environment.presets.structural` | ✅ Ready |
-| FEniCS bridge | `pinneaple_solvers.FEnicsBridge` | ✅ Ready |
-| DeepONet / VanillaPINN | `pinneaple_models` | ✅ Ready |
-| Trainer + AMP + compile | `pinneaple_train` | ✅ Ready |
-| Digital twin + anomaly | `pinneaple_digital_twin` | ✅ Ready |
+| `rotary_coupling_torsion` preset | `pinneapple_environment.presets.structural` | ✅ Ready |
+| FEniCS bridge | `pinneapple_solvers.FEnicsBridge` | ✅ Ready |
+| DeepONet / VanillaPINN | `pinneapple_models` | ✅ Ready |
+| Trainer + AMP + compile | `pinneapple_train` | ✅ Ready |
+| Digital twin + anomaly | `pinneapple_digital_twin` | ✅ Ready |
 
 The following steps require **your domain-specific implementation**:
 
@@ -506,7 +506,7 @@ report:
 
 Run with:
 ```bash
-python -m pinneaple_arena.runner.run_pipeline --config configs/coupling_config.yaml
+python -m pinneapple_arena.runner.run_pipeline --config configs/coupling_config.yaml
 ```
 
 ---
@@ -516,4 +516,4 @@ python -m pinneaple_arena.runner.run_pipeline --config configs/coupling_config.y
 - Archard, J.F. (1953). "Contact and Rubbing of Flat Surfaces." Journal of Applied Physics.
 - Timoshenko & Goodier (1970). *Theory of Elasticity*, 3rd ed. McGraw-Hill.
 - Leake & Mortari (2020). "Deep Theory of Functional Connections." arXiv:2005.01219
-- pinneaple docs: `QUICKSTART.md`
+- pinneapple docs: `QUICKSTART.md`

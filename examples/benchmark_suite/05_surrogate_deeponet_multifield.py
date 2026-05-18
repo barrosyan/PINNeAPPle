@@ -20,7 +20,7 @@ For each training sample:
   - u is approximated with the analytical Green's function (toy)
 
 Run from repo root:
-    python examples/pinneaple_arena/05_surrogate_deeponet_multifield.py
+    python examples/pinneapple_arena/05_surrogate_deeponet_multifield.py
 """
 
 from __future__ import annotations
@@ -39,8 +39,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from pinneaple_models.neural_operators.deeponet import DeepONet
-from pinneaple_train import (
+from pinneapple_models.neural_operators.deeponet import DeepONet
+from pinneapple_train import (
     best_device, maybe_compile, AMPContext,
     GradAccumConfig, GradAccumTrainer,
     ThroughputMonitor, batched_inference,

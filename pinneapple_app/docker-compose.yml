@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  # ── FastAPI backend ───────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ..          # root of PINNeAPPle repo
+      dockerfile: pinneapple_app/Dockerfile.backend
+    container_name: pinneapple_backend
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/pinneapple_src
+    volumes:
+      # Mount checkpoints/outputs to persist between runs
+      - pinneapple_checkpoints:/app/pinneapple_src/checkpoints
+      - pinneapple_outputs:/app/pinneapple_src/outputs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pinneapple_net
+
+  # ── React frontend (nginx) ────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: pinneapple_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - pinneapple_net
+
+volumes:
+  pinneapple_checkpoints:
+  pinneapple_outputs:
+
+networks:
+  pinneapple_net:
+    driver: bridge

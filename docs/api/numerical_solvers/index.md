@@ -1,4 +1,4 @@
-# pinneaple_simulation.numerical_solvers
+# pinneapple_simulation.numerical_solvers
 
 ## Overview
 
@@ -20,4 +20,4 @@ Training policy independent from execution runtime.
 
 ## Package API
 
-::: pinneaple_simulation.numerical_solvers
+::: pinneapple_simulation.numerical_solvers

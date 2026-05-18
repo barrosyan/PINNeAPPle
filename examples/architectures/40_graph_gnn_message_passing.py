@@ -8,7 +8,7 @@ This demonstrates:
 - masked MSE loss inside the model (`return_loss=True`)
 
 Run:
-  python examples/pinneaple_models_showcase/40_graph_gnn_message_passing.py
+  python examples/pinneapple_models_showcase/40_graph_gnn_message_passing.py
 """
 
 from __future__ import annotations
@@ -22,8 +22,8 @@ sys.path.insert(0, str(ROOT))
 
 import torch
 
-from pinneaple_models.graphnn.base import GraphBatch
-from pinneaple_models.graphnn.gnn import GraphNeuralNetwork
+from pinneapple_models.graphnn.base import GraphBatch
+from pinneapple_models.graphnn.gnn import GraphNeuralNetwork
 
 
 def build_ring_edge_index(N: int, device: torch.device) -> torch.Tensor:

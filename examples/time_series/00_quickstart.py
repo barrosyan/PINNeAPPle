@@ -1,6 +1,6 @@
 """Quickstart: TimeSeriesSpec + TSDataModule + naive baselines.
 
-This example is meant to be the fastest way to validate that `pinneaple_timeseries`
+This example is meant to be the fastest way to validate that `pinneapple_timeseries`
 is installed and working end-to-end.
 
 It demonstrates:
@@ -10,7 +10,7 @@ It demonstrates:
   - computing a couple of simple metrics
 
 Run:
-  python examples/pinneaple_timeseries/00_quickstart.py
+  python examples/pinneapple_timeseries/00_quickstart.py
 """
 
 from __future__ import annotations
@@ -19,14 +19,14 @@ import math
 import numpy as np
 import torch
 
-from pinneaple_timeseries import (
+from pinneapple_timeseries import (
     TimeSeriesSpec,
     TSDataModule,
     NaiveForecaster,
     SeasonalNaiveForecaster,
     DriftForecaster,
 )
-from pinneaple_timeseries.metrics_ext.point import mae, rmse, smape
+from pinneapple_timeseries.metrics_ext.point import mae, rmse, smape
 
 
 def make_synthetic(T: int = 3000, F: int = 1, seed: int = 7) -> torch.Tensor:

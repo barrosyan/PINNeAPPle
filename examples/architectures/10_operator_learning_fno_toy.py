@@ -8,7 +8,7 @@ This is *not* a PDE dataset; it's a quick, self-contained demo that shows:
 - how to train using the model's built-in `return_loss=True`
 
 Run:
-  python examples/pinneaple_models_showcase/10_operator_learning_fno_toy.py
+  python examples/pinneapple_models_showcase/10_operator_learning_fno_toy.py
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ import math
 
 import torch
 
-from pinneaple_models.neural_operators.fno import FourierNeuralOperator
+from pinneapple_models.neural_operators.fno import FourierNeuralOperator
 
 
 def make_batch(B: int, L: int, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:

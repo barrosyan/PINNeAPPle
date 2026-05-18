@@ -1,3 +1,3 @@
-# pinneaple_neural.trainer.checkpoint
+# pinneapple_neural.trainer.checkpoint
 
-::: pinneaple_neural.trainer.checkpoint
+::: pinneapple_neural.trainer.checkpoint

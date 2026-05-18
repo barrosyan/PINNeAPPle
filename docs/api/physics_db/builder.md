@@ -1,3 +1,3 @@
-# pinneaple_pdb.builder
+# pinneapple_pdb.builder
 
-::: pinneaple_pdb.builder
+::: pinneapple_pdb.builder

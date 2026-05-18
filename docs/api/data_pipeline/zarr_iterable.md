@@ -1,3 +1,3 @@
-# pinneaple_data.zarr_iterable
+# pinneapple_data.zarr_iterable
 
-::: pinneaple_data.zarr_iterable
+::: pinneapple_data.zarr_iterable

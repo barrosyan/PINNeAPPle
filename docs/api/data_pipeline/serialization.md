@@ -1,3 +1,3 @@
-# pinneaple_data.serialization
+# pinneapple_data.serialization
 
-::: pinneaple_data.serialization
+::: pinneapple_data.serialization

@@ -1,28 +1,28 @@
 """Offline usage: build a full DesignReport without any LLM.
 
 Why this matters:
-  - You can integrate `pinneaple_problemdesign` into CI / pipelines.
+  - You can integrate `pinneapple_problemdesign` into CI / pipelines.
   - You can generate consistent reports for stakeholders.
   - You can start from a partially-known spec and still get a structured plan.
 
 Run:
-  python examples/pinneaple_problemdesign/03_offline_spec_to_report.py
+  python examples/pinneapple_problemdesign/03_offline_spec_to_report.py
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from pinneaple_problemdesign.schema import (
+from pinneapple_problemdesign.schema import (
     ProblemSpec,
     DataSpec,
     ValidationSpec,
     DesignReport,
 )
-from pinneaple_problemdesign.knowledge.mapping import build_plan_fno_first
-from pinneaple_problemdesign.renderers.report_md import render_markdown_report
-from pinneaple_problemdesign.renderers.report_json import render_json_report
-from pinneaple_problemdesign.elicitation.validators import validate_and_suggest
+from pinneapple_problemdesign.knowledge.mapping import build_plan_fno_first
+from pinneapple_problemdesign.renderers.report_md import render_markdown_report
+from pinneapple_problemdesign.renderers.report_json import render_json_report
+from pinneapple_problemdesign.elicitation.validators import validate_and_suggest
 
 
 def main() -> None:

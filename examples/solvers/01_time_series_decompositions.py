@@ -7,7 +7,7 @@ Run:
 import numpy as np
 import torch
 
-from pinneaple_simulation.numerical_solvers import SolverRegistry, register_all
+from pinneapple_simulation.numerical_solvers import SolverRegistry, register_all
 
 
 def main():

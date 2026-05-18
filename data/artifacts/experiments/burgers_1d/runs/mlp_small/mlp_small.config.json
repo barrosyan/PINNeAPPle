@@ -7,7 +7,7 @@
   "device": "cpu",
   "seed": 42,
   "deterministic": false,
-  "log_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\data\\artifacts\\experiments\\burgers_1d\\runs\\mlp_small",
+  "log_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\data\\artifacts\\experiments\\burgers_1d\\runs\\mlp_small",
   "run_name": "mlp_small",
   "save_best": true,
   "ddp": false,

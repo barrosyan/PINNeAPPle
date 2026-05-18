@@ -7,10 +7,10 @@ This shows how to:
 
 Notes:
   - This is a minimal demo. In real projects you would use the Trainer API
-    (pinneaple_train) + BacktestRunner for fold-safe evaluation.
+    (pinneapple_train) + BacktestRunner for fold-safe evaluation.
 
 Run:
-  python examples/pinneaple_timeseries/05_quantile_uncertainty.py
+  python examples/pinneapple_timeseries/05_quantile_uncertainty.py
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from pinneaple_timeseries import TimeSeriesSpec, TSDataModule
-from pinneaple_timeseries.uncertainty.quantile import QuantileHead, QuantileConfig, pinball_loss_torch
+from pinneapple_timeseries import TimeSeriesSpec, TSDataModule
+from pinneapple_timeseries.uncertainty.quantile import QuantileHead, QuantileConfig, pinball_loss_torch
 
 
 def make_series(T: int = 5000, seed: int = 3) -> torch.Tensor:

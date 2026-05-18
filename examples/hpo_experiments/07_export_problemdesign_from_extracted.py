@@ -6,7 +6,7 @@ If you already ran Example 03/00 with extraction enabled, you'll have:
 This script re-exports into a stable ProblemDesign-like schema.
 
 Usage:
-  python examples/pinneaple_researcher/07_export_problemdesign_from_extracted.py \
+  python examples/pinneapple_researcher/07_export_problemdesign_from_extracted.py \
       --extracted runs/researcher/<topic>/<timestamp>/extracted_problem_solutions.json
 """
 
@@ -16,8 +16,8 @@ import argparse
 import json
 from pathlib import Path
 
-from pinneaple_researcher.models import ExtractedProblemSolution
-from pinneaple_researcher.pipelines.export_problemdesign import export_problemdesign
+from pinneapple_researcher.models import ExtractedProblemSolution
+from pinneapple_researcher.pipelines.export_problemdesign import export_problemdesign
 
 
 def main() -> None:

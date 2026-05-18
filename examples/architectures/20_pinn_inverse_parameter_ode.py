@@ -10,7 +10,7 @@ Demo goal:
 - use `VanillaPINN` *and* its `inverse_params` mechanism to learn `a`.
 
 Run:
-  python examples/pinneaple_models_showcase/20_pinn_inverse_parameter_ode.py
+  python examples/pinneapple_models_showcase/20_pinn_inverse_parameter_ode.py
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ import math
 
 import torch
 
-from pinneaple_models.pinns.vanilla import VanillaPINN
+from pinneapple_models.pinns.vanilla import VanillaPINN
 
 
 def physics_fn(model: VanillaPINN, data: dict) -> tuple[torch.Tensor, dict]:

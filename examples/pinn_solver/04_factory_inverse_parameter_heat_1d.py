@@ -12,7 +12,7 @@ We set the *true* alpha and generate sparse supervised measurements at a later t
 The PINN learns both the field u(t,x) and alpha.
 
 Run:
-  python examples/pinneaple_pinn/04_factory_inverse_parameter_heat_1d.py
+  python examples/pinneapple_pinn/04_factory_inverse_parameter_heat_1d.py
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ import math
 import numpy as np
 import torch
 
-from pinneaple_pinn.factory.pinn_factory import NeuralNetwork, PINN, PINNFactory, PINNProblemSpec
+from pinneapple_pinn.factory.pinn_factory import NeuralNetwork, PINN, PINNFactory, PINNProblemSpec
 
 
 def u_analytic(t: np.ndarray, x: np.ndarray, alpha: float) -> np.ndarray:

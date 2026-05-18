@@ -1,4 +1,4 @@
-"""09_dataset_benchmarks.py — Arena benchmarks on real pinneaple_data datasets.
+"""09_dataset_benchmarks.py — Arena benchmarks on real pinneapple_data datasets.
 
 This example shows three complementary APIs for building Arena benchmarks
 from datasets already integrated with PINNeAPPle:
@@ -45,7 +45,7 @@ _ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from pinneaple_arena import (
+from pinneapple_arena import (
     Arena,
     ArenaConfig,
     DatasetProblem,
@@ -289,7 +289,7 @@ CASE_DEFAULTS = {
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Arena benchmarks from real pinneaple_data datasets"
+        description="Arena benchmarks from real pinneapple_data datasets"
     )
     parser.add_argument(
         "--case",

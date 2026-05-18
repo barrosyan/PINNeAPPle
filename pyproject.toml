@@ -3,7 +3,7 @@ requires = ["hatchling>=1.24.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pinneaple"
+name = "pinneapple"
 version = "0.4.0"
 description = "PINNeAPPle: Physics-Informed Neural Networks platform — PDE problem design, PINN/operator/GNN models, UQ, digital twins, meta-learning, active learning, validation, and REST serving."
 readme = "README.md"
@@ -202,37 +202,37 @@ Issues = "https://github.com/barrosyan/PINNeAPPle/issues"
 Changelog = "https://github.com/barrosyan/PINNeAPPle/blob/main/CHANGELOG.md"
 
 [project.scripts]
-pdb = "pinneaple_pdb.cli:main"
-pinneaple = "pinneaple_pdb.cli:main"
+pdb = "pinneapple_pdb.cli:main"
+pinneapple = "pinneapple_pdb.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = [
   # ── core ──────────────────────────────────────────────────────────────────
-  "pinneaple",
-  "pinneaple_data",
-  "pinneaple_pdb",
-  "pinneaple_problemdesign",
+  "pinneapple",
+  "pinneapple_data",
+  "pinneapple_pdb",
+  "pinneapple_problemdesign",
 
   # ── mega-modules ──────────────────────────────────────────────────────────
   # Each includes its nested sub-modules automatically.
-  "pinneaple_physics",      # pde_environment + pinn_solver + symbolic_pde
-  "pinneaple_neural",       # architectures + trainer + predictor
-  "pinneaple_analysis",     # uncertainty + validation + inverse_problems
-  "pinneaple_adaptation",   # transfer_learning + meta_learning
-  "pinneaple_simulation",   # numerical_solvers + particle_dynamics + external_solvers
-  "pinneaple_systems",      # time_series + cosimulation + digital_twin
-  "pinneaple_design",       # geometry + design_optimizer
-  "pinneaple_tools",        # visualization + model_export + hpo_experiments + benchmark_suite + compute_backends
+  "pinneapple_physics",      # pde_environment + pinn_solver + symbolic_pde
+  "pinneapple_neural",       # architectures + trainer + predictor
+  "pinneapple_analysis",     # uncertainty + validation + inverse_problems
+  "pinneapple_adaptation",   # transfer_learning + meta_learning
+  "pinneapple_simulation",   # numerical_solvers + particle_dynamics + external_solvers
+  "pinneapple_systems",      # time_series + cosimulation + digital_twin
+  "pinneapple_design",       # geometry + design_optimizer
+  "pinneapple_tools",        # visualization + model_export + hpo_experiments + benchmark_suite + compute_backends
 
   # ── extended packages ─────────────────────────────────────────────────────
-  "pinneaple_worldmodel",
-  "pinneaple_quantum",
+  "pinneapple_worldmodel",
+  "pinneapple_quantum",
 
   # ── arena + compatibility shims ───────────────────────────────────────────
-  "pinneaple_arena",     # YAML/JSON-driven multi-model benchmark runner
-  "pinneaple_models",    # shim → pinneaple_neural.architectures
-  "pinneaple_train",     # shim → pinneaple_neural.trainer
-  "pinneaple_solvers",   # shim → pinneaple_simulation.numerical_solvers
+  "pinneapple_arena",     # YAML/JSON-driven multi-model benchmark runner
+  "pinneapple_models",    # shim → pinneapple_neural.architectures
+  "pinneapple_train",     # shim → pinneapple_neural.trainer
+  "pinneapple_solvers",   # shim → pinneapple_simulation.numerical_solvers
 ]
 include = [
   "data/bundles/**/*",

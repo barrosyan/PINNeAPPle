@@ -1,7 +1,7 @@
 """20_deeponet_surrogate.py — DeepONet surrogate for parametric ODEs.
 
 Demonstrates:
-- DeepONet architecture (branch + trunk networks) from pinneaple_models
+- DeepONet architecture (branch + trunk networks) from pinneapple_models
 - Operator learning: map forcing function f → solution u
 - Query-point evaluation: trunk inputs are the spatial coordinates
 - Mean/std normalisation of branch inputs via InputNormaliser
@@ -14,8 +14,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_neural.architectures.neural_operators.deeponet import DeepONet
-from pinneaple_neural.architectures.utils import InputNormaliser
+from pinneapple_neural.architectures.neural_operators.deeponet import DeepONet
+from pinneapple_neural.architectures.utils import InputNormaliser
 
 
 # ---------------------------------------------------------------------------

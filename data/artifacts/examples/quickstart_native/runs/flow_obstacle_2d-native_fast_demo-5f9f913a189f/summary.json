@@ -2,7 +2,7 @@
   "run_id": "flow_obstacle_2d-native_fast_demo-5f9f913a189f",
   "run_name": "native_fast_demo",
   "task_id": "flow_obstacle_2d",
-  "backend": "pinneaple_native",
+  "backend": "pinneapple_native",
   "key_metrics": {
     "test_pde_rms": 0.12606415152549744,
     "test_div_rms": 0.11443059891462326,

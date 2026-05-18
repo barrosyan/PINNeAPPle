@@ -15,7 +15,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_neural.trainer.causal import CausalPINNTrainer, CausalWeightScheduler
+from pinneapple_neural.trainer.causal import CausalPINNTrainer, CausalWeightScheduler
 
 
 # ---------------------------------------------------------------------------

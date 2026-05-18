@@ -20,7 +20,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pinneaple_design.geometry import (
+from pinneapple_design.geometry import (
     step_to_mesh,
     StepImportConfig,
     mesh_to_pointcloud,

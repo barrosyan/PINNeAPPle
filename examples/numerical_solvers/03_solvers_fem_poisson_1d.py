@@ -1,5 +1,5 @@
 """
-pinneaple_solvers: FEMSolver demo (1D Poisson with Dirichlet BCs)
+pinneapple_solvers: FEMSolver demo (1D Poisson with Dirichlet BCs)
 
 Problem
 -------
@@ -17,7 +17,7 @@ What this shows
 
 Run
 ---
-python examples/pinneaple_solvers/03_solvers_fem_poisson_1d.py
+python examples/pinneapple_solvers/03_solvers_fem_poisson_1d.py
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from typing import Dict, Any, Tuple
 
 import torch
 
-from pinneaple_solvers.fem import FEMSolver
+from pinneapple_solvers.fem import FEMSolver
 
 
 @dataclass

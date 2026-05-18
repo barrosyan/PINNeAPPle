@@ -1,5 +1,5 @@
 """
-pinneaple_solvers: Hilbert–Huang Transform (EMD + Hilbert) demo
+pinneapple_solvers: Hilbert–Huang Transform (EMD + Hilbert) demo
 
 What this shows
 --------------
@@ -9,7 +9,7 @@ What this shows
 
 Run
 ---
-python examples/pinneaple_solvers/02_solvers_hilbert_huang_decompose.py
+python examples/pinneapple_solvers/02_solvers_hilbert_huang_decompose.py
 
 Notes
 -----
@@ -23,7 +23,7 @@ import math
 
 import torch
 
-from pinneaple_solvers.hilbert_huang import HilbertHuangSolver
+from pinneapple_solvers.hilbert_huang import HilbertHuangSolver
 
 
 def make_signal(T: int = 2048, dt: float = 1.0 / 200.0) -> torch.Tensor:

@@ -1,3 +1,3 @@
-# pinneaple_design.problem_designer.protocol
+# pinneapple_design.problem_designer.protocol
 
-::: pinneaple_design.problem_designer.protocol
+::: pinneapple_design.problem_designer.protocol

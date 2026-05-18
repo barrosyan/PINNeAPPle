@@ -1,3 +1,3 @@
-# pinneaple_neural.architectures.transformers.registry
+# pinneapple_neural.architectures.transformers.registry
 
-::: pinneaple_neural.architectures.transformers.registry
+::: pinneapple_neural.architectures.transformers.registry

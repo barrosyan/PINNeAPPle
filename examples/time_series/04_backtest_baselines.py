@@ -10,7 +10,7 @@ Shows:
   - reporting fold metrics and aggregate
 
 Run:
-  python examples/pinneaple_timeseries/04_backtest_baselines.py
+  python examples/pinneapple_timeseries/04_backtest_baselines.py
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from __future__ import annotations
 import math
 import numpy as np
 
-from pinneaple_timeseries import (
+from pinneapple_timeseries import (
     ExpandingWindowSplitter,
     BacktestRunner,
     BacktestConfig,
@@ -26,7 +26,7 @@ from pinneaple_timeseries import (
     SeasonalNaiveForecaster,
     DriftForecaster,
 )
-from pinneaple_timeseries.metrics_ext.point import mae, rmse, smape
+from pinneapple_timeseries.metrics_ext.point import mae, rmse, smape
 
 
 def make_series(T: int = 2500, seed: int = 1) -> np.ndarray:

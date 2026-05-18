@@ -1,6 +1,6 @@
 """Build UPD shards from an Earthdata collection (online) and write catalog.
 
-This is the "full" pinneaple_pdb pipeline:
+This is the "full" pinneapple_pdb pipeline:
 
   - select variables (by include list and/or packs)
   - standardize dims to (time, lev?, lat, lon)
@@ -25,7 +25,7 @@ Note:
 from __future__ import annotations
 
 import os
-from pinneaple_pdb import (
+from pinneapple_pdb import (
     PhysicalDatasetBuilder,
     ShardSpec,
     DerivedSpec,
@@ -34,7 +34,7 @@ from pinneaple_pdb import (
 
 
 def main():
-    out_root = "examples/_out/pinneaple_pdb/earthaccess_build"
+    out_root = "examples/_out/pinneapple_pdb/earthaccess_build"
     os.makedirs(out_root, exist_ok=True)
 
     out_dir = os.path.join(out_root, "shards")

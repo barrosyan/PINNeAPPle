@@ -23,7 +23,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from pinneaple_tools.benchmark_suite import TimeSeriesBenchmarkSpec
+from pinneapple_tools.benchmark_suite import TimeSeriesBenchmarkSpec
 
 OUT = Path("outputs") / "timeseries"
 

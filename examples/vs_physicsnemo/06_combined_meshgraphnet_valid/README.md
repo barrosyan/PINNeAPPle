@@ -27,7 +27,7 @@ Malha CFD não-estruturada (aerofólio NACA 0012)
 └──────────────────┬──────────────────────┘
                    ▼
 ┌─────────────────────────────────────────┐
-│  PINNeAPPle pinneaple_export           │  ← PINNeAPPle exclusive
+│  PINNeAPPle pinneapple_export           │  ← PINNeAPPle exclusive
 │  • export_torchscript() → .pt          │
 │  • export_onnx()        → .onnx        │
 │  • Verifica fidelidade orig vs exported│
@@ -66,7 +66,7 @@ GNNs treinados em dados CFD podem:
 O `PhysicsValidator` do PINNeAPPle detecta esses problemas **antes do deploy**:
 
 ```python
-from pinneaple_validate import PhysicsValidator, ConservationCheck, BoundaryCheck
+from pinneapple_validate import PhysicsValidator, ConservationCheck, BoundaryCheck
 
 validator = PhysicsValidator([
     ConservationCheck("divergence", threshold=0.05),
@@ -105,13 +105,13 @@ model = MeshGraphNet(node_in=7, edge_in=4, hidden=128, out_fields=3)
 train_distributed(model, cfd_dataset)          # DDP, cuDNN, fp16
 
 # PINNeAPPle: valida física — sem alterar o modelo
-from pinneaple_validate import PhysicsValidator
+from pinneapple_validate import PhysicsValidator
 report = PhysicsValidator.from_config("incompressible_ns").validate(model, mesh)
 if report.score < 0.8:
     raise ValueError(f"Modelo não passou validação: {report.failed_checks}")
 
 # PINNeAPPle: exporta para produção
-from pinneaple_export import export_torchscript, export_onnx
+from pinneapple_export import export_torchscript, export_onnx
 export_torchscript(model, example_inputs, "mgn.pt", verify=True)
 export_onnx(model, example_inputs, "mgn.onnx", dynamic_axes={"N": 0, "E": 0})
 ```
@@ -153,7 +153,7 @@ python example.py
 [3/4] Validação física (PINNeAPPle PhysicsValidator)...
 
 ═══════════════════════════════════════════════════════
-  RELATÓRIO DE VALIDAÇÃO FÍSICA  (pinneaple_validate)
+  RELATÓRIO DE VALIDAÇÃO FÍSICA  (pinneapple_validate)
 ═══════════════════════════════════════════════════════
   [✓] PASS  Conservação de massa (∇·u≈0)
       div médio = 0.0312  (87% nós OK)
@@ -172,7 +172,7 @@ python example.py
 
   Score: 5/5  [████████████████████]  100%
 
-[4/4] Exportando modelo (PINNeAPPle pinneaple_export)...
+[4/4] Exportando modelo (PINNeAPPle pinneapple_export)...
   [✓] TorchScript salvo: mgn_airfoil.torchscript.pt  (831.2 KB)
        Diferença máxima orig vs scripted: 2.38e-07
   [!] ONNX não disponível (pip install onnx). Pulando.

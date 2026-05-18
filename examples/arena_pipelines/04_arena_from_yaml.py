@@ -16,7 +16,7 @@ _ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from pinneaple_arena import Arena, ArenaConfig
+from pinneapple_arena import Arena, ArenaConfig
 
 
 # ── pre-built configs for common problems ─────────────────────────────────────

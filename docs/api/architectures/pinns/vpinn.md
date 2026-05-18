@@ -1,3 +1,3 @@
-# pinneaple_neural.architectures.pinns.vpinn
+# pinneapple_neural.architectures.pinns.vpinn
 
-::: pinneaple_neural.architectures.pinns.vpinn
+::: pinneapple_neural.architectures.pinns.vpinn

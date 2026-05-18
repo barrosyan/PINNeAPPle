@@ -1,3 +1,3 @@
-# pinneaple_pdb.templates
+# pinneapple_pdb.templates
 
-::: pinneaple_pdb.templates
+::: pinneapple_pdb.templates

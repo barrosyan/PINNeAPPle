@@ -1,4 +1,4 @@
-# pinneaple_systems.time_series
+# pinneapple_systems.time_series
 
 ## Overview
 
@@ -21,4 +21,4 @@ Forecasting and hybrid dynamical workflows integrated with Physics AI pipelines.
 
 ## Package API
 
-::: pinneaple_systems.time_series
+::: pinneapple_systems.time_series

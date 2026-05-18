@@ -6,13 +6,13 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-from pinneaple_physics.pde_environment.spec import ProblemSpec
-from pinneaple_physics.pde_environment.pdes import PDEspec
-from pinneaple_physics.pde_environment.conditions import ConditionSpec
-from pinneaple_physics.pinn_solver.compiler.compile import compile_problem
-from pinneaple_physics.pinn_solver.compiler.loss import LossWeights
-from pinneaple_neural.architectures.pinns.registry import PINNCatalog
-from pinneaple_neural.trainer.trainer import Trainer, TrainConfig
+from pinneapple_physics.pde_environment.spec import ProblemSpec
+from pinneapple_physics.pde_environment.pdes import PDEspec
+from pinneapple_physics.pde_environment.conditions import ConditionSpec
+from pinneapple_physics.pinn_solver.compiler.compile import compile_problem
+from pinneapple_physics.pinn_solver.compiler.loss import LossWeights
+from pinneapple_neural.architectures.pinns.registry import PINNCatalog
+from pinneapple_neural.trainer.trainer import Trainer, TrainConfig
 
 
 PINN_MODELS = ["vanilla_pinn", "vpinn", "xpinn", "pinnsformer", "xtfc"]

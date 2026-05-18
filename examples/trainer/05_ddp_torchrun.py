@@ -1,4 +1,4 @@
-"""pinneaple_train example 05: DistributedDataParallel (DDP) with torchrun.
+"""pinneapple_train example 05: DistributedDataParallel (DDP) with torchrun.
 
 This example is intentionally small and focuses on *how to launch* DDP.
 
@@ -9,11 +9,11 @@ Requirements
 
 Run (CPU / gloo)
 ---------------
-torchrun --standalone --nproc_per_node=2 examples/pinneaple_train/05_ddp_torchrun.py
+torchrun --standalone --nproc_per_node=2 examples/pinneapple_train/05_ddp_torchrun.py
 
 Run (GPU / nccl)
 ---------------
-torchrun --standalone --nproc_per_node=2 examples/pinneaple_train/05_ddp_torchrun.py --device cuda --backend nccl
+torchrun --standalone --nproc_per_node=2 examples/pinneapple_train/05_ddp_torchrun.py --device cuda --backend nccl
 
 Notes
 -----
@@ -30,7 +30,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from pinneaple_train import Trainer, TrainConfig, CombinedLoss, SupervisedLoss
+from pinneapple_train import Trainer, TrainConfig, CombinedLoss, SupervisedLoss
 
 
 class M(nn.Module):

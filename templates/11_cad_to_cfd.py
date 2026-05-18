@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneaple_simulation.numerical_solvers.cfd_pipeline import CADToCFDPipeline, CFDMesh, NSFlowSolver
+from pinneapple_simulation.numerical_solvers.cfd_pipeline import CADToCFDPipeline, CFDMesh, NSFlowSolver
 
 
 # ---------------------------------------------------------------------------

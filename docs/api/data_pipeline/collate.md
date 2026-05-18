@@ -1,3 +1,3 @@
-# pinneaple_data.collate
+# pinneapple_data.collate
 
-::: pinneaple_data.collate
+::: pinneapple_data.collate

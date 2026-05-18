@@ -1,3 +1,3 @@
-# pinneaple_data.device
+# pinneapple_data.device
 
-::: pinneaple_data.device
+::: pinneapple_data.device
