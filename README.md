@@ -304,6 +304,24 @@ Physics AI is about:
 
 ---
 
+## Citation
+
+If you use **PINNeAPPle** in academic research, technical reports, benchmarks, or industrial publications, please cite the framework.
+
+### BibTeX
+
+```bibtex
+@software{pinneapple2026,
+  title        = {PINNeAPPle: An Open-Source Physics AI Research and Experimentation Platform},
+  author       = {Barros, Yan and Contributors},
+  year         = {2026},
+  url          = {https://github.com/barrosyan/PINNeAPPle},
+  version      = {0.1.0}
+}
+```
+
+---
+
 ## Support the Project
 
 If this project makes sense to you, **give it a star** ⭐
