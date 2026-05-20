@@ -98,6 +98,20 @@ except Exception:
     trajectories_to_upd = None    # type: ignore
     MJXParallelRunner = None      # type: ignore
 
+# TurboDesigner (optional: turbodesigner; falls back to built-in analytical solver)
+try:
+    from .turbodesigner import (
+        TurboDesignerConfig,
+        TurboDesignerWorkflow,
+        run_turbodesigner,
+        turbodesigner_to_upd,
+    )
+except Exception:
+    TurboDesignerConfig = None       # type: ignore
+    TurboDesignerWorkflow = None     # type: ignore
+    run_turbodesigner = None         # type: ignore
+    turbodesigner_to_upd = None      # type: ignore
+
 # Genesis AI (optional: genesis-world)
 try:
     from .genesis import (
@@ -162,4 +176,9 @@ __all__ = [
     "GenesisRunner",
     "genesis_traj_to_upd",
     "genesis_trajs_to_upd",
+    # TurboDesigner
+    "TurboDesignerConfig",
+    "TurboDesignerWorkflow",
+    "run_turbodesigner",
+    "turbodesigner_to_upd",
 ]
