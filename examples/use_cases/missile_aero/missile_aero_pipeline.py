@@ -408,7 +408,7 @@ class AeroSurrogatePINN(nn.Module):
         z    = torch.cat([s_feat, g], dim=-1)
         h    = self.decoder(z) + self.skip(z)
         out  = self.head(h)
-        return torch.softplus(out)   # Cp, Cf ≥ 0
+        return torch.nn.functional.softplus(out)   # Cp, Cf ≥ 0
 
 
 # ══════════════════════════════════════════════════════════════════════════════
