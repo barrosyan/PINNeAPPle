@@ -290,7 +290,7 @@ class CrashPINN(nn.Module):
         z   = self._encode(x)
         h   = self.trunk(z) + self.skip(z)
         out = self.head(h)
-        return torch.softplus(out)   # enforce positivity (P, σ, ε all ≥ 0)
+        return torch.nn.functional.softplus(out)   # enforce positivity (P, σ, ε all ≥ 0)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
