@@ -1,0 +1,23 @@
+{
+  "train_config": {
+    "epochs": 50,
+    "lr": 0.001,
+    "weight_decay": 0.0,
+    "grad_clip": 0.0,
+    "amp": false,
+    "device": "cpu",
+    "seed": 123,
+    "deterministic": false,
+    "log_dir": "examples/_runs_coldplate_industrial",
+    "run_name": "cold_plate_industrial_theta",
+    "save_best": true
+  },
+  "env": {
+    "python": "3.11.9",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "torch": "2.10.0+cpu",
+    "cuda_available": false,
+    "cuda": null
+  },
+  "model": "TrainerFriendlyTheta"
+}
