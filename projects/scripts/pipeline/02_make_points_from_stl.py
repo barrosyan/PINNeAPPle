@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 import torch
 
-from pinneaple_geom.builders.stl_domain_batch_builder import (
+from pinneapple_design.geometry.builders.stl_domain_batch_builder import (
     STLDomainBatchBuilder,
     STLDomainBatchConfig,
     TagHeuristics,
 )
-from pinneaple_environment.spec import ProblemSpec
-from pinneaple_environment.pdes import PDEspec
+from pinneapple_physics.pde_environment.spec import ProblemSpec
+from pinneapple_physics.pde_environment.pdes import PDEspec
 
 
 def region_from_xyz(xyz: np.ndarray) -> np.ndarray:

@@ -1,0 +1,19 @@
+run_name: poisson_pinn_demo
+
+backend:
+  name: poisson_pinn
+
+train:
+  device: cpu
+  epochs: 2500
+  lr: 0.001
+  seed: 0
+  log_every: 250
+  w_pde: 1.0
+  w_bc: 50.0
+  n_collocation: 2048
+  n_boundary: 1024
+
+model:
+  width: 128
+  depth: 4

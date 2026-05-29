@@ -1,0 +1,47 @@
+# Poisson 2D — -Δu = f(x,y) on [0,1]^2
+# Elliptic PDE with forcing; PINN vs SIREN vs FNO comparison
+problem:
+  name: poisson_2d
+  params:
+    n_collocation: 4000
+    n_bc: 400
+    k: 1.0  # wave-number-like source parameter
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    training:
+      epochs: 5000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: SIREN
+    type: siren
+    network:
+      hidden: [64, 64, 64, 64]
+      omega_0: 30.0
+    training:
+      epochs: 5000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: FNO-2D
+    type: fno2d
+    network:
+      modes: 12
+      width: 32
+      layers: 4
+    training:
+      epochs: 500
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/poisson_2d/
+  prefix: poisson
+  save_figures: true
+  save_csv: true

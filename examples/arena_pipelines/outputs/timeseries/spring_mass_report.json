@@ -1,0 +1,151 @@
+{
+  "benchmark_type": "timeseries",
+  "version": "1.0",
+  "created_at": "2026-05-03T00:20:14",
+  "problem_info": {
+    "source": "spring_mass_2dof",
+    "n_samples": 1000,
+    "n_features": 4,
+    "n_train_windows": 752,
+    "n_test_windows": 189,
+    "horizon": 20,
+    "lookback": 40
+  },
+  "config": {
+    "models": [
+      "gru",
+      "transformer"
+    ],
+    "metrics": [
+      "mse",
+      "mae"
+    ],
+    "test_size": 0.2,
+    "epochs": 80,
+    "lr": 0.001,
+    "batch_size": 256,
+    "seed": 42
+  },
+  "models": {
+    "gru": {
+      "model_id": "gru",
+      "n_params": 43728,
+      "training_time_s": 41.60551763,
+      "metrics": {
+        "mse": 0.0082074,
+        "mae": 0.07235266
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 1.25384462
+        },
+        {
+          "epoch": 10,
+          "loss": 0.08959261
+        },
+        {
+          "epoch": 20,
+          "loss": 0.05432702
+        },
+        {
+          "epoch": 30,
+          "loss": 0.03874078
+        },
+        {
+          "epoch": 40,
+          "loss": 0.02705042
+        },
+        {
+          "epoch": 50,
+          "loss": 0.0205944
+        },
+        {
+          "epoch": 60,
+          "loss": 0.01699606
+        },
+        {
+          "epoch": 70,
+          "loss": 0.0160193
+        },
+        {
+          "epoch": 80,
+          "loss": 0.01572008
+        }
+      ],
+      "param_estimates": null,
+      "rank": 1,
+      "error_message": null
+    },
+    "transformer": {
+      "model_id": "transformer",
+      "n_params": 563353,
+      "training_time_s": 222.25734234,
+      "metrics": {
+        "mse": 0.00901771,
+        "mae": 0.07599699
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 1.18748379
+        },
+        {
+          "epoch": 10,
+          "loss": 0.10687498
+        },
+        {
+          "epoch": 20,
+          "loss": 0.0436498
+        },
+        {
+          "epoch": 30,
+          "loss": 0.02573601
+        },
+        {
+          "epoch": 40,
+          "loss": 0.01632781
+        },
+        {
+          "epoch": 50,
+          "loss": 0.01233705
+        },
+        {
+          "epoch": 60,
+          "loss": 0.01075308
+        },
+        {
+          "epoch": 70,
+          "loss": 0.01018996
+        },
+        {
+          "epoch": 80,
+          "loss": 0.01004499
+        }
+      ],
+      "param_estimates": null,
+      "rank": 2,
+      "error_message": null
+    }
+  },
+  "leaderboard": [
+    {
+      "rank": 1,
+      "model": "gru",
+      "mse": 0.0082074
+    },
+    {
+      "rank": 2,
+      "model": "transformer",
+      "mse": 0.00901771
+    }
+  ],
+  "best_model": "gru",
+  "plots_saved": [
+    "outputs\\timeseries\\ts_spring_mass_2dof_gru_loss.png",
+    "outputs\\timeseries\\ts_spring_mass_2dof_gru_forecast.png",
+    "outputs\\timeseries\\ts_spring_mass_2dof_transformer_loss.png",
+    "outputs\\timeseries\\ts_spring_mass_2dof_transformer_forecast.png"
+  ],
+  "metadata": {}
+}

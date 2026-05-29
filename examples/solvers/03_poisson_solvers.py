@@ -6,7 +6,7 @@ Run:
 
 import torch
 
-from pinneaple_solvers import SolverRegistry, register_all
+from pinneapple_simulation.numerical_solvers import SolverRegistry, register_all
 
 
 def main():

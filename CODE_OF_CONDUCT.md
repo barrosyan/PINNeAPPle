@@ -1,6 +1,6 @@
 # Code of Conduct
 
-Pinneaple follows the **Contributor Covenant**.
+Pinneapple follows the **Contributor Covenant**.
 
 ## Our Pledge
 We pledge to make participation in our community a harassment-free experience for everyone.

@@ -21,7 +21,7 @@ e depois copiar para a pasta bundle/ se preferir.
    - inlet / outlet / walls / obstacle
    Use Semantics Schema Editor para aplicar as labels.
 4) No Script Editor do Kit:
-   - aponte o sys.path para o seu repo (para importar pinneaple_integrations)
+   - aponte o sys.path para o seu repo (para importar pinneapple_integrations)
    - rode `export_bundle_from_stage.py`
 
 ## Como importar o repo dentro do Kit
@@ -38,9 +38,9 @@ export_bundle_from_stage.py: exporta bundle + derived points.
 
 Observações importantes
 
-Este script assume que pinneaple_integrations.omniverse.export_flow_bundle_from_usd
+Este script assume que pinneapple_integrations.omniverse.export_flow_bundle_from_usd
 existe no seu repo (na parte de integrações).
 
 Se você ainda não tiver esse export no repo, você pode:
 (A) exportar manualmente pontos e salvar parquets, ou
-(B) implementar o export dentro de pinneaple_integrations/omniverse.
+(B) implementar o export dentro de pinneapple_integrations/omniverse.

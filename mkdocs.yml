@@ -58,14 +58,14 @@ plugins:
 
 watch:
   - docs
-  - pinneaple_arena
-  - pinneaple_data
-  - pinneaple_geom
-  - pinneaple_models
-  - pinneaple_pdb
-  - pinneaple_pinn
-  - pinneaple_problemdesign
-  - pinneaple_researcher
-  - pinneaple_solvers
-  - pinneaple_timeseries
-  - pinneaple_train
+  - pinneapple_arena
+  - pinneapple_data
+  - pinneapple_geom
+  - pinneapple_models
+  - pinneapple_pdb
+  - pinneapple_pinn
+  - pinneapple_problemdesign
+  - pinneapple_researcher
+  - pinneapple_solvers
+  - pinneapple_timeseries
+  - pinneapple_train

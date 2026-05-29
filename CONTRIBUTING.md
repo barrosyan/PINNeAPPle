@@ -1,4 +1,4 @@
-# Contributing to Pinneaple
+# Contributing to Pinneapple
 
 Thanks for taking the time to contribute!
 

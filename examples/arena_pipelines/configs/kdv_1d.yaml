@@ -1,0 +1,47 @@
+# KdV 1D — u_t + 6*u*u_x + u_xxx = 0 on [-10,10] x [0,T]
+# Soliton-forming PDE; third-order spatial derivative; high omega_0 for SIREN
+problem:
+  name: kdv_1d
+  params:
+    n_collocation: 10000
+    n_ic: 400
+    n_bc: 200
+    t_end: 1.0
+
+models:
+  - name: SIREN-High
+    type: siren
+    network:
+      hidden: [128, 128, 128, 128, 128]
+      omega_0: 30.0
+    training:
+      epochs: 10000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: VanillaPINN-Deep
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 10000
+      lr: 5.0e-4
+      optimizer: adam
+      scheduler: cosine
+
+  - name: ModifiedMLP
+    type: modified_mlp
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 10000
+      lr: 5.0e-4
+      optimizer: adam
+
+output:
+  dir: outputs/kdv_1d/
+  prefix: kdv
+  save_figures: true
+  save_csv: true

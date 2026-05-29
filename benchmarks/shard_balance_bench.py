@@ -17,12 +17,12 @@ except Exception:  # pragma: no cover
 
 
 def _require_pinnea_data():
-    """Import pinneaple_data with a helpful error if optional deps are missing."""
+    """Import pinneapple_data with a helpful error if optional deps are missing."""
     try:
-        from pinneaple_data.physical_sample import PhysicalSample
-        from pinneaple_data.zarr_shards import UPDZarrShardedWriter, ShardSpec
-        from pinneaple_data.zarr_shard_iterable import ShardAwareZarrUPDIterable, ShardAwareConfig
-        from pinneaple_data.zarr_cached_store_bytes import ZarrByteCacheConfig
+        from pinneapple_data.physical_sample import PhysicalSample
+        from pinneapple_data.zarr_shards import UPDZarrShardedWriter, ShardSpec
+        from pinneapple_data.zarr_shard_iterable import ShardAwareZarrUPDIterable, ShardAwareConfig
+        from pinneapple_data.zarr_cached_store_bytes import ZarrByteCacheConfig
 
         return (
             PhysicalSample,
@@ -37,7 +37,7 @@ def _require_pinnea_data():
         raise SystemExit(
             "\n".join(
                 [
-                    "[ERROR] Missing dependency while importing pinneaple_data.",
+                    "[ERROR] Missing dependency while importing pinneapple_data.",
                     f"Missing module: {missing}",
                     "",
                     "Fix:",

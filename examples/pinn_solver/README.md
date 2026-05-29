@@ -1,0 +1,35 @@
+# pinneapple_pinn examples
+
+This folder focuses on the **PINN-specific** layer of PINNeAPPle.
+
+## Quickstart
+
+```bash
+python examples/pinneapple_pinn/01_symbolic_loss_basic.py
+```
+
+## Compiler API (autograd PDEs)
+
+- `02_compiler_poisson_2d.py`
+  - Poisson (2D) on a unit square with Dirichlet BC
+  - Uses `pinneapple_environment.ProblemSpec` + `pinneapple_pinn.compile_problem()`
+
+- `03_compiler_burgers_1d.py`
+  - Viscous Burgers (1D + time) with initial and boundary conditions
+
+- `06_compiler_wave_1d.py`
+  - 1D Wave equation (standing wave on a string) with Dirichlet BC
+  - Demonstrates the built-in `"wave_equation"` PDE kind (second-order in time)
+  - Includes initial-velocity penalty for the standing-wave solution
+
+## Symbolic API (SymPy -> torch)
+
+- `04_factory_inverse_parameter_heat_1d.py`
+  - Heat equation with *unknown* `alpha` learned as an inverse parameter
+  - Uses `PINNFactory`, symbolic residual strings, and sparse supervised data
+
+## UPD integration (Zarr -> sampled batches)
+
+- `05_upd_dataset_data_only_regression.py`
+  - Creates a tiny synthetic Zarr shard, samples points with `UPDDataset`,
+    and trains a data-only neural surrogate through `PINNFactory`.

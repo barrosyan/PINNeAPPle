@@ -1,0 +1,165 @@
+{
+  "benchmark_type": "timeseries",
+  "version": "1.0",
+  "created_at": "2026-05-03T00:11:59",
+  "problem_info": {
+    "source": "lorenz63",
+    "n_samples": 5000,
+    "n_features": 3,
+    "n_train_windows": 3944,
+    "n_test_windows": 987,
+    "horizon": 20,
+    "lookback": 50
+  },
+  "config": {
+    "models": [
+      "lstm",
+      "tcn",
+      "nbeats"
+    ],
+    "metrics": [
+      "mse",
+      "mae",
+      "rmse"
+    ],
+    "test_size": 0.2,
+    "epochs": 60,
+    "lr": 0.001,
+    "batch_size": 256,
+    "seed": 42
+  },
+  "models": {
+    "lstm": {
+      "model_id": "lstm",
+      "n_params": 54972,
+      "training_time_s": 85.25436711,
+      "metrics": {
+        "mse": 0.00683934,
+        "mae": 0.04603674,
+        "rmse": 0.0827003
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 0.52414804
+        },
+        {
+          "epoch": 7,
+          "loss": 0.0343622
+        },
+        {
+          "epoch": 14,
+          "loss": 0.00719765
+        },
+        {
+          "epoch": 21,
+          "loss": 0.00415971
+        },
+        {
+          "epoch": 28,
+          "loss": 0.00278634
+        },
+        {
+          "epoch": 35,
+          "loss": 0.00207848
+        },
+        {
+          "epoch": 42,
+          "loss": 0.00175132
+        },
+        {
+          "epoch": 49,
+          "loss": 0.00161921
+        },
+        {
+          "epoch": 56,
+          "loss": 0.00154699
+        }
+      ],
+      "param_estimates": null,
+      "rank": 1,
+      "error_message": null
+    },
+    "tcn": {
+      "model_id": "tcn",
+      "n_params": 92284,
+      "training_time_s": 385.75103402,
+      "metrics": {
+        "mse": 0.01655708,
+        "mae": 0.07435995,
+        "rmse": 0.1286743
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 0.73854791
+        },
+        {
+          "epoch": 7,
+          "loss": 0.04542725
+        },
+        {
+          "epoch": 14,
+          "loss": 0.02232198
+        },
+        {
+          "epoch": 21,
+          "loss": 0.01572951
+        },
+        {
+          "epoch": 28,
+          "loss": 0.01216075
+        },
+        {
+          "epoch": 35,
+          "loss": 0.00983707
+        },
+        {
+          "epoch": 42,
+          "loss": 0.00870242
+        },
+        {
+          "epoch": 49,
+          "loss": 0.00822218
+        },
+        {
+          "epoch": 56,
+          "loss": 0.00785184
+        }
+      ],
+      "param_estimates": null,
+      "rank": 2,
+      "error_message": null
+    },
+    "nbeats": {
+      "model_id": "nbeats",
+      "n_params": 0,
+      "training_time_s": 0.02483249,
+      "metrics": {},
+      "history": [],
+      "param_estimates": null,
+      "rank": 0,
+      "error_message": "mat1 and mat2 shapes cannot be multiplied (256x50 and 150x64)"
+    }
+  },
+  "leaderboard": [
+    {
+      "rank": 1,
+      "model": "lstm",
+      "mse": 0.00683934
+    },
+    {
+      "rank": 2,
+      "model": "tcn",
+      "mse": 0.01655708
+    }
+  ],
+  "best_model": "lstm",
+  "plots_saved": [
+    "outputs\\timeseries\\ts_lorenz63_lstm_loss.png",
+    "outputs\\timeseries\\ts_lorenz63_lstm_forecast.png",
+    "outputs\\timeseries\\ts_lorenz63_tcn_loss.png",
+    "outputs\\timeseries\\ts_lorenz63_tcn_forecast.png"
+  ],
+  "metadata": {}
+}

@@ -1,0 +1,32 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System deps for scientific computing
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential gcc git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PyTorch CPU (slim; replace index URL for GPU builds)
+RUN pip install --no-cache-dir \
+    torch==2.2.0 torchvision==0.17.0 --index-url https://download.pytorch.org/whl/cpu
+
+# Copy and install the entire PINNeAPPle library
+COPY . /app/pinneaple_src
+RUN pip install --no-cache-dir -e /app/pinneaple_src
+
+# Install FastAPI stack + scientific deps
+RUN pip install --no-cache-dir \
+    fastapi==0.110.0 \
+    uvicorn[standard]==0.29.0 \
+    pydantic==2.6.4 \
+    scipy==1.12.0 \
+    numpy==1.26.4 \
+    matplotlib==3.8.3 \
+    pandas==2.2.1
+
+WORKDIR /app/pinneaple_src/pinneaple_app
+
+EXPOSE 8000
+
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

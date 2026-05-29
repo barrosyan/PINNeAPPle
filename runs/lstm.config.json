@@ -1,0 +1,16 @@
+{
+  "epochs": 150,
+  "lr": 0.0003,
+  "weight_decay": 0.0001,
+  "grad_clip": 1.0,
+  "amp": false,
+  "device": "cpu",
+  "seed": 42,
+  "deterministic": true,
+  "log_dir": "runs",
+  "run_name": "lstm",
+  "save_best": true,
+  "ddp": false,
+  "ddp_backend": "nccl",
+  "ddp_find_unused_parameters": false
+}

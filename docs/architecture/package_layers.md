@@ -1,13 +1,13 @@
 # Package Layers
 
-- `pinneaple_problemdesign`: problem definitions
-- `pinneaple_geom`: geometry + sampling
-- `pinneaple_data`: PhysicalSample + datasets
-- `pinneaple_models`: architectures
-- `pinneaple_pinn`: residuals + constraints
-- `pinneaple_solvers`: optimization strategies
-- `pinneaple_train`: training orchestration
-- `pinneaple_arena`: execution backends
-- `pinneaple_researcher`: benchmarking
-- `pinneaple_timeseries`: time-series
-- `pinneaple_pdb`: structured storage
+- `pinneapple_design.problem_designer`: problem definitions
+- `pinneapple_design.geometry`: geometry + sampling
+- `pinneapple_data`: PhysicalSample + datasets
+- `pinneapple_neural.architectures`: architectures
+- `pinneapple_physics.pinn_solver`: residuals + constraints
+- `pinneapple_simulation.numerical_solvers`: optimization strategies
+- `pinneapple_neural.trainer`: training orchestration
+- `pinneapple_tools.benchmark_suite`: execution backends
+- `pinneapple_tools.hpo_experiments`: benchmarking
+- `pinneapple_systems.time_series`: time-series
+- `pinneapple_pdb`: structured storage

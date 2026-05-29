@@ -1,0 +1,154 @@
+{
+  "benchmark_type": "timeseries",
+  "version": "1.0",
+  "created_at": "2026-05-03T00:19:55",
+  "problem_info": {
+    "source": "sunspots",
+    "n_samples": 100,
+    "n_features": 1,
+    "n_train_windows": 23,
+    "n_test_windows": 6,
+    "horizon": 12,
+    "lookback": 60
+  },
+  "config": {
+    "models": [
+      "lstm",
+      "transformer"
+    ],
+    "metrics": [
+      "mse",
+      "rmse",
+      "mae"
+    ],
+    "test_size": 0.2,
+    "epochs": 80,
+    "lr": 0.001,
+    "batch_size": 256,
+    "seed": 0
+  },
+  "models": {
+    "lstm": {
+      "model_id": "lstm",
+      "n_params": 51340,
+      "training_time_s": 1.56229734,
+      "metrics": {
+        "mse": 0.05038967,
+        "rmse": 0.22447643,
+        "mae": 0.17712307
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 1.46290624
+        },
+        {
+          "epoch": 10,
+          "loss": 0.80772209
+        },
+        {
+          "epoch": 20,
+          "loss": 0.36130092
+        },
+        {
+          "epoch": 30,
+          "loss": 0.09375637
+        },
+        {
+          "epoch": 40,
+          "loss": 0.05364583
+        },
+        {
+          "epoch": 50,
+          "loss": 0.04388219
+        },
+        {
+          "epoch": 60,
+          "loss": 0.04234908
+        },
+        {
+          "epoch": 70,
+          "loss": 0.04333056
+        },
+        {
+          "epoch": 80,
+          "loss": 0.04365778
+        }
+      ],
+      "param_estimates": null,
+      "rank": 1,
+      "error_message": null
+    },
+    "transformer": {
+      "model_id": "transformer",
+      "n_params": 264595,
+      "training_time_s": 6.55211949,
+      "metrics": {
+        "mse": 0.05481653,
+        "rmse": 0.23412931,
+        "mae": 0.19348532
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 1.03559828
+        },
+        {
+          "epoch": 10,
+          "loss": 0.84227508
+        },
+        {
+          "epoch": 20,
+          "loss": 0.59914905
+        },
+        {
+          "epoch": 30,
+          "loss": 0.31259426
+        },
+        {
+          "epoch": 40,
+          "loss": 0.15394685
+        },
+        {
+          "epoch": 50,
+          "loss": 0.08919231
+        },
+        {
+          "epoch": 60,
+          "loss": 0.05727227
+        },
+        {
+          "epoch": 70,
+          "loss": 0.05982666
+        },
+        {
+          "epoch": 80,
+          "loss": 0.05825736
+        }
+      ],
+      "param_estimates": null,
+      "rank": 2,
+      "error_message": null
+    }
+  },
+  "leaderboard": [
+    {
+      "rank": 1,
+      "model": "lstm",
+      "mse": 0.05038967
+    },
+    {
+      "rank": 2,
+      "model": "transformer",
+      "mse": 0.05481653
+    }
+  ],
+  "best_model": "lstm",
+  "plots_saved": [
+    "outputs\\timeseries\\ts_sunspots_lstm_loss.png",
+    "outputs\\timeseries\\ts_sunspots_lstm_forecast.png",
+    "outputs\\timeseries\\ts_sunspots_transformer_loss.png",
+    "outputs\\timeseries\\ts_sunspots_transformer_forecast.png"
+  ],
+  "metadata": {}
+}

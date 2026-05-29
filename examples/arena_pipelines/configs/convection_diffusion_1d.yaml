@@ -1,0 +1,49 @@
+# Convection-Diffusion 1D — u_t + c*u_x = nu*u_xx on [0,1] x [0,1]
+# Transport-dominated regime (Pe >> 1); tests ability to resolve sharp fronts
+problem:
+  name: convection_diffusion_1d
+  params:
+    c: 1.0     # convection speed
+    nu: 0.01   # diffusivity  → Peclet ≈ 100
+    n_collocation: 4000
+    n_ic: 200
+    n_bc: 200
+    t_end: 1.0
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    training:
+      epochs: 5000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: SIREN
+    type: siren
+    network:
+      hidden: [64, 64, 64, 64]
+      omega_0: 30.0
+    training:
+      epochs: 5000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: ModifiedMLP
+    type: modified_mlp
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    training:
+      epochs: 5000
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/convection_diffusion_1d/
+  prefix: conv_diff_1d
+  save_figures: true
+  save_csv: true

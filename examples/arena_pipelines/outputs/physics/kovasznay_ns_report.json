@@ -1,0 +1,127 @@
+{
+  "benchmark_type": "physics",
+  "version": "1.0",
+  "created_at": "2026-05-03T00:16:04",
+  "problem_info": {
+    "id": "kovasznay_ns",
+    "pde": "NS incompressible (Kovasznay)",
+    "in_dim": 2,
+    "out_dim": 3,
+    "domain": {
+      "x": [
+        -0.5,
+        1.0
+      ],
+      "y": [
+        -0.5,
+        1.5
+      ]
+    },
+    "params": {
+      "Re": 40.0
+    }
+  },
+  "config": {
+    "load_generate_data": "generate",
+    "source": null,
+    "collocation_points": "sobol",
+    "n_col": 3000,
+    "n_bc": 500,
+    "n_ic": 0,
+    "epochs": 3000,
+    "lr": 0.001,
+    "metrics": [
+      "mse",
+      "l2_rel"
+    ],
+    "models": [
+      "vanilla_pinn"
+    ],
+    "inverse": false,
+    "inverse_variables": [],
+    "hidden": [
+      64,
+      64,
+      64,
+      64
+    ],
+    "seed": 42
+  },
+  "models": {
+    "vanilla_pinn": {
+      "model_id": "vanilla_pinn",
+      "n_params": 12867,
+      "training_time_s": 445.67452669,
+      "metrics": {
+        "mse": 0.00144268,
+        "l2_rel": 0.03137063
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "loss_total": 8.58062172,
+          "loss_pde": 0.00115855,
+          "loss_bc": 0.85794628,
+          "loss_ic": 0.0
+        },
+        {
+          "epoch": 500,
+          "loss_total": 0.12466227,
+          "loss_pde": 0.05714035,
+          "loss_bc": 0.00675219,
+          "loss_ic": 0.0
+        },
+        {
+          "epoch": 1000,
+          "loss_total": 0.01909784,
+          "loss_pde": 0.01074594,
+          "loss_bc": 0.00083519,
+          "loss_ic": 0.0
+        },
+        {
+          "epoch": 1500,
+          "loss_total": 0.01056378,
+          "loss_pde": 0.00703168,
+          "loss_bc": 0.00035321,
+          "loss_ic": 0.0
+        },
+        {
+          "epoch": 2000,
+          "loss_total": 0.00832301,
+          "loss_pde": 0.00565975,
+          "loss_bc": 0.00026633,
+          "loss_ic": 0.0
+        },
+        {
+          "epoch": 2500,
+          "loss_total": 0.00743349,
+          "loss_pde": 0.00510464,
+          "loss_bc": 0.00023288,
+          "loss_ic": 0.0
+        },
+        {
+          "epoch": 3000,
+          "loss_total": 0.00727161,
+          "loss_pde": 0.00500313,
+          "loss_bc": 0.00022685,
+          "loss_ic": 0.0
+        }
+      ],
+      "param_estimates": null,
+      "rank": 1,
+      "error_message": null
+    }
+  },
+  "leaderboard": [
+    {
+      "rank": 1,
+      "model": "vanilla_pinn",
+      "mse": 0.00144268
+    }
+  ],
+  "best_model": "vanilla_pinn",
+  "plots_saved": [
+    "outputs\\physics\\physics_kovasznay_ns_vanilla_pinn_loss.png"
+  ],
+  "metadata": {}
+}

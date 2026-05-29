@@ -1,58 +1,58 @@
 {
-  "repo_root": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple",
+  "repo_root": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple",
   "top_packages": [
-    "pinneaple_data",
-    "pinneaple_geom",
-    "pinneaple_models",
-    "pinneaple_pdb",
-    "pinneaple_pinn",
-    "pinneaple_problemdesign",
-    "pinneaple_solvers",
-    "pinneaple_timeseries",
-    "pinneaple_train"
+    "pinneapple_data",
+    "pinneapple_geom",
+    "pinneapple_models",
+    "pinneapple_pdb",
+    "pinneapple_pinn",
+    "pinneapple_problemdesign",
+    "pinneapple_solvers",
+    "pinneapple_timeseries",
+    "pinneapple_train"
   ],
   "packages": {
-    "pinneaple_data": {
+    "pinneapple_data": {
       "exists": true,
-      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\pinneaple_data"
+      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\pinneapple_data"
     },
-    "pinneaple_geom": {
+    "pinneapple_geom": {
       "exists": true,
-      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\pinneaple_geom"
+      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\pinneapple_geom"
     },
-    "pinneaple_models": {
+    "pinneapple_models": {
       "exists": true,
-      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\pinneaple_models"
+      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\pinneapple_models"
     },
-    "pinneaple_pdb": {
+    "pinneapple_pdb": {
       "exists": true,
-      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\pinneaple_pdb"
+      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\pinneapple_pdb"
     },
-    "pinneaple_pinn": {
+    "pinneapple_pinn": {
       "exists": true,
-      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\pinneaple_pinn"
+      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\pinneapple_pinn"
     },
-    "pinneaple_problemdesign": {
+    "pinneapple_problemdesign": {
       "exists": true,
-      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\pinneaple_problemdesign"
+      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\pinneapple_problemdesign"
     },
-    "pinneaple_solvers": {
+    "pinneapple_solvers": {
       "exists": true,
-      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\pinneaple_solvers"
+      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\pinneapple_solvers"
     },
-    "pinneaple_timeseries": {
+    "pinneapple_timeseries": {
       "exists": true,
-      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\pinneaple_timeseries"
+      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\pinneapple_timeseries"
     },
-    "pinneaple_train": {
+    "pinneapple_train": {
       "exists": true,
-      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\pinneaple_train"
+      "package_dir": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\pinneapple_train"
     }
   },
   "files": {
-    "pinneaple_data/cache.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/cache.py",
+    "pinneapple_data/cache.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/cache.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -168,9 +168,9 @@
         ]
       }
     },
-    "pinneaple_data/cache_bytes.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/cache_bytes.py",
+    "pinneapple_data/cache_bytes.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/cache_bytes.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -307,9 +307,9 @@
         ]
       }
     },
-    "pinneaple_data/chunking.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/chunking.py",
+    "pinneapple_data/chunking.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/chunking.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -385,9 +385,9 @@
         ]
       }
     },
-    "pinneaple_data/collate.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/collate.py",
+    "pinneapple_data/collate.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/collate.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -478,9 +478,9 @@
         "classes": []
       }
     },
-    "pinneaple_data/dataloaders.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/dataloaders.py",
+    "pinneapple_data/dataloaders.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/dataloaders.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -551,7 +551,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_pinn.io",
+            "module": "pinneapple_pinn.io",
             "level": 0,
             "names": [
               {
@@ -658,9 +658,9 @@
         ]
       }
     },
-    "pinneaple_data/device.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/device.py",
+    "pinneapple_data/device.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/device.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -729,9 +729,9 @@
         "classes": []
       }
     },
-    "pinneaple_data/physical_sample.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/physical_sample.py",
+    "pinneapple_data/physical_sample.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/physical_sample.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -803,7 +803,7 @@
           {
             "name": "PhysicalSample",
             "bases": [],
-            "doc": "Unified Physical Sample (UPD-aligned) used across Pinneaple.\n\n- state: xr.Dataset (preferred for gridded data) OR dict-like for non-grid.\n- geometry: GeometryAsset (optional).\n- schema: governing equations, IC/BC, forcings, units policy, etc.\n- domain: how to interpret sample (grid / mesh / graph / points).\n- provenance: lineage (uid, source, query, tiling, time span, etc.)\n- extras: extensibility (feature caches, mesh labels, sdf, etc.)",
+            "doc": "Unified Physical Sample (UPD-aligned) used across Pinneapple.\n\n- state: xr.Dataset (preferred for gridded data) OR dict-like for non-grid.\n- geometry: GeometryAsset (optional).\n- schema: governing equations, IC/BC, forcings, units policy, etc.\n- domain: how to interpret sample (grid / mesh / graph / points).\n- provenance: lineage (uid, source, query, tiling, time span, etc.)\n- extras: extensibility (feature caches, mesh labels, sdf, etc.)",
             "class_vars": [
               "domain",
               "extras",
@@ -860,9 +860,9 @@
         ]
       }
     },
-    "pinneaple_data/prefetch_adaptive.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/prefetch_adaptive.py",
+    "pinneapple_data/prefetch_adaptive.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/prefetch_adaptive.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -1029,9 +1029,9 @@
         ]
       }
     },
-    "pinneaple_data/serialization.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/serialization.py",
+    "pinneapple_data/serialization.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/serialization.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -1169,9 +1169,9 @@
         "classes": []
       }
     },
-    "pinneaple_data/upd_dataset.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/upd_dataset.py",
+    "pinneapple_data/upd_dataset.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/upd_dataset.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -1361,9 +1361,9 @@
         ]
       }
     },
-    "pinneaple_data/validators.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/validators.py",
+    "pinneapple_data/validators.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/validators.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -1461,9 +1461,9 @@
         ]
       }
     },
-    "pinneaple_data/zarr_cached_store.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/zarr_cached_store.py",
+    "pinneapple_data/zarr_cached_store.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/zarr_cached_store.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -1621,9 +1621,9 @@
         ]
       }
     },
-    "pinneaple_data/zarr_cached_store_bytes.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/zarr_cached_store_bytes.py",
+    "pinneapple_data/zarr_cached_store_bytes.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/zarr_cached_store_bytes.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -1781,9 +1781,9 @@
         ]
       }
     },
-    "pinneaple_data/zarr_iterable.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/zarr_iterable.py",
+    "pinneapple_data/zarr_iterable.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/zarr_iterable.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -1901,9 +1901,9 @@
         ]
       }
     },
-    "pinneaple_data/zarr_prefetch.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/zarr_prefetch.py",
+    "pinneapple_data/zarr_prefetch.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/zarr_prefetch.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -2058,9 +2058,9 @@
         ]
       }
     },
-    "pinneaple_data/zarr_shards.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/zarr_shards.py",
+    "pinneapple_data/zarr_shards.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/zarr_shards.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -2190,9 +2190,9 @@
         ]
       }
     },
-    "pinneaple_data/zarr_shard_iterable.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/zarr_shard_iterable.py",
+    "pinneapple_data/zarr_shard_iterable.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/zarr_shard_iterable.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -2366,9 +2366,9 @@
         ]
       }
     },
-    "pinneaple_data/zarr_store.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/zarr_store.py",
+    "pinneapple_data/zarr_store.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/zarr_store.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -2556,9 +2556,9 @@
         ]
       }
     },
-    "pinneaple_data/__init__.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/__init__.py",
+    "pinneapple_data/__init__.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -2795,9 +2795,9 @@
         "classes": []
       }
     },
-    "pinneaple_data/adapters/geom_adapter.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/adapters/geom_adapter.py",
+    "pinneapple_data/adapters/geom_adapter.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/adapters/geom_adapter.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -2882,7 +2882,7 @@
           {
             "name": "load_geometry_asset",
             "signature": "(geom, *, options)",
-            "doc": "Loads/creates a GeometryAsset using pinneaple_geom.\n\nReturns:\n  GeometryAsset (opaque here; defined in pinneaple_geom)\n\nSupported inputs:\n  - Path/str: inferred spec by file extension\n  - dict: GeometrySpec-like\n  - GeometryAsset: returned as-is",
+            "doc": "Loads/creates a GeometryAsset using pinneapple_geom.\n\nReturns:\n  GeometryAsset (opaque here; defined in pinneapple_geom)\n\nSupported inputs:\n  - Path/str: inferred spec by file extension\n  - dict: GeometrySpec-like\n  - GeometryAsset: returned as-is",
             "decorators": []
           },
           {
@@ -2896,7 +2896,7 @@
           {
             "name": "GeometryLoadOptions",
             "bases": [],
-            "doc": "Options for geometry/mesh loading and basic processing.\n\nThis MVP focuses on:\n  - fast load (trimesh/meshio)\n  - basic transforms\n  - optional simplification hooks (for later)\n\nNote: operations such as remeshing/decimation are expected to live in pinneaple_geom.ops.",
+            "doc": "Options for geometry/mesh loading and basic processing.\n\nThis MVP focuses on:\n  - fast load (trimesh/meshio)\n  - basic transforms\n  - optional simplification hooks (for later)\n\nNote: operations such as remeshing/decimation are expected to live in pinneapple_geom.ops.",
             "class_vars": [
               "boundary_labels",
               "compute_normals",
@@ -2910,9 +2910,9 @@
         ]
       }
     },
-    "pinneaple_data/adapters/upd_adapter.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/adapters/upd_adapter.py",
+    "pinneapple_data/adapters/upd_adapter.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/adapters/upd_adapter.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -2998,7 +2998,7 @@
           {
             "name": "upd_to_physical_sample",
             "signature": "(upd, *, schema_override, provenance_extra)",
-            "doc": "Creates a PhysicalSample from a UPD shard (Zarr+JSON).\n\nRequires `pinneaple_data.physical_sample.PhysicalSample` to exist.\n\nReturns:\n  PhysicalSample\n\nIf you haven't created PhysicalSample yet, this will raise ImportError.",
+            "doc": "Creates a PhysicalSample from a UPD shard (Zarr+JSON).\n\nRequires `pinneapple_data.physical_sample.PhysicalSample` to exist.\n\nReturns:\n  PhysicalSample\n\nIf you haven't created PhysicalSample yet, this will raise ImportError.",
             "decorators": []
           },
           {
@@ -3011,9 +3011,9 @@
         "classes": []
       }
     },
-    "pinneaple_data/adapters/__init__.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/adapters/__init__.py",
+    "pinneapple_data/adapters/__init__.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/adapters/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -3068,9 +3068,9 @@
         "classes": []
       }
     },
-    "pinneaple_data/synth/base.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/base.py",
+    "pinneapple_data/synth/base.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -3162,9 +3162,9 @@
         ]
       }
     },
-    "pinneaple_data/synth/curvefit.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/curvefit.py",
+    "pinneapple_data/synth/curvefit.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/curvefit.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -3258,9 +3258,9 @@
         ]
       }
     },
-    "pinneaple_data/synth/distributions.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/distributions.py",
+    "pinneapple_data/synth/distributions.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/distributions.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -3357,9 +3357,9 @@
         ]
       }
     },
-    "pinneaple_data/synth/geometry.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/geometry.py",
+    "pinneapple_data/synth/geometry.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/geometry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -3482,9 +3482,9 @@
         ]
       }
     },
-    "pinneaple_data/synth/geometry_cadquery.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/geometry_cadquery.py",
+    "pinneapple_data/synth/geometry_cadquery.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/geometry_cadquery.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -3654,9 +3654,9 @@
         ]
       }
     },
-    "pinneaple_data/synth/images.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/images.py",
+    "pinneapple_data/synth/images.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/images.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -3767,9 +3767,9 @@
         ]
       }
     },
-    "pinneaple_data/synth/pde.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/pde.py",
+    "pinneapple_data/synth/pde.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/pde.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -3853,7 +3853,7 @@
           {
             "name": "SimplePhysicalSample",
             "bases": [],
-            "doc": "MVP duck-typed PhysicalSample to keep synth module usable standalone.\nReplace with your pinneaple_data.physical_sample.PhysicalSample later.",
+            "doc": "MVP duck-typed PhysicalSample to keep synth module usable standalone.\nReplace with your pinneapple_data.physical_sample.PhysicalSample later.",
             "class_vars": [
               "coords",
               "fields",
@@ -3890,9 +3890,9 @@
         ]
       }
     },
-    "pinneaple_data/synth/pde_symbolic.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/pde_symbolic.py",
+    "pinneapple_data/synth/pde_symbolic.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/pde_symbolic.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -4029,9 +4029,9 @@
         ]
       }
     },
-    "pinneaple_data/synth/registry.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/registry.py",
+    "pinneapple_data/synth/registry.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -4191,9 +4191,9 @@
         ]
       }
     },
-    "pinneaple_data/synth/sample_adapter.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/sample_adapter.py",
+    "pinneapple_data/synth/sample_adapter.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/sample_adapter.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -4272,7 +4272,7 @@
           {
             "name": "to_physical_sample",
             "signature": "(sample_like, *, device, dtype)",
-            "doc": "Best-effort conversion:\n  - if already a PhysicalSample -> return\n  - if duck-typed {fields, coords, meta} -> convert\n  - else if dict with keys -> interpret\n\nReturns:\n  - pinneaple_data.physical_sample.PhysicalSample if available\n  - else returns a minimal dataclass fallback (SynthPhysicalSample)",
+            "doc": "Best-effort conversion:\n  - if already a PhysicalSample -> return\n  - if duck-typed {fields, coords, meta} -> convert\n  - else if dict with keys -> interpret\n\nReturns:\n  - pinneapple_data.physical_sample.PhysicalSample if available\n  - else returns a minimal dataclass fallback (SynthPhysicalSample)",
             "decorators": []
           }
         ],
@@ -4293,9 +4293,9 @@
         ]
       }
     },
-    "pinneaple_data/synth/__init__.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/__init__.py",
+    "pinneapple_data/synth/__init__.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -4438,9 +4438,9 @@
         "classes": []
       }
     },
-    "pinneaple_data/synth/operators/masks.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/operators/masks.py",
+    "pinneapple_data/synth/operators/masks.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/operators/masks.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -4461,9 +4461,9 @@
         "classes": []
       }
     },
-    "pinneaple_data/synth/operators/noise.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/operators/noise.py",
+    "pinneapple_data/synth/operators/noise.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/operators/noise.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -4484,9 +4484,9 @@
         "classes": []
       }
     },
-    "pinneaple_data/synth/operators/transforms.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/operators/transforms.py",
+    "pinneapple_data/synth/operators/transforms.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/operators/transforms.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -4507,9 +4507,9 @@
         "classes": []
       }
     },
-    "pinneaple_data/synth/operators/__init__.py": {
-      "package": "pinneaple_data",
-      "path": "pinneaple_data/synth/operators/__init__.py",
+    "pinneapple_data/synth/operators/__init__.py": {
+      "package": "pinneapple_data",
+      "path": "pinneapple_data/synth/operators/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -4551,11 +4551,11 @@
         "classes": []
       }
     },
-    "pinneaple_geom/__init__.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/__init__.py",
+    "pinneapple_geom/__init__.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/__init__.py",
       "parsed": {
-        "doc": "pinneaple_geom\n\nGeometry + mesh utilities for Pinneaple.\n\nMVP-1 focus (trimesh + meshio):\n- Load geometry files (STL/OBJ/PLY/GLTF/...)\n- Load mesh files (VTK/VTU/MSH/...)\n- Generate simple parametric primitives -> meshes\n- Apply fast transforms (scale/translate/rotate)\n- Provide surface sampling hooks for PINN collocation/BC points\n\nDesign principles:\n- Keep `pinneaple_geom` independent from `pinneaple_pdb` (ETL) and `pinneaple_pinn` (loss/models)\n- Expose a small stable API surface from `__init__`",
+        "doc": "pinneapple_geom\n\nGeometry + mesh utilities for Pinneapple.\n\nMVP-1 focus (trimesh + meshio):\n- Load geometry files (STL/OBJ/PLY/GLTF/...)\n- Load mesh files (VTK/VTU/MSH/...)\n- Generate simple parametric primitives -> meshes\n- Apply fast transforms (scale/translate/rotate)\n- Provide surface sampling hooks for PINN collocation/BC points\n\nDesign principles:\n- Keep `pinneapple_geom` independent from `pinneapple_pdb` (ETL) and `pinneapple_pinn` (loss/models)\n- Expose a small stable API surface from `__init__`",
         "imports": [
           {
             "type": "from",
@@ -4603,9 +4603,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/core/geometry.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/core/geometry.py",
+    "pinneapple_geom/core/geometry.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/core/geometry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -4775,7 +4775,7 @@
           {
             "name": "GeometryAsset",
             "bases": [],
-            "doc": "Unified geometry container used across Pinneaple.\n\nHolds a MeshData + metadata and optional boundary groups.\n\nAttributes:\n  - mesh: MeshData (expects .vertices (N,3), .faces (M,3))\n  - bounds: (min_xyz, max_xyz)\n  - units: optional physical units (e.g. meters)\n  - boundary_groups: semantic labels (inlet/outlet/wall/etc.)\n  - meta: free metadata (source, transforms applied, hashes)\n\nImprovements:\n  - recompute bounds / normalization\n  - transforms (translate/scale/affine 4x4)\n  - lightweight geometry fingerprints (verts/faces)\n  - optional normal computation (face/vertex)\n  - boundary group convenience helpers\n  - safe \"manifest\" summary for storage (e.g., Zarr index)",
+            "doc": "Unified geometry container used across Pinneapple.\n\nHolds a MeshData + metadata and optional boundary groups.\n\nAttributes:\n  - mesh: MeshData (expects .vertices (N,3), .faces (M,3))\n  - bounds: (min_xyz, max_xyz)\n  - units: optional physical units (e.g. meters)\n  - boundary_groups: semantic labels (inlet/outlet/wall/etc.)\n  - meta: free metadata (source, transforms applied, hashes)\n\nImprovements:\n  - recompute bounds / normalization\n  - transforms (translate/scale/affine 4x4)\n  - lightweight geometry fingerprints (verts/faces)\n  - optional normal computation (face/vertex)\n  - boundary group convenience helpers\n  - safe \"manifest\" summary for storage (e.g., Zarr index)",
             "class_vars": [
               "boundary_groups",
               "bounds",
@@ -4893,9 +4893,9 @@
         ]
       }
     },
-    "pinneaple_geom/core/mesh.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/core/mesh.py",
+    "pinneapple_geom/core/mesh.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/core/mesh.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -5150,9 +5150,9 @@
         ]
       }
     },
-    "pinneaple_geom/core/registry.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/core/registry.py",
+    "pinneapple_geom/core/registry.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/core/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -5291,7 +5291,7 @@
           {
             "name": "build_geometry_asset",
             "signature": "(spec, *, options)",
-            "doc": "Build a GeometryAsset from a GeometrySpec or spec dict.\n\nSupported kinds:\n  - file       (STL/OBJ/PLY/GLTF/OFF) via trimesh\n  - mesh_file  (VTK/VTU/MSH/...) via meshio\n  - primitive  (delegated to pinneaple_geom.gen.primitives)\n\nImprovements:\n  - spec.validate() when available\n  - robust meta (fingerprints, transforms applied)\n  - optional normalization/centering/hygiene\n  - normals handling\n  - boundary group helpers passthrough",
+            "doc": "Build a GeometryAsset from a GeometrySpec or spec dict.\n\nSupported kinds:\n  - file       (STL/OBJ/PLY/GLTF/OFF) via trimesh\n  - mesh_file  (VTK/VTU/MSH/...) via meshio\n  - primitive  (delegated to pinneapple_geom.gen.primitives)\n\nImprovements:\n  - spec.validate() when available\n  - robust meta (fingerprints, transforms applied)\n  - optional normalization/centering/hygiene\n  - normals handling\n  - boundary group helpers passthrough",
             "decorators": []
           },
           {
@@ -5304,9 +5304,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/core/__init__.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/core/__init__.py",
+    "pinneapple_geom/core/__init__.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/core/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -5356,9 +5356,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/gen/cadquery_gen.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/gen/cadquery_gen.py",
+    "pinneapple_geom/gen/cadquery_gen.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/gen/cadquery_gen.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -5437,7 +5437,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.core.mesh",
+            "module": "pinneapple_geom.core.mesh",
             "level": 0,
             "names": [
               {
@@ -5583,9 +5583,9 @@
         ]
       }
     },
-    "pinneaple_geom/gen/primitives.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/gen/primitives.py",
+    "pinneapple_geom/gen/primitives.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/gen/primitives.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -5653,7 +5653,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.core.mesh",
+            "module": "pinneapple_geom.core.mesh",
             "level": 0,
             "names": [
               {
@@ -5841,9 +5841,9 @@
         ]
       }
     },
-    "pinneaple_geom/gen/__init__.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/gen/__init__.py",
+    "pinneapple_geom/gen/__init__.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/gen/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -5886,9 +5886,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/io/cadquery_bridge.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/io/cadquery_bridge.py",
+    "pinneapple_geom/io/cadquery_bridge.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/io/cadquery_bridge.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -5929,7 +5929,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_data.physical_sample",
+            "module": "pinneapple_data.physical_sample",
             "level": 0,
             "names": [
               {
@@ -5950,9 +5950,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/io/meshio_bridge.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/io/meshio_bridge.py",
+    "pinneapple_geom/io/meshio_bridge.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/io/meshio_bridge.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6021,7 +6021,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.core.mesh",
+            "module": "pinneapple_geom.core.mesh",
             "level": 0,
             "names": [
               {
@@ -6032,7 +6032,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_data.physical_sample",
+            "module": "pinneapple_data.physical_sample",
             "level": 0,
             "names": [
               {
@@ -6065,9 +6065,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/io/openfoam.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/io/openfoam.py",
+    "pinneapple_geom/io/openfoam.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/io/openfoam.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6131,7 +6131,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_data.physical_sample",
+            "module": "pinneapple_data.physical_sample",
             "level": 0,
             "names": [
               {
@@ -6170,9 +6170,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/io/stl.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/io/stl.py",
+    "pinneapple_geom/io/stl.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/io/stl.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6225,7 +6225,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.core.mesh",
+            "module": "pinneapple_geom.core.mesh",
             "level": 0,
             "names": [
               {
@@ -6236,7 +6236,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.io.trimesh_bridge",
+            "module": "pinneapple_geom.io.trimesh_bridge",
             "level": 0,
             "names": [
               {
@@ -6247,7 +6247,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_data.physical_sample",
+            "module": "pinneapple_data.physical_sample",
             "level": 0,
             "names": [
               {
@@ -6274,9 +6274,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/io/trimesh_bridge.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/io/trimesh_bridge.py",
+    "pinneapple_geom/io/trimesh_bridge.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/io/trimesh_bridge.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6324,7 +6324,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.core.mesh",
+            "module": "pinneapple_geom.core.mesh",
             "level": 0,
             "names": [
               {
@@ -6339,7 +6339,7 @@
           {
             "name": "TrimeshBridge",
             "bases": [],
-            "doc": "Adapter between trimesh.Trimesh and Pinneaple MeshData.\n\nResponsibilities:\n  - Load meshes from disk\n  - Repair / clean meshes\n  - Convert to MeshData (internal representation)",
+            "doc": "Adapter between trimesh.Trimesh and Pinneapple MeshData.\n\nResponsibilities:\n  - Load meshes from disk\n  - Repair / clean meshes\n  - Convert to MeshData (internal representation)",
             "class_vars": [],
             "methods": [
               {
@@ -6371,9 +6371,9 @@
         ]
       }
     },
-    "pinneaple_geom/io/__init__.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/io/__init__.py",
+    "pinneapple_geom/io/__init__.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/io/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6449,9 +6449,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/ops/features.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/ops/features.py",
+    "pinneapple_geom/ops/features.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/ops/features.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6484,7 +6484,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.core.mesh",
+            "module": "pinneapple_geom.core.mesh",
             "level": 0,
             "names": [
               {
@@ -6523,9 +6523,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/ops/remesh.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/ops/remesh.py",
+    "pinneapple_geom/ops/remesh.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/ops/remesh.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6558,7 +6558,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.core.mesh",
+            "module": "pinneapple_geom.core.mesh",
             "level": 0,
             "names": [
               {
@@ -6579,9 +6579,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/ops/repair.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/ops/repair.py",
+    "pinneapple_geom/ops/repair.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/ops/repair.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6603,7 +6603,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.core.mesh",
+            "module": "pinneapple_geom.core.mesh",
             "level": 0,
             "names": [
               {
@@ -6624,9 +6624,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/ops/simplify.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/ops/simplify.py",
+    "pinneapple_geom/ops/simplify.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/ops/simplify.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6659,7 +6659,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.core.mesh",
+            "module": "pinneapple_geom.core.mesh",
             "level": 0,
             "names": [
               {
@@ -6704,9 +6704,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/ops/__init__.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/ops/__init__.py",
+    "pinneapple_geom/ops/__init__.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/ops/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6771,9 +6771,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/sample/barycentric.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/sample/barycentric.py",
+    "pinneapple_geom/sample/barycentric.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/sample/barycentric.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6832,9 +6832,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/sample/grids.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/sample/grids.py",
+    "pinneapple_geom/sample/grids.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/sample/grids.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6887,9 +6887,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/sample/points.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/sample/points.py",
+    "pinneapple_geom/sample/points.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/sample/points.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -6926,7 +6926,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.core.mesh",
+            "module": "pinneapple_geom.core.mesh",
             "level": 0,
             "names": [
               {
@@ -6937,7 +6937,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_geom.ops.features",
+            "module": "pinneapple_geom.ops.features",
             "level": 0,
             "names": [
               {
@@ -6985,9 +6985,9 @@
         "classes": []
       }
     },
-    "pinneaple_geom/sample/__init__.py": {
-      "package": "pinneaple_geom",
-      "path": "pinneaple_geom/sample/__init__.py",
+    "pinneapple_geom/sample/__init__.py": {
+      "package": "pinneapple_geom",
+      "path": "pinneapple_geom/sample/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -7045,9 +7045,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/base.py",
+    "pinneapple_models/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -7121,7 +7121,7 @@
             "bases": [
               "nn.Module"
             ],
-            "doc": "Unified base class for all Pinneaple models.",
+            "doc": "Unified base class for all Pinneapple models.",
             "class_vars": [
               "family",
               "name"
@@ -7138,9 +7138,9 @@
         ]
       }
     },
-    "pinneaple_models/catalog.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/catalog.py",
+    "pinneapple_models/catalog.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/catalog.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -7324,9 +7324,9 @@
         ]
       }
     },
-    "pinneaple_models/register_all.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/register_all.py",
+    "pinneapple_models/register_all.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/register_all.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -7353,9 +7353,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/registry.py",
+    "pinneapple_models/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -7434,7 +7434,7 @@
           {
             "name": "ModelRegistry",
             "bases": [],
-            "doc": "Central registry for all Pinneaple models.",
+            "doc": "Central registry for all Pinneapple models.",
             "class_vars": [
               "_REGISTRY"
             ],
@@ -7484,9 +7484,9 @@
         ]
       }
     },
-    "pinneaple_models/_registry_bridge.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/_registry_bridge.py",
+    "pinneapple_models/_registry_bridge.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/_registry_bridge.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -7562,9 +7562,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/__init__.py",
+    "pinneapple_models/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -7588,9 +7588,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/autoencoders/ae_2d.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/autoencoders/ae_2d.py",
+    "pinneapple_models/autoencoders/ae_2d.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/autoencoders/ae_2d.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -7680,9 +7680,9 @@
         ]
       }
     },
-    "pinneaple_models/autoencoders/ae_rom_hybrid.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/autoencoders/ae_rom_hybrid.py",
+    "pinneapple_models/autoencoders/ae_rom_hybrid.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/autoencoders/ae_rom_hybrid.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -7823,9 +7823,9 @@
         ]
       }
     },
-    "pinneaple_models/autoencoders/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/autoencoders/base.py",
+    "pinneapple_models/autoencoders/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/autoencoders/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -7904,7 +7904,7 @@
             "bases": [
               "nn.Module"
             ],
-            "doc": "Base class for all autoencoders in Pinneaple.\n\nContract:\n  - encode(x) -> z\n  - decode(z) -> x_hat\n  - forward(x) -> AEOutput\n  - loss(output, x) -> dict of losses (recon + model-specific)",
+            "doc": "Base class for all autoencoders in Pinneapple.\n\nContract:\n  - encode(x) -> z\n  - decode(z) -> x_hat\n  - forward(x) -> AEOutput\n  - loss(output, x) -> dict of losses (recon + model-specific)",
             "class_vars": [],
             "methods": [
               {
@@ -7942,9 +7942,9 @@
         ]
       }
     },
-    "pinneaple_models/autoencoders/dense_ae.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/autoencoders/dense_ae.py",
+    "pinneapple_models/autoencoders/dense_ae.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/autoencoders/dense_ae.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -8047,9 +8047,9 @@
         ]
       }
     },
-    "pinneaple_models/autoencoders/kae.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/autoencoders/kae.py",
+    "pinneapple_models/autoencoders/kae.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/autoencoders/kae.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -8190,9 +8190,9 @@
         ]
       }
     },
-    "pinneaple_models/autoencoders/koopman_pi_ae.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/autoencoders/koopman_pi_ae.py",
+    "pinneapple_models/autoencoders/koopman_pi_ae.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/autoencoders/koopman_pi_ae.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -8338,9 +8338,9 @@
         ]
       }
     },
-    "pinneaple_models/autoencoders/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/autoencoders/registry.py",
+    "pinneapple_models/autoencoders/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/autoencoders/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -8509,9 +8509,9 @@
         ]
       }
     },
-    "pinneaple_models/autoencoders/vae.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/autoencoders/vae.py",
+    "pinneapple_models/autoencoders/vae.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/autoencoders/vae.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -8633,9 +8633,9 @@
         ]
       }
     },
-    "pinneaple_models/autoencoders/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/autoencoders/__init__.py",
+    "pinneapple_models/autoencoders/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/autoencoders/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -8670,9 +8670,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/classical_ts/arima.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/classical_ts/arima.py",
+    "pinneapple_models/classical_ts/arima.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/classical_ts/arima.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -8813,9 +8813,9 @@
         ]
       }
     },
-    "pinneaple_models/classical_ts/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/classical_ts/base.py",
+    "pinneapple_models/classical_ts/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/classical_ts/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -8911,9 +8911,9 @@
         ]
       }
     },
-    "pinneaple_models/classical_ts/ekf.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/classical_ts/ekf.py",
+    "pinneapple_models/classical_ts/ekf.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/classical_ts/ekf.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -8999,9 +8999,9 @@
         ]
       }
     },
-    "pinneaple_models/classical_ts/enkf.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/classical_ts/enkf.py",
+    "pinneapple_models/classical_ts/enkf.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/classical_ts/enkf.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -9087,9 +9087,9 @@
         ]
       }
     },
-    "pinneaple_models/classical_ts/kalman.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/classical_ts/kalman.py",
+    "pinneapple_models/classical_ts/kalman.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/classical_ts/kalman.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -9176,9 +9176,9 @@
         ]
       }
     },
-    "pinneaple_models/classical_ts/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/classical_ts/registry.py",
+    "pinneapple_models/classical_ts/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/classical_ts/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -9354,9 +9354,9 @@
         ]
       }
     },
-    "pinneaple_models/classical_ts/tcn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/classical_ts/tcn.py",
+    "pinneapple_models/classical_ts/tcn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/classical_ts/tcn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -9492,9 +9492,9 @@
         ]
       }
     },
-    "pinneaple_models/classical_ts/ukf.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/classical_ts/ukf.py",
+    "pinneapple_models/classical_ts/ukf.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/classical_ts/ukf.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -9600,9 +9600,9 @@
         ]
       }
     },
-    "pinneaple_models/classical_ts/var.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/classical_ts/var.py",
+    "pinneapple_models/classical_ts/var.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/classical_ts/var.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -9721,9 +9721,9 @@
         ]
       }
     },
-    "pinneaple_models/classical_ts/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/classical_ts/__init__.py",
+    "pinneapple_models/classical_ts/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/classical_ts/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -9758,9 +9758,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/continuous/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/base.py",
+    "pinneapple_models/continuous/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -9864,9 +9864,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/bayesian_rnn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/bayesian_rnn.py",
+    "pinneapple_models/continuous/bayesian_rnn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/bayesian_rnn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -9995,9 +9995,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/deep_state_space.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/deep_state_space.py",
+    "pinneapple_models/continuous/deep_state_space.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/deep_state_space.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -10131,9 +10131,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/hamiltonian.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/hamiltonian.py",
+    "pinneapple_models/continuous/hamiltonian.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/hamiltonian.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -10216,9 +10216,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/latent_ode.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/latent_ode.py",
+    "pinneapple_models/continuous/latent_ode.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/latent_ode.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -10385,9 +10385,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/neural_cde.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/neural_cde.py",
+    "pinneapple_models/continuous/neural_cde.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/neural_cde.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -10484,9 +10484,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/neural_gp.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/neural_gp.py",
+    "pinneapple_models/continuous/neural_gp.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/neural_gp.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -10633,9 +10633,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/neural_ode.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/neural_ode.py",
+    "pinneapple_models/continuous/neural_ode.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/neural_ode.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -10735,9 +10735,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/neural_sde.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/neural_sde.py",
+    "pinneapple_models/continuous/neural_sde.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/neural_sde.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -10859,9 +10859,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/ode_rnn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/ode_rnn.py",
+    "pinneapple_models/continuous/ode_rnn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/ode_rnn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -10955,9 +10955,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/registry.py",
+    "pinneapple_models/continuous/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -11177,9 +11177,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/symplectic_ode.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/symplectic_ode.py",
+    "pinneapple_models/continuous/symplectic_ode.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/symplectic_ode.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -11275,9 +11275,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/symplectic_rnn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/symplectic_rnn.py",
+    "pinneapple_models/continuous/symplectic_rnn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/symplectic_rnn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -11372,9 +11372,9 @@
         ]
       }
     },
-    "pinneaple_models/continuous/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/continuous/__init__.py",
+    "pinneapple_models/continuous/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/continuous/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -11409,9 +11409,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/convolutions/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/convolutions/base.py",
+    "pinneapple_models/convolutions/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/convolutions/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -11472,7 +11472,7 @@
           {
             "name": "ConvOutput",
             "bases": [],
-            "doc": "Standard output for convolutional models in Pinneaple.",
+            "doc": "Standard output for convolutional models in Pinneapple.",
             "class_vars": [
               "extras",
               "losses",
@@ -11507,9 +11507,9 @@
         ]
       }
     },
-    "pinneaple_models/convolutions/conv1d.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/convolutions/conv1d.py",
+    "pinneapple_models/convolutions/conv1d.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/convolutions/conv1d.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -11596,9 +11596,9 @@
         ]
       }
     },
-    "pinneaple_models/convolutions/conv2d.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/convolutions/conv2d.py",
+    "pinneapple_models/convolutions/conv2d.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/convolutions/conv2d.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -11681,9 +11681,9 @@
         ]
       }
     },
-    "pinneaple_models/convolutions/conv3d.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/convolutions/conv3d.py",
+    "pinneapple_models/convolutions/conv3d.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/convolutions/conv3d.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -11766,9 +11766,9 @@
         ]
       }
     },
-    "pinneaple_models/convolutions/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/convolutions/registry.py",
+    "pinneapple_models/convolutions/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/convolutions/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -11900,9 +11900,9 @@
         ]
       }
     },
-    "pinneaple_models/convolutions/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/convolutions/__init__.py",
+    "pinneapple_models/convolutions/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/convolutions/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -11937,9 +11937,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/graphnn/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/graphnn/base.py",
+    "pinneapple_models/graphnn/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/graphnn/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12048,9 +12048,9 @@
         ]
       }
     },
-    "pinneaple_models/graphnn/equivariant_gnn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/graphnn/equivariant_gnn.py",
+    "pinneapple_models/graphnn/equivariant_gnn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/graphnn/equivariant_gnn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12148,9 +12148,9 @@
         ]
       }
     },
-    "pinneaple_models/graphnn/gnn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/graphnn/gnn.py",
+    "pinneapple_models/graphnn/gnn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/graphnn/gnn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12248,9 +12248,9 @@
         ]
       }
     },
-    "pinneaple_models/graphnn/gnn_ode.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/graphnn/gnn_ode.py",
+    "pinneapple_models/graphnn/gnn_ode.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/graphnn/gnn_ode.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12359,9 +12359,9 @@
         ]
       }
     },
-    "pinneaple_models/graphnn/graphcast.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/graphnn/graphcast.py",
+    "pinneapple_models/graphnn/graphcast.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/graphnn/graphcast.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12481,9 +12481,9 @@
         ]
       }
     },
-    "pinneaple_models/graphnn/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/graphnn/registry.py",
+    "pinneapple_models/graphnn/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/graphnn/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12637,9 +12637,9 @@
         ]
       }
     },
-    "pinneaple_models/graphnn/spatiotemporal_gnn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/graphnn/spatiotemporal_gnn.py",
+    "pinneapple_models/graphnn/spatiotemporal_gnn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/graphnn/spatiotemporal_gnn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12737,9 +12737,9 @@
         ]
       }
     },
-    "pinneaple_models/graphnn/utils.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/graphnn/utils.py",
+    "pinneapple_models/graphnn/utils.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/graphnn/utils.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12771,9 +12771,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/graphnn/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/graphnn/__init__.py",
+    "pinneapple_models/graphnn/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/graphnn/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12808,9 +12808,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/neural_operators/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/neural_operators/base.py",
+    "pinneapple_models/neural_operators/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/neural_operators/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12906,9 +12906,9 @@
         ]
       }
     },
-    "pinneaple_models/neural_operators/deeponet.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/neural_operators/deeponet.py",
+    "pinneapple_models/neural_operators/deeponet.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/neural_operators/deeponet.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -12991,9 +12991,9 @@
         ]
       }
     },
-    "pinneaple_models/neural_operators/fno.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/neural_operators/fno.py",
+    "pinneapple_models/neural_operators/fno.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/neural_operators/fno.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -13098,9 +13098,9 @@
         ]
       }
     },
-    "pinneaple_models/neural_operators/gno.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/neural_operators/gno.py",
+    "pinneapple_models/neural_operators/gno.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/neural_operators/gno.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -13168,9 +13168,9 @@
         ]
       }
     },
-    "pinneaple_models/neural_operators/ms_deeponet.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/neural_operators/ms_deeponet.py",
+    "pinneapple_models/neural_operators/ms_deeponet.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/neural_operators/ms_deeponet.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -13245,9 +13245,9 @@
         ]
       }
     },
-    "pinneaple_models/neural_operators/pino.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/neural_operators/pino.py",
+    "pinneapple_models/neural_operators/pino.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/neural_operators/pino.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -13329,9 +13329,9 @@
         ]
       }
     },
-    "pinneaple_models/neural_operators/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/neural_operators/registry.py",
+    "pinneapple_models/neural_operators/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/neural_operators/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -13496,9 +13496,9 @@
         ]
       }
     },
-    "pinneaple_models/neural_operators/uno.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/neural_operators/uno.py",
+    "pinneapple_models/neural_operators/uno.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/neural_operators/uno.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -13566,9 +13566,9 @@
         ]
       }
     },
-    "pinneaple_models/neural_operators/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/neural_operators/__init__.py",
+    "pinneapple_models/neural_operators/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/neural_operators/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -13603,9 +13603,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/physics_aware/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/physics_aware/base.py",
+    "pinneapple_models/physics_aware/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/physics_aware/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -13697,9 +13697,9 @@
         ]
       }
     },
-    "pinneaple_models/physics_aware/pann.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/physics_aware/pann.py",
+    "pinneapple_models/physics_aware/pann.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/physics_aware/pann.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -13790,9 +13790,9 @@
         ]
       }
     },
-    "pinneaple_models/physics_aware/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/physics_aware/registry.py",
+    "pinneapple_models/physics_aware/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/physics_aware/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -13913,9 +13913,9 @@
         ]
       }
     },
-    "pinneaple_models/physics_aware/spn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/physics_aware/spn.py",
+    "pinneapple_models/physics_aware/spn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/physics_aware/spn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -14002,9 +14002,9 @@
         ]
       }
     },
-    "pinneaple_models/physics_aware/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/physics_aware/__init__.py",
+    "pinneapple_models/physics_aware/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/physics_aware/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -14039,9 +14039,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/pinns/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/base.py",
+    "pinneapple_models/pinns/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -14123,7 +14123,7 @@
             "bases": [
               "nn.Module"
             ],
-            "doc": "Base class for PINN-family models in the catalog.\n\nContract:\n  - forward(*inputs, **kwargs) -> PINNOutput\n  - physics_loss(...) optional hook:\n      can be driven by pinneaple_pinn.factory loss_fn or other physics term.",
+            "doc": "Base class for PINN-family models in the catalog.\n\nContract:\n  - forward(*inputs, **kwargs) -> PINNOutput\n  - physics_loss(...) optional hook:\n      can be driven by pinneapple_pinn.factory loss_fn or other physics term.",
             "class_vars": [],
             "methods": [
               {
@@ -14149,9 +14149,9 @@
         ]
       }
     },
-    "pinneaple_models/pinns/inverse.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/inverse.py",
+    "pinneapple_models/pinns/inverse.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/inverse.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -14297,9 +14297,9 @@
         ]
       }
     },
-    "pinneaple_models/pinns/pielm.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/pielm.py",
+    "pinneapple_models/pinns/pielm.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/pielm.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -14453,9 +14453,9 @@
         ]
       }
     },
-    "pinneaple_models/pinns/pinnsformer.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/pinnsformer.py",
+    "pinneapple_models/pinns/pinnsformer.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/pinnsformer.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -14533,9 +14533,9 @@
         ]
       }
     },
-    "pinneaple_models/pinns/pinn_lstm.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/pinn_lstm.py",
+    "pinneapple_models/pinns/pinn_lstm.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/pinn_lstm.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -14615,9 +14615,9 @@
         ]
       }
     },
-    "pinneaple_models/pinns/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/registry.py",
+    "pinneapple_models/pinns/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -14804,9 +14804,9 @@
         ]
       }
     },
-    "pinneaple_models/pinns/vanilla.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/vanilla.py",
+    "pinneapple_models/pinns/vanilla.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/vanilla.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -14918,9 +14918,9 @@
         ]
       }
     },
-    "pinneaple_models/pinns/vpinn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/vpinn.py",
+    "pinneapple_models/pinns/vpinn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/vpinn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -15023,7 +15023,7 @@
             "bases": [
               "nn.Module"
             ],
-            "doc": "Base class for PINN-family models in the catalog.\n\nContract:\n  - forward(...) -> PINNOutput\n  - physics_loss(...) optional hook:\n      can be driven by pinneaple_pinn.factory loss_fn or other physics term.",
+            "doc": "Base class for PINN-family models in the catalog.\n\nContract:\n  - forward(...) -> PINNOutput\n  - physics_loss(...) optional hook:\n      can be driven by pinneapple_pinn.factory loss_fn or other physics term.",
             "class_vars": [],
             "methods": [
               {
@@ -15095,9 +15095,9 @@
         ]
       }
     },
-    "pinneaple_models/pinns/xpinn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/xpinn.py",
+    "pinneapple_models/pinns/xpinn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/xpinn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -15322,9 +15322,9 @@
         ]
       }
     },
-    "pinneaple_models/pinns/xtfc.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/xtfc.py",
+    "pinneapple_models/pinns/xtfc.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/xtfc.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -15566,9 +15566,9 @@
         ]
       }
     },
-    "pinneaple_models/pinns/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/pinns/__init__.py",
+    "pinneapple_models/pinns/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/pinns/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -15603,9 +15603,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/recurrent/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/recurrent/base.py",
+    "pinneapple_models/recurrent/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/recurrent/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -15666,7 +15666,7 @@
           {
             "name": "RNNOutput",
             "bases": [],
-            "doc": "Standard output for recurrent models in Pinneaple.",
+            "doc": "Standard output for recurrent models in Pinneapple.",
             "class_vars": [
               "extras",
               "losses",
@@ -15701,9 +15701,9 @@
         ]
       }
     },
-    "pinneaple_models/recurrent/gru.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/recurrent/gru.py",
+    "pinneapple_models/recurrent/gru.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/recurrent/gru.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -15808,9 +15808,9 @@
         ]
       }
     },
-    "pinneaple_models/recurrent/lstm.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/recurrent/lstm.py",
+    "pinneapple_models/recurrent/lstm.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/recurrent/lstm.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -15915,9 +15915,9 @@
         ]
       }
     },
-    "pinneaple_models/recurrent/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/recurrent/registry.py",
+    "pinneapple_models/recurrent/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/recurrent/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -16057,9 +16057,9 @@
         ]
       }
     },
-    "pinneaple_models/recurrent/seq2seq.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/recurrent/seq2seq.py",
+    "pinneapple_models/recurrent/seq2seq.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/recurrent/seq2seq.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -16142,9 +16142,9 @@
         ]
       }
     },
-    "pinneaple_models/recurrent/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/recurrent/__init__.py",
+    "pinneapple_models/recurrent/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/recurrent/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -16179,9 +16179,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/reservoir_computing/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/reservoir_computing/base.py",
+    "pinneapple_models/reservoir_computing/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/reservoir_computing/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -16285,9 +16285,9 @@
         ]
       }
     },
-    "pinneaple_models/reservoir_computing/elm.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/reservoir_computing/elm.py",
+    "pinneapple_models/reservoir_computing/elm.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/reservoir_computing/elm.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -16388,9 +16388,9 @@
         ]
       }
     },
-    "pinneaple_models/reservoir_computing/esn.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/reservoir_computing/esn.py",
+    "pinneapple_models/reservoir_computing/esn.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/reservoir_computing/esn.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -16504,9 +16504,9 @@
         ]
       }
     },
-    "pinneaple_models/reservoir_computing/esn_rc.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/reservoir_computing/esn_rc.py",
+    "pinneapple_models/reservoir_computing/esn_rc.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/reservoir_computing/esn_rc.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -16614,9 +16614,9 @@
         ]
       }
     },
-    "pinneaple_models/reservoir_computing/hybrid_rbf.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/reservoir_computing/hybrid_rbf.py",
+    "pinneapple_models/reservoir_computing/hybrid_rbf.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/reservoir_computing/hybrid_rbf.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -16724,9 +16724,9 @@
         ]
       }
     },
-    "pinneaple_models/reservoir_computing/koopman.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/reservoir_computing/koopman.py",
+    "pinneapple_models/reservoir_computing/koopman.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/reservoir_computing/koopman.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -16835,9 +16835,9 @@
         ]
       }
     },
-    "pinneaple_models/reservoir_computing/rbf.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/reservoir_computing/rbf.py",
+    "pinneapple_models/reservoir_computing/rbf.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/reservoir_computing/rbf.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -16934,9 +16934,9 @@
         ]
       }
     },
-    "pinneaple_models/reservoir_computing/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/reservoir_computing/registry.py",
+    "pinneapple_models/reservoir_computing/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/reservoir_computing/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -17101,9 +17101,9 @@
         ]
       }
     },
-    "pinneaple_models/reservoir_computing/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/reservoir_computing/__init__.py",
+    "pinneapple_models/reservoir_computing/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/reservoir_computing/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -17138,9 +17138,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/rom/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/rom/base.py",
+    "pinneapple_models/rom/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/rom/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -17236,9 +17236,9 @@
         ]
       }
     },
-    "pinneaple_models/rom/deep_uq_rom.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/rom/deep_uq_rom.py",
+    "pinneapple_models/rom/deep_uq_rom.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/rom/deep_uq_rom.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -17326,9 +17326,9 @@
         ]
       }
     },
-    "pinneaple_models/rom/dmd.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/rom/dmd.py",
+    "pinneapple_models/rom/dmd.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/rom/dmd.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -17427,9 +17427,9 @@
         ]
       }
     },
-    "pinneaple_models/rom/havok.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/rom/havok.py",
+    "pinneapple_models/rom/havok.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/rom/havok.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -17532,9 +17532,9 @@
         ]
       }
     },
-    "pinneaple_models/rom/opinf.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/rom/opinf.py",
+    "pinneapple_models/rom/opinf.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/rom/opinf.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -17651,9 +17651,9 @@
         ]
       }
     },
-    "pinneaple_models/rom/pod.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/rom/pod.py",
+    "pinneapple_models/rom/pod.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/rom/pod.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -17756,9 +17756,9 @@
         ]
       }
     },
-    "pinneaple_models/rom/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/rom/registry.py",
+    "pinneapple_models/rom/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/rom/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -17923,9 +17923,9 @@
         ]
       }
     },
-    "pinneaple_models/rom/rom_hybrid.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/rom/rom_hybrid.py",
+    "pinneapple_models/rom/rom_hybrid.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/rom/rom_hybrid.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18038,9 +18038,9 @@
         ]
       }
     },
-    "pinneaple_models/rom/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/rom/__init__.py",
+    "pinneapple_models/rom/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/rom/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18075,9 +18075,9 @@
         "classes": []
       }
     },
-    "pinneaple_models/transformers/autoformer.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/transformers/autoformer.py",
+    "pinneapple_models/transformers/autoformer.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/transformers/autoformer.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18182,9 +18182,9 @@
         ]
       }
     },
-    "pinneaple_models/transformers/base.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/transformers/base.py",
+    "pinneapple_models/transformers/base.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/transformers/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18245,7 +18245,7 @@
           {
             "name": "TSOutput",
             "bases": [],
-            "doc": "Standard output for time-series transformers in Pinneaple.",
+            "doc": "Standard output for time-series transformers in Pinneapple.",
             "class_vars": [
               "extras",
               "losses",
@@ -18286,9 +18286,9 @@
         ]
       }
     },
-    "pinneaple_models/transformers/fedformer.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/transformers/fedformer.py",
+    "pinneapple_models/transformers/fedformer.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/transformers/fedformer.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18371,9 +18371,9 @@
         ]
       }
     },
-    "pinneaple_models/transformers/informer.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/transformers/informer.py",
+    "pinneapple_models/transformers/informer.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/transformers/informer.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18456,9 +18456,9 @@
         ]
       }
     },
-    "pinneaple_models/transformers/registry.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/transformers/registry.py",
+    "pinneapple_models/transformers/registry.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/transformers/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18623,9 +18623,9 @@
         ]
       }
     },
-    "pinneaple_models/transformers/tft.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/transformers/tft.py",
+    "pinneapple_models/transformers/tft.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/transformers/tft.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18730,9 +18730,9 @@
         ]
       }
     },
-    "pinneaple_models/transformers/timesnet.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/transformers/timesnet.py",
+    "pinneapple_models/transformers/timesnet.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/transformers/timesnet.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18837,9 +18837,9 @@
         ]
       }
     },
-    "pinneaple_models/transformers/transformer.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/transformers/transformer.py",
+    "pinneapple_models/transformers/transformer.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/transformers/transformer.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18903,9 +18903,9 @@
         ]
       }
     },
-    "pinneaple_models/transformers/__init__.py": {
-      "package": "pinneaple_models",
-      "path": "pinneaple_models/transformers/__init__.py",
+    "pinneapple_models/transformers/__init__.py": {
+      "package": "pinneapple_models",
+      "path": "pinneapple_models/transformers/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -18940,9 +18940,9 @@
         "classes": []
       }
     },
-    "pinneaple_pdb/builder.py": {
-      "package": "pinneaple_pdb",
-      "path": "pinneaple_pdb/builder.py",
+    "pinneapple_pdb/builder.py": {
+      "package": "pinneapple_pdb",
+      "path": "pinneapple_pdb/builder.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -19317,9 +19317,9 @@
         ]
       }
     },
-    "pinneaple_pdb/derived.py": {
-      "package": "pinneaple_pdb",
-      "path": "pinneaple_pdb/derived.py",
+    "pinneapple_pdb/derived.py": {
+      "package": "pinneapple_pdb",
+      "path": "pinneapple_pdb/derived.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -19414,9 +19414,9 @@
         ]
       }
     },
-    "pinneaple_pdb/shard.py": {
-      "package": "pinneaple_pdb",
-      "path": "pinneaple_pdb/shard.py",
+    "pinneapple_pdb/shard.py": {
+      "package": "pinneapple_pdb",
+      "path": "pinneapple_pdb/shard.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -19524,9 +19524,9 @@
         ]
       }
     },
-    "pinneaple_pdb/templates.py": {
-      "package": "pinneaple_pdb",
-      "path": "pinneaple_pdb/templates.py",
+    "pinneapple_pdb/templates.py": {
+      "package": "pinneapple_pdb",
+      "path": "pinneapple_pdb/templates.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -19557,9 +19557,9 @@
         "classes": []
       }
     },
-    "pinneaple_pdb/validate.py": {
-      "package": "pinneaple_pdb",
-      "path": "pinneaple_pdb/validate.py",
+    "pinneapple_pdb/validate.py": {
+      "package": "pinneapple_pdb",
+      "path": "pinneapple_pdb/validate.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -19655,9 +19655,9 @@
         ]
       }
     },
-    "pinneaple_pdb/__init__.py": {
-      "package": "pinneaple_pdb",
-      "path": "pinneaple_pdb/__init__.py",
+    "pinneapple_pdb/__init__.py": {
+      "package": "pinneapple_pdb",
+      "path": "pinneapple_pdb/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -19716,9 +19716,9 @@
         "classes": []
       }
     },
-    "pinneaple_pinn/__init__.py": {
-      "package": "pinneaple_pinn",
-      "path": "pinneaple_pinn/__init__.py",
+    "pinneapple_pinn/__init__.py": {
+      "package": "pinneapple_pinn",
+      "path": "pinneapple_pinn/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [],
@@ -19726,9 +19726,9 @@
         "classes": []
       }
     },
-    "pinneaple_pinn/factory/autodiff.py": {
-      "package": "pinneaple_pinn",
-      "path": "pinneaple_pinn/factory/autodiff.py",
+    "pinneapple_pinn/factory/autodiff.py": {
+      "package": "pinneapple_pinn",
+      "path": "pinneapple_pinn/factory/autodiff.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -19846,9 +19846,9 @@
         ]
       }
     },
-    "pinneaple_pinn/factory/pinn_factory.py": {
-      "package": "pinneaple_pinn",
-      "path": "pinneaple_pinn/factory/pinn_factory.py",
+    "pinneapple_pinn/factory/pinn_factory.py": {
+      "package": "pinneapple_pinn",
+      "path": "pinneapple_pinn/factory/pinn_factory.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -20050,9 +20050,9 @@
         ]
       }
     },
-    "pinneaple_pinn/factory/sympy_backend.py": {
-      "package": "pinneaple_pinn",
-      "path": "pinneaple_pinn/factory/sympy_backend.py",
+    "pinneapple_pinn/factory/sympy_backend.py": {
+      "package": "pinneapple_pinn",
+      "path": "pinneapple_pinn/factory/sympy_backend.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -20180,9 +20180,9 @@
         ]
       }
     },
-    "pinneaple_pinn/factory/__init__.py": {
-      "package": "pinneaple_pinn",
-      "path": "pinneaple_pinn/factory/__init__.py",
+    "pinneapple_pinn/factory/__init__.py": {
+      "package": "pinneapple_pinn",
+      "path": "pinneapple_pinn/factory/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -20244,9 +20244,9 @@
         "classes": []
       }
     },
-    "pinneaple_pinn/io/mappings.py": {
-      "package": "pinneaple_pinn",
-      "path": "pinneaple_pinn/io/mappings.py",
+    "pinneapple_pinn/io/mappings.py": {
+      "package": "pinneapple_pinn",
+      "path": "pinneapple_pinn/io/mappings.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -20408,9 +20408,9 @@
         ]
       }
     },
-    "pinneaple_pinn/io/upd_dataset.py": {
-      "package": "pinneaple_pinn",
-      "path": "pinneaple_pinn/io/upd_dataset.py",
+    "pinneapple_pinn/io/upd_dataset.py": {
+      "package": "pinneapple_pinn",
+      "path": "pinneapple_pinn/io/upd_dataset.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -20647,9 +20647,9 @@
         ]
       }
     },
-    "pinneaple_pinn/io/__init__.py": {
-      "package": "pinneaple_pinn",
-      "path": "pinneaple_pinn/io/__init__.py",
+    "pinneapple_pinn/io/__init__.py": {
+      "package": "pinneapple_pinn",
+      "path": "pinneapple_pinn/io/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -20712,9 +20712,9 @@
         "classes": []
       }
     },
-    "pinneaple_pinn/schemas/schema_adapter.py": {
-      "package": "pinneaple_pinn",
-      "path": "pinneaple_pinn/schemas/schema_adapter.py",
+    "pinneapple_pinn/schemas/schema_adapter.py": {
+      "package": "pinneapple_pinn",
+      "path": "pinneapple_pinn/schemas/schema_adapter.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -20773,7 +20773,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_pinn.factory",
+            "module": "pinneapple_pinn.factory",
             "level": 0,
             "names": [
               {
@@ -20784,7 +20784,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_pinn.io",
+            "module": "pinneapple_pinn.io",
             "level": 0,
             "names": [
               {
@@ -20844,7 +20844,7 @@
           {
             "name": "SchemaAdapter",
             "bases": [],
-            "doc": "Converts a Physical Schema (UPD/Pinneaple) into:\n  - PINNProblemSpec (for PINNFactory)\n  - Optional: SamplingSpec/ConditionSpec (for UPDDataset)\n\nIntended usage:\n  adapter = SchemaAdapter(mapping, options)\n  problem, sampling = adapter.to_pinn_problem(schema, base_sampling=...)",
+            "doc": "Converts a Physical Schema (UPD/Pinneapple) into:\n  - PINNProblemSpec (for PINNFactory)\n  - Optional: SamplingSpec/ConditionSpec (for UPDDataset)\n\nIntended usage:\n  adapter = SchemaAdapter(mapping, options)\n  problem, sampling = adapter.to_pinn_problem(schema, base_sampling=...)",
             "class_vars": [],
             "methods": [
               {
@@ -20894,9 +20894,9 @@
         ]
       }
     },
-    "pinneaple_pinn/schemas/__init__.py": {
-      "package": "pinneaple_pinn",
-      "path": "pinneaple_pinn/schemas/__init__.py",
+    "pinneapple_pinn/schemas/__init__.py": {
+      "package": "pinneapple_pinn",
+      "path": "pinneapple_pinn/schemas/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [],
@@ -20904,9 +20904,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/agent.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/agent.py",
+    "pinneapple_problemdesign/agent.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/agent.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -21144,9 +21144,9 @@
         ]
       }
     },
-    "pinneaple_problemdesign/cli.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/cli.py",
+    "pinneapple_problemdesign/cli.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/cli.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -21195,9 +21195,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/extractor.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/extractor.py",
+    "pinneapple_problemdesign/extractor.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/extractor.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -21280,9 +21280,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/merge.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/merge.py",
+    "pinneapple_problemdesign/merge.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/merge.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -21341,9 +21341,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/policy.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/policy.py",
+    "pinneapple_problemdesign/policy.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/policy.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -21410,9 +21410,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/protocol.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/protocol.py",
+    "pinneapple_problemdesign/protocol.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/protocol.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -21543,9 +21543,9 @@
         ]
       }
     },
-    "pinneaple_problemdesign/schema.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/schema.py",
+    "pinneapple_problemdesign/schema.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/schema.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -21776,7 +21776,7 @@
             "class_vars": [
               "actions",
               "exit_criteria",
-              "pinneaple_modules",
+              "pinneapple_modules",
               "title",
               "why"
             ],
@@ -21809,9 +21809,9 @@
         ]
       }
     },
-    "pinneaple_problemdesign/state.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/state.py",
+    "pinneapple_problemdesign/state.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/state.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -21924,9 +21924,9 @@
         ]
       }
     },
-    "pinneaple_problemdesign/__init__.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/__init__.py",
+    "pinneapple_problemdesign/__init__.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22007,9 +22007,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/elicitation/questions.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/elicitation/questions.py",
+    "pinneapple_problemdesign/elicitation/questions.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/elicitation/questions.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22058,9 +22058,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/elicitation/stages.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/elicitation/stages.py",
+    "pinneapple_problemdesign/elicitation/stages.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/elicitation/stages.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22118,9 +22118,9 @@
         ]
       }
     },
-    "pinneaple_problemdesign/elicitation/validators.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/elicitation/validators.py",
+    "pinneapple_problemdesign/elicitation/validators.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/elicitation/validators.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22177,9 +22177,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/elicitation/__init__.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/elicitation/__init__.py",
+    "pinneapple_problemdesign/elicitation/__init__.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/elicitation/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22225,9 +22225,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/knowledge/mapping.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/knowledge/mapping.py",
+    "pinneapple_problemdesign/knowledge/mapping.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/knowledge/mapping.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22288,9 +22288,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/knowledge/pinneaple_capabilities.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/knowledge/pinneaple_capabilities.py",
+    "pinneapple_problemdesign/knowledge/pinneapple_capabilities.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/knowledge/pinneapple_capabilities.py",
       "parsed": {
         "doc": null,
         "imports": [],
@@ -22298,19 +22298,19 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/knowledge/__init__.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/knowledge/__init__.py",
+    "pinneapple_problemdesign/knowledge/__init__.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/knowledge/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
           {
             "type": "from",
-            "module": "pinneaple_capabilities",
+            "module": "pinneapple_capabilities",
             "level": 1,
             "names": [
               {
-                "name": "PINNEAPLE_CAPABILITIES",
+                "name": "PINNEAPPLE_CAPABILITIES",
                 "as": null
               }
             ]
@@ -22331,9 +22331,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/renderers/report_json.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/renderers/report_json.py",
+    "pinneapple_problemdesign/renderers/report_json.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/renderers/report_json.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22376,9 +22376,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/renderers/report_md.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/renderers/report_md.py",
+    "pinneapple_problemdesign/renderers/report_md.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/renderers/report_md.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22437,9 +22437,9 @@
         "classes": []
       }
     },
-    "pinneaple_problemdesign/renderers/__init__.py": {
-      "package": "pinneaple_problemdesign",
-      "path": "pinneaple_problemdesign/renderers/__init__.py",
+    "pinneapple_problemdesign/renderers/__init__.py": {
+      "package": "pinneapple_problemdesign",
+      "path": "pinneapple_problemdesign/renderers/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22470,9 +22470,9 @@
         "classes": []
       }
     },
-    "pinneaple_solvers/base.py": {
-      "package": "pinneaple_solvers",
-      "path": "pinneaple_solvers/base.py",
+    "pinneapple_solvers/base.py": {
+      "package": "pinneapple_solvers",
+      "path": "pinneapple_solvers/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22568,9 +22568,9 @@
         ]
       }
     },
-    "pinneaple_solvers/fem.py": {
-      "package": "pinneaple_solvers",
-      "path": "pinneaple_solvers/fem.py",
+    "pinneapple_solvers/fem.py": {
+      "package": "pinneapple_solvers",
+      "path": "pinneapple_solvers/fem.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22654,7 +22654,7 @@
               {
                 "name": "forward",
                 "signature": "(self, *, mesh, params)",
-                "doc": "mesh: pinneaple_geom mesh object (or trimesh/meshio wrapper)\nparams: PDE coefficients, source terms, BC definitions, etc.\n\nassemble_fn(mesh, params) -> (K, f)\napply_bcs_fn(K, f, params) -> (K2, f2) optional",
+                "doc": "mesh: pinneapple_geom mesh object (or trimesh/meshio wrapper)\nparams: PDE coefficients, source terms, BC definitions, etc.\n\nassemble_fn(mesh, params) -> (K, f)\napply_bcs_fn(K, f, params) -> (K2, f2) optional",
                 "decorators": []
               }
             ]
@@ -22662,9 +22662,9 @@
         ]
       }
     },
-    "pinneaple_solvers/fft.py": {
-      "package": "pinneaple_solvers",
-      "path": "pinneaple_solvers/fft.py",
+    "pinneapple_solvers/fft.py": {
+      "package": "pinneapple_solvers",
+      "path": "pinneapple_solvers/fft.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22750,9 +22750,9 @@
         ]
       }
     },
-    "pinneaple_solvers/fvm.py": {
-      "package": "pinneaple_solvers",
-      "path": "pinneaple_solvers/fvm.py",
+    "pinneapple_solvers/fvm.py": {
+      "package": "pinneapple_solvers",
+      "path": "pinneapple_solvers/fvm.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22838,9 +22838,9 @@
         ]
       }
     },
-    "pinneaple_solvers/hilbert_huang.py": {
-      "package": "pinneaple_solvers",
-      "path": "pinneaple_solvers/hilbert_huang.py",
+    "pinneapple_solvers/hilbert_huang.py": {
+      "package": "pinneapple_solvers",
+      "path": "pinneapple_solvers/hilbert_huang.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -22955,9 +22955,9 @@
         ]
       }
     },
-    "pinneaple_solvers/registry.py": {
-      "package": "pinneaple_solvers",
-      "path": "pinneaple_solvers/registry.py",
+    "pinneapple_solvers/registry.py": {
+      "package": "pinneapple_solvers",
+      "path": "pinneapple_solvers/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23093,9 +23093,9 @@
         ]
       }
     },
-    "pinneaple_solvers/__init__.py": {
-      "package": "pinneaple_solvers",
-      "path": "pinneaple_solvers/__init__.py",
+    "pinneapple_solvers/__init__.py": {
+      "package": "pinneapple_solvers",
+      "path": "pinneapple_solvers/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23130,9 +23130,9 @@
         "classes": []
       }
     },
-    "pinneaple_solvers/adapters/upd_mesh.py": {
-      "package": "pinneaple_solvers",
-      "path": "pinneaple_solvers/adapters/upd_mesh.py",
+    "pinneapple_solvers/adapters/upd_mesh.py": {
+      "package": "pinneapple_solvers",
+      "path": "pinneapple_solvers/adapters/upd_mesh.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23186,7 +23186,7 @@
           {
             "name": "_extract_mesh_arrays",
             "signature": "(mesh)",
-            "doc": "Duck-typed mesh extraction.\n\nAccepts:\n  - trimesh.Trimesh: mesh.vertices, mesh.faces\n  - meshio.Mesh: mesh.points, mesh.cells_dict (tri/tetra/quad/hex)\n  - Pinneaple mesh wrapper with .vertices/.faces or .points/.cells_dict",
+            "doc": "Duck-typed mesh extraction.\n\nAccepts:\n  - trimesh.Trimesh: mesh.vertices, mesh.faces\n  - meshio.Mesh: mesh.points, mesh.cells_dict (tri/tetra/quad/hex)\n  - Pinneapple mesh wrapper with .vertices/.faces or .points/.cells_dict",
             "decorators": []
           },
           {
@@ -23205,9 +23205,9 @@
         "classes": []
       }
     },
-    "pinneaple_solvers/adapters/upd_signal.py": {
-      "package": "pinneaple_solvers",
-      "path": "pinneaple_solvers/adapters/upd_signal.py",
+    "pinneapple_solvers/adapters/upd_signal.py": {
+      "package": "pinneapple_solvers",
+      "path": "pinneapple_solvers/adapters/upd_signal.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23311,9 +23311,9 @@
         "classes": []
       }
     },
-    "pinneaple_solvers/adapters/__init__.py": {
-      "package": "pinneaple_solvers",
-      "path": "pinneaple_solvers/adapters/__init__.py",
+    "pinneapple_solvers/adapters/__init__.py": {
+      "package": "pinneapple_solvers",
+      "path": "pinneapple_solvers/adapters/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23360,9 +23360,9 @@
         "classes": []
       }
     },
-    "pinneaple_timeseries/base.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/base.py",
+    "pinneapple_timeseries/base.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/base.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23451,9 +23451,9 @@
         ]
       }
     },
-    "pinneaple_timeseries/datamodule.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/datamodule.py",
+    "pinneapple_timeseries/datamodule.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/datamodule.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23535,9 +23535,9 @@
         ]
       }
     },
-    "pinneaple_timeseries/losses.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/losses.py",
+    "pinneapple_timeseries/losses.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/losses.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23558,9 +23558,9 @@
         "classes": []
       }
     },
-    "pinneaple_timeseries/metrics.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/metrics.py",
+    "pinneapple_timeseries/metrics.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/metrics.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23593,9 +23593,9 @@
         "classes": []
       }
     },
-    "pinneaple_timeseries/registry.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/registry.py",
+    "pinneapple_timeseries/registry.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/registry.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23643,7 +23643,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_models.registry",
+            "module": "pinneapple_models.registry",
             "level": 0,
             "names": [
               {
@@ -23721,9 +23721,9 @@
         ]
       }
     },
-    "pinneaple_timeseries/spec.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/spec.py",
+    "pinneapple_timeseries/spec.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/spec.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23756,9 +23756,9 @@
         ]
       }
     },
-    "pinneaple_timeseries/__init__.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/__init__.py",
+    "pinneapple_timeseries/__init__.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23800,9 +23800,9 @@
         "classes": []
       }
     },
-    "pinneaple_timeseries/adapters/shape.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/adapters/shape.py",
+    "pinneapple_timeseries/adapters/shape.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/adapters/shape.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23839,9 +23839,9 @@
         ]
       }
     },
-    "pinneaple_timeseries/adapters/__init__.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/adapters/__init__.py",
+    "pinneapple_timeseries/adapters/__init__.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/adapters/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [],
@@ -23849,9 +23849,9 @@
         "classes": []
       }
     },
-    "pinneaple_timeseries/datasets/windowed.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/datasets/windowed.py",
+    "pinneapple_timeseries/datasets/windowed.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/datasets/windowed.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23916,9 +23916,9 @@
         ]
       }
     },
-    "pinneaple_timeseries/datasets/__init__.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/datasets/__init__.py",
+    "pinneapple_timeseries/datasets/__init__.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/datasets/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [],
@@ -23926,9 +23926,9 @@
         "classes": []
       }
     },
-    "pinneaple_timeseries/models/fno_forecaster.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/models/fno_forecaster.py",
+    "pinneapple_timeseries/models/fno_forecaster.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/models/fno_forecaster.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -23977,7 +23977,7 @@
           },
           {
             "type": "from",
-            "module": "pinneaple_models.neural_operators.fno",
+            "module": "pinneapple_models.neural_operators.fno",
             "level": 0,
             "names": [
               {
@@ -24029,9 +24029,9 @@
         ]
       }
     },
-    "pinneaple_timeseries/models/__init__.py": {
-      "package": "pinneaple_timeseries",
-      "path": "pinneaple_timeseries/models/__init__.py",
+    "pinneapple_timeseries/models/__init__.py": {
+      "package": "pinneapple_timeseries",
+      "path": "pinneapple_timeseries/models/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [],
@@ -24039,9 +24039,9 @@
         "classes": []
       }
     },
-    "pinneaple_train/audit.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/audit.py",
+    "pinneapple_train/audit.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/audit.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -24191,9 +24191,9 @@
         ]
       }
     },
-    "pinneaple_train/callbacks.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/callbacks.py",
+    "pinneapple_train/callbacks.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/callbacks.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -24295,9 +24295,9 @@
         ]
       }
     },
-    "pinneaple_train/checkpoint.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/checkpoint.py",
+    "pinneapple_train/checkpoint.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/checkpoint.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -24384,9 +24384,9 @@
         ]
       }
     },
-    "pinneaple_train/datamodule.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/datamodule.py",
+    "pinneapple_train/datamodule.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/datamodule.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -24523,7 +24523,7 @@
             "bases": [
               "ItemAdapter"
             ],
-            "doc": "Convenience adapter for Pinneaple PhysicalSample-like objects (or any object).\n\nYou pass:\n  x_fn(sample) -> Tensor\n  y_fn(sample) -> Tensor\n  meta_fn(sample) -> dict (optional)",
+            "doc": "Convenience adapter for Pinneapple PhysicalSample-like objects (or any object).\n\nYou pass:\n  x_fn(sample) -> Tensor\n  y_fn(sample) -> Tensor\n  meta_fn(sample) -> dict (optional)",
             "class_vars": [],
             "methods": [
               {
@@ -24627,9 +24627,9 @@
         ]
       }
     },
-    "pinneaple_train/inference.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/inference.py",
+    "pinneapple_train/inference.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/inference.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -24693,9 +24693,9 @@
         "classes": []
       }
     },
-    "pinneaple_train/losses.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/losses.py",
+    "pinneapple_train/losses.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/losses.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -24818,9 +24818,9 @@
         ]
       }
     },
-    "pinneaple_train/metrics.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/metrics.py",
+    "pinneapple_train/metrics.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/metrics.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -25065,9 +25065,9 @@
         ]
       }
     },
-    "pinneaple_train/normalizers.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/normalizers.py",
+    "pinneapple_train/normalizers.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/normalizers.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -25249,9 +25249,9 @@
         ]
       }
     },
-    "pinneaple_train/preprocess.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/preprocess.py",
+    "pinneapple_train/preprocess.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/preprocess.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -25451,9 +25451,9 @@
         ]
       }
     },
-    "pinneaple_train/splits.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/splits.py",
+    "pinneapple_train/splits.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/splits.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -25542,9 +25542,9 @@
         ]
       }
     },
-    "pinneaple_train/trainer.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/trainer.py",
+    "pinneapple_train/trainer.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/trainer.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -25776,9 +25776,9 @@
         ]
       }
     },
-    "pinneaple_train/viz.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/viz.py",
+    "pinneapple_train/viz.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/viz.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -25829,9 +25829,9 @@
         "classes": []
       }
     },
-    "pinneaple_train/__init__.py": {
-      "package": "pinneaple_train",
-      "path": "pinneaple_train/__init__.py",
+    "pinneapple_train/__init__.py": {
+      "package": "pinneapple_train",
+      "path": "pinneapple_train/__init__.py",
       "parsed": {
         "doc": null,
         "imports": [
@@ -26000,5 +26000,5 @@
       }
     }
   },
-  "examples_root": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneaple\\examples"
+  "examples_root": "C:\\Users\\laisc\\OneDrive\\Documents\\pinneapple\\examples"
 }
