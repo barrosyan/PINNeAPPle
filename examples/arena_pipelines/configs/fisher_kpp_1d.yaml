@@ -1,0 +1,49 @@
+# Fisher-KPP 1D — u_t = D u_xx + r u(1 - u) on [0,1] x [0,T]
+# Reaction-diffusion; logistic growth + diffusion; traveling wave solutions
+problem:
+  name: fisher_kpp_1d
+  params:
+    D: 0.01    # diffusion coefficient
+    r: 1.0     # growth rate
+    n_collocation: 4000
+    n_ic: 200
+    n_bc: 200
+    t_end: 5.0
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: SIREN
+    type: siren
+    network:
+      hidden: [64, 64, 64, 64]
+      omega_0: 30.0
+    training:
+      epochs: 8000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: ModifiedMLP
+    type: modified_mlp
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/fisher_kpp_1d/
+  prefix: fisher_kpp
+  save_figures: true
+  save_csv: true

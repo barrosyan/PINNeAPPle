@@ -17,12 +17,12 @@ except Exception:  # pragma: no cover
 
 
 def _require_pinnea_data():
-    """Import pinneaple_data with a helpful error if optional deps are missing."""
+    """Import pinneapple_data with a helpful error if optional deps are missing."""
     try:
-        from pinneaple_data.physical_sample import PhysicalSample
-        from pinneaple_data.zarr_store import UPDZarrStore
-        from pinneaple_data.zarr_prefetch import PrefetchConfig, PrefetchZarrUPDIterable
-        from pinneaple_data.zarr_cached_store_bytes import ZarrByteCacheConfig, CachedUPDZarrStoreBytes
+        from pinneapple_data.physical_sample import PhysicalSample
+        from pinneapple_data.zarr_store import UPDZarrStore
+        from pinneapple_data.zarr_prefetch import PrefetchConfig, PrefetchZarrUPDIterable
+        from pinneapple_data.zarr_cached_store_bytes import ZarrByteCacheConfig, CachedUPDZarrStoreBytes
 
         return PhysicalSample, UPDZarrStore, PrefetchZarrUPDIterable, PrefetchConfig, CachedUPDZarrStoreBytes, ZarrByteCacheConfig
 
@@ -32,7 +32,7 @@ def _require_pinnea_data():
         raise SystemExit(
             "\n".join(
                 [
-                    "[ERROR] Missing dependency while importing pinneaple_data.",
+                    "[ERROR] Missing dependency while importing pinneapple_data.",
                     f"Missing module: {missing}",
                     "",
                     "Fix:",

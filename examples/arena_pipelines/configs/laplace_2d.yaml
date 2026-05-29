@@ -1,0 +1,44 @@
+# Laplace 2D — u_xx + u_yy = 0 on [0,1]^2
+# Classic elliptic BVP; solved with vanilla PINN + SIREN + ModifiedMLP
+problem:
+  name: laplace_2d
+  params:
+    n_collocation: 3000
+    n_bc: 400
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    training:
+      epochs: 3000
+      lr: 1.0e-3
+      optimizer: adam
+
+  - name: SIREN
+    type: siren
+    network:
+      hidden: [64, 64, 64, 64]
+      omega_0: 30.0
+    training:
+      epochs: 3000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: ModifiedMLP
+    type: modified_mlp
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    training:
+      epochs: 3000
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/laplace_2d/
+  prefix: laplace
+  save_figures: true
+  save_csv: true

@@ -1,0 +1,53 @@
+# Black-Scholes 1D — European call option PDE on [S_min, S_max] x [0, T]
+#   V_t + 0.5 σ² S² V_SS + r S V_S - r V = 0
+# Finance PDE; boundary conditions from option payoff
+problem:
+  name: black_scholes_1d
+  params:
+    sigma: 0.25   # volatility
+    r: 0.05       # risk-free rate
+    K: 100.0      # strike price
+    S_min: 20.0   # min stock price (spatial boundary)
+    S_max: 200.0  # max stock price
+    T: 1.0        # time to expiry
+    n_collocation: 4000
+    n_ic: 200   # terminal payoff condition (t = T)
+    n_bc: 200
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    training:
+      epochs: 5000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: SIREN
+    type: siren
+    network:
+      hidden: [64, 64, 64, 64]
+      omega_0: 30.0
+    training:
+      epochs: 5000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: ModifiedMLP
+    type: modified_mlp
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    training:
+      epochs: 5000
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/black_scholes_1d/
+  prefix: black_scholes
+  save_figures: true
+  save_csv: true

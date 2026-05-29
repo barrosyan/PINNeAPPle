@@ -1,0 +1,35 @@
+# Poisson 2D — Inverse Problem: recover source term magnitude from observations
+# Demonstrates InverseConfig; pinneapple_analysis.invert() is called post-training
+problem:
+  name: poisson_2d
+  params:
+    k: 1.0
+    n_collocation: 4000
+    n_bc: 400
+
+models:
+  - name: VanillaPINN-Inv
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 5000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+inverse:
+  enabled: true
+  params: ["k"]        # physical parameters to identify
+  n_obs: 200           # number of noisy sensor observations
+  noise_std: 0.01
+  method: adam
+  n_iters: 2000
+  lambda_reg: 1.0e-3   # Tikhonov regularization
+
+output:
+  dir: outputs/poisson_2d_inverse/
+  prefix: poisson_inv
+  save_figures: true
+  save_csv: true

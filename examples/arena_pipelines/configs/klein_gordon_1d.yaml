@@ -1,0 +1,49 @@
+# Klein-Gordon 1D — u_tt - u_xx + m² u = 0 on [0,1] x [0,T]
+# Relativistic wave equation; oscillatory in both space and time
+problem:
+  name: klein_gordon_1d
+  params:
+    m: 1.0     # mass parameter
+    c: 1.0     # wave speed
+    n_collocation: 5000
+    n_ic: 400
+    n_bc: 200
+    t_end: 2.0
+
+models:
+  - name: SIREN
+    type: siren
+    network:
+      hidden: [128, 128, 128, 128]
+      omega_0: 30.0
+    training:
+      epochs: 8000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: ModifiedMLP
+    type: modified_mlp
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/klein_gordon_1d/
+  prefix: klein_gordon
+  save_figures: true
+  save_csv: true

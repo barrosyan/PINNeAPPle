@@ -1,0 +1,56 @@
+# FitzHugh-Nagumo 1D — coupled excitable neuron model on [0,1] x [0,T]
+#   v_t = D v_xx + v - v³/3 - w + I_ext
+#   w_t = epsilon * (v + a - b*w)
+# Two-output problem [v, w]; action potential propagation
+problem:
+  name: fitzhugh_nagumo_1d
+  params:
+    D: 0.1        # spatial diffusion of membrane potential
+    epsilon: 0.08  # time-scale separation
+    a: 0.7
+    b: 0.8
+    I_ext: 0.5    # external current
+    n_collocation: 5000
+    n_ic: 300
+    n_bc: 200
+    t_end: 20.0
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 10000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: SIREN
+    type: siren
+    network:
+      hidden: [128, 128, 128, 128]
+      omega_0: 30.0
+    training:
+      epochs: 10000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: PINNsFormer
+    type: pinnsformer
+    network:
+      d_model: 64
+      nhead: 4
+      num_layers: 3
+      dim_feedforward: 256
+    training:
+      epochs: 5000
+      lr: 5.0e-4
+      optimizer: adam
+
+output:
+  dir: outputs/fitzhugh_nagumo_1d/
+  prefix: fhn
+  save_figures: true
+  save_csv: true

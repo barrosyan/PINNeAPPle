@@ -1,0 +1,49 @@
+# Linear Elasticity 2D — plane-stress on [0,1]^2
+# Outputs: [u_x, u_y] displacement; enforces equilibrium + stress-strain + BC
+# MeshGraphNet naturally handles mesh-based structural problems
+problem:
+  name: linear_elasticity_2d
+  params:
+    E: 200.0e9   # Young's modulus (Pa) — normalized internally
+    nu: 0.3      # Poisson ratio
+    n_collocation: 5000
+    n_bc: 600
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 10000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: MeshGraphNet
+    type: meshgraphnet
+    network:
+      hidden_dim: 128
+      n_message_passing: 8
+      dropout: 0.0
+    training:
+      epochs: 1500
+      lr: 1.0e-3
+      optimizer: adam
+
+  - name: ModifiedMLP
+    type: modified_mlp
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 10000
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/linear_elasticity_2d/
+  prefix: elasticity
+  save_figures: true
+  save_csv: true

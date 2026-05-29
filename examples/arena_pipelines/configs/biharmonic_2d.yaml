@@ -1,0 +1,45 @@
+# Biharmonic 2D — Δ²u = 0 on [0,1]^2
+# Fourth-order PDE; requires deeper nets or SIREN for smooth solutions
+problem:
+  name: biharmonic_2d
+  params:
+    n_collocation: 5000
+    n_bc: 600
+
+models:
+  - name: VanillaPINN-Deep
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 5.0e-4
+      optimizer: adam
+      scheduler: cosine
+
+  - name: SIREN-Deep
+    type: siren
+    network:
+      hidden: [128, 128, 128, 128, 128]
+      omega_0: 30.0
+    training:
+      epochs: 8000
+      lr: 2.0e-4
+      optimizer: adam
+
+  - name: ModifiedMLP
+    type: modified_mlp
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 5.0e-4
+      optimizer: adam
+
+output:
+  dir: outputs/biharmonic_2d/
+  prefix: biharmonic
+  save_figures: true
+  save_csv: true

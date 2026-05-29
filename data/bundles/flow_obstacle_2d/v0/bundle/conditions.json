@@ -1,0 +1,24 @@
+{
+  "inlet": {
+    "type": "dirichlet",
+    "u": 1.0,
+    "v": 0.0
+  },
+  "outlet": {
+    "type": "neumann",
+    "p": 0.0
+  },
+  "walls": {
+    "type": "no_slip",
+    "u": 0.0,
+    "v": 0.0
+  },
+  "obstacle": {
+    "type": "no_slip",
+    "u": 0.0,
+    "v": 0.0
+  },
+  "_meta": {
+    "notes": "Optional metadata ignored by loader, ok to include."
+  }
+}

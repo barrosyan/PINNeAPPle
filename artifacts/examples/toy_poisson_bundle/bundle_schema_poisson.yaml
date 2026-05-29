@@ -1,0 +1,14 @@
+bundle_schema_version: "1.0"
+
+required_files:
+  - "bundle/geometry.usd"
+  - "bundle/conditions.json"
+  - "bundle/manifest.json"
+  - "derived/points_boundary.parquet"
+  - "derived/points_collocation.parquet"
+
+conditions_json:
+  required_regions: ["boundary"]
+
+manifest_json:
+  required_keys: [problem_id, pde, domain, fields, weights]

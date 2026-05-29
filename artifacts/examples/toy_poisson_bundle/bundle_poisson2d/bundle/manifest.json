@@ -1,0 +1,21 @@
+{
+  "problem_id": "poisson_2d_sine",
+  "pde": "-laplacian(u)=f",
+  "domain": {
+    "x": [
+      0.0,
+      1.0
+    ],
+    "y": [
+      0.0,
+      1.0
+    ]
+  },
+  "fields": [
+    "u"
+  ],
+  "weights": {
+    "pde": 1.0,
+    "bc": 50.0
+  }
+}

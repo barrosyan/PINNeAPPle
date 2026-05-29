@@ -1,0 +1,50 @@
+# Heat 1D — u_t = alpha * u_xx on [0,1] x [0,1]
+# Parabolic PDE; time-space PINN benchmark
+problem:
+  name: heat_1d
+  params:
+    alpha: 0.01
+    n_collocation: 3000
+    n_ic: 200
+    n_bc: 200
+    t_end: 1.0
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [64, 64, 64, 64]
+      activation: tanh
+    training:
+      epochs: 5000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: SIREN
+    type: siren
+    network:
+      hidden: [64, 64, 64, 64]
+      omega_0: 30.0
+    training:
+      epochs: 5000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: PINNsFormer
+    type: pinnsformer
+    network:
+      d_model: 64
+      nhead: 4
+      num_layers: 3
+      dim_feedforward: 256
+    training:
+      epochs: 3000
+      lr: 5.0e-4
+      optimizer: adam
+
+output:
+  dir: outputs/heat_1d/
+  prefix: heat1d
+  save_figures: true
+  save_csv: true

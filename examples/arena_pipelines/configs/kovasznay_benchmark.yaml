@@ -1,0 +1,52 @@
+problem:
+  name: kovasznay_ns
+  params:
+    re: 40.0
+  grid_n: 40
+  n_col: 2000
+  n_bc: 500
+  n_train_supervised: 200
+  n_mesh_nodes: 600
+
+models:
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 2000
+      lr: 5.0e-4
+      grad_clip: 1.0
+      scheduler: cosine
+
+  - name: FNO-2D
+    type: fno2d
+    network:
+      width: 32
+      modes: 12
+      layers: 4
+    training:
+      epochs: 600
+      lr: 1.0e-3
+      batch_size: 64
+      scheduler: cosine
+
+  - name: MeshGraphNet
+    type: meshgraphnet
+    network:
+      hidden_dim: 128
+      n_message_passing: 6
+      dropout: 0.0
+    training:
+      epochs: 600
+      lr: 1.0e-3
+      scheduler: cosine
+
+output:
+  dir: outputs/kovasznay
+  prefix: benchmark
+  save_figures: true
+  dpi: 150
+  dark_theme: true
+  show: false

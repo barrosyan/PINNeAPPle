@@ -3,13 +3,13 @@ import os
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from pinneaple_train.trainer import Trainer, TrainConfig
-from pinneaple_train.losses import CombinedLoss, SupervisedLoss
-from pinneaple_train.metrics import default_metrics
-from pinneaple_train.checkpoint import load_checkpoint
+from pinneapple_neural.trainer.trainer import Trainer, TrainConfig
+from pinneapple_neural.trainer.losses import CombinedLoss, SupervisedLoss
+from pinneapple_neural.trainer.metrics import default_metrics
+from pinneapple_neural.trainer.checkpoint import load_checkpoint
 
-from pinneaple_models.register_all import register_all
-from pinneaple_models.registry import ModelRegistry
+from pinneapple_neural.architectures.register_all import register_all
+from pinneapple_neural.architectures.registry import ModelRegistry
 
 # ----------------------------
 # Helpers

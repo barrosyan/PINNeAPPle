@@ -1,0 +1,52 @@
+# Navier-Stokes — Dataset mode (no closed-form problem)
+# Loads from pinneapple_data registry instead of an ArenaProblem.
+# Trains FNO and MeshGraphNet in supervised mode on existing NS simulation data.
+problem:
+  name: kovasznay_ns   # used only for evaluation metric reference
+  params: {}
+
+dataset:
+  dataset_id: navier_stokes_2d        # pinneapple_data dataset key
+  input_fields: ["x", "y"]
+  output_fields: ["u", "v", "p"]
+  n_train: 2000
+  n_val: 400
+  split_seed: 42
+
+models:
+  - name: FNO-2D
+    type: fno2d
+    network:
+      modes: 12
+      width: 32
+      layers: 4
+    training:
+      epochs: 600
+      lr: 1.0e-3
+      optimizer: adam
+
+  - name: MeshGraphNet
+    type: meshgraphnet
+    network:
+      hidden_dim: 128
+      n_message_passing: 6
+    training:
+      epochs: 800
+      lr: 1.0e-3
+      optimizer: adam
+
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 3000
+      lr: 1.0e-3
+      optimizer: adam
+
+output:
+  dir: outputs/ns_dataset_mode/
+  prefix: ns_data
+  save_figures: true
+  save_csv: true

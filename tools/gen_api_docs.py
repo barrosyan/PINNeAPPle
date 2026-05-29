@@ -8,62 +8,62 @@ SRC = ROOT
 DOCS_API_DIR = Path("api")
 
 TARGET_PACKAGES = [
-    "pinneaple_arena",
-    "pinneaple_data",
-    "pinneaple_geom",
-    "pinneaple_models",
-    "pinneaple_pdb",
-    "pinneaple_pinn",
-    "pinneaple_problemdesign",
-    "pinneaple_researcher",
-    "pinneaple_solvers",
-    "pinneaple_timeseries",
-    "pinneaple_train",
+    "pinneapple_arena",
+    "pinneapple_data",
+    "pinneapple_geom",
+    "pinneapple_models",
+    "pinneapple_pdb",
+    "pinneapple_pinn",
+    "pinneapple_problemdesign",
+    "pinneapple_researcher",
+    "pinneapple_solvers",
+    "pinneapple_timeseries",
+    "pinneapple_train",
 ]
 
 PACKAGE_OVERVIEWS = {
-    "pinneaple_arena": (
+    "pinneapple_arena": (
         "Execution layer and backend abstraction.\n\n"
         "Provides backends for running training and evaluation workflows. "
         "Decouples solver logic from execution engines."
     ),
-    "pinneaple_data": (
+    "pinneapple_data": (
         "Data representation and PhysicalSample abstraction.\n\n"
         "Unified containers for fields, coordinates and metadata, plus dataset utilities."
     ),
-    "pinneaple_geom": (
+    "pinneapple_geom": (
         "Geometry and domain encoding.\n\n"
         "Domain definitions, boundary handling and sampling utilities."
     ),
-    "pinneaple_models": (
+    "pinneapple_models": (
         "Neural architecture abstractions.\n\n"
         "Physics-agnostic models (e.g., MLPs). Constraints live in the PINN layer."
     ),
-    "pinneaple_pdb": (
+    "pinneapple_pdb": (
         "Structured physics database.\n\n"
         "Stores/retrieves problems, benchmarks and experiment specs."
     ),
-    "pinneaple_pinn": (
+    "pinneapple_pinn": (
         "PINN core logic.\n\n"
         "Residual construction, autograd utilities and constraint composition."
     ),
-    "pinneaple_problemdesign": (
+    "pinneapple_problemdesign": (
         "Problem definition layer.\n\n"
         "Encodes equations, BC/IC and metadata into reusable definitions."
     ),
-    "pinneaple_researcher": (
+    "pinneapple_researcher": (
         "Research orchestration and benchmarking.\n\n"
         "Experiment management, metrics and reproducible comparisons."
     ),
-    "pinneaple_solvers": (
+    "pinneapple_solvers": (
         "Optimization strategies and solver logic.\n\n"
         "Training policy independent from execution runtime."
     ),
-    "pinneaple_timeseries": (
+    "pinneapple_timeseries": (
         "Scientific time-series utilities.\n\n"
         "Forecasting and hybrid dynamical workflows integrated with Physics AI pipelines."
     ),
-    "pinneaple_train": (
+    "pinneapple_train": (
         "Training orchestration.\n\n"
         "High-level APIs wiring problem, data, model, physics, solver and backend."
     ),

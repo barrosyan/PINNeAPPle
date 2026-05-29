@@ -1,0 +1,50 @@
+# Wave 1D — u_tt = c² * u_xx on [0,1] x [0,T]
+# Hyperbolic PDE; second-order in time; periodic standing-wave benchmark
+problem:
+  name: wave_1d
+  params:
+    c: 1.0     # wave speed
+    n_collocation: 5000
+    n_ic: 400   # need both u(x,0) and u_t(x,0)
+    n_bc: 200
+    t_end: 2.0
+
+models:
+  - name: SIREN
+    type: siren
+    network:
+      hidden: [128, 128, 128, 128]
+      omega_0: 30.0
+    training:
+      epochs: 8000
+      lr: 5.0e-4
+      optimizer: adam
+
+  - name: VanillaPINN
+    type: vanilla_pinn
+    network:
+      hidden: [128, 128, 128, 128]
+      activation: tanh
+    training:
+      epochs: 8000
+      lr: 1.0e-3
+      optimizer: adam
+      scheduler: cosine
+
+  - name: PINNsFormer
+    type: pinnsformer
+    network:
+      d_model: 64
+      nhead: 4
+      num_layers: 3
+      dim_feedforward: 256
+    training:
+      epochs: 5000
+      lr: 5.0e-4
+      optimizer: adam
+
+output:
+  dir: outputs/wave_1d/
+  prefix: wave1d
+  save_figures: true
+  save_csv: true
