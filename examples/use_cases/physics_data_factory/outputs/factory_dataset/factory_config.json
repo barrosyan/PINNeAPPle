@@ -3,7 +3,7 @@
   "pde_kind": "ns2d",
   "n_samples": 5,
   "output_dir": "C:\\Users\\laisc\\Documents\\GitHub\\PINNeAPPle\\examples\\use_cases\\physics_data_factory\\outputs\\factory_dataset",
-  "elapsed_s": 22.806953191757202,
+  "elapsed_s": 28.158530950546265,
   "field_names": [
     "u",
     "v",

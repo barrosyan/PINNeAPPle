@@ -43,9 +43,9 @@
     "name": "air"
   },
   "solver_metadata": {
-    "elapsed_s": 0.04754339996725321,
+    "elapsed_s": 0.09617260005325079,
     "solver": "builtin",
     "device": "cpu"
   },
-  "timestamp": "2026-06-04T16:23:39Z"
+  "timestamp": "2026-06-04T16:54:16Z"
 }

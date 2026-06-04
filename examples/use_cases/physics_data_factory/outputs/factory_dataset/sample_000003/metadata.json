@@ -1,5 +1,5 @@
 {
-  "sample_id_generation_time": "2026-06-04T16:24:01Z",
+  "sample_id_generation_time": "2026-06-04T16:54:43Z",
   "scenario_name": "demo_cavity",
   "pde_kind": "ns2d",
   "grid_shape": [
@@ -44,7 +44,7 @@
     "name": "air"
   },
   "solver_meta": {
-    "elapsed_s": 0.02125789993442595,
+    "elapsed_s": 0.03194219991564751,
     "solver": "builtin",
     "device": "cpu",
     "field_names": [
