@@ -1,0 +1,13 @@
+[
+  {
+    "sample_id": "000000",
+    "sample_dir": "C:\\Users\\laisc\\Documents\\GitHub\\PINNeAPPle\\examples\\use_cases\\physics_data_factory\\outputs\\gt_dataset_cavity\\sample_000000",
+    "fields": {
+      "velocity": "C:\\Users\\laisc\\Documents\\GitHub\\PINNeAPPle\\examples\\use_cases\\physics_data_factory\\outputs\\gt_dataset_cavity\\sample_000000\\velocity.npy",
+      "pressure": "C:\\Users\\laisc\\Documents\\GitHub\\PINNeAPPle\\examples\\use_cases\\physics_data_factory\\outputs\\gt_dataset_cavity\\sample_000000\\pressure.npy",
+      "temperature": "C:\\Users\\laisc\\Documents\\GitHub\\PINNeAPPle\\examples\\use_cases\\physics_data_factory\\outputs\\gt_dataset_cavity\\sample_000000\\temperature.npy",
+      "concentration": "C:\\Users\\laisc\\Documents\\GitHub\\PINNeAPPle\\examples\\use_cases\\physics_data_factory\\outputs\\gt_dataset_cavity\\sample_000000\\concentration.npy"
+    },
+    "metadata": "C:\\Users\\laisc\\Documents\\GitHub\\PINNeAPPle\\examples\\use_cases\\physics_data_factory\\outputs\\gt_dataset_cavity\\sample_000000\\metadata.json"
+  }
+]

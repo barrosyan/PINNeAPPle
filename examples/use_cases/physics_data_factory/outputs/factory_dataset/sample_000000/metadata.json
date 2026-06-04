@@ -1,0 +1,57 @@
+{
+  "sample_id_generation_time": "2026-06-04T16:23:48Z",
+  "scenario_name": "demo_cavity",
+  "pde_kind": "ns2d",
+  "grid_shape": [
+    64,
+    64
+  ],
+  "n_timesteps": 33,
+  "n_fields": 4,
+  "field_names": [
+    "u",
+    "v",
+    "p"
+  ],
+  "t_span": [
+    0.0,
+    1127.9926335174955
+  ],
+  "dt": 35.249769797421735,
+  "domain_bounds": [
+    [
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "parameters": {
+    "Re": 373.3154602050781
+  },
+  "solver": "builtin",
+  "domain": "fluid_dynamics",
+  "geometry": {
+    "type": "cavity"
+  },
+  "fluid": {
+    "rho": 1.225,
+    "mu": 1.81e-05,
+    "Pr": 0.71,
+    "cp": 1005.0,
+    "name": "air"
+  },
+  "solver_meta": {
+    "elapsed_s": 0.03441069996915758,
+    "solver": "builtin",
+    "device": "cpu",
+    "field_names": [
+      "u",
+      "v",
+      "p",
+      "T"
+    ]
+  }
+}

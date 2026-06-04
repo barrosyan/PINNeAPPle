@@ -45,22 +45,59 @@ def _load_manifest(dataset_dir: Path) -> List[Dict[str, Any]]:
     return json.loads(manifest_path.read_text())
 
 
+_SEMANTIC_ALIASES: Dict[str, List[str]] = {
+    # PDE name -> list of semantic field names that contain it
+    "u":  ["velocity", "u", "ux"],
+    "v":  ["velocity", "v", "uy"],
+    "w":  ["velocity", "w", "uz"],
+    "T":  ["temperature", "T", "temp"],
+    "p":  ["pressure", "p"],
+    "C":  ["concentration", "C", "phi"],
+}
+_VELOCITY_COMP = {"u": 0, "v": 1, "w": 2}
+
+
 def _load_field(entry: Dict, field_name: str) -> Optional[np.ndarray]:
-    """Load a physical field from a manifest entry."""
+    """Load a physical field from a manifest entry.
+
+    Handles both PDE-style names ('u', 'v', 'p', 'T') and semantic names
+    ('velocity', 'pressure', 'temperature') to support both DatasetPackager
+    and GroundTruthPackager manifest formats.
+    """
     fields = entry.get("fields", {})
-    if field_name not in fields:
+
+    def _read_path(path_str: str) -> Optional[np.ndarray]:
+        path = Path(path_str)
+        if path.suffix == ".zarr" or path.is_dir():
+            try:
+                import zarr
+                return np.array(zarr.open(str(path), mode="r"))
+            except Exception:
+                pass
+        npy_path = path.with_suffix(".npy")
+        if npy_path.exists():
+            return np.load(str(npy_path))
+        if path.exists():
+            return np.load(str(path))
         return None
-    path = Path(fields[field_name])
-    if path.suffix == ".zarr" or path.is_dir():
-        try:
-            import zarr
-            return np.array(zarr.open(str(path), mode="r"))
-        except Exception:
-            pass
-    # fallback: .npy
-    npy_path = path.with_suffix(".npy")
-    if npy_path.exists():
-        return np.load(str(npy_path))
+
+    # Direct lookup
+    if field_name in fields:
+        return _read_path(fields[field_name])
+
+    # Semantic alias lookup (e.g. "u" -> try "velocity", extract channel 0)
+    for alias in _SEMANTIC_ALIASES.get(field_name, []):
+        if alias in fields:
+            arr = _read_path(fields[alias])
+            if arr is None:
+                continue
+            # velocity.npy has shape (T, 2|3, Ny, Nx) -> extract component
+            if field_name in _VELOCITY_COMP and alias == "velocity" and arr.ndim == 4:
+                comp = _VELOCITY_COMP[field_name]
+                if comp < arr.shape[1]:
+                    return arr[:, comp]
+            return arr
+
     return None
 
 

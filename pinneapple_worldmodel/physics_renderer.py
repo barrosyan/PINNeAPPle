@@ -229,16 +229,16 @@ class PhysicsRenderer:
         return states[:, 0]
 
     def _select_depth_field(self, states: np.ndarray, names: List[str]) -> np.ndarray:
-        """Synthetic depth: use flow divergence or vorticity as proxy."""
+        """Synthetic depth: use vorticity magnitude as proxy."""
         if states.shape[1] >= 2:
             u_idx = _find_channel(names, ["u", "ux"])
             v_idx = _find_channel(names, ["v", "uy"])
             if u_idx is not None and v_idx is not None:
-                u = states[:, u_idx]
-                v = states[:, v_idx]
-                # Vorticity proxy: |curl| = |dv/dx - du/dy| (finite diff)
-                dvdx = np.gradient(v, axis=3)
-                dudy = np.gradient(u, axis=2)
+                u = states[:, u_idx]  # (T, Ny, Nx)
+                v = states[:, v_idx]  # (T, Ny, Nx)
+                # Vorticity: dv/dx - du/dy  (axis 2=x, axis 1=y for T,Ny,Nx)
+                dvdx = np.gradient(v, axis=2)
+                dudy = np.gradient(u, axis=1)
                 return np.abs(dvdx - dudy)
         return np.abs(states[:, 0])
 

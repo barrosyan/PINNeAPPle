@@ -1,0 +1,51 @@
+{
+  "sample_id": "000000",
+  "solver": "builtin",
+  "scenario_name": "cavity_Re400",
+  "pde_kind": "ns2d",
+  "n_timesteps": 51,
+  "grid_shape": [
+    2,
+    64,
+    64
+  ],
+  "field_names": [
+    "velocity",
+    "pressure",
+    "temperature",
+    "concentration"
+  ],
+  "parameters": {
+    "Re": 400.0
+  },
+  "t_span": [
+    0.0,
+    845.9944751381216
+  ],
+  "domain_bounds": [
+    [
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "geometry": {
+    "type": "cavity"
+  },
+  "fluid": {
+    "rho": 1.225,
+    "mu": 1.81e-05,
+    "Pr": 0.71,
+    "cp": 1005.0,
+    "name": "air"
+  },
+  "solver_metadata": {
+    "elapsed_s": 0.04754339996725321,
+    "solver": "builtin",
+    "device": "cpu"
+  },
+  "timestamp": "2026-06-04T16:23:39Z"
+}
