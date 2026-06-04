@@ -235,9 +235,37 @@ def catalog() -> List[Script]:
         Script("examples/use_cases/solid_mechanics/solid_mechanics_pipeline.py",
                "use_cases","uc_solid",timeout=600,mode="slow"),
         Script("examples/use_cases/physics_data_factory/full_pipeline_example.py",
-               "use_cases","uc_factory",timeout=600,mode="slow"),
+               "use_cases","uc_factory_pipeline",timeout=600,mode="slow"),
         Script("examples/use_cases/physics_data_factory/industrial_digital_twin.py",
                "use_cases","uc_digital_twin",timeout=300,mode="slow"),
+
+        # ── PHYSICS DATA FACTORY — 3D / PyVista ──────────────────────────
+        # Requires: pyvista (pip install pyvista vtk)
+        Script("examples/use_cases/physics_data_factory/factory_3d_render.py",
+               "factory_3d","fac_3d_pyvista",
+               args=["--n-frames","48","--fps","24"],
+               timeout=300, mode="slow",
+               requires=["pyvista"]),
+        Script("examples/use_cases/physics_data_factory/ultrarealistic_digital_twin.py",
+               "factory_3d","fac_3d_ultra",
+               args=["--frames","48","--samples","256"],
+               timeout=600, mode="slow",
+               requires=["pyvista"]),
+
+        # ── PHYSICS DATA FACTORY — Blender Cycles ────────────────────────
+        # Requires: blender executable (portable install at ~/blender-4.2)
+        # Use blender_factory_launcher.py as the entry point — it handles
+        # finding blender.exe, running the render script, and assembling MP4.
+        Script("examples/use_cases/physics_data_factory/blender_factory_launcher.py",
+               "factory_blender","fac_blender_preview",
+               args=["--frames","12","--samples","64","--width","1280","--height","720"],
+               timeout=600, mode="slow",
+               skip_if=["blender", "blender.exe"]),   # needs blender in PATH or ~/blender-4.2
+        Script("examples/use_cases/physics_data_factory/blender_factory_launcher.py",
+               "factory_blender","fac_blender_hd",
+               args=["--frames","192","--samples","256","--width","1920","--height","1080"],
+               timeout=7200, mode="slow",
+               skip_if=["blender", "blender.exe"]),
 
         # ── CLIENT EXAMPLES ──────────────────────────────────────────────
         Script("examples/clients/lane_emden_example.py","clients","cli_lane",    args=["--epochs","500"],timeout=90,mode="medium"),
@@ -259,24 +287,51 @@ def catalog() -> List[Script]:
 # ============================================================================
 
 def _is_available(name: str) -> bool:
-    """Check if a package/executable is importable or in PATH."""
+    """Check if a package/executable is importable, in PATH, or at known locations."""
     import importlib, shutil
+    # Python import check
     try:
         importlib.import_module(name.replace("-", "_"))
         return True
     except ImportError:
         pass
-    return shutil.which(name) is not None
+    # PATH check
+    if shutil.which(name):
+        return True
+    # Extra: check common portable / out-of-PATH install locations
+    _PORTABLE_LOCS = {
+        "blender":     [Path.home() / "blender-4.2" / "blender.exe",
+                        Path.home() / "blender-4.1" / "blender.exe",
+                        Path.home() / "blender-4.3" / "blender.exe",
+                        Path("C:/Program Files/Blender Foundation/Blender 4.2/blender.exe")],
+        "blender.exe": [Path.home() / "blender-4.2" / "blender.exe",
+                        Path.home() / "blender-4.1" / "blender.exe"],
+        "openfoam":    [Path("/usr/bin/foamDictionary"), Path("/opt/openfoam10/bin/foamDictionary")],
+        "fenics":      [Path("/usr/bin/fenics")],
+        "dolfinx":     [Path("/usr/bin/dolfinx-version")],
+    }
+    for loc in _PORTABLE_LOCS.get(name, []):
+        if loc.exists():
+            return True
+    return False
 
 
 def can_run(script: Script) -> tuple[bool, str]:
-    """Return (ok, reason_if_not_ok)."""
+    """Return (ok, reason_if_not_ok).
+
+    script.requires  — pip packages or executables that MUST be available
+    script.skip_if   — executables that must NOT be available (i.e. the script
+                       requires an external tool that is unavailable, so we skip
+                       when the tool is absent)
+    """
     for pkg in script.requires:
         if not _is_available(pkg):
             return False, f"missing package: {pkg}"
     for exe in script.skip_if:
-        if _is_available(exe):
-            return False, f"skipped (requires unavailable external: {exe})"
+        # skip_if lists executables that the script NEEDS but that are typically
+        # not installed (OpenFOAM, fenics, …). Skip when the tool is absent.
+        if not _is_available(exe):
+            return False, f"missing external tool: {exe}"
     if not (REPO / script.path).exists():
         return False, f"file not found: {script.path}"
     return True, ""
@@ -469,8 +524,8 @@ def main():
     out_dir = Path(args.output)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Filter catalog
-    mode_order = {"fast": 0, "medium": 1, "slow": 2}
+    # Filter catalog  ("all" includes every mode)
+    mode_order = {"fast": 0, "medium": 1, "slow": 2, "all": 99}
     mode_limit = mode_order.get(args.mode, 0)
     all_scripts = [
         s for s in catalog()
