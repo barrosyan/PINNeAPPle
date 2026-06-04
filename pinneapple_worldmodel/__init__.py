@@ -214,6 +214,51 @@ from .pipeline import PhysicsAIPipeline, PhysicsAIConfig, PhysicsAIPipelineResul
 # Legacy pipeline (kept for backwards compatibility)
 from .pipeline import PhysicsAIPipeline as WorldModelPipeline  # noqa: F401
 
+# ── Physics Synthetic Data Factory (9-stage pipeline) ──────────────────────
+from .scenario_generator import ScenarioGenerator, ScenarioSpec
+from .physics_renderer import PhysicsRenderer, RendererConfig, RenderResult
+from .camera_system import (
+    CameraConfig,
+    MultiCameraArray,
+    CameraSystem,
+)
+from .reality_randomizer import RealityRandomizer, RandomizerConfig
+from .photorealistic_enhancer import (
+    PhotorealisticEnhancer,
+    EnhancerConfig,
+    register_enhancer,
+)
+from .dataset_packager import (
+    DatasetPackager,
+    PackagerConfig,
+    PackagedSample,
+    DatasetManifest,
+)
+from .training_hooks import (
+    PhysicsAIDataset,
+    CosmosEncoderDataset,
+    PhysicsDecoderDataset,
+    InversePINNDataset,
+    NeuralOperatorDataset,
+    TrainingHooks,
+)
+from .synthetic_factory import (
+    SyntheticFactoryConfig,
+    SyntheticDataFactory,
+    FactoryResult,
+    generate_pipe_flow,
+    generate_cylinder_flow,
+    generate_heat_transfer,
+    generate_chemical_mixing,
+)
+# Stages 2 & 3 — Physics Solver Bridge + Ground Truth Packager
+from .physics_solver_bridge import (
+    SolverOutput,
+    SolverBridgeConfig,
+    PhysicsSolverBridge,
+    GroundTruthPackager,
+)
+
 # --- Training & dataset generation entry points ---
 from .train import (
     train_specialist,
@@ -315,4 +360,49 @@ __all__ = [
     "generate_datasets",
     "generate_via_factory",
     "load_catalog",
+    # ── Physics Synthetic Data Factory ─────────────────────────────────────
+    # Stage 1 — Scenario generator
+    "ScenarioGenerator",
+    "ScenarioSpec",
+    # Stage 4 — Physics renderer
+    "PhysicsRenderer",
+    "RendererConfig",
+    "RenderResult",
+    # Stage 5 — Camera system
+    "CameraConfig",
+    "MultiCameraArray",
+    "CameraSystem",
+    # Stage 6 — Reality randomizer
+    "RealityRandomizer",
+    "RandomizerConfig",
+    # Stage 7 — Photorealistic enhancer
+    "PhotorealisticEnhancer",
+    "EnhancerConfig",
+    "register_enhancer",
+    # Stage 8 — Dataset packager
+    "DatasetPackager",
+    "PackagerConfig",
+    "PackagedSample",
+    "DatasetManifest",
+    # Stage 9 — Training hooks
+    "PhysicsAIDataset",
+    "CosmosEncoderDataset",
+    "PhysicsDecoderDataset",
+    "InversePINNDataset",
+    "NeuralOperatorDataset",
+    "TrainingHooks",
+    # Stages 2 & 3 — solver bridge + ground truth packager
+    "SolverOutput",
+    "SolverBridgeConfig",
+    "PhysicsSolverBridge",
+    "GroundTruthPackager",
+    # Main orchestrator
+    "SyntheticFactoryConfig",
+    "SyntheticDataFactory",
+    "FactoryResult",
+    # Convenience one-liners
+    "generate_pipe_flow",
+    "generate_cylinder_flow",
+    "generate_heat_transfer",
+    "generate_chemical_mixing",
 ]
