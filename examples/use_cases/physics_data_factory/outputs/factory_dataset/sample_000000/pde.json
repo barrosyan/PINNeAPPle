@@ -1,0 +1,23 @@
+{
+  "equation": "\u2202u/\u2202t + (u\u00b7\u2207)u = -\u2207p/\u03c1 + \u03bd\u00b7\u2207\u00b2u,  \u2207\u00b7u = 0",
+  "pde_kind": "ns2d",
+  "field_names": [
+    "u",
+    "v",
+    "p"
+  ],
+  "parameters": {
+    "Re": [
+      150.0,
+      600.0
+    ]
+  },
+  "ic_type": "random_smooth",
+  "bc_type": "periodic",
+  "tags": [
+    "fluid_dynamics",
+    "cavity",
+    "ns2d",
+    "2d"
+  ]
+}
