@@ -283,8 +283,26 @@ class PhysicsRenderer:
 # ---------------------------------------------------------------------------
 
 def _save_video(frames: np.ndarray, path: Path, fps: int, crf: int = 23) -> None:
-    """Write (T, H, W, 3) uint8 array to .mp4.  Tries imageio then matplotlib."""
+    """Write (T, H, W, 3) uint8 array to .mp4 with automatic fallback chain.
+
+    Tries, in order:
+      1. imageio v3 + imageio-ffmpeg  (pip install imageio[ffmpeg])
+      2. imageio v2 legacy writer
+      3. matplotlib FFMpegWriter
+      4. PIL animated GIF  (always works if Pillow is installed)
+      5. PNG sequence
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 1. imageio v3 (imageio-ffmpeg bundled binary — no system ffmpeg needed)
+    try:
+        import imageio.v3 as iio3
+        iio3.imwrite(str(path), frames, fps=fps)
+        return
+    except Exception:
+        pass
+
+    # 2. imageio v2 legacy
     if _IMAGEIO:
         try:
             writer = imageio.get_writer(str(path), fps=fps, quality=8,
@@ -295,18 +313,17 @@ def _save_video(frames: np.ndarray, path: Path, fps: int, crf: int = 23) -> None
             return
         except Exception:
             pass
-    # Fallback: matplotlib FFMpeg writer
+
+    # 3. matplotlib FFMpegWriter
     if _MPL:
         try:
             fig, ax = plt.subplots(figsize=(frames.shape[2]/72, frames.shape[1]/72))
             ax.axis("off")
             im = ax.imshow(frames[0])
             fig.subplots_adjust(0, 0, 1, 1)
-
             def _update(t):
                 im.set_data(frames[t])
                 return [im]
-
             from matplotlib.animation import FuncAnimation
             anim   = FuncAnimation(fig, _update, frames=len(frames), interval=1000/fps)
             writer = FFMpegWriter(fps=fps, metadata={"crf": str(crf)})
@@ -315,7 +332,29 @@ def _save_video(frames: np.ndarray, path: Path, fps: int, crf: int = 23) -> None
             return
         except Exception:
             pass
-    raise RuntimeError("No video writer available (install imageio[ffmpeg] or ffmpeg)")
+
+    # 4. PIL animated GIF (always available with Pillow)
+    try:
+        from PIL import Image
+        gif_path = path.with_suffix(".gif")
+        pil_frames = [Image.fromarray(f) for f in frames]
+        duration = max(20, int(1000 / fps))
+        pil_frames[0].save(
+            str(gif_path), save_all=True,
+            append_images=pil_frames[1:],
+            duration=duration, loop=0, optimize=True,
+        )
+        # rename so callers get a predictable path regardless of extension
+        import shutil
+        shutil.move(str(gif_path), str(path.with_suffix(".gif")))
+        return
+    except Exception:
+        pass
+
+    raise RuntimeError(
+        "No video writer available. "
+        "Install imageio[ffmpeg] (pip install imageio[ffmpeg]) for MP4 support."
+    )
 
 
 def _save_png_sequence(frames: np.ndarray, out_dir: Path) -> None:
