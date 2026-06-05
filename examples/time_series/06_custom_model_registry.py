@@ -14,7 +14,7 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-from pinneapple_models.registry import ModelRegistry
+from pinneapple_models import ModelRegistry
 from pinneapple_timeseries import TimeSeriesSpec, TSDataModule, TSModelCatalog
 
 

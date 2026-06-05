@@ -9,9 +9,9 @@ from _utils import ensure_repo_on_path
 ensure_repo_on_path()
 
 from pinneapple_environment import linear_elasticity_3d_default
-from pinneapple_geom.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig, TagHeuristics
+from pinneapple_design.geometry.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig, TagHeuristics
 from pinneapple_pinn.compiler import LossWeights, compile_problem
-from pinneapple_models.pinns.vanilla import VanillaPINN
+from pinneapple_models import VanillaPINN
 
 
 def make_beam_stl(path: Path, *, extents=(2.0, 0.4, 0.4)) -> Path:

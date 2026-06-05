@@ -22,9 +22,9 @@ import textwrap
 
 import torch
 
-from pinneapple_models.catalog import ModelCatalog
-from pinneapple_models.register_all import register_all
-from pinneapple_models.registry import ModelRegistry
+from pinneapple_models import ModelCatalog
+from pinneapple_models import register_all
+from pinneapple_models import ModelRegistry
 
 
 def _short(s: str, n: int = 90) -> str:
@@ -91,7 +91,7 @@ def main() -> None:
     print("POD recon:", tuple(out.y.shape), "| mse:", float(out.losses["mse"]))
 
     # 4) GraphNN (GNN)
-    from pinneapple_models.graphnn.base import GraphBatch
+    from pinneapple_models import GraphBatch
 
     gnn = ModelRegistry.build("gnn", node_dim=3, out_dim=2, edge_dim=1, hidden=64, layers=3).to(device)
 

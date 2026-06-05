@@ -3,10 +3,10 @@ PINNeAPPle Pure Benchmark — multi-architecture PINN comparison
 ==============================================================
 
 Architectures benchmarked:
-- VanillaPINN (pinneapple_models.pinns.vanilla.VanillaPINN)
-- VPINN      (pinneapple_models.pinns.vpinn.VPINN)
-- PINNsFormer (pinneapple_models.pinns.pinnsformer.PINNsFormer wrapped as PINN)
-- PIELM (pinneapple_models.pinns.pielm.PIELM) via a gradient-enabled wrapper
+- VanillaPINN (pinneapple_models.VanillaPINN)
+- VPINN      (pinneapple_neural.architectures.pinns.vpinn.VPINN)
+- PINNsFormer (pinneapple_neural.architectures.pinns.pinnsformer.PINNsFormer wrapped as PINN)
+- PIELM (pinneapple_neural.architectures.pinns.pielm.PIELM) via a gradient-enabled wrapper
   NOTE: upstream PIELM.forward_tensor is decorated with @torch.no_grad(), which
   prevents training by gradient descent. We intentionally avoid it.
 

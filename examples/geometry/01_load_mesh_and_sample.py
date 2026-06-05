@@ -1,8 +1,8 @@
 import trimesh
 import numpy as np
 
-from pinneapple_geom.io.trimesh_bridge import TrimeshBridge
-from pinneapple_geom.sample.points import sample_surface_points
+from pinneapple_design.geometry.io.trimesh_bridge import TrimeshBridge
+from pinneapple_design.geometry.sample.points import sample_surface_points
 
 # create trimesh geometry
 mesh = trimesh.creation.icosphere(subdivisions=3, radius=1.0)

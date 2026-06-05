@@ -9,7 +9,7 @@ ensure_repo_on_path()
 
 from pinneapple_environment import laplace_2d_default
 from pinneapple_pinn.compiler import LossWeights, compile_problem
-from pinneapple_models.pinns.vanilla import VanillaPINN
+from pinneapple_models import VanillaPINN
 
 
 def sample_square(n: int, *, low=-1.0, high=1.0, seed=7) -> np.ndarray:

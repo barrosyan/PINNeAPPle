@@ -22,8 +22,8 @@ sys.path.insert(0, str(ROOT))
 
 import torch
 
-from pinneapple_models.graphnn.base import GraphBatch
-from pinneapple_models.graphnn.gnn import GraphNeuralNetwork
+from pinneapple_models import GraphBatch
+from pinneapple_neural.architectures.graphnn.gnn import GraphNeuralNetwork
 
 
 def build_ring_edge_index(N: int, device: torch.device) -> torch.Tensor:
