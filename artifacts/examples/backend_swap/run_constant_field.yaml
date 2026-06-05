@@ -1,4 +1,0 @@
-run_name: constant_field_demo
-
-backend:
-  name: constant_field

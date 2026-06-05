@@ -1,6 +1,0 @@
-{
-  "boundary": {
-    "type": "dirichlet",
-    "u": 0.0
-  }
-}
