@@ -154,14 +154,18 @@ def lens_flare(img: np.ndarray, light_positions: List[Tuple[int, int]],
             continue
         flicker = 0.7 + 0.3 * math.sin(frame_idx * 0.43 + lx * 0.01)
         for r, intensity in [(4, 180), (12, 60), (25, 20)]:
-            yy = np.arange(max(0, ly-r), min(img.shape[0], ly+r))
-            xx = np.arange(max(0, lx-r), min(img.shape[1], lx+r))
-            if len(yy) == 0 or len(xx) == 0:
+            y0 = max(0, ly - r);  y1 = min(img.shape[0], ly + r)
+            x0 = max(0, lx - r);  x1 = min(img.shape[1], lx + r)
+            if y0 >= y1 or x0 >= x1:
                 continue
-            Y, X = np.meshgrid(yy - ly, xx - lx, indexing="ij")
+            yy = np.arange(y0, y1) - ly
+            xx = np.arange(x0, x1) - lx
+            Y, X = np.meshgrid(yy, xx, indexing="ij")
             mask = np.exp(-(X*X + Y*Y) / (2*(r*0.5)**2)) * intensity * flicker
-            out[np.ix_(yy, xx), :] = np.clip(
-                out[np.ix_(yy, xx), :] + mask[:, :, None], 0, 255)
+            # Use plain slice indexing (np.ix_ + trailing : breaks on numpy ≥ 2)
+            out[y0:y1, x0:x1, :] = np.clip(
+                out[y0:y1, x0:x1, :].astype(np.float32) + mask[:, :, None],
+                0, 255).astype(np.uint8)
     return out.clip(0, 255).astype(np.uint8)
 
 
@@ -207,10 +211,10 @@ def make_pump(cx, cy, cz, spin_deg=0.0):
     """Centrifugal pump with motor, coupling, baseplate."""
     volute  = pv.Sphere(center=[cx, cy+0.20, cz], radius=0.01)
     volute.scale([0.30, 0.24, 0.35], inplace=True)
-    motor   = pv.Cylinder([cx-0.46, cy+0.20, cz], direction=(1,0,0), radius=0.19, height=0.58)
-    guard   = pv.Cylinder([cx-0.15, cy+0.20, cz], direction=(1,0,0), radius=0.125, height=0.12)
-    suction = pv.Cylinder([cx,      cy+0.20, cz-0.25], direction=(0,0,1), radius=0.072, height=0.32)
-    disch   = pv.Cylinder([cx,      cy+0.40, cz],      direction=(0,1,0), radius=0.062, height=0.25)
+    motor   = pv.Cylinder(center=[cx-0.46, cy+0.20, cz], direction=(1,0,0), radius=0.19, height=0.58)
+    guard   = pv.Cylinder(center=[cx-0.15, cy+0.20, cz], direction=(1,0,0), radius=0.125, height=0.12)
+    suction = pv.Cylinder(center=[cx,      cy+0.20, cz-0.25], direction=(0,0,1), radius=0.072, height=0.32)
+    disch   = pv.Cylinder(center=[cx,      cy+0.40, cz],      direction=(0,1,0), radius=0.062, height=0.25)
     base    = pv.Box(bounds=[cx-0.58, cx+0.38, cy-0.01, cy+0.05, cz-0.38, cz+0.38])
     # Impeller vanes (visible through sight glass proxy)
     imp = pv.Disc(center=[cx, cy+0.20, cz], normal=(1,0,0), inner=0.0, outer=0.22,
@@ -222,17 +226,17 @@ def make_pump(cx, cy, cz, spin_deg=0.0):
 
 def make_hx(x0, x1, y0, y1, z0, z1):
     cx=(x0+x1)/2; cy=(y0+y1)/2; cz=(z0+z1)/2; L=x1-x0
-    shell  = pv.Cylinder([cx,cy,cz], direction=(1,0,0), radius=0.48, height=L)
+    shell  = pv.Cylinder(center=[cx,cy,cz], direction=(1,0,0), radius=0.48, height=L)
     head_l = pv.Sphere(center=[x0-0.12, cy, cz], radius=0.49)
     head_r = pv.Sphere(center=[x1+0.12, cy, cz], radius=0.49)
-    n_l = pv.Cylinder([x0, cy+0.56, cz], (0,1,0), radius=0.085, height=0.22)
-    n_r = pv.Cylinder([x1, cy+0.56, cz], (0,1,0), radius=0.085, height=0.22)
-    n_3 = pv.Cylinder([x0, cy-0.56, cz], (0,1,0), radius=0.072, height=0.19)
-    n_4 = pv.Cylinder([x1, cy-0.56, cz], (0,1,0), radius=0.072, height=0.19)
+    n_l = pv.Cylinder(center=[x0, cy+0.56, cz], (0,1,0), radius=0.085, height=0.22)
+    n_r = pv.Cylinder(center=[x1, cy+0.56, cz], (0,1,0), radius=0.085, height=0.22)
+    n_3 = pv.Cylinder(center=[x0, cy-0.56, cz], (0,1,0), radius=0.072, height=0.19)
+    n_4 = pv.Cylinder(center=[x1, cy-0.56, cz], (0,1,0), radius=0.072, height=0.19)
     # Baffle rings
     rings = []
     for bx in np.linspace(x0+0.4, x1-0.4, 4):
-        rings.append(pv.Disc([bx, cy, cz], normal=(1,0,0), inner=0.42, outer=0.48,
+        rings.append(pv.Disc(center=[bx, cy, cz], normal=(1,0,0), inner=0.42, outer=0.48,
                               r_res=2, c_res=32).extrude([0.02, 0, 0], capping=True))
     sad_l = pv.Box(bounds=[x0+0.3, x0+0.65, y0, cy-0.46, cz-0.6, cz+0.6])
     sad_r = pv.Box(bounds=[x1-0.65, x1-0.3, y0, cy-0.46, cz-0.6, cz+0.6])
@@ -245,9 +249,9 @@ def make_hx(x0, x1, y0, y1, z0, z1):
 
 
 def make_valve(cx, cy, cz, axis=(1,0,0)):
-    body  = pv.Cylinder([cx, cy, cz], direction=axis, radius=0.10, height=0.17)
-    stem  = pv.Cylinder([cx, cy+0.22, cz], direction=(0,1,0), radius=0.022, height=0.28)
-    wheel = pv.Disc([cx, cy+0.38, cz], normal=(0,1,0), inner=0.022, outer=0.13,
+    body  = pv.Cylinder(center=[cx, cy, cz], direction=axis, radius=0.10, height=0.17)
+    stem  = pv.Cylinder(center=[cx, cy+0.22, cz], direction=(0,1,0), radius=0.022, height=0.28)
+    wheel = pv.Disc(center=[cx, cy+0.38, cz], normal=(0,1,0), inner=0.022, outer=0.13,
                     r_res=2, c_res=16).extrude([0,0.012,0], capping=True)
     spokes = []
     for ang in [0, 90, 180, 270]:
@@ -263,9 +267,9 @@ def make_valve(cx, cy, cz, axis=(1,0,0)):
 
 def make_gauge(cx, cy, cz):
     """Pressure gauge: dial + stem."""
-    dial = pv.Disc([cx, cy+0.10, cz], normal=(0,1,0), inner=0.0, outer=0.085,
+    dial = pv.Disc(center=[cx, cy+0.10, cz], normal=(0,1,0), inner=0.0, outer=0.085,
                    r_res=2, c_res=32).extrude([0,0.018,0], capping=True)
-    stem = pv.Cylinder([cx, cy, cz], direction=(0,1,0), radius=0.015, height=0.12)
+    stem = pv.Cylinder(center=[cx, cy, cz], direction=(0,1,0), radius=0.015, height=0.12)
     return dial.merge(stem)
 
 
