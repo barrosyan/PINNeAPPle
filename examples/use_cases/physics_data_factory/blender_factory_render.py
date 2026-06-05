@@ -246,34 +246,108 @@ def smooth(obj):
 # MATERIAL LIBRARY
 # ============================================================================
 
+def mat_painted_metal(name, base_color, roughness_paint=0.55) -> bpy.types.Material:
+    """
+    Industrial painted metal: matte paint base with procedural scratches and
+    surface imperfections — reveals bare metal under the paint in worn areas.
+    Much more realistic than a flat Principled BSDF for pump casings.
+    """
+    mat = bpy.data.materials.get(name)
+    if mat:
+        return mat
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+
+    out    = nt.nodes.new('ShaderNodeOutputMaterial')
+    mix    = nt.nodes.new('ShaderNodeMixShader')       # blend paint ↔ bare metal
+    paint  = nt.nodes.new('ShaderNodeBsdfPrincipled')  # painted surface
+    metal  = nt.nodes.new('ShaderNodeBsdfPrincipled')  # exposed bare metal
+    noise1 = nt.nodes.new('ShaderNodeTexNoise')        # large scratch pattern
+    noise2 = nt.nodes.new('ShaderNodeTexNoise')        # fine bump texture
+    bump   = nt.nodes.new('ShaderNodeBump')
+    ramp   = nt.nodes.new('ShaderNodeValToRGB')        # threshold scratches
+    coord  = nt.nodes.new('ShaderNodeTexCoord')
+
+    # Paint layer — opaque matte industrial paint
+    paint.inputs['Base Color'].default_value   = (*base_color, 1.0)
+    paint.inputs['Metallic'].default_value     = 0.0
+    paint.inputs['Roughness'].default_value    = roughness_paint
+    paint.inputs['Specular IOR Level'].default_value = 0.15
+
+    # Bare metal layer — shows where paint is chipped
+    paint_rgb = base_color
+    metal.inputs['Base Color'].default_value   = (0.55, 0.56, 0.58, 1.0)
+    metal.inputs['Metallic'].default_value     = 0.95
+    metal.inputs['Roughness'].default_value    = 0.22
+
+    # Scratch / chip pattern (low frequency)
+    noise1.inputs['Scale'].default_value      = 8.0
+    noise1.inputs['Detail'].default_value     = 4.0
+    noise1.inputs['Roughness'].default_value  = 0.8
+    noise1.inputs['Distortion'].default_value = 0.5
+
+    # Ramp: convert noise to binary scratch mask
+    ramp.color_ramp.interpolation = 'CONSTANT'
+    ramp.color_ramp.elements[0].position = 0.80   # 20% of surface is chipped
+    ramp.color_ramp.elements[0].color    = (0.0, 0.0, 0.0, 1.0)
+    ramp.color_ramp.elements[1].position = 0.85
+    ramp.color_ramp.elements[1].color    = (1.0, 1.0, 1.0, 1.0)
+
+    # Surface bump (fine manufacturing texture)
+    noise2.inputs['Scale'].default_value     = 40.0
+    noise2.inputs['Detail'].default_value    = 8.0
+    noise2.inputs['Roughness'].default_value = 0.6
+    bump.inputs['Strength'].default_value    = 0.15
+    bump.inputs['Distance'].default_value    = 0.003
+
+    # Connect nodes
+    nt.links.new(coord.outputs['Object'],  noise1.inputs['Vector'])
+    nt.links.new(coord.outputs['Object'],  noise2.inputs['Vector'])
+    nt.links.new(noise1.outputs['Fac'],    ramp.inputs['Fac'])
+    nt.links.new(ramp.outputs['Color'],    mix.inputs['Fac'])
+    nt.links.new(noise2.outputs['Fac'],    bump.inputs['Height'])
+    nt.links.new(bump.outputs['Normal'],   paint.inputs['Normal'])
+    nt.links.new(bump.outputs['Normal'],   metal.inputs['Normal'])
+    nt.links.new(paint.outputs['BSDF'],    mix.inputs[1])
+    nt.links.new(metal.outputs['BSDF'],    mix.inputs[2])
+    nt.links.new(mix.outputs['Shader'],    out.inputs['Surface'])
+    return mat
+
+
 def build_materials():
     mats = {}
-    # Brushed stainless steel
-    mats["steel"]      = mat_principled("steel",      (0.72,0.72,0.74), metallic=0.92, roughness=0.18)
-    # Polished stainless (heat exchanger)
-    mats["stainless"]  = mat_principled("stainless",  (0.80,0.82,0.84), metallic=0.96, roughness=0.10, clearcoat=0.3)
-    # Industrial blue pump paint
-    mats["pump_blue"]  = mat_principled("pump_blue",  (0.07,0.25,0.60), metallic=0.55, roughness=0.30, clearcoat=0.2)
-    # Yellow pipe insulation
-    mats["insulation"] = mat_principled("insulation",  (0.85,0.62,0.06), metallic=0.01, roughness=0.90)
-    # Dark valve body
-    mats["valve"]      = mat_principled("valve",       (0.10,0.10,0.12), metallic=0.70, roughness=0.42)
-    # Chrome / gauge
-    mats["chrome"]     = mat_principled("chrome",      (0.92,0.92,0.90), metallic=0.98, roughness=0.06)
-    # Concrete floor / wall
+    # Brushed stainless steel  (pipes, flanges)
+    mats["steel"]      = mat_principled("steel",      (0.72,0.72,0.74), metallic=0.92, roughness=0.20)
+    # Polished stainless  (heat exchanger shell)
+    mats["stainless"]  = mat_principled("stainless",  (0.80,0.82,0.84), metallic=0.96, roughness=0.08, clearcoat=0.2)
+    # Industrial pump casing — matte paint with wear and scratch imperfections
+    mats["pump_blue"]  = mat_painted_metal("pump_blue",  (0.06, 0.22, 0.55), roughness_paint=0.60)
+    # Motor housing — slightly darker navy blue paint (same wear material)
+    mats["pump_motor"] = mat_painted_metal("pump_motor", (0.04, 0.16, 0.42), roughness_paint=0.65)
+    # Yellow pipe insulation  (rock-wool / armaflex wrap)
+    mats["insulation"] = mat_principled("insulation",  (0.82, 0.60, 0.04), metallic=0.0, roughness=0.92)
+    # Gate valve body  (dark cast iron)
+    mats["valve"]      = mat_principled("valve",       (0.08, 0.08, 0.10), metallic=0.65, roughness=0.50)
+    # Chrome / gauge face and dial
+    mats["chrome"]     = mat_principled("chrome",      (0.92, 0.92, 0.90), metallic=0.98, roughness=0.05)
+    # Concrete floor / wall with procedural aggregate texture
     mats["concrete"]   = mat_concrete("concrete")
-    # Galvanised catwalk steel
-    mats["galv"]       = mat_principled("galv",        (0.55,0.58,0.58), metallic=0.75, roughness=0.38)
-    # Structural dark steel (beams)
-    mats["struct"]     = mat_principled("struct",      (0.12,0.14,0.15), metallic=0.85, roughness=0.55)
-    # LED light panel (emissive)
-    mats["led"]        = mat_principled("led", (1.0,0.97,0.90), emission=(1.0,0.97,0.90),
-                                        emission_strength=6.0, metallic=0.0, roughness=0.3)
-    # Control panel housing
-    mats["panel"]      = mat_principled("panel",       (0.12,0.16,0.20), metallic=0.45, roughness=0.55)
-    # Screen (emissive green for status)
-    mats["screen"]     = mat_principled("screen", (0.0,0.8,0.2), emission=(0.0,0.8,0.2),
-                                        emission_strength=3.0, metallic=0.0, roughness=0.2)
+    # Galvanised catwalk grating
+    mats["galv"]       = mat_principled("galv",        (0.50, 0.54, 0.54), metallic=0.72, roughness=0.42)
+    # Structural dark steel (columns, beams)
+    mats["struct"]     = mat_principled("struct",      (0.10, 0.12, 0.13), metallic=0.88, roughness=0.58)
+    # LED panel (warm white emissive)
+    mats["led"]        = mat_principled("led", (1.0, 0.97, 0.90),
+                                        emission=(1.0, 0.97, 0.90),
+                                        emission_strength=8.0, metallic=0.0, roughness=0.3)
+    # Control panel housing  (dark painted steel)
+    mats["panel"]      = mat_principled("panel",       (0.10, 0.14, 0.18), metallic=0.42, roughness=0.58)
+    # SCADA screen  (green emissive)
+    mats["screen"]     = mat_principled("screen", (0.0, 0.75, 0.18),
+                                        emission=(0.0, 0.75, 0.18),
+                                        emission_strength=4.0, metallic=0.0, roughness=0.2)
     return mats
 
 
@@ -377,34 +451,114 @@ def build_scene(mats):
 
     # ── Pumps ─────────────────────────────────────────────────────────────
     for i, (px, py, pz) in enumerate(PUMP_XYZ):
-        # Volute casing (scaled sphere)
-        v = add_sphere((px, py+0.20, pz), radius=0.30, name=f"volute_{i}")
-        v.scale.x = 0.95; v.scale.z = 1.10
+        # ── Volute casing: flat oval cross-section cylinder (looks like
+        #    a real pump casing, not a balloon sphere) ──────────────────
+        bpy.ops.mesh.primitive_cylinder_add(
+            vertices=48, radius=0.30, depth=0.38,
+            location=(px, py+0.20, pz),
+            rotation=(0, 0, math.pi/2))   # axis along X
+        v = bpy.context.active_object
+        v.name = f"volute_{i}"
+        # Flatten the cross-section: squash in Z to look oval from the side
+        v.scale.z = 0.80
+        v.scale.y = 0.85
         bpy.ops.object.transform_apply(scale=True)
         assign(v, mats["pump_blue"]); smooth(v)
-        # Motor housing
-        m = add_cylinder((px-0.46, py+0.20, pz), rot=(0, math.pi/2, 0),
-                         radius=0.18, depth=0.56, name=f"motor_{i}")
-        assign(m, mats["pump_blue"]); smooth(m)
-        # Coupling guard
-        g = add_cylinder((px-0.15, py+0.20, pz), rot=(0, math.pi/2, 0),
-                         radius=0.12, depth=0.12, name=f"guard_{i}")
+
+        # ── Split-case bolting flange (equatorial ring) ────────────────
+        bpy.ops.mesh.primitive_cylinder_add(
+            vertices=32, radius=0.32, depth=0.04,
+            location=(px, py+0.20, pz),
+            rotation=(0, math.pi/2, 0))
+        flange_eq = bpy.context.active_object
+        flange_eq.name = f"volute_flange_{i}"
+        assign(flange_eq, mats["pump_blue"]); smooth(flange_eq)
+
+        # ── Bolt studs around the split-case flange (8 bolts) ─────────
+        for b in range(8):
+            ang = b * math.pi / 4
+            bx = px
+            by = py + 0.20 + 0.30 * math.sin(ang)
+            bz = pz            + 0.30 * math.cos(ang)
+            bpy.ops.mesh.primitive_cylinder_add(
+                vertices=8, radius=0.018, depth=0.06,
+                location=(bx, by, bz),
+                rotation=(0, math.pi/2, 0))
+            bolt = bpy.context.active_object
+            bolt.name = f"bolt_v_{i}_{b}"
+            assign(bolt, mats["chrome"]); smooth(bolt)
+
+        # ── Motor housing (cylindrical, darker blue) ───────────────────
+        m = add_cylinder((px-0.48, py+0.20, pz), rot=(0, math.pi/2, 0),
+                         radius=0.175, depth=0.60, name=f"motor_{i}")
+        assign(m, mats["pump_motor"]); smooth(m)
+
+        # Motor end cap (flat disc)
+        bpy.ops.mesh.primitive_cylinder_add(
+            vertices=32, radius=0.176, depth=0.02,
+            location=(px-0.80, py+0.20, pz),
+            rotation=(0, math.pi/2, 0))
+        end_cap = bpy.context.active_object
+        end_cap.name = f"motor_endcap_{i}"
+        assign(end_cap, mats["pump_motor"]); smooth(end_cap)
+
+        # Motor cooling fins (thin cylinder rings)
+        for fi_idx, fx in enumerate([-0.48, -0.58, -0.68]):
+            bpy.ops.mesh.primitive_torus_add(
+                major_radius=0.195, minor_radius=0.012,
+                major_segments=32, minor_segments=8,
+                location=(px + fx, py+0.20, pz))
+            fin = bpy.context.active_object
+            fin.rotation_euler = Euler((0, math.pi/2, 0))
+            fin.name = f"motor_fin_{i}_{fi_idx}"
+            assign(fin, mats["pump_motor"]); smooth(fin)
+
+        # ── Coupling guard (polished steel tube) ──────────────────────
+        g = add_cylinder((px-0.16, py+0.20, pz), rot=(0, math.pi/2, 0),
+                         radius=0.115, depth=0.14, name=f"guard_{i}")
         assign(g, mats["steel"]); smooth(g)
-        # Suction nozzle
-        sn = add_pipe((px, py+0.20, pz-0.22), (px, py+0.20, pz-0.50),
-                      radius=0.07, name=f"suction_{i}")
+
+        # ── Suction nozzle (Z direction, entering volute side) ────────
+        sn = add_pipe((px, py+0.20, pz-0.28), (px, py+0.20, pz-0.55),
+                      radius=0.072, name=f"suction_{i}")
         assign(sn, mats["steel"]); smooth(sn)
-        # Discharge nozzle
-        dn = add_pipe((px, py+0.35, pz), (px, py+0.65, pz),
-                      radius=0.06, name=f"discharge_n_{i}")
+        # Suction flange
+        sf = add_cylinder((px, py+0.20, pz-0.32), radius=0.10, depth=0.025,
+                          name=f"suc_fl_{i}")
+        assign(sf, mats["steel"]); smooth(sf)
+
+        # ── Discharge nozzle (Y direction, going up to header) ────────
+        dn = add_pipe((px, py+0.34, pz), (px, py+0.68, pz),
+                      radius=0.062, name=f"discharge_n_{i}")
         assign(dn, mats["steel"]); smooth(dn)
-        # Baseplate
-        bp = add_box((px-0.08, py+0.02, pz), (0.9, 0.04, 0.7), name=f"baseplate_{i}")
+        # Discharge flange
+        df = add_cylinder((px, py+0.38, pz), radius=0.090, depth=0.025,
+                          name=f"dsc_fl_{i}")
+        assign(df, mats["steel"]); smooth(df)
+
+        # ── Baseplate (gusset style) ───────────────────────────────────
+        bp = add_box((px-0.10, py+0.01, pz), (0.95, 0.03, 0.72), name=f"baseplate_{i}")
         assign(bp, mats["struct"])
-        # Motor fan cover
-        fc = add_cylinder((px-0.75, py+0.20, pz), rot=(0, math.pi/2, 0),
-                          radius=0.19, depth=0.02, name=f"fancover_{i}")
+
+        # Anchor bolts (4 corners)
+        for abx, abz in [(px-0.35,pz-0.28),(px-0.35,pz+0.28),
+                          (px+0.20,pz-0.28),(px+0.20,pz+0.28)]:
+            bpy.ops.mesh.primitive_cylinder_add(
+                vertices=8, radius=0.022, depth=0.12,
+                location=(abx, py+0.06, abz))
+            ab = bpy.context.active_object
+            ab.name = f"anchor_{i}_{abx}"
+            assign(ab, mats["chrome"]); smooth(ab)
+
+        # ── Motor fan cover (perforated look) ─────────────────────────
+        fc = add_cylinder((px-0.78, py+0.20, pz), rot=(0, math.pi/2, 0),
+                          radius=0.185, depth=0.025, name=f"fancover_{i}")
         assign(fc, mats["steel"]); smooth(fc)
+
+        # ── Nameplate (small rectangle on casing) ─────────────────────
+        np_obj = add_box((px, py+0.42, pz), (0.14, 0.002, 0.08), name=f"nameplate_{i}")
+        assign(np_obj, mats["chrome"])
+
         objs[f"pump_{i}"] = v
 
     # ── Pipe network ──────────────────────────────────────────────────────
@@ -519,53 +673,53 @@ def setup_lighting(light_locs):
         if o.type == 'LIGHT':
             bpy.data.objects.remove(o, do_unlink=True)
 
-    # ── Sun / Skylight (main key) ─────────────────────────────────────────
+    # ── Sun / Skylight — enters through high industrial windows ──────────────
     bpy.ops.object.light_add(type='SUN', location=(8, 12, 4))
     sun = bpy.context.active_object
     sun.name = "sun_key"
-    sun.data.energy  = 3.5
-    sun.data.color   = (0.95, 0.97, 1.00)
-    sun.data.angle   = math.radians(2.0)    # soft shadow
-    sun.rotation_euler = Euler((math.radians(-55), 0, math.radians(30)))
+    sun.data.energy  = 5.0        # brighter sun for clear industrial day
+    sun.data.color   = (1.00, 0.97, 0.90)   # slightly warm (morning light)
+    sun.data.angle   = math.radians(2.5)     # soft penumbra shadows
+    sun.rotation_euler = Euler((math.radians(-50), 0, math.radians(25)))
 
-    # ── Large sky fill (through skylight diffuse) ─────────────────────────
+    # ── Large diffuse fill — skylights / north window ─────────────────────
     bpy.ops.object.light_add(type='AREA', location=(3.5, 8.0, 2.5))
     fill = bpy.context.active_object
     fill.name = "sky_fill"
-    fill.data.energy  = 80.0
-    fill.data.color   = (0.80, 0.88, 1.00)
-    fill.data.size    = 6.0
+    fill.data.energy  = 120.0     # strong fill to illuminate shadow side
+    fill.data.color   = (0.82, 0.90, 1.00)  # cool blue-sky fill
+    fill.data.size    = 8.0
     fill.rotation_euler = Euler((math.radians(90), 0, 0))
 
-    # ── Bounce fill from floor ────────────────────────────────────────────
-    bpy.ops.object.light_add(type='AREA', location=(3.5, -2.0, 2.5))
+    # ── Floor bounce — light bounced from concrete floor ──────────────────
+    bpy.ops.object.light_add(type='AREA', location=(3.5, -1.5, 2.5))
     bounce = bpy.context.active_object
     bounce.name = "floor_bounce"
-    bounce.data.energy  = 25.0
-    bounce.data.color   = (0.90, 0.88, 0.82)
-    bounce.data.size    = 8.0
+    bounce.data.energy  = 40.0
+    bounce.data.color   = (0.92, 0.90, 0.85)   # warm concrete-tinted bounce
+    bounce.data.size    = 10.0
     bounce.rotation_euler = Euler((math.radians(-90), 0, 0))
 
-    # ── Ceiling LED fixtures ──────────────────────────────────────────────
-    for j, (lx,ly,lz) in enumerate(light_locs):
-        bpy.ops.object.light_add(type='AREA', location=(lx, ly-0.05, lz))
+    # ── Ceiling industrial LED high-bay fixtures ──────────────────────────
+    for j, (lx, ly, lz) in enumerate(light_locs):
+        bpy.ops.object.light_add(type='AREA', location=(lx, ly-0.06, lz))
         led = bpy.context.active_object
         led.name = f"led_light_{j}"
-        led.data.energy  = 350.0
-        led.data.color   = (1.00, 0.95, 0.80)
-        led.data.size    = 0.40
-        led.data.size_y  = 0.18
-        led.data.spread  = math.radians(120)
+        led.data.energy  = 500.0     # bright industrial high-bay (5000 lm equiv.)
+        led.data.color   = (1.00, 0.96, 0.82)   # warm white LED (4000K)
+        led.data.size    = 0.50
+        led.data.size_y  = 0.20
+        led.data.spread  = math.radians(130)
         led.rotation_euler = Euler((math.radians(180), 0, 0))
 
-    # ── Rim light (separates equipment from background) ───────────────────
-    bpy.ops.object.light_add(type='AREA', location=(3.5, 5.0, 10.0))
+    # ── Rim / back light — separates dark equipment from walls ────────────
+    bpy.ops.object.light_add(type='AREA', location=(3.5, 4.8, 10.0))
     rim = bpy.context.active_object
     rim.name = "rim_light"
-    rim.data.energy  = 60.0
-    rim.data.color   = (0.75, 0.82, 1.00)
-    rim.data.size    = 4.0
-    rim.rotation_euler = Euler((math.radians(30), 0, 0))
+    rim.data.energy  = 90.0
+    rim.data.color   = (0.78, 0.85, 1.00)
+    rim.data.size    = 5.0
+    rim.rotation_euler = Euler((math.radians(28), 0, 0))
 
 
 # ============================================================================
@@ -573,15 +727,30 @@ def setup_lighting(light_locs):
 # ============================================================================
 
 CAM_KEYS = [
-    # (frame_pct, eye,                        focal,               fstop)
-    # All cameras at eye-level (y=1.6-2.5) — industrial floor perspective
-    (0.00, (10.0, 1.80,  0.5),  (1.0, 0.70, 2.5), 5.6),   # wide: right end looking left
-    (0.18, ( 7.0, 1.70, -1.2),  (0.0, 0.75, 2.5), 4.0),   # diagonal pump view
-    (0.38, (-2.5, 1.65,  2.5),  (4.0, 0.80, 2.5), 2.8),   # facing full plant from left wall
-    (0.55, ( 0.5, 1.60,  7.5),  (5.5, 0.80, 2.5), 4.0),   # back corner: HX approach
-    (0.72, (10.5, 1.75,  6.5),  (5.5, 0.80, 2.5), 4.0),   # far right: HX & pipes
-    (0.88, ( 3.0, 2.80,  2.5),  (2.5, 0.70, 2.5), 8.0),   # elevated: aerial overview
-    (1.00, (10.0, 1.80,  0.5),  (1.0, 0.70, 2.5), 5.6),   # back to start
+    # (frame_pct, eye,                         focal_point,          f/stop)
+    # All positions inside the plant (z:-1.5..7, x:-4.5..12, y:0.1..4.8)
+    # Eye level at y=1.65-1.80 = realistic industrial inspector viewpoint
+
+    # Shot 1 — Wide master: diagonal from front-right, shows full plant depth
+    (0.00, ( 9.5, 1.75,  1.5),  (0.5, 0.85, 2.5),  5.6),
+
+    # Shot 2 — Close-up: pump array side view, piping in foreground
+    (0.20, ( 3.0, 1.65,  0.5),  (-0.5, 0.90, 2.5), 2.8),
+
+    # Shot 3 — Walking shot: facing the 3 pumps from the walkway at left wall
+    (0.40, (-3.2, 1.68,  2.5),  (3.0, 0.85, 2.5),  4.0),
+
+    # Shot 4 — HX approach: from back-right, looking toward manifold & HX
+    (0.57, ( 9.0, 1.72,  6.5),  (4.0, 0.85, 2.5),  4.0),
+
+    # Shot 5 — HX close-up: ground level beside the heat exchanger vessel
+    (0.73, ( 5.5, 1.65,  5.5),  (6.2, 0.90, 2.5),  2.0),
+
+    # Shot 6 — Low angle: dramatic low-angle looking up at pipes and ceiling lights
+    (0.87, ( 2.0, 0.80,  2.5),  (4.0, 2.50, 2.5),  4.0),
+
+    # Shot 7 — Return to master
+    (1.00, ( 9.5, 1.75,  1.5),  (0.5, 0.85, 2.5),  5.6),
 ]
 
 

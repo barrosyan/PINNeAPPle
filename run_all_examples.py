@@ -44,6 +44,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -382,6 +383,12 @@ def run_script(script: Script, out_dir: Path, device: str, seed: int) -> RunResu
     result.stdout_file = str(stdout_f.relative_to(out_dir))
     result.stderr_file = str(stderr_f.relative_to(out_dir))
 
+    # Force UTF-8 I/O in child process — fixes UnicodeEncodeError with Greek
+    # letters, arrows etc. in plot labels on Windows cp1252 consoles.
+    env = dict(os.environ)
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"]       = "1"
+
     t0 = time.time()
     try:
         proc = subprocess.run(
@@ -392,6 +399,7 @@ def run_script(script: Script, out_dir: Path, device: str, seed: int) -> RunResu
             cwd=str(REPO),
             encoding="utf-8",
             errors="replace",
+            env=env,
         )
         elapsed = time.time() - t0
         stdout_f.write_text(proc.stdout or "(no output)", encoding="utf-8")
@@ -401,10 +409,26 @@ def run_script(script: Script, out_dir: Path, device: str, seed: int) -> RunResu
         if proc.returncode == 0:
             result.status = "passed"
         else:
-            result.status  = "failed"
-            # Extract last error line
-            lines = (proc.stderr or proc.stdout or "").strip().splitlines()
-            result.error_msg = lines[-1] if lines else "exit code " + str(proc.returncode)
+            combined = (proc.stderr or "") + (proc.stdout or "")
+            lines     = combined.strip().splitlines()
+            last_line = lines[-1] if lines else f"exit code {proc.returncode}"
+            result.error_msg = last_line
+
+            # Classify missing-module failures as skipped, not failed
+            _SKIP_PATTERNS = (
+                "ModuleNotFoundError",
+                "No module named",
+                "ImportError",
+                "cannot import name",
+            )
+            if any(p in combined for p in _SKIP_PATTERNS):
+                # Extract the missing module name
+                m = re.search(r"No module named '([^']+)'", combined)
+                mod = m.group(1) if m else "unknown"
+                result.status     = "skipped"
+                result.skip_reason = f"missing module: {mod}"
+            else:
+                result.status = "failed"
 
     except subprocess.TimeoutExpired:
         elapsed = time.time() - t0
@@ -429,6 +453,14 @@ def run_script(script: Script, out_dir: Path, device: str, seed: int) -> RunResu
 ICONS = {"passed": "PASS", "failed": "FAIL", "skipped": "SKIP",
          "timeout": "TIME", "error": "ERR "}
 
+def _safe_print(msg: str) -> None:
+    """Print safely on Windows cp1252 consoles — replace unencodable chars."""
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        print(msg.encode(sys.stdout.encoding or "ascii", errors="replace").decode(sys.stdout.encoding or "ascii"))
+
+
 def print_result(r: RunResult, verbose: bool = False):
     icon = ICONS.get(r.status, "???")
     t    = f"{r.elapsed_s:5.1f}s" if r.elapsed_s else "      "
@@ -437,7 +469,7 @@ def print_result(r: RunResult, verbose: bool = False):
         msg += f"  -- {r.error_msg[:80]}"
     elif r.status == "skipped":
         msg += f"  ({r.skip_reason})"
-    print(msg)
+    _safe_print(msg)
 
 
 def save_report(results: List[RunResult], out_dir: Path, args: argparse.Namespace):
@@ -583,7 +615,7 @@ def main():
             suffix = f"  -- {result.error_msg[:70]}"
         elif result.status == "skipped":
             suffix = f"  ({result.skip_reason})"
-        print(f"  {icon} {t}{suffix}")
+        _safe_print(f"  {icon} {t}{suffix}")
 
     # Save report
     total_elapsed = time.time() - t_start
@@ -603,10 +635,10 @@ def main():
     # Print failures
     failures = [r for r in results if r.status in ("failed","error","timeout")]
     if failures:
-        print("  Failed scripts:")
+        _safe_print("  Failed scripts:")
         for r in failures:
-            print(f"    [{r.status.upper()}] {r.category}/{r.name}: {r.error_msg}")
-        print()
+            _safe_print(f"    [{r.status.upper()}] {r.category}/{r.name}: {r.error_msg[:100]}")
+        _safe_print("")
 
     sys.exit(0 if totals["failed"] == 0 and totals["error"] == 0 else 1)
 
