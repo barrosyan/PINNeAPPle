@@ -26,7 +26,7 @@ import math
 
 import torch
 
-from pinneapple_models.pinns.vanilla import VanillaPINN
+from pinneapple_models import VanillaPINN
 
 
 def physics_fn(model: VanillaPINN, data: dict) -> tuple[torch.Tensor, dict]:

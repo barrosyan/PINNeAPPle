@@ -39,7 +39,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from pinneapple_models.neural_operators.deeponet import DeepONet
+from pinneapple_neural.architectures.neural_operators.deeponet import DeepONet
 from pinneapple_train import (
     best_device, maybe_compile, AMPContext,
     GradAccumConfig, GradAccumTrainer,

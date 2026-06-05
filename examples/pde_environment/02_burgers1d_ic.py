@@ -9,7 +9,7 @@ ensure_repo_on_path()
 
 from pinneapple_environment import burgers_1d_default
 from pinneapple_pinn.compiler import LossWeights, compile_problem
-from pinneapple_models.pinns.vanilla import VanillaPINN
+from pinneapple_models import VanillaPINN
 
 
 def sample_xt(n: int, *, xlim=(-1.0, 1.0), tlim=(0.0, 1.0), seed=7) -> np.ndarray:

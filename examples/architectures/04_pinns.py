@@ -6,14 +6,14 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 
 from pinneapple_pinn.factory.pinn_factory import PINNProblemSpec, PINNFactory, PINN
-from pinneapple_models.pinns.inverse import InversePINN
-from pinneapple_models.pinns.pielm import PIELM, PIELMFactoryAdapter
-from pinneapple_models.pinns.pinn_lstm import PINNLSTM
-from pinneapple_models.pinns.pinnsformer import PINNsFormer
-from pinneapple_models.pinns.vanilla import VanillaPINN
-from pinneapple_models.pinns.vpinn import VPINN, pinn_factory_adapter
-from pinneapple_models.pinns.xpinn import XPINN
-from pinneapple_models.pinns.xtfc import XTFC, XTFCFactoryModel, XTFCConfig
+from pinneapple_neural.architectures.pinns.inverse import InversePINN
+from pinneapple_neural.architectures.pinns.pielm import PIELM, PIELMFactoryAdapter
+from pinneapple_neural.architectures.pinns.pinn_lstm import PINNLSTM
+from pinneapple_neural.architectures.pinns.pinnsformer import PINNsFormer
+from pinneapple_models import VanillaPINN
+from pinneapple_neural.architectures.pinns.vpinn import VPINN, pinn_factory_adapter
+from pinneapple_neural.architectures.pinns.xpinn import XPINN
+from pinneapple_neural.architectures.pinns.xtfc import XTFC, XTFCFactoryModel, XTFCConfig
 
 from typing import Dict, Any, List, Tuple
 

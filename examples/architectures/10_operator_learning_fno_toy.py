@@ -24,7 +24,7 @@ import math
 
 import torch
 
-from pinneapple_models.neural_operators.fno import FourierNeuralOperator
+from pinneapple_models import FourierNeuralOperator
 
 
 def make_batch(B: int, L: int, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:

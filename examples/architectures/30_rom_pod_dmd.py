@@ -20,8 +20,8 @@ sys.path.insert(0, str(ROOT))
 
 import torch
 
-from pinneapple_models.rom.pod import POD
-from pinneapple_models.rom.dmd import DynamicModeDecomposition
+from pinneapple_neural.architectures.rom.pod import POD
+from pinneapple_neural.architectures.rom.dmd import DynamicModeDecomposition
 
 
 def make_linear_system(D: int, seed: int = 0) -> torch.Tensor:

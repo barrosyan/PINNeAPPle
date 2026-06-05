@@ -52,8 +52,8 @@ from pinneapple_environment.conditions import DirichletBC, InitialCondition, Dat
 from pinneapple_arena.pipeline.dataset_builder import build_from_solver, build_from_real_data
 from pinneapple_arena.runner.compare import compare_runs
 
-from pinneapple_models.registry import ModelRegistry
-from pinneapple_models.register_all import register_all
+from pinneapple_models import ModelRegistry
+from pinneapple_models import register_all
 
 from pinneapple_pinn.compiler.compile import compile_problem
 from pinneapple_pinn.compiler.loss import LossWeights

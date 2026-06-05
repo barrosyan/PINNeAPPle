@@ -124,8 +124,8 @@ print()
 # ---------------------------------------------------------------------------
 # 4. MeshGraphNet
 # ---------------------------------------------------------------------------
-from pinneapple_models.graphnn.mesh_graph_net import MeshGraphNet
-from pinneapple_models.graphnn.base import GraphBatch
+from pinneapple_neural.architectures.graphnn.mesh_graph_net import MeshGraphNet
+from pinneapple_models import GraphBatch
 
 print("=" * 60)
 print("4. MeshGraphNet (GNN for unstructured FEM meshes)")
@@ -232,8 +232,8 @@ print()
 # ---------------------------------------------------------------------------
 # 6. Registry check
 # ---------------------------------------------------------------------------
-from pinneapple_models.register_all import register_all
-from pinneapple_models.registry import ModelRegistry
+from pinneapple_models import register_all
+from pinneapple_models import ModelRegistry
 
 print("=" * 60)
 print("6. ModelRegistry — Group B models")

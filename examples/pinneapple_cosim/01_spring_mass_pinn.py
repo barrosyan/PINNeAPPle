@@ -208,7 +208,7 @@ class _AccelWrapper(nn.Module):
 
 
 try:
-    from pinneapple_models.pinns.vanilla import VanillaPINN
+    from pinneapple_models import VanillaPINN
     _base2 = VanillaPINN(in_dim=3, out_dim=1, hidden=[128, 128, 128])
     nn.init.xavier_uniform_(list(_base2.parameters())[-2], gain=0.1)
     nn.init.zeros_(list(_base2.parameters())[-1])

@@ -9,7 +9,7 @@ ensure_repo_on_path()
 
 from pinneapple_environment import ns_incompressible_2d_default
 from pinneapple_pinn.compiler import LossWeights, compile_problem
-from pinneapple_models.pinns.vanilla import VanillaPINN
+from pinneapple_models import VanillaPINN
 
 
 def sample_uniform(n: int, low: np.ndarray, high: np.ndarray, seed=7) -> np.ndarray:

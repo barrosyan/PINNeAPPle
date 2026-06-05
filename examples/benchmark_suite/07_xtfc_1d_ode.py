@@ -37,8 +37,8 @@ sys.path.insert(0, str(REPO_ROOT))
 import torch
 import torch.nn as nn
 
-from pinneapple_models.pinns.xtfc import XTFC, XTFCConfig, build_xtfc, tfc_available
-from pinneapple_models.pinns.vanilla import VanillaPINN
+from pinneapple_neural.architectures.pinns.xtfc import XTFC, XTFCConfig, build_xtfc, tfc_available
+from pinneapple_models import VanillaPINN
 from pinneapple_train import best_device
 
 

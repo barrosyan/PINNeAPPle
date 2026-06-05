@@ -8,7 +8,7 @@ What this shows
 
 Run
 ---
-python examples/pinneapple_geom/06_meshio_roundtrip_with_pointdata.py
+python examples/pinneapple_design.geometry/06_meshio_roundtrip_with_pointdata.py
 """
 
 from __future__ import annotations
@@ -17,12 +17,12 @@ from pathlib import Path
 
 import numpy as np
 
-from pinneapple_geom.gen.primitives import build_primitive
-from pinneapple_geom.io.meshio_bridge import save_meshio, meshio_to_upd
+from pinneapple_design.geometry.gen.primitives import build_primitive
+from pinneapple_design.geometry.io.meshio_bridge import save_meshio, meshio_to_upd
 
 
 def main() -> None:
-    out_dir = Path("examples/pinneapple_geom/_out")
+    out_dir = Path("examples/pinneapple_design.geometry/_out")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # A smooth mesh so point_data looks clean.

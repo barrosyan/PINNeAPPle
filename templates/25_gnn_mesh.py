@@ -1,7 +1,7 @@
 """25_gnn_mesh.py — MeshGraphNet for mesh-based CFD simulation.
 
 Demonstrates:
-- MeshGraphNet architecture from pinneapple_models.graphnn
+- MeshGraphNet architecture from pinneapple_neural.architectures.graphnn
 - GraphDataBuilder: convert a 2D mesh to a PyG-compatible graph
 - Node features: position (x,y), pressure, velocity components
 - Training to predict next-step velocity from mesh graph
