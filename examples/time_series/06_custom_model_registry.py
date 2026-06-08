@@ -15,7 +15,7 @@ import torch
 import torch.nn as nn
 
 from pinneapple_models import ModelRegistry
-from pinneapple_timeseries import TimeSeriesSpec, TSDataModule, TSModelCatalog
+from pinneapple_systems import TimeSeriesSpec, TSDataModule, TSModelCatalog
 
 
 # 1) Define and register a model

@@ -1,7 +1,7 @@
 """19_fno_neural_operator.py — Fourier Neural Operator (FNO) for 1D Burgers.
 
 Demonstrates:
-- FNO1d architecture from pinneapple_neural.architectures.neural_operators
+- FourierNeuralOperator architecture from pinneapple_neural.architectures.neural_operators
 - Operator learning: map initial condition u0(x) → solution u(x,T)
 - Training on a dataset of (u0, u_T) pairs generated from a simple solver
 - Evaluation: relative L2 error over test trajectories
@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneapple_neural.architectures.neural_operators.fno import FNO1d
+from pinneapple_neural.architectures.neural_operators.fno import FourierNeuralOperator
 
 
 # ---------------------------------------------------------------------------
@@ -85,16 +85,16 @@ def main():
     Y_te = torch.tensor(uT_te[:, :, None], device=device)
 
     # --- FNO -----------------------------------------------------------------
-    fno = FNO1d(
-        n_modes=16,
-        hidden_channels=32,
-        n_layers=4,
+    fno = FourierNeuralOperator(
         in_channels=1,
         out_channels=1,
+        width=32,
+        modes=16,
+        layers=4,
     ).to(device)
 
     n_params = sum(p.numel() for p in fno.parameters())
-    print(f"FNO1d parameters: {n_params:,}")
+    print(f"FourierNeuralOperator parameters: {n_params:,}")
 
     # --- Training ------------------------------------------------------------
     optimizer = torch.optim.Adam(fno.parameters(), lr=1e-3)

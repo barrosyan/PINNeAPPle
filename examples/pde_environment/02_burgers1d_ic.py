@@ -7,8 +7,7 @@ from _utils import ensure_repo_on_path
 
 ensure_repo_on_path()
 
-from pinneapple_environment import burgers_1d_default
-from pinneapple_pinn.compiler import LossWeights, compile_problem
+from pinneapple_physics import burgers_1d_default, LossWeights, compile_problem
 from pinneapple_models import VanillaPINN
 
 

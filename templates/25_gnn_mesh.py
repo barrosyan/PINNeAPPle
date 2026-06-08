@@ -16,7 +16,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from pinneapple_neural.architectures.graphnn.mesh_graph_net import MeshGraphNet
-from pinneapple_neural.architectures.graphnn.graph_builder import GraphDataBuilder
 
 
 # ---------------------------------------------------------------------------

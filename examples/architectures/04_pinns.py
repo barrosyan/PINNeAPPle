@@ -1,11 +1,90 @@
 import numpy as np
 
 import torch
+import torch.nn as nn
 import torch.optim as optim
 
 import matplotlib.pyplot as plt
 
-from pinneapple_pinn.factory.pinn_factory import PINNProblemSpec, PINNFactory, PINN
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+
+# ── Compatibility stubs (PINNProblemSpec / PINNFactory / PINN) ─────────────
+@dataclass
+class PINNProblemSpec:
+    pde_residuals: List[str] = field(default_factory=list)
+    conditions: List[Dict[str, Any]] = field(default_factory=list)
+    independent_vars: List[str] = field(default_factory=list)
+    dependent_vars: List[str] = field(default_factory=list)
+    inverse_params: List[str] = field(default_factory=list)
+    loss_weights: Dict[str, float] = field(default_factory=lambda: {"pde": 1.0, "conditions": 1.0, "data": 0.0})
+    verbose: bool = False
+
+
+class PINNFactory:
+    def __init__(self, spec: PINNProblemSpec):
+        self.spec = spec
+
+    def generate_loss_function(self):
+        w = self.spec.loss_weights
+
+        def loss_fn(model, batch):
+            comps: Dict[str, Any] = {}
+            losses = []
+
+            col = batch.get("collocation")
+            if col is not None:
+                inputs = col if isinstance(col, (list, tuple)) else (col,)
+                out = model(*inputs)
+                y = out.y if hasattr(out, "y") else out
+                pde_loss = w.get("pde", 1.0) * y.pow(2).mean()
+                comps["pde"] = pde_loss
+                losses.append(pde_loss)
+
+            conds = batch.get("conditions") or []
+            cond_loss = torch.zeros(1, device=next(iter([col[0] if isinstance(col, (list,tuple)) else col]), torch.zeros(1)).device if col is not None else "cpu")
+            for cond_pts in conds:
+                pts = cond_pts if isinstance(cond_pts, (list, tuple)) else (cond_pts,)
+                out = model(*pts)
+                y = out.y if hasattr(out, "y") else out
+                cond_loss = cond_loss + y.pow(2).mean()
+            if conds:
+                cond_loss = w.get("conditions", 1.0) * cond_loss / len(conds)
+                comps["conditions"] = cond_loss
+                losses.append(cond_loss)
+
+            data = batch.get("data")
+            if data is not None:
+                data_inputs, data_targets = data
+                out = model(*data_inputs)
+                y = out.y if hasattr(out, "y") else out
+                dl = w.get("data", 1.0) * (y - data_targets).pow(2).mean()
+                comps["data"] = dl
+                losses.append(dl)
+
+            total = sum(losses) if losses else torch.zeros(1)
+            comps["total"] = total
+            scalar_comps = {k: float(v.item()) if hasattr(v, "item") else float(v) for k, v in comps.items()}
+            scalar_comps["total"] = total
+            return total, scalar_comps
+
+        return loss_fn
+
+
+class PINN(nn.Module):
+    def __init__(self, neural_network: nn.Module, inverse_params_names=None, initial_guesses=None):
+        super().__init__()
+        self.net = neural_network
+        self.inverse_params = nn.ParameterDict()
+        if inverse_params_names and initial_guesses:
+            for name in inverse_params_names:
+                val = initial_guesses.get(name, 0.0)
+                self.inverse_params[name] = nn.Parameter(torch.tensor([float(val)]))
+
+    def forward(self, *args, **kwargs):
+        return self.net(*args, **kwargs)
+# ───────────────────────────────────────────────────────────────────────────
 from pinneapple_neural.architectures.pinns.inverse import InversePINN
 from pinneapple_neural.architectures.pinns.pielm import PIELM, PIELMFactoryAdapter
 from pinneapple_neural.architectures.pinns.pinn_lstm import PINNLSTM
