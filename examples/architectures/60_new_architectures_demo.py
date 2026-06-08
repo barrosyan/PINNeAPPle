@@ -21,7 +21,7 @@ import torch
 # ---------------------------------------------------------------------------
 # 1. SIREN
 # ---------------------------------------------------------------------------
-from pinneapple_models.siren import SIREN
+from pinneapple_neural.architectures.siren import SIREN
 
 print("=" * 60)
 print("1. SIREN (Sinusoidal Representation Network)")
@@ -55,7 +55,8 @@ print()
 # ---------------------------------------------------------------------------
 # 2. Modified MLP
 # ---------------------------------------------------------------------------
-from pinneapple_models.modified_mlp import ModifiedMLP, FourierFeatureEmbedding
+from pinneapple_models import ModifiedMLP
+from pinneapple_neural.architectures.modified_mlp import FourierFeatureEmbedding
 
 print("=" * 60)
 print("2. ModifiedMLP (Fourier features + highway U/V gating)")
@@ -87,7 +88,7 @@ print()
 # ---------------------------------------------------------------------------
 # 3. HashGridMLP
 # ---------------------------------------------------------------------------
-from pinneapple_models.hash_grid import HashGridMLP, HashGridEncoding
+from pinneapple_neural.architectures import HashGridMLP, HashGridEncoding
 
 print("=" * 60)
 print("3. HashGridMLP (Instant-NGP style multi-resolution hash encoding)")
@@ -194,7 +195,7 @@ print()
 # ---------------------------------------------------------------------------
 # 5. AFNO
 # ---------------------------------------------------------------------------
-from pinneapple_models.afno import AFNO, AFNOLayer
+from pinneapple_neural.architectures.afno import AFNO, AFNOLayer
 
 print("=" * 60)
 print("5. AFNO (Adaptive Fourier Neural Operator)")

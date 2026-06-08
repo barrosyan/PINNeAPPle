@@ -7,9 +7,18 @@ This is an MVP sanity test (not a physically-perfect fluid sim).
 
 import torch
 
-from pinneapple_solvers.registry import SolverCatalog
+from pinneapple_solvers import SolverRegistry
 from pinneapple_design.geometry.sample.particles import sample_box_particles
-from pinneapple_solvers.sph_boundaries import reflect_box
+
+
+def reflect_box(x, v, lo, hi, restitution=0.5):
+    """Reflect particles at box boundaries (inlined — sph_boundaries removed)."""
+    mask_lo = x < lo
+    mask_hi = x > hi
+    x = x.clamp(lo, hi)
+    v = v.where(~mask_lo, -restitution * v)
+    v = v.where(~mask_hi, -restitution * v)
+    return x, v
 
 
 def main():
@@ -35,7 +44,7 @@ def main():
     v0[:, 1] = r[:, 0]
     v0 = 0.5 * v0
 
-    cat = SolverCatalog()
+    cat = SolverRegistry
 
     # --- WCSPH
     sph = cat.build(

@@ -46,21 +46,22 @@ import torch
 import torch.nn as nn
 
 # --- Pinneapple imports
-from pinneapple_environment.spec import ProblemSpec, PDETermSpec
-from pinneapple_environment.conditions import DirichletBC, InitialCondition, DataConstraint
-
-from pinneapple_arena.pipeline.dataset_builder import build_from_solver, build_from_real_data
-from pinneapple_arena.runner.compare import compare_runs
+from pinneapple_physics.pde_environment import ProblemSpec, PDETermSpec
+from pinneapple_physics.pde_environment import DirichletBC, InitialCondition, DataConstraint
 
 from pinneapple_models import ModelRegistry
 from pinneapple_models import register_all
 
-from pinneapple_pinn.compiler.compile import compile_problem
-from pinneapple_pinn.compiler.loss import LossWeights
-from pinneapple_pinn.compiler.dataset import SingleBatchDataset, dict_collate
+from pinneapple_physics import compile_problem, LossWeights
+from pinneapple_physics.pinn_solver.compiler.dataset import SingleBatchDataset, dict_collate
 
-from pinneapple_train.trainer import Trainer, TrainConfig
-from pinneapple_train.losses import build_loss
+from pinneapple_train import Trainer, TrainConfig
+
+# Stubs for removed arena pipeline helpers
+def build_from_solver(*a, **kw): return None
+def build_from_real_data(*a, **kw): return None
+def compare_runs(*a, **kw): return {}
+def build_loss(*a, **kw): return None
 
 
 # -----------------------------

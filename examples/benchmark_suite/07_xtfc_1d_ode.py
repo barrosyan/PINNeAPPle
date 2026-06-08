@@ -39,10 +39,9 @@ import torch.nn as nn
 
 from pinneapple_neural.architectures.pinns.xtfc import XTFC, XTFCConfig, build_xtfc, tfc_available
 from pinneapple_models import VanillaPINN
-from pinneapple_train import best_device
+import torch as _torch
 
-
-DEVICE = best_device()
+DEVICE = _torch.device("cuda" if _torch.cuda.is_available() else "cpu")
 print(f"[Device] {DEVICE}")
 print(f"[TFC library] Available: {tfc_available()}")
 

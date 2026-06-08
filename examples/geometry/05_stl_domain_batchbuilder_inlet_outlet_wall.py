@@ -20,8 +20,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pinneapple_environment.conditions import DirichletBC
-from pinneapple_environment.spec import PDETermSpec, ProblemSpec
+from pinneapple_physics.pde_environment import DirichletBC, PDETermSpec, ProblemSpec
 
 from pinneapple_design.geometry.gen.primitives import build_primitive
 from pinneapple_design.geometry.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig

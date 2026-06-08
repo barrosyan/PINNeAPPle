@@ -8,9 +8,8 @@ from _utils import ensure_repo_on_path
 
 ensure_repo_on_path()
 
-from pinneapple_environment import steady_heat_conduction_3d_default
+from pinneapple_physics import steady_heat_conduction_3d_default, LossWeights, compile_problem
 from pinneapple_design.geometry.builders.stl_domain_batch_builder import STLDomainBatchBuilder, STLDomainBatchConfig
-from pinneapple_pinn.compiler import LossWeights, compile_problem
 from pinneapple_models import VanillaPINN
 
 
