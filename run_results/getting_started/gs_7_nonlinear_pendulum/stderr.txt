@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\getting_started\07_nonlinear_pendulum.py", line 156, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\getting_started\07_nonlinear_pendulum.py", line 118, in main
+    print(f"Training: {cfg['label']} ...")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 23-24: character maps to <undefined>

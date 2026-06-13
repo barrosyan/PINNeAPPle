@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\physics_db\06_supervised_tiny_train_from_upd.py", line 22, in <module>
+    from pinneapple_physics.pinn_solver.io.upd_dataset import UPDItem, UPDDataset, SamplingSpec
+ModuleNotFoundError: No module named 'pinneapple_physics'

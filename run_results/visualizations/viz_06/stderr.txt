@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\visualizations\viz_06_structural.py", line 237, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\visualizations\viz_06_structural.py", line 228, in main
+    print("\u2500" * 55)
+    ~~~~~^^^^^^^^^^
+  File "C:\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-54: character maps to <undefined>

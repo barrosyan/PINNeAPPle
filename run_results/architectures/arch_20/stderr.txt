@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\architectures\20_pinn_inverse_parameter_ode.py", line 29, in <module>
+    from pinneapple_models.pinns.vanilla import VanillaPINN
+ModuleNotFoundError: No module named 'pinneapple_models.pinns'

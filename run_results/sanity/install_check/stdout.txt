@@ -1,0 +1,10 @@
+=== Sanity check ===
+torch           : OK
+pandas          : OK
+pyarrow         : MISSING
+yaml            : OK
+physicsnemo.sym : MISSING
+
+Notes:
+- physicsnemo.sym is optional (only needed for PhysicsNeMo backend).
+- Omniverse modules are not checked here (they exist only inside Kit).

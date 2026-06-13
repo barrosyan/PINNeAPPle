@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\data_pipeline\01_physical_sample_basics.py", line 2, in <module>
+    import xarray as xr
+ModuleNotFoundError: No module named 'xarray'

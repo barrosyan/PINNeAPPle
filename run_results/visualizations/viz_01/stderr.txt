@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\visualizations\viz_01_flow_cylinder.py", line 37, in <module>
+    from pinneapple_design.geometry import CSGRectangle, CSGCircle, CSGDifference
+ModuleNotFoundError: No module named 'pinneapple_design'

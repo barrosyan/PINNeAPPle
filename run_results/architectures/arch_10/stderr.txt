@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\architectures\10_operator_learning_fno_toy.py", line 27, in <module>
+    from pinneapple_models.neural_operators.fno import FourierNeuralOperator
+ModuleNotFoundError: No module named 'pinneapple_models.neural_operators'
