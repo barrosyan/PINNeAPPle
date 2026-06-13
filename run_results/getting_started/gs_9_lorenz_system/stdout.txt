@@ -1,0 +1,2 @@
+Lorenz System � chaos, attractors, and PINN limits
+

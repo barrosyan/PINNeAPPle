@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\architectures\30_rom_pod_dmd.py", line 23, in <module>
+    from pinneapple_models.rom.pod import POD
+ModuleNotFoundError: No module named 'pinneapple_models.rom'

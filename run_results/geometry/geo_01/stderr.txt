@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\geometry\01_load_mesh_and_sample.py", line 4, in <module>
+    from pinneapple_geom.io.trimesh_bridge import TrimeshBridge
+ModuleNotFoundError: No module named 'pinneapple_geom'

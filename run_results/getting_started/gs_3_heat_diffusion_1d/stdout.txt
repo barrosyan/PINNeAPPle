@@ -1,0 +1,2 @@
+1D Heat Diffusion Equation � three diffusivity experiments
+

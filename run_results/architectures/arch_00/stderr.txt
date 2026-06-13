@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\architectures\00_registry_tour.py", line 25, in <module>
+    from pinneapple_models.catalog import ModelCatalog
+ModuleNotFoundError: No module named 'pinneapple_models.catalog'

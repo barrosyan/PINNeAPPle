@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\getting_started\08_van_der_pol.py", line 145, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\getting_started\08_van_der_pol.py", line 104, in main
+    print("Van der Pol Oscillator � three \u03bc experiments\n")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u03bc' in position 31: character maps to <undefined>

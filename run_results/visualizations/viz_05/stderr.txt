@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\visualizations\viz_05_wave_2d.py", line 36, in <module>
+    from pinneapple_analysis.validation import compare_to_analytical
+ModuleNotFoundError: No module named 'pinneapple_analysis'

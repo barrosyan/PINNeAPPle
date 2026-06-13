@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\physics_db\00_quickstart_inspect.py", line 27, in <module>
+    from pinneapple_pdb import PhysicalDatasetBuilder
+ModuleNotFoundError: No module named 'pinneapple_pdb'

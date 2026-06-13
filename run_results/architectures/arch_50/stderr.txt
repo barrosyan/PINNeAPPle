@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\laisc\Documents\GitHub\PINNeAPPle\examples\architectures\50_timeseries_transformer_forecast_toy.py", line 26, in <module>
+    from pinneapple_models.transformers.transformer import VanillaTransformer
+ModuleNotFoundError: No module named 'pinneapple_models.transformers'

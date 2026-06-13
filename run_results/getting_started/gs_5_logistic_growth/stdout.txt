@@ -1,0 +1,3 @@
+Logistic Growth � three population experiments
+
+Training: Fast growth  r=2.0 ...
