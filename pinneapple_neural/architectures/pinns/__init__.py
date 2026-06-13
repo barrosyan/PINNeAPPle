@@ -10,6 +10,14 @@ from .pinnsformer import PINNsFormer
 from .vpinn import VPINN
 from .xpinn import XPINN, SubnetWrapper
 from .xtfc import XTFC, XTFCConfig, build_xtfc, tfc_available
+from .bpinn import (
+    BayesianPINN, BPINNConfig, BayesianLinear,
+)
+from .physics_diffusion import (
+    PhysicsInformedDiffusion, PIDiffConfig,
+    MLPDenoiser, VPNoiseScheduler, EDMNoiseScheduler,
+    DSMLoss, PDEResidualGuidance, DataConsistencyGuidance, ComposedGuidance,
+)
 from .registry import PINNCatalog
 
 __all__ = [
@@ -29,6 +37,20 @@ __all__ = [
     "XTFCConfig",
     "build_xtfc",
     "tfc_available",
+    # Bayesian PINN
+    "BayesianPINN",
+    "BPINNConfig",
+    "BayesianLinear",
+    # Physics-Informed Diffusion
+    "PhysicsInformedDiffusion",
+    "PIDiffConfig",
+    "MLPDenoiser",
+    "VPNoiseScheduler",
+    "EDMNoiseScheduler",
+    "DSMLoss",
+    "PDEResidualGuidance",
+    "DataConsistencyGuidance",
+    "ComposedGuidance",
     # registry
     "PINNCatalog",
 ]
