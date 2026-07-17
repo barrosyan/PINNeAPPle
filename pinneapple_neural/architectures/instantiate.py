@@ -64,6 +64,27 @@ def normalize_kwargs(kwargs: Mapping[str, Any]) -> Tuple[Dict[str, Any], Dict[st
     return out, used
 
 
+def _adapt_canonical_to_signature(model_cls: Type[Any], kwargs: Mapping[str, Any]) -> Dict[str, Any]:
+    """Reverse of normalize_kwargs: some model classes (e.g. FourierNeuralOperator,
+    whose __init__ requires in_channels/out_channels) only accept an ALIAS name,
+    never the canonical one — normalize_kwargs alone renames alias->canonical, so
+    for these classes the canonical key is simply absent from the signature and
+    filter_supported_kwargs would silently drop it, leaving a required
+    constructor arg unfilled (TypeError: missing N required positional arguments).
+    If the canonical key isn't in the signature but one of its known aliases is,
+    rename back to that alias before filtering."""
+    sig = inspect.signature(model_cls.__init__)
+    params = sig.parameters
+    if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()):
+        return dict(kwargs)
+    supported = {k for k in params if k != "self"}
+    out = dict(kwargs)
+    for canonical, alias in _ALIASES:
+        if canonical in out and canonical not in supported and alias in supported and alias not in out:
+            out[alias] = out.pop(canonical)
+    return out
+
+
 def filter_supported_kwargs(model_cls: Type[Any], kwargs: Mapping[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """Keep only kwargs accepted by ``model_cls.__init__``.
 
@@ -110,6 +131,7 @@ def instantiate(
     """
     kwargs = dict(kwargs or {})
     normalized, used_aliases = normalize_kwargs(kwargs)
+    normalized = _adapt_canonical_to_signature(model_cls, normalized)
     kept, dropped = filter_supported_kwargs(model_cls, normalized)
     if strict and dropped:
         raise TypeError(
