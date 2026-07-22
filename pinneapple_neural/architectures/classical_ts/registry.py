@@ -38,7 +38,13 @@ _REGISTRY: Dict[str, Type[ClassicalTSBase]] = {
 
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="classical_ts")
+
+    def capabilities(name: str, cls) -> dict:
+        # VAR/ARIMA/TCN take a history tensor, Kalman filters take an
+        # observation sequence — all time-series, none per-point regressors.
+        return {"input_kind": "sequence", "expects": ["x_past"], "predicts": ["u"]}
+
+    register_family_registry(_REGISTRY, family="classical_ts", capabilities_getter=capabilities)
 
 @dataclass
 class ClassicalTSCatalog:

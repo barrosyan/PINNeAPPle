@@ -51,7 +51,14 @@ _REGISTRY: Dict[str, Type[ROMBase]] = {
 
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="rom")
+
+    def capabilities(name: str, cls) -> dict:
+        # Reduced-order models compress a *distribution* of field snapshots
+        # (POD/DMD/SINDy/Koopman all take X: (N, state_dim) full-field state
+        # vectors, see rom/*.py forward()s) — not coords->solution regression.
+        return {"input_kind": "autoencoder", "expects": ["x"], "predicts": ["u"]}
+
+    register_family_registry(_REGISTRY, family="rom", capabilities_getter=capabilities)
 
 
 @dataclass

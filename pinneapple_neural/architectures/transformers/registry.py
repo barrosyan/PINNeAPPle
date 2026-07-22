@@ -30,7 +30,14 @@ _REGISTRY: Dict[str, Type[TimeSeriesModelBase]] = {
 
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="transformers")
+
+    def capabilities(name: str, cls) -> dict:
+        # TimeSeriesModelBase family — forecasting transformers over (B, T, D)
+        # history (informer.py/tft.py/autoformer.py all take x_past), not
+        # per-point coordinate regressors.
+        return {"input_kind": "sequence", "expects": ["x_past"], "predicts": ["u"]}
+
+    register_family_registry(_REGISTRY, family="transformers", capabilities_getter=capabilities)
 
 @dataclass
 class TransformerCatalog:

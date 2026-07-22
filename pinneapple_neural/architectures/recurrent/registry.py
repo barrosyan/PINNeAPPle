@@ -25,7 +25,14 @@ _REGISTRY: Dict[str, Type[RecurrentModelBase]] = {
 
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="recurrent")
+
+    def capabilities(name: str, cls) -> dict:
+        # All models here take x_past: (B, T, D) and forecast — real forecasting
+        # RNNs, not per-point regressors (see forward() signatures in gru.py/
+        # lstm.py/seq2seq.py — always x_past, never a plain (N, in_dim) tensor).
+        return {"input_kind": "sequence", "expects": ["x_past"], "predicts": ["u"]}
+
+    register_family_registry(_REGISTRY, family="recurrent", capabilities_getter=capabilities)
 
 
 @dataclass

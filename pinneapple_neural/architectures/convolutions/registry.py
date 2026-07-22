@@ -21,9 +21,22 @@ _REGISTRY: Dict[str, Type[ConvModelBase]] = {
     "conv_3d": Conv3DModel,
 }
 
+_GRID_RANK = {
+    Conv1DModel: "grid_1d",
+    Conv2DModel: "grid_2d",
+    Conv3DModel: "grid_3d",
+}
+
+
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="convolutions")
+
+    def capabilities(name: str, cls) -> dict:
+        # All expect a channel-first rasterized grid tensor, not scattered
+        # (N, in_dim) points.
+        return {"input_kind": _GRID_RANK.get(cls, "grid"), "expects": ["u_grid"], "predicts": ["u"]}
+
+    register_family_registry(_REGISTRY, family="convolutions", capabilities_getter=capabilities)
 
 @dataclass
 class ConvolutionCatalog:

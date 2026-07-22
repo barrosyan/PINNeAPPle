@@ -36,7 +36,12 @@ _REGISTRY: Dict[str, Type[AEBase]] = {
 
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="autoencoders")
+
+    def capabilities(name: str, cls) -> dict:
+        # Reconstruct x -> x_hat (encode/decode a field), not coords -> solution.
+        return {"input_kind": "autoencoder", "expects": ["x"], "predicts": ["u"]}
+
+    register_family_registry(_REGISTRY, family="autoencoders", capabilities_getter=capabilities)
 
 @dataclass
 class AutoencoderCatalog:

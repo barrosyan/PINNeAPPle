@@ -35,7 +35,13 @@ _REGISTRY: Dict[str, Type[GraphModelBase]] = {
 
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="graphnn")
+
+    def capabilities(name: str, cls) -> dict:
+        # All take a graph object or (x, edge_index) — see forward_batch() on
+        # gnn.py/mesh_graph_net.py/etc — never a plain (N, in_dim) tensor.
+        return {"input_kind": "graph", "expects": ["graph"], "predicts": ["u"]}
+
+    register_family_registry(_REGISTRY, family="graphnn", capabilities_getter=capabilities)
 
 @dataclass
 class GraphCatalog:
