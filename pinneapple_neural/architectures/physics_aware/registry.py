@@ -19,7 +19,12 @@ _REGISTRY: Dict[str, Type[PhysicsAwareBase]] = {
 
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="physics_aware")
+
+    def capabilities(name: str, cls) -> dict:
+        # forward(x, y_true=, batch=, return_loss=) — plain (N, in_dim) coords.
+        return {"input_kind": "pointwise_coords", "expects": ["x"], "predicts": ["u"]}
+
+    register_family_registry(_REGISTRY, family="physics_aware", capabilities_getter=capabilities)
 
 @dataclass
 class PhysicsAwareCatalog:

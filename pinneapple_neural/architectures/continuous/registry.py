@@ -40,9 +40,24 @@ _REGISTRY: Dict[str, Type[ContinuousModelBase]] = {
     "ngp": NeuralGaussianProcess,
 }
 
+_DYNAMICS_MODELS = (NeuralODE, LatentODE, ODERNN, NeuralCDE, NeuralSDE, SymplecticRNN)  # forward(state, t, ...)
+_SEQUENCE_MODELS = (BayesianRNN, DeepStateSpaceModel)  # forward(x: (B,T,D), ...)
+# HamiltonianNeuralNetwork/SymplecticODENet(z: (B,2*dim_q)) and
+# NeuralGaussianProcess(x: (...,in_dim)) are genuinely per-point/pointwise
+# (hamiltonian.py:28, symplectic_ode.py:68, neural_gp.py:202) — fall through.
+
+
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="continuous")
+
+    def capabilities(name: str, cls) -> dict:
+        if cls in _DYNAMICS_MODELS:
+            return {"input_kind": "dynamics", "expects": ["x0", "t"], "predicts": ["u"]}
+        if cls in _SEQUENCE_MODELS:
+            return {"input_kind": "sequence", "expects": ["x_past"], "predicts": ["u"]}
+        return {"input_kind": "pointwise_coords", "expects": ["x"], "predicts": ["u"]}
+
+    register_family_registry(_REGISTRY, family="continuous", capabilities_getter=capabilities)
 
 @dataclass
 class ContinuousCatalog:

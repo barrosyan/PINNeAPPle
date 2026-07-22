@@ -32,9 +32,22 @@ _REGISTRY: Dict[str, Type[RCBase]] = {
     "koopman_operator": KoopmanOperator,
 }
 
+_SEQUENCE_MODELS = (EchoStateNetwork, ESNRC, KoopmanOperator)  # forward(x: (B,T,in_dim), ...)
+
+
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="reservoir_computing")
+
+    def capabilities(name: str, cls) -> dict:
+        # ELM/RBF/HybridRBF are row-wise (each point independent, see
+        # elm.py:78/rbf.py:233 forward(x: (N,in_dim))) — genuinely pointwise.
+        # ESN/ESNRC/Koopman require x: (B,T,in_dim) and roll out over T
+        # (esn.py:296, koopman.py:139) — real sequence models.
+        if cls in _SEQUENCE_MODELS:
+            return {"input_kind": "sequence", "expects": ["x_past"], "predicts": ["u"]}
+        return {"input_kind": "pointwise_coords", "expects": ["x"], "predicts": ["u"]}
+
+    register_family_registry(_REGISTRY, family="reservoir_computing", capabilities_getter=capabilities)
 
 @dataclass
 class ReservoirCatalog:

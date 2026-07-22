@@ -49,6 +49,17 @@ class ModelSpec:
     name: str
     factory: Callable[[int, int], nn.Module]
     description: str = ""
+    # pointwise_coords | sequence | graph | grid* | dynamics | operator_branch_trunk | autoencoder
+    # — mirrors pinneapple_neural.architectures.registry.ModelSpec.input_kind,
+    # copied over in _make_registry_factory() so the training loop below can
+    # dispatch to the right adapter/batch convention instead of assuming
+    # every model accepts a single (N, in_dim) coordinate tensor.
+    input_kind: str = "pointwise_coords"
+    # Also mirrors registry.ModelSpec.family — select_adapter() branches on
+    # both spec.input_kind AND spec.family (e.g. OperatorAdapter keys off
+    # family == "neural_operators"), so this local ModelSpec needs both,
+    # not just input_kind, to dispatch through the same adapters correctly.
+    family: str = ""
 
 
 @dataclass
@@ -97,6 +108,24 @@ class BenchmarkTaskBase:
     def eval_grid(self, n: int) -> Tuple[np.ndarray, np.ndarray]:
         """Return (X_eval, U_exact) as numpy arrays."""
         raise NotImplementedError
+
+    def build_batch(
+        self, input_kind: str, n: int, seed: int, device: "torch.device", split: str = "train"
+    ) -> Optional[Dict[str, Any]]:
+        """Build a batch dict for a non-pointwise ``input_kind`` (sequence,
+        graph, grid*, dynamics — see ``pinneapple_neural.architectures.
+        adapters.select_adapter`` for the keys each expects), or ``None`` if
+        this task cannot represent its data that way (e.g. no time axis to
+        build a sequence/dynamics rollout from).
+
+        Base implementation always returns ``None`` — tasks that only support
+        the classic pointwise sample_collocation/sample_boundary/eval_grid
+        hooks (every task in this module's own suite) are unaffected; only
+        tasks that override this (e.g. BiaML's ``BiaMLProblemTask``) gain
+        non-pointwise architecture support. Must include ``'y_true'`` in the
+        returned dict when ``split == "train"``.
+        """
+        return None
 
     def evaluate(self, model: nn.Module, device: "torch.device") -> Dict[str, float]:
         X_eval, U_exact = self.eval_grid(self.n_eval if hasattr(self, 'n_eval') else 10000)
@@ -451,7 +480,9 @@ class _PresetProblemTask(BenchmarkTaskBase):
 # Dynamic model catalogue  (all pinneapple_models registered architectures)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _make_registry_factory(model_name: str, description: str) -> "ModelSpec":
+def _make_registry_factory(
+    model_name: str, description: str, input_kind: str = "pointwise_coords", family: str = "",
+) -> "ModelSpec":
     """Create a benchmark ModelSpec for a model in ModelRegistry."""
     def factory(in_dim: int, out_dim: int, _n: str = model_name) -> nn.Module:
         from pinneapple_neural.architectures import ModelRegistry
@@ -461,6 +492,16 @@ def _make_registry_factory(model_name: str, description: str) -> "ModelSpec":
             {"in_dim": in_dim, "out_dim": out_dim, "dim_q": in_dim, "hidden_dim": 64},
             {"in_dim": in_dim, "out_dim": out_dim, "dim_q": in_dim,
              "hidden_dim": 64, "n_layers": 4},
+            # Sequence/dynamics/reconstruction/graph families frequently
+            # require these as well (seq_len for PINNLSTM, horizon for
+            # recurrent forecasters, node_dim for GNNs, state_dim for
+            # ROM/AE, latent_dim for VAE-style models) — harmless no-ops for
+            # models that don't accept them, filtered by instantiate()'s
+            # filter_supported_kwargs.
+            {"in_dim": in_dim, "out_dim": out_dim, "dim_q": in_dim, "hidden_dim": 64,
+             "n_layers": 4, "seq_len": 16, "state_dim": in_dim, "latent_dim": max(2, in_dim),
+             "horizon": 1, "node_dim": in_dim, "dim": in_dim, "pos_dim": in_dim, "n_subdomains": 1,
+             "node_in": in_dim, "node_in_dim": in_dim},
         ]
         last_exc: Exception = RuntimeError("no attempts")
         for kw in attempts:
@@ -469,7 +510,8 @@ def _make_registry_factory(model_name: str, description: str) -> "ModelSpec":
             except Exception as e:
                 last_exc = e
         raise last_exc
-    return ModelSpec(name=model_name, factory=factory, description=description)
+    return ModelSpec(name=model_name, factory=factory, description=description,
+                      input_kind=input_kind, family=family)
 
 
 def _make_pinn_factory(model_name: str, pinn_cls: Any) -> "ModelSpec":
@@ -489,15 +531,23 @@ def _make_pinn_factory(model_name: str, pinn_cls: Any) -> "ModelSpec":
 
 
 def all_model_specs() -> List[ModelSpec]:
-    """Return a ModelSpec for every model in ``pinneapple_models`` that can
-    accept plain ``(N, in_dim)`` coordinate tensors.
+    """Return a ModelSpec for every model in ``pinneapple_models``, tagged with
+    its real ``input_kind`` (pointwise_coords / sequence / graph / grid* /
+    dynamics / operator_branch_trunk / autoencoder — see
+    ``pinneapple_neural.architectures.registry.ModelSpec.input_kind``, now
+    accurately declared per family via each family's ``capabilities_getter``).
 
     Importing ``pinneapple_models`` triggers ``register_all()`` automatically,
     so ``ModelRegistry`` is guaranteed to be fully populated here.
 
-    Models with ``input_kind != 'pointwise_coords'`` (graph / grid / sequence
-    architectures such as MeshGraphNet, AFNO, FNO, DeepONet) are excluded
-    because the PINN benchmark loop passes raw coordinate tensors.
+    Non-pointwise architectures are no longer excluded here — callers that
+    only know how to feed plain coordinate tensors (this module's own
+    ``_train_benchmark``/``BenchmarkTaskBase.evaluate``, used by
+    ``transfer_benchmark.py``/``meta_benchmark.py``/the hardcoded task suite)
+    naturally only ever run with ``input_kind == "pointwise_coords"`` specs.
+    Callers that support other input kinds (e.g. BiaML's benchmark, via
+    ``BenchmarkTaskBase.build_batch`` + ``_train_benchmark_batch``) decide
+    per-problem applicability themselves.
     """
     # Importing pinneapple_models calls register_all() — registry is now full.
     try:
@@ -513,12 +563,10 @@ def all_model_specs() -> List[ModelSpec]:
             reg_spec = ModelRegistry.spec(name)
         except Exception:
             continue
-        if reg_spec.input_kind != "pointwise_coords":
-            continue
         if reg_spec.cls in seen_cls:       # skip aliases (same class, different key)
             continue
         seen_cls.add(reg_spec.cls)
-        specs.append(_make_registry_factory(name, reg_spec.description))
+        specs.append(_make_registry_factory(name, reg_spec.description, reg_spec.input_kind, reg_spec.family))
 
     return specs if specs else list(DEFAULT_MODELS)
 
@@ -661,6 +709,123 @@ def _train_benchmark(
     return history, convergence_epoch
 
 
+class NotApplicableError(Exception):
+    """Raised (by callers, not by this module) when a task can't build a
+    batch for a given input_kind. ``run()`` doesn't raise this itself — it
+    relies on ``task.build_batch()`` returning ``None`` — but callers that
+    pre-check applicability (e.g. BiaML's ``run_benchmark()``) can use this
+    to signal "not applicable" distinctly from a real training failure."""
+
+
+def _train_benchmark_batch(
+    task: BenchmarkTaskBase,
+    model: nn.Module,
+    spec: "ModelSpec",
+    cfg: BenchmarkConfig,
+    device: torch.device,
+    verbose: bool = False,
+) -> Tuple[List[Dict[str, float]], float]:
+    """Training loop for non-pointwise architectures (sequence / graph / grid*
+    / dynamics / operator_branch_trunk / autoencoder): builds one batch via
+    ``task.build_batch(spec.input_kind, ...)`` and trains with plain
+    supervised MSE through the family's adapter (``select_adapter``), instead
+    of assuming every model accepts a bare ``(N, in_dim)`` coordinate tensor
+    the way ``_train_benchmark`` above does for PINN-style models."""
+    from pinneapple_neural.architectures.adapters.base import select_adapter
+
+    torch.manual_seed(cfg.seed)
+    np.random.seed(cfg.seed)
+    model = model.to(device)
+
+    batch = task.build_batch(spec.input_kind, cfg.n_bc, cfg.seed, device, split="train")
+    if batch is None or batch.get("y_true") is None:
+        raise ValueError(
+            f"{type(task).__name__}.build_batch({spec.input_kind!r}) returned no data "
+            "— caller should have checked applicability before training."
+        )
+    y_true = batch["y_true"]
+    adapter = select_adapter(spec)
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr)
+    scheduler = CosineAnnealingLR(optimizer, T_max=cfg.epochs, eta_min=cfg.lr * 1e-2)
+
+    history: List[Dict[str, float]] = []
+    convergence_epoch = -1
+    t0 = time.time()
+
+    for ep in range(1, cfg.epochs + 1):
+        model.train()
+        optimizer.zero_grad()
+
+        pred = adapter.forward_batch(model, batch)
+        if hasattr(pred, "y"):
+            pred = pred.y
+        loss = nn.functional.mse_loss(pred, y_true)
+        loss.backward()
+
+        nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        optimizer.step()
+        scheduler.step()
+
+        loss_v = float(loss.item())
+        history.append({"epoch": ep, "loss": loss_v, "pde": 0.0, "bc": loss_v, "ic": 0.0})
+
+        if convergence_epoch < 0 and loss_v < cfg.convergence_threshold:
+            convergence_epoch = ep
+
+        if verbose and ep % cfg.log_interval == 0:
+            print(f"      ep {ep:5d}/{cfg.epochs}  loss={loss_v:.3e}  t={time.time() - t0:.1f}s")
+
+    return history, convergence_epoch
+
+
+def _evaluate_batch(
+    task: BenchmarkTaskBase, model: nn.Module, device: torch.device, spec: "ModelSpec"
+) -> Dict[str, float]:
+    """Evaluation counterpart to ``_train_benchmark_batch`` — mirrors
+    ``BenchmarkTaskBase.evaluate()``'s metrics but through the adapter/batch
+    convention instead of a bare ``model(X_t)`` call."""
+    from pinneapple_neural.architectures.adapters.base import select_adapter
+
+    n_eval = getattr(task, "n_eval", 2000)
+    batch = task.build_batch(spec.input_kind, n_eval, 0, device, split="eval")
+    if batch is None or batch.get("y_true") is None:
+        return {"rel_l2": float("nan"), "l_inf": float("nan"), "mse": float("nan"), "pde_residual": float("nan")}
+
+    y_true = batch["y_true"]
+    adapter = select_adapter(spec)
+
+    model.eval()
+    with torch.no_grad():
+        pred = adapter.forward_batch(model, batch)
+        if hasattr(pred, "y"):
+            pred = pred.y
+
+    if pred.shape != y_true.shape:
+        if pred.ndim == 1:
+            pred = pred.unsqueeze(-1)
+        if y_true.ndim == 1:
+            y_true = y_true.unsqueeze(-1)
+
+    diff = pred - y_true
+    rel_l2 = float((diff.pow(2).sum() / (y_true.pow(2).sum() + 1e-10)).sqrt().item())
+    l_inf = float(diff.abs().max().item())
+    mse = float(diff.pow(2).mean().item())
+
+    # Mirrors BenchmarkTaskBase.evaluate()'s capture point for pointwise
+    # models — lets tasks that want a real-vs-predicted sample for plots
+    # (e.g. BiaML's BiaMLProblemTask) get one here too, keeping any
+    # per-result capture list in the same order/cardinality regardless of
+    # which path (pointwise vs batch) produced each successful result.
+    if hasattr(task, "on_batch_evaluated"):
+        try:
+            task.on_batch_evaluated(pred, y_true, batch)
+        except Exception:
+            pass
+
+    return {"rel_l2": rel_l2, "l_inf": l_inf, "mse": mse, "pde_residual": float("nan")}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # PINNArenaBenchmark
 # ─────────────────────────────────────────────────────────────────────────────
@@ -723,12 +888,31 @@ class PINNArenaBenchmark:
 
                 t0 = time.time()
                 try:
-                    model = spec.factory(task.in_dim, task.out_dim).to(device)
-                    n_params = _count_params(model)
-                    history, conv_ep = _train_benchmark(
-                        task, model, self.config, device, verbose=verbose
+                    # "dynamics"/grid* families evolve or reconstruct a
+                    # state/field of dimensionality out_dim on BOTH ends
+                    # (x0/u_grid input and the trajectory/field they predict
+                    # both have out_dim features — see build_grid_batch's
+                    # solution-field rasterization and build_dynamics_batch's
+                    # x0=solution-at-t0 in core/benchmark_batch.py), unlike
+                    # pointwise_coords/sequence/graph where the model genuinely
+                    # maps in_dim (coords) -> out_dim (solution).
+                    state_dim = (
+                        task.out_dim
+                        if spec.input_kind == "dynamics" or spec.input_kind.startswith("grid")
+                        else task.in_dim
                     )
-                    eval_metrics = task.evaluate(model, device)
+                    model = spec.factory(state_dim, task.out_dim).to(device)
+                    n_params = _count_params(model)
+                    if spec.input_kind == "pointwise_coords":
+                        history, conv_ep = _train_benchmark(
+                            task, model, self.config, device, verbose=verbose
+                        )
+                        eval_metrics = task.evaluate(model, device)
+                    else:
+                        history, conv_ep = _train_benchmark_batch(
+                            task, model, spec, self.config, device, verbose=verbose
+                        )
+                        eval_metrics = _evaluate_batch(task, model, device, spec)
                 except Exception as e:
                     if verbose:
                         print(f"      ERROR: {e}")
@@ -1030,6 +1214,13 @@ class PINNArenaBenchmark:
 
         # ── Models ────────────────────────────────────────────────────────────
         all_specs = all_model_specs()
+        if models is None:
+            # These built-in tasks only implement the pointwise sample_*/
+            # eval_grid hooks, not build_batch() — preserve default()'s
+            # original "every model that accepts plain coords" behavior
+            # unless the caller explicitly asks for specific (possibly
+            # non-pointwise) models by name.
+            all_specs = [s for s in all_specs if s.input_kind == "pointwise_coords"]
         selected_specs = _filter_model_specs(all_specs, models)
 
         cfg = BenchmarkConfig(epochs=epochs, device=device)

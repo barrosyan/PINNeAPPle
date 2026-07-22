@@ -37,9 +37,50 @@ try:
 except Exception:
     pass
 
+_NOETHER_KEYS = {
+    "upt", "abupt", "anchored_branched_upt", "transformer", "transolver",
+    "aero_upt", "aero_abupt", "aero_transformer", "aero_transolver",
+}
+
+
 def register_into_global() -> None:
     from pinneapple_neural.architectures._registry_bridge import register_family_registry
-    register_family_registry(_REGISTRY, family="neural_operators")
+
+    def capabilities(name: str, cls) -> dict:
+        key = name.lower().strip()
+        caps = {"predicts": ["u"], "supports_physics_loss": (key in ("pino", "physics_informed_neural_operator"))}
+
+        if key in ("deeponet", "multiscale_deeponet"):
+            caps.update({"input_kind": "operator_branch_trunk", "expects": ["u_branch", "coords"]})
+            return caps
+
+        if key in ("fno", "fourier_neural_operator"):
+            caps.update({"input_kind": "grid_1d", "expects": ["u_grid_1d"]})
+            return caps
+
+        if key in ("gno", "galerkin_neural_operator"):
+            caps.update({"input_kind": "operator_branch_trunk", "expects": ["u_points", "coords_points"]})
+            return caps
+
+        if key in ("uno", "universal_operator_network"):
+            caps.update({"input_kind": "grid", "expects": ["u_grid"]})
+            return caps
+
+        if key in ("pino", "physics_informed_neural_operator"):
+            caps.update({"input_kind": "operator_branch_trunk", "expects": ["u", "physics_fn", "physics_data"]})
+            return caps
+
+        if key.startswith("noether") or key in _NOETHER_KEYS:
+            # Mesh/point-cloud transformers (UPT/AB-UPT/Transolver) — closer to
+            # graph/mesh models than plain coords; also need the optional
+            # emmiai-noether dependency (see noether_bridge.py's _import_noether()).
+            caps.update({"input_kind": "graph", "expects": ["graph"]})
+            return caps
+
+        caps.update({"input_kind": "grid", "expects": ["u"]})
+        return caps
+
+    register_family_registry(_REGISTRY, family="neural_operators", capabilities_getter=capabilities)
 
 @dataclass
 class NeuralOperatorCatalog:

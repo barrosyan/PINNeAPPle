@@ -44,6 +44,8 @@ def select_adapter(spec: ModelSpec) -> ModelAdapter:
     from .gnn import GNNAdapter
     from .ts import TimeSeriesAdapter
     from .ae import AutoEncoderAdapter
+    from .conv import ConvAdapter
+    from .dynamics import DynamicsAdapter
 
     adapters = [
         PINNAdapter(),
@@ -51,6 +53,8 @@ def select_adapter(spec: ModelSpec) -> ModelAdapter:
         GNNAdapter(),
         TimeSeriesAdapter(),
         AutoEncoderAdapter(),
+        ConvAdapter(),
+        DynamicsAdapter(),
     ]
     for a in adapters:
         if a.can_handle(spec):

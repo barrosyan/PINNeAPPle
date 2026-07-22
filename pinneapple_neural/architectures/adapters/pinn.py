@@ -28,4 +28,9 @@ class PINNAdapter:
             x = batch.get("x_col")
         if x is None:
             raise KeyError("PINNAdapter requires 'x' or 'x_col' in batch.")
+        # XPINN.forward(x_list, ...) takes a list of per-subdomain tensors —
+        # BiaML has no subdomain decomposition, so treat the whole domain as
+        # a single subdomain.
+        if type(model).__name__ == "XPINN":
+            return model([x])
         return model(x)
