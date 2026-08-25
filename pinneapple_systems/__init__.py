@@ -17,6 +17,12 @@ digital_twin   (pinneapple_digital_twin — same name, clearer context)
     real-time sensor streams (MQTT, Kafka, HTTP, file), fuse observations
     with Kalman filters (EKF, EnKF), and detect anomalies.
 
+component_modeling
+    Control, optimization, and uncertainty-quantification tooling that
+    works on any differentiable component model: PID control, gradient-based
+    MPC, SWAG/ensemble/MC-Dropout uncertainty, generic PDE residuals, and
+    ONNX edge-deployment packaging.
+
 Integration helpers
 -------------------
 ``forecast(data, horizon, ...)``
@@ -39,6 +45,7 @@ from __future__ import annotations
 from . import time_series
 from . import cosimulation
 from . import digital_twin
+from . import component_modeling
 
 # backward-compat aliases
 timeseries = time_series
@@ -93,6 +100,18 @@ from .digital_twin import (
     ThresholdDetector, ZScoreDetector, MahalanobisDetector,
 )
 
+# ── component_modeling re-exports ─────────────────────────────────────────────
+from .component_modeling import (
+    PIDController, run_closed_loop,
+    run_mpc,
+    SWAGApproximation,
+    DeepEnsemble,
+    mc_dropout_uncertainty,
+    incompressible_continuity_residual, heat_conduction_residual,
+    linear_elasticity_residual, species_diffusion_residual,
+    export_edge_package, EdgeRuntime,
+)
+
 
 # ── Integration helpers ────────────────────────────────────────────────────────
 
@@ -131,7 +150,7 @@ def forecast(data, horizon: int, *, model: str = "auto", **kwargs):
 
 __all__ = [
     # Sub-modules (new names)
-    "time_series", "cosimulation", "digital_twin",
+    "time_series", "cosimulation", "digital_twin", "component_modeling",
     # Sub-modules (old aliases — backward compat)
     "timeseries", "cosim",
     # Integration
@@ -173,4 +192,10 @@ __all__ = [
     "ExtendedKalmanFilter", "EnsembleKalmanFilter",
     "AnomalyEvent", "AnomalyMonitor",
     "ThresholdDetector", "ZScoreDetector", "MahalanobisDetector",
+    # component_modeling
+    "PIDController", "run_closed_loop", "run_mpc",
+    "SWAGApproximation", "DeepEnsemble", "mc_dropout_uncertainty",
+    "incompressible_continuity_residual", "heat_conduction_residual",
+    "linear_elasticity_residual", "species_diffusion_residual",
+    "export_edge_package", "EdgeRuntime",
 ]
