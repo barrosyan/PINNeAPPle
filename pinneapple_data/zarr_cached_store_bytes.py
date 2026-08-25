@@ -186,7 +186,7 @@ class CachedUPDZarrStoreBytes:
                     from .physical_sample import PhysicalSample
                     sample = PhysicalSample(
                         state=out_fields,
-                        domain={"type": "grid"},
+                        domain={"type": "grid", "coords": out_coords},
                         provenance=meta,
                     )
                 except Exception:

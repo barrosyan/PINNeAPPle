@@ -164,20 +164,16 @@ def to_physical_sample(
     # Preferred: real PhysicalSample
     if has_pinnego_physical_sample():
         from pinneapple_data.physical_sample import PhysicalSample  # type: ignore
-        # Many projects define PhysicalSample differently; use the most conservative constructor:
         try:
-            return PhysicalSample(fields=fields_t, coords=coords_t, meta=meta)
+            return PhysicalSample(
+                state=fields_t,
+                domain={"type": "grid", "coords": coords_t},
+                provenance=meta.get("provenance", {}) or {},
+                schema={"units": meta.get("units", {})} if meta.get("units") else {},
+            )
         except TypeError:
-            # fallback constructor names
-            try:
-                return PhysicalSample(state=fields_t, coords=coords_t, meta=meta)
-            except TypeError:
-                # last resort: create and set attrs
-                ps = PhysicalSample()
-                setattr(ps, "fields", fields_t)
-                setattr(ps, "coords", coords_t)
-                setattr(ps, "meta", meta)
-                return ps
+            # PhysicalSample's constructor doesn't match this shape; fall back below.
+            pass
 
     # Fallback minimal
     @dataclass

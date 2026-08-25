@@ -141,11 +141,8 @@ def meshio_to_upd(path: str):
         )
 
     return PhysicalSample(
-        fields=fields,
-        coords={},
-        meta={
-            "upd": {"version": "0.1", "domain": "mesh", "source": "meshio"},
-            "provenance": {"path": path},
-            "units": {},
-        },
+        state=fields,
+        domain={"type": "mesh"},
+        provenance={"version": "0.1", "source": "meshio", "path": path},
+        schema={"units": {}},
     )
