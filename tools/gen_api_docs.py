@@ -8,64 +8,130 @@ SRC = ROOT
 DOCS_API_DIR = Path("api")
 
 TARGET_PACKAGES = [
-    "pinneapple_arena",
+    "pinneapple",
+    "pinneapple_physics",
+    "pinneapple_neural",
+    "pinneapple_analysis",
+    "pinneapple_adaptation",
+    "pinneapple_simulation",
+    "pinneapple_systems",
+    "pinneapple_design",
+    "pinneapple_tools",
     "pinneapple_data",
-    "pinneapple_geom",
-    "pinneapple_models",
     "pinneapple_pdb",
-    "pinneapple_pinn",
     "pinneapple_problemdesign",
-    "pinneapple_researcher",
+    "pinneapple_arena",
+    "pinneapple_quantum",
+    "pinneapple_worldmodel",
+    "pinneapple_models",
     "pinneapple_solvers",
-    "pinneapple_timeseries",
     "pinneapple_train",
 ]
 
 PACKAGE_OVERVIEWS = {
-    "pinneapple_arena": (
-        "Execution layer and backend abstraction.\n\n"
-        "Provides backends for running training and evaluation workflows. "
-        "Decouples solver logic from execution engines."
+    "pinneapple": (
+        "Top-level convenience API.\n\n"
+        "Quick-start entry point re-exporting the pieces most users need first: "
+        "listing problem presets, building models, and solving a PDE in a few lines."
+    ),
+    "pinneapple_physics": (
+        "PDE definitions, PINN loss compiler, and symbolic differentiation.\n\n"
+        "Covers pde_environment (problem specs, BCs/ICs, canonical presets), "
+        "pinn_solver (PINN residual compiler, domain decomposition), and "
+        "symbolic_pde (SymPy → autograd residual compiler)."
+    ),
+    "pinneapple_neural": (
+        "Neural network architectures, training, and inference for physics.\n\n"
+        "Covers architectures (PINNs, neural operators, GNNs, transformers, ROMs, "
+        "reservoir computing, classical time-series models), trainer (distributed/"
+        "causal/two-phase training), and predictor (batched inference, flow "
+        "visualization)."
+    ),
+    "pinneapple_analysis": (
+        "Uncertainty quantification, physics validation, and inverse problems.\n\n"
+        "Covers uncertainty (MC-dropout, ensembles, conformal prediction), "
+        "validation (conservation/BC/symmetry checks against reference solutions), "
+        "and inverse_problems (noise models, regularizers, EKI, SINDy)."
+    ),
+    "pinneapple_adaptation": (
+        "Transfer and meta-learning across PDE families.\n\n"
+        "Covers transfer_learning (fine-tuning, layer freezing) and meta_learning "
+        "(MAML, Reptile, few-shot task sampling)."
+    ),
+    "pinneapple_simulation": (
+        "Classical numerical solvers and external-solver bridges.\n\n"
+        "Covers numerical_solvers (FEM/FDM/FVM/spectral/SPH/LBM), particle_dynamics "
+        "(MPM, SPH particles, rigid-body), and external_solvers (OpenFOAM, FEniCS, "
+        "Modelica, MATLAB, MuJoCo, Genesis, TurboDesigner bridges)."
+    ),
+    "pinneapple_systems": (
+        "Time series, co-simulation, and digital twins.\n\n"
+        "Covers time_series (forecasting models and decomposition), cosimulation "
+        "(graph-based multi-model coupling), and digital_twin (live state "
+        "assimilation via EKF/EnKF, anomaly detection)."
+    ),
+    "pinneapple_design": (
+        "Geometry representation and design optimization.\n\n"
+        "Covers geometry (SDFs, CSG, mesh I/O, parametric shapes) and "
+        "design_optimizer (adjoint, Pareto, Bayesian/evolutionary optimization)."
+    ),
+    "pinneapple_tools": (
+        "Visualization, export, benchmarking, and compute backends.\n\n"
+        "Covers visualization (CFD-style plots, streamlines, Q-criterion), "
+        "model_export (TorchScript/ONNX), hpo_experiments (hyperparameter search, "
+        "paper discovery), benchmark_suite (the Arena runner), and compute_backends "
+        "(PyTorch/JAX abstraction)."
     ),
     "pinneapple_data": (
-        "Data representation and PhysicalSample abstraction.\n\n"
-        "Unified containers for fields, coordinates and metadata, plus dataset utilities."
-    ),
-    "pinneapple_geom": (
-        "Geometry and domain encoding.\n\n"
-        "Domain definitions, boundary handling and sampling utilities."
-    ),
-    "pinneapple_models": (
-        "Neural architecture abstractions.\n\n"
-        "Physics-agnostic models (e.g., MLPs). Constraints live in the PINN layer."
+        "Unified Physical Data (UPD) format and dataset utilities.\n\n"
+        "The PhysicalSample container (state/geometry/schema/domain/provenance), "
+        "dataset adapters, synthetic data generators, and storage backends "
+        "(Zarr, HDF5, PyTorch)."
     ),
     "pinneapple_pdb": (
         "Structured physics database.\n\n"
-        "Stores/retrieves problems, benchmarks and experiment specs."
-    ),
-    "pinneapple_pinn": (
-        "PINN core logic.\n\n"
-        "Residual construction, autograd utilities and constraint composition."
+        "Builds and validates physical datasets from Earth-observation sources "
+        "(NASA CMR / earthaccess) and derives physical quantities (vorticity, "
+        "divergence) from gridded fields."
     ),
     "pinneapple_problemdesign": (
-        "Problem definition layer.\n\n"
-        "Encodes equations, BC/IC and metadata into reusable definitions."
+        "Natural-language-to-PDE problem design agent.\n\n"
+        "Elicits a physics problem from a natural-language description and "
+        "generates a runnable PINN pipeline (elicitation, knowledge base, "
+        "code generation, report rendering)."
     ),
-    "pinneapple_researcher": (
-        "Research orchestration and benchmarking.\n\n"
-        "Experiment management, metrics and reproducible comparisons."
+    "pinneapple_arena": (
+        "Benchmark problems and leaderboard.\n\n"
+        "Canonical PDEs with analytical or reference solutions, used to compare "
+        "models and solvers on equal footing."
+    ),
+    "pinneapple_quantum": (
+        "Quantum and quantum-inspired PINNs.\n\n"
+        "Parameterized quantum circuits, quantum loss functions (e.g. Schrodinger "
+        "residuals), and hybrid classical/quantum training pipelines."
+    ),
+    "pinneapple_worldmodel": (
+        "Learned world models for physics.\n\n"
+        "Built-in PDE simulators used as ground truth, foundation-model "
+        "architectures, and meta-learning over simulated dynamics."
+    ),
+    "pinneapple_models": (
+        "Compatibility shim.\n\n"
+        "Re-exports from `pinneapple_neural.architectures` so legacy code "
+        "importing `pinneapple_models.*` keeps working. New code should import "
+        "from `pinneapple_neural.architectures` directly."
     ),
     "pinneapple_solvers": (
-        "Optimization strategies and solver logic.\n\n"
-        "Training policy independent from execution runtime."
-    ),
-    "pinneapple_timeseries": (
-        "Scientific time-series utilities.\n\n"
-        "Forecasting and hybrid dynamical workflows integrated with Physics AI pipelines."
+        "Compatibility shim.\n\n"
+        "Re-exports from `pinneapple_simulation.numerical_solvers` so legacy code "
+        "importing `pinneapple_solvers.*` keeps working. New code should import "
+        "from `pinneapple_simulation.numerical_solvers` directly."
     ),
     "pinneapple_train": (
-        "Training orchestration.\n\n"
-        "High-level APIs wiring problem, data, model, physics, solver and backend."
+        "Compatibility shim.\n\n"
+        "Re-exports from `pinneapple_neural.trainer` so legacy code importing "
+        "`pinneapple_train.*` keeps working. New code should import from "
+        "`pinneapple_neural.trainer` directly."
     ),
 }
 
