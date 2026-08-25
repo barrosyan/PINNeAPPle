@@ -191,7 +191,11 @@ class CachedUPDZarrStore:
             if sample_ctor is None:
                 try:
                     from .physical_sample import PhysicalSample
-                    sample = PhysicalSample(fields=out_fields, coords=out_coords, meta=meta)
+                    sample = PhysicalSample(
+                        state=out_fields,
+                        domain={"type": "grid", "coords": out_coords},
+                        provenance=meta,
+                    )
                 except Exception:
                     sample = {"fields": out_fields, "coords": out_coords, "meta": meta}
             else:

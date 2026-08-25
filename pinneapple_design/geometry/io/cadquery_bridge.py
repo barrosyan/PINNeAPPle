@@ -30,4 +30,9 @@ def cadquery_solid_to_upd(
     m.setdefault("upd", {"version": "0.1", "domain": "geometry", "source": "cadquery"})
     m.setdefault("units", {"vertices": units})
 
-    return PhysicalSample(fields={"vertices": V, "faces": F}, coords={}, meta=m)
+    return PhysicalSample(
+        state={"vertices": V, "faces": F},
+        domain={"type": "mesh"},
+        provenance={**m.get("upd", {}), **{k: v for k, v in m.items() if k not in ("upd", "units")}},
+        schema={"units": m.get("units", {})},
+    )
