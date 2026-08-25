@@ -238,19 +238,19 @@ class DecoderLayer(nn.Module):
         x = x + self.drop(self.self_ac(x, x))
         x = self.norm1(x)
         seasonal, t1 = self.decomp1(x)
-        trend = trend + self.trend_proj(t1)
 
         # cross auto-corr (decoder attends to encoder)
         seasonal = seasonal + self.drop(self.cross_ac(seasonal, enc_out))
         seasonal = self.norm2(seasonal)
         seasonal, t2 = self.decomp2(seasonal)
-        trend = trend + self.trend_proj(t2)
 
         # FFN
         seasonal = seasonal + self.drop(self.ff(seasonal))
         seasonal = self.norm3(seasonal)
         seasonal, t3 = self.decomp3(seasonal)
-        trend = trend + self.trend_proj(t3)
+
+        # accumulate raw trend components once, then project a single time
+        trend = trend + self.trend_proj(t1 + t2 + t3)
 
         return seasonal, trend
 

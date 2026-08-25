@@ -188,6 +188,19 @@ def compile_problem(
             else:
                 raise ValueError(f"Unsupported Burgers configuration: spatial_dim={spatial_dim}, fields={field_names}")
 
+        elif pde_kind == "inviscid_burgers":
+            if not has_t:
+                raise ValueError("Inviscid Burgers expects time coord 't'.")
+            if spatial_dim == 1 and field_names == ["u"]:
+                u = fields["u"]
+                ut = time_derivative(u, xcol, t_index)  # type: ignore[arg-type]
+                gu = grad(u, xcol)
+                ix = _coord_index(coords, "x")
+                ux = gu[:, ix:ix + 1]
+                res_list.append(ut + u * ux)
+            else:
+                raise ValueError(f"Unsupported Burgers configuration: spatial_dim={spatial_dim}, fields={field_names}")
+
         elif pde_kind == "navier_stokes_incompressible":
             if not has_t:
                 raise ValueError("Navier–Stokes expects time coord 't'.")
@@ -280,8 +293,17 @@ def compile_problem(
             if b_fn is not None:
                 b_np = b_fn(xcol.detach().cpu().numpy(), ctx)
                 b = torch.as_tensor(b_np, device=device, dtype=xcol.dtype)
-                if b.ndim == 1:
-                    b = b[:, None].repeat(1, spatial_dim)
+                if b.ndim == 1 or (b.ndim == 2 and b.shape[1] == 1):
+                    raise ValueError(
+                        "linear_elasticity body_force_fn returned a scalar-valued "
+                        f"({tuple(b.shape)}) body force. A scalar cannot be broadcast "
+                        "isotropically across all spatial axes -- most body forces "
+                        "(e.g. gravity, b=(0, -rho*g) in 2D) act along a single "
+                        "direction, and silently applying the scalar to every "
+                        "equilibrium equation would produce a physically incorrect "
+                        f"loading condition. Return a full (N, {spatial_dim}) vector "
+                        "body force instead."
+                    )
 
             for i in range(spatial_dim):
                 div_si = torch.zeros((xcol.shape[0], 1), device=device, dtype=xcol.dtype)
@@ -719,6 +741,18 @@ def compile_problem(
             res_list.append(rhou_t + grad(F2x, xcol)[:, x_idx:x_idx + 1] + grad(F2y, xcol)[:, y_idx:y_idx + 1])
             res_list.append(rhov_t + grad(F3x, xcol)[:, x_idx:x_idx + 1] + grad(F3y, xcol)[:, y_idx:y_idx + 1])
             res_list.append(E_t + grad(F4x, xcol)[:, x_idx:x_idx + 1] + grad(F4y, xcol)[:, y_idx:y_idx + 1])
+
+        elif pde_kind == "fisher_kpp":
+            if not has_t:
+                raise ValueError("Fisher-KPP expects time coord 't'.")
+            if len(field_names) != 1:
+                raise ValueError("Fisher-KPP expects 1 scalar field.")
+            D = float(p.get("D", 0.001))
+            r = float(p.get("r", 1.0))
+            u_f = fields[field_names[0]]
+            ut = time_derivative(u_f, xcol, t_index)  # type: ignore[arg-type]
+            lap_u = laplacian(u_f, xcol, spatial_indices)
+            res_list.append(ut - D * lap_u - r * u_f * (1.0 - u_f))
 
         elif pde_kind == "reaction_diffusion":
             # Two-species autocatalytic reaction-diffusion (Gray-Scott form);

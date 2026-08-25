@@ -927,6 +927,17 @@ class PhysicsPipeline:
         x_obs = x_eval[idx]
         out_dim = len(fields)
         u_obs = torch.tensor(u_true[idx].reshape(-1, out_dim), dtype=torch.float32)
+        # Remember which reference indices were used as training observations, and
+        # the full grid they were drawn from, so the Step 4 eval grid (often the
+        # SAME underlying reference array, e.g. when no external solver backend is
+        # available) can exclude them — otherwise the held-out test metrics would
+        # include points the model was directly supervised on. We keep the full
+        # grid (not just its size) so Step 4 can confirm it's actually the same
+        # array before masking — a coincidentally-larger but genuinely different
+        # (e.g. real-solver-generated) eval grid must NOT be masked by these
+        # indices, since they wouldn't correspond to the same points.
+        self._obs_idx = idx
+        self._obs_full_x_eval = x_eval
         return x_obs, u_obs
 
     # -------------------------------------------------------------------------
@@ -1125,6 +1136,27 @@ class PhysicsPipeline:
         x_eval, u_true = None, None
         if ref_data_eval is not None:
             x_eval, u_true = _make_eval_grid(coords, fields, ref_data_eval)
+            obs_idx = getattr(self, "_obs_idx", None)
+            obs_full = getattr(self, "_obs_full_x_eval", None)
+            same_grid = (
+                obs_idx is not None and x_eval is not None and obs_full is not None
+                and tuple(x_eval.shape) == tuple(obs_full.shape)
+                and torch.equal(x_eval, obs_full)
+            )
+            if same_grid:
+                # Held-out split: drop the points used as training observations
+                # from the test set to avoid scoring the model on data it saw.
+                # Only safe when x_eval is confirmed to be the SAME array the
+                # observations were drawn from (e.g. the no-solver fallback both
+                # paths resolve to via _load_reference) — a differently-sourced
+                # eval grid (a real solver run) that merely happens to be large
+                # enough must be left untouched, since obs_idx wouldn't map to
+                # the same physical points in it.
+                mask = np.ones(len(x_eval), dtype=bool)
+                mask[obs_idx] = False
+                x_eval = x_eval[mask]
+                if u_true is not None:
+                    u_true = u_true[mask]
             print(f"    Data     : {len(x_eval) if x_eval is not None else 0} reference points")
         else:
             print("    Data     : no reference data — training-loss metrics only")

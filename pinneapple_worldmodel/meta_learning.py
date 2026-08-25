@@ -399,21 +399,26 @@ class MetaLearner:
                     loss.backward()
                     inner_opt.step()
 
-                # Query loss from adapted model (first-order: no meta-gradient through inner)
+                # Query loss from adapted model
                 inner.eval()
-                with torch.no_grad() if cfg.first_order else torch.enable_grad():  # type: ignore
+                with torch.enable_grad():
                     q_pred = inner(query["state_t"], query.get("context"))
                     q_loss = torch.mean((q_pred - query["state_tp1"]) ** 2)
 
                 if cfg.first_order:
-                    # First-order MAML: use inner params gradient as proxy
+                    # First-order MAML: meta-gradient is ∂L_query/∂φ evaluated at
+                    # the support-adapted params φ, used directly as a proxy for
+                    # ∂L_query/∂θ (drops the inner-loop Jacobian dφ/dθ).
+                    inner.zero_grad(set_to_none=True)
+                    q_loss.backward()
                     with torch.no_grad():
                         for p_meta, p_inner in zip(
                             model.parameters(), inner.parameters()
                         ):
                             if p_meta.grad is None:
                                 p_meta.grad = torch.zeros_like(p_meta)
-                            p_meta.grad += (p_meta - p_inner) / cfg.n_tasks_per_batch
+                            if p_inner.grad is not None:
+                                p_meta.grad += p_inner.grad / cfg.n_tasks_per_batch
                 else:
                     meta_loss_total = meta_loss_total + q_loss / cfg.n_tasks_per_batch
 

@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Callable, Deque, Dict, List, Optional, Tuple
+from typing import Any, Callable, Deque, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -138,7 +138,8 @@ class ZScoreDetector:
                 continue
 
             arr = np.array(win)
-            mu, sigma = arr.mean(), arr.std()
+            mu = arr.mean()
+            sigma = arr.std(ddof=1) if len(arr) > 1 else 0.0
             if sigma < 1e-12:
                 continue
             z = abs((residual - mu) / sigma)
@@ -172,9 +173,64 @@ class MahalanobisDetector:
     Thresholds can be set using chi-squared quantiles.
     """
 
-    def __init__(self, threshold: float = 3.0) -> None:
+    def __init__(
+        self,
+        threshold: float = 3.0,
+        field_order: Optional[Sequence[str]] = None,
+    ) -> None:
         self.threshold = float(threshold)
         self.events: List[AnomalyEvent] = []
+        self.field_order = list(field_order) if field_order else None
+        self.covariance: Optional[np.ndarray] = None
+
+    def update_covariance(
+        self,
+        covariance: np.ndarray,
+        field_order: Optional[Sequence[str]] = None,
+    ) -> None:
+        """Update the covariance (and its field ordering) used by `check`.
+
+        Called by the owning `AnomalyMonitor`/`DigitalTwin` whenever a fresh
+        state covariance (e.g. the EKF/EnKF `P`) becomes available.
+        """
+        self.covariance = np.asarray(covariance, dtype=np.float64)
+        if field_order:
+            self.field_order = list(field_order)
+
+    def check(
+        self,
+        timestamp: float,
+        sensor_id: str,
+        observed: Dict[str, float],
+        predicted: Dict[str, float],
+    ) -> List[AnomalyEvent]:
+        """
+        Adapt the common per-sensor `(observed, predicted)` interface to the
+        vector Mahalanobis check.
+
+        Builds the innovation vector from the fields present in both
+        `observed` and `predicted` (ordered per `self.field_order` when set,
+        so it lines up with `self.covariance`) and checks it with
+        `check_vector`. Falls back to an identity covariance (Euclidean
+        distance) when no compatible covariance has been supplied yet.
+        """
+        if self.field_order:
+            fields = [f for f in self.field_order if f in observed and f in predicted]
+        else:
+            fields = sorted(set(observed) & set(predicted))
+        if not fields:
+            return []
+
+        delta = np.array([observed[f] - predicted[f] for f in fields], dtype=np.float64)
+        cov = self.covariance
+        if cov is None or cov.shape != (len(delta), len(delta)):
+            cov = np.eye(len(delta))
+
+        ev = self.check_vector(
+            timestamp, delta, cov,
+            sensor_id=sensor_id, field_name="+".join(fields),
+        )
+        return [ev] if ev is not None else []
 
     def check_vector(
         self,
@@ -216,6 +272,79 @@ class MahalanobisDetector:
         return None
 
 
+class ResidualDetector:
+    """
+    Checks the innovation residuals produced by the assimilation filter.
+
+    Unlike `ThresholdDetector`/`ZScoreDetector`, which recompute a residual
+    as ``obs - pred`` from scratch, this detector consumes the innovation
+    (observation-minus-background, ``y - h(x_pred)``) that the EKF/EnKF
+    already computes on every `step()` — i.e. `SystemState.residuals` — and
+    flags entries that stray far from their own rolling distribution.  This
+    catches filter divergence and sensor drift that a simple obs-vs-pred
+    comparison would miss once the filter has started fusing bad data.
+    """
+
+    def __init__(
+        self,
+        z_threshold: float = 3.0,
+        window_size: int = 100,
+        min_samples: int = 10,
+    ) -> None:
+        self.z_threshold = float(z_threshold)
+        self.window_size = int(window_size)
+        self.min_samples = int(min_samples)
+        self._windows: Dict[str, Deque[float]] = {}
+        self.events: List[AnomalyEvent] = []
+
+    def _get_window(self, key: str) -> Deque[float]:
+        if key not in self._windows:
+            self._windows[key] = deque(maxlen=self.window_size)
+        return self._windows[key]
+
+    def check_residuals(
+        self,
+        timestamp: float,
+        residuals: Dict[str, float],
+        *,
+        sensor_id: str = "system",
+    ) -> List[AnomalyEvent]:
+        """Check a {field_name: innovation} dict, e.g. `SystemState.residuals`."""
+        new_events: List[AnomalyEvent] = []
+        for fname, r in residuals.items():
+            if r is None or not np.isfinite(r):
+                continue
+            win = self._get_window(fname)
+            win.append(float(r))
+
+            if len(win) < self.min_samples:
+                continue
+
+            arr = np.array(win)
+            mu = arr.mean()
+            sigma = arr.std(ddof=1) if len(arr) > 1 else 0.0
+            if sigma < 1e-12:
+                continue
+            z = abs((r - mu) / sigma)
+            if z > self.z_threshold:
+                ev = AnomalyEvent(
+                    timestamp=timestamp,
+                    sensor_id=sensor_id,
+                    field_name=fname,
+                    observed=float("nan"),
+                    predicted=float("nan"),
+                    score=float(z),
+                    detector="residual",
+                    metadata={"residual": float(r), "z": float(z), "mu": float(mu), "sigma": float(sigma)},
+                )
+                new_events.append(ev)
+                logger.warning(
+                    f"[ANOMALY/Residual] {sensor_id}/{fname}: z={z:.2f} > threshold={self.z_threshold}"
+                )
+        self.events.extend(new_events)
+        return new_events
+
+
 class AnomalyMonitor:
     """
     Composite anomaly monitor that runs multiple detectors in sequence.
@@ -234,6 +363,31 @@ class AnomalyMonitor:
 
     def add_detector(self, detector: Any) -> None:
         self._detectors.append(detector)
+
+    def update_covariance(
+        self,
+        covariance: np.ndarray,
+        field_order: Optional[Sequence[str]] = None,
+    ) -> None:
+        """Push a fresh state covariance to any covariance-aware detectors."""
+        for det in self._detectors:
+            if hasattr(det, "update_covariance"):
+                det.update_covariance(covariance, field_order)
+
+    def check_residuals(
+        self,
+        timestamp: float,
+        residuals: Dict[str, float],
+        *,
+        sensor_id: str = "system",
+    ) -> List[AnomalyEvent]:
+        """Feed filter innovation residuals (e.g. `SystemState.residuals`) to detectors."""
+        events: List[AnomalyEvent] = []
+        for det in self._detectors:
+            if hasattr(det, "check_residuals"):
+                events.extend(det.check_residuals(timestamp, residuals, sensor_id=sensor_id))
+        self.all_events.extend(events)
+        return events
 
     def check(
         self,

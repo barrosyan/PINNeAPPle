@@ -394,7 +394,8 @@ class FDMSolver(SolverBase):
         y0, y1 = domain.get(c1, (0.0, 1.0))
 
         x, y, XX, YY, dx, dy = _build_2d_grid(x0, x1, self.nx, y0, y1, self.ny)
-        f  = np.zeros((self.nx, self.ny))
+        source = float(params.get("source", 0.0))
+        f  = np.full((self.nx, self.ny), source)
         u  = np.zeros((self.nx, self.ny))
         k2 = float(params.get("k2", params.get("k", 0.0))) ** 2
 

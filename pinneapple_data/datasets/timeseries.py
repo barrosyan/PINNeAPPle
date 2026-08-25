@@ -175,13 +175,13 @@ def _load_double_pendulum(dt: float = 0.02, T: float = 30.0,
         d = th1 - th2
         den1 = (m1 + m2) * L1 - m2 * L1 * math.cos(d)**2
         den2 = (L2 / L1) * den1
-        dom1 = (m2 * L1 * om1**2 * math.sin(d) * math.cos(d)
+        dom1 = (-m2 * L1 * om1**2 * math.sin(d) * math.cos(d)
                 + m2 * g * math.sin(th2) * math.cos(d)
-                + m2 * L2 * om2**2 * math.sin(d)
+                - m2 * L2 * om2**2 * math.sin(d)
                 - (m1 + m2) * g * math.sin(th1)) / den1
-        dom2 = (-m2 * L2 * om2**2 * math.sin(d) * math.cos(d)
+        dom2 = (m2 * L2 * om2**2 * math.sin(d) * math.cos(d)
                 + (m1 + m2) * g * math.sin(th1) * math.cos(d)
-                - (m1 + m2) * L1 * om1**2 * math.sin(d)
+                + (m1 + m2) * L1 * om1**2 * math.sin(d)
                 - (m1 + m2) * g * math.sin(th2)) / den2
         return [om1, dom1, om2, dom2]
 

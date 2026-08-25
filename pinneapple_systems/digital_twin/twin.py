@@ -381,6 +381,9 @@ class DigitalTwin:
         predictions: Dict[str, np.ndarray],
     ) -> None:
         """Compare point predictions against observations."""
+        if self.state.covariance is not None:
+            self.anomaly_monitor.update_covariance(self.state.covariance, self.field_names)
+
         for obs in observations:
             if obs.coords is None:
                 continue
@@ -444,8 +447,32 @@ class DigitalTwin:
                 for i, f in enumerate(self.field_names):
                     if i < len(inn):
                         self.state.residuals[f] = float(inn[i])
+                if self.state.residuals:
+                    for ev in self.anomaly_monitor.check_residuals(
+                        time.time(), self.state.residuals
+                    ):
+                        for cb in self._anomaly_callbacks:
+                            try:
+                                cb(ev)
+                            except Exception as exc:
+                                logger.warning(f"anomaly callback error: {exc}")
             if "P" in result:
                 self.state.covariance = result["P"]
+            if "x" in result:
+                # The filter's state is one fused scalar per field (see
+                # _build_default_filter). Shift each field's raw predicted
+                # array so its mean matches the fused estimate, preserving
+                # the spatial pattern from the surrogate model while
+                # calibrating its level against the sensor data.
+                fused = result["x"]
+                for i, f in enumerate(self.field_names):
+                    if i >= len(fused) or not np.isfinite(fused[i]):
+                        continue
+                    arr = self.state.fields.get(f)
+                    if arr is None or arr.size == 0:
+                        continue
+                    bias = float(fused[i]) - float(np.mean(arr))
+                    self.state.fields[f] = (arr + bias).astype(arr.dtype)
         except Exception as exc:
             logger.warning(f"Assimilation error: {exc}")
 

@@ -21,6 +21,45 @@ import torch.nn as nn
 
 
 # ---------------------------------------------------------------------------
+# Shared helper
+# ---------------------------------------------------------------------------
+
+def split_output_ports(
+    out: torch.Tensor, ports: List[str]
+) -> Dict[str, torch.Tensor]:
+    """Split *out*'s last dimension evenly across *ports*.
+
+    Args:
+        out:   raw model output, shape ``(..., total_dim)``.
+        ports: output port names; ``total_dim`` must be a multiple of
+               ``len(ports)``.
+
+    Returns:
+        ``{port_name: tensor}`` with one equal-size chunk per port.
+
+    Raises:
+        ValueError: if ``out.shape[-1]`` is not evenly divisible by
+            ``len(ports)``. ``torch.chunk`` silently returns uneven or
+            fewer-than-requested chunks in that case, which would mislabel
+            which output elements belong to which port.
+    """
+    n = len(ports)
+    if n == 1:
+        return {ports[0]: out}
+    size = out.shape[-1]
+    if size % n != 0:
+        raise ValueError(
+            f"Model output last dimension ({size}) is not evenly divisible "
+            f"by the number of output ports ({n}: {ports}). "
+            "torch.chunk would silently mislabel ports in this case. "
+            "Provide a model whose output dim is a multiple of the port "
+            "count, or override step() to split ports explicitly."
+        )
+    chunks = torch.chunk(out, n, dim=-1)
+    return {p: c for p, c in zip(ports, chunks)}
+
+
+# ---------------------------------------------------------------------------
 # Abstract base
 # ---------------------------------------------------------------------------
 
@@ -90,7 +129,8 @@ class TorchNode(CoSimNode):
 
     The module receives the concatenation of all input-port tensors (in port
     order) along the last dimension.  Outputs are split into equal chunks, one
-    per output port.  For asymmetric splits, override ``step()``.
+    per output port (raises ``ValueError`` if the output dim is not evenly
+    divisible by the port count).  For asymmetric splits, override ``step()``.
     """
 
     def __init__(
@@ -115,11 +155,7 @@ class TorchNode(CoSimNode):
         if not isinstance(raw, torch.Tensor):
             raw = getattr(raw, "y", raw)
         out: torch.Tensor = raw
-        n = len(self.output_ports)
-        if n == 1:
-            return {self.output_ports[0]: out}
-        chunks = torch.chunk(out, n, dim=-1)
-        return {p: c for p, c in zip(self.output_ports, chunks)}
+        return split_output_ports(out, self.output_ports)
 
     def parameters(self) -> Iterable[nn.Parameter]:
         return self.model.parameters()

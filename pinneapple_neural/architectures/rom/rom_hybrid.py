@@ -126,10 +126,12 @@ class ROMHybrid(ROMBase):
 
         self.corrector.train()
         for _ in range(epochs):
-            # teacher-forcing: correct one-step predictions
-            inp = a_opinf_full[:, :-1].reshape(-1, self.r_dim)
-            tgt = a_true[:, 1:].reshape(-1, self.r_dim)
-            pred = a_opinf_full[:, :-1].reshape(-1, self.r_dim) + self.corrector(inp)
+            # correct the free-running OpInf rollout at each time index t so that
+            # a_opinf_full[:, t] + corrector(a_opinf_full[:, t]) ~= a_true[:, t],
+            # matching how forward() applies the corrector at the same index it decodes.
+            inp = a_opinf_full.reshape(-1, self.r_dim)
+            tgt = a_true.reshape(-1, self.r_dim)
+            pred = inp + self.corrector(inp)
             loss = ((pred - tgt) ** 2).mean()
             opt.zero_grad()
             loss.backward()

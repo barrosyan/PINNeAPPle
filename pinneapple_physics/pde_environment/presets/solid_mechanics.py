@@ -255,12 +255,13 @@ def thick_walled_cylinder_lame_default(
             value_fn=lambda X, ctx, _p=_pa: np.full((X.shape[0], 1), -_p, dtype=np.float32),
             weight=10.0,
         ),
+        # External pressure as Neumann BC: σ_rr(r=b) = −p_b  (same sign as at r=a; see lame_analytical)
         NeumannBC(
             name="outer_surface",
             fields=("u_r",),
             selector_type="callable",
             selector=lambda X, ctx, _r=_b: np.abs(X[:, 0] - _r) < 1e-6,
-            value_fn=lambda X, ctx, _p=_pb: np.full((X.shape[0], 1), _p, dtype=np.float32),
+            value_fn=lambda X, ctx, _p=_pb: np.full((X.shape[0], 1), -_p, dtype=np.float32),
             weight=10.0,
         ),
         DirichletBC(

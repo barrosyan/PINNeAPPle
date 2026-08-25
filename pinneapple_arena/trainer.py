@@ -335,10 +335,18 @@ def evaluate_model(
     else:
         pred = _eval_dense(model, cfg, xy_eval, device)
 
+    n_pred_cols = pred.shape[1] if pred.ndim > 1 else 1
+    if n_pred_cols < len(field_names):
+        raise ValueError(
+            f"Model prediction has {n_pred_cols} column(s) but problem expects "
+            f"{len(field_names)} field(s) ({field_names}); refusing to silently "
+            f"reuse one field's prediction as another's."
+        )
+
     metrics = {}
     for i, fname in enumerate(field_names):
         ref_i = Y_ref[:, i] if Y_ref.ndim > 1 else Y_ref.ravel()
-        pred_i = pred[:, i] if pred.ndim > 1 and pred.shape[1] > i else pred.ravel()
+        pred_i = pred[:, i] if pred.ndim > 1 else pred.ravel()
         l2   = float(np.sqrt(np.mean((pred_i - ref_i) ** 2)))
         linf = float(np.max(np.abs(pred_i - ref_i)))
         rel  = l2 / (float(np.sqrt(np.mean(ref_i ** 2))) + 1e-8)

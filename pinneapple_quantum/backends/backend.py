@@ -219,6 +219,23 @@ def _apply_cnot(state: torch.Tensor, ctrl: int, tgt: int, n: int) -> torch.Tenso
     return st2.reshape(2 ** n)
 
 
+_HADAMARD = torch.tensor(
+    [[1.0, 1.0], [1.0, -1.0]], dtype=torch.complex64
+) / math.sqrt(2)
+
+
+def _apply_cz(state: torch.Tensor, q0: int, q1: int, n: int) -> torch.Tensor:
+    """Apply a controlled-Z gate: flips the sign of the |11⟩ amplitude of (q0, q1)."""
+    shape = [2] * n
+    st = state.reshape(shape)
+    idx11 = [slice(None)] * n
+    idx11[q0] = 1
+    idx11[q1] = 1
+    st2 = st.clone()
+    st2[tuple(idx11)] = -st2[tuple(idx11)]
+    return st2.reshape(2 ** n)
+
+
 def _pauli_z_expectation(state: torch.Tensor, qubit: int, n: int) -> torch.Tensor:
     """Compute ⟨Z⟩ for a single qubit."""
     shape = [2] * n
@@ -246,9 +263,13 @@ class ClassicalQNode:
         # Run the circuit description to collect operations
         recorder = _CircuitRecorder(n)
         self._circuit_fn(x, weights, recorder=recorder)
-        # Execute on state vector |0...0⟩
-        state = torch.zeros(2 ** n, dtype=torch.complex64)
-        state[0] = 1.0
+        # Execute on the initial state (|0...0⟩, unless an encoding overrides it
+        # via recorder.set_amplitudes, e.g. amplitude embedding)
+        if recorder.initial_state is not None:
+            state = recorder.initial_state.to(torch.complex64)
+        else:
+            state = torch.zeros(2 ** n, dtype=torch.complex64)
+            state[0] = 1.0
         for op in recorder.ops:
             state = op(state, n)
         # Measure: return Pauli-Z expectation for each observable
@@ -265,6 +286,19 @@ class _CircuitRecorder:
         self.n_qubits = n_qubits
         self.ops = []
         self.observables = []
+        self.initial_state = None
+
+    def hadamard(self, wires):
+        q = wires if isinstance(wires, int) else wires[0]
+        self.ops.append(lambda s, n, q=q: _apply_single(s, _HADAMARD, q, n))
+
+    def cz(self, wires):
+        q0, q1 = wires
+        self.ops.append(lambda s, n, a=q0, b=q1: _apply_cz(s, a, b, n))
+
+    def set_amplitudes(self, amplitudes: torch.Tensor):
+        """Override the circuit's initial state (used by amplitude encoding)."""
+        self.initial_state = amplitudes
 
     def rx(self, theta, wires):
         q = wires if isinstance(wires, int) else wires[0]

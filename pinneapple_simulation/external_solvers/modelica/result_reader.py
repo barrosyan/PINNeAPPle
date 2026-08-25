@@ -45,11 +45,8 @@ def modelica_result_to_upd(
     }
 
     return PhysicalSample(
-        fields=fields,
-        coords=coords,
-        meta={
-            "upd": {"version": "0.1", "source": source},
-            "provenance": {},
-            "units": units or {},
-        },
+        state=fields,
+        domain={"type": "grid", "coords": coords},
+        provenance={"version": "0.1", "source": source},
+        schema={"units": units or {}},
     )

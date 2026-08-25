@@ -61,6 +61,43 @@ def _laplacian(f: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
     return lap
 
 
+def _hessian_components_2d(f: torch.Tensor, x: torch.Tensor, grad_f: torch.Tensor):
+    """Given grad_f = _grad1(f, x) for 2D x, return (f_xx, f_xy, f_yy)."""
+    gx = _grad1(grad_f[:, 0:1], x)
+    gy = _grad1(grad_f[:, 1:2], x)
+    f_xx = gx[:, 0:1]
+    f_xy = gx[:, 1:2]
+    f_yy = gy[:, 1:2]
+    return f_xx, f_xy, f_yy
+
+
+def _viscous_stress_divergence_2d(
+    mu_eff: torch.Tensor,
+    mu_eff_grad: torch.Tensor,
+    x: torch.Tensor,
+    u_grad: torch.Tensor,
+    v_grad: torch.Tensor,
+    u: torch.Tensor,
+    v: torch.Tensor,
+):
+    """div[mu_eff (grad u + grad u^T)] for 2D velocity (u, v).
+
+    Computed exactly from the full Hessians of u, v (no incompressibility
+    assumption) — required whenever mu_eff varies spatially, since
+    div[mu_eff grad u] alone drops the mu_eff_x*u_x / mu_eff_y*v_x terms
+    that dominate across a turbulent boundary layer.
+    """
+    u_x = u_grad[:, 0:1]; u_y = u_grad[:, 1:2]
+    v_x = v_grad[:, 0:1]; v_y = v_grad[:, 1:2]
+    u_xx, u_xy, u_yy = _hessian_components_2d(u, x, u_grad)
+    v_xx, v_xy, v_yy = _hessian_components_2d(v, x, v_grad)
+    mu_x = mu_eff_grad[:, 0:1]; mu_y = mu_eff_grad[:, 1:2]
+
+    visc_x = 2.0 * (mu_x * u_x + mu_eff * u_xx) + (mu_y * (u_y + v_x) + mu_eff * (u_yy + v_xy))
+    visc_y = (mu_x * (u_y + v_x) + mu_eff * (u_xy + v_xx)) + 2.0 * (mu_y * v_y + mu_eff * v_yy)
+    return visc_x, visc_y
+
+
 # ---------------------------------------------------------------------------
 # Feature 10a: k-omega SST
 # ---------------------------------------------------------------------------
@@ -199,12 +236,11 @@ class KOmegaSSTResiduals:
         # ---- continuity ----
         cont = u_x + v_y
 
-        # ---- momentum-x: rho(u u_x + v u_y) + p_x - div[(mu_eff)(grad u + ...)]=0 ----
-        # viscous term (Boussinesq): div[(mu+mu_t) grad u] = mu_eff * lap(u) (simplified)
-        lap_u = _laplacian(u, x)
-        # grad(nu_eff) . grad(u) cross-term (d mu_eff / dx * u_x + ...)
+        # ---- momentum-x/y: rho(u.grad u) + grad p - div[mu_eff(grad u + grad u^T)] = 0 ----
         mu_eff_grad = _grad1(mu_eff, x)         # (N, 2)
-        visc_x = mu_eff * lap_u + mu_eff_grad[:, 0:1] * u_x + mu_eff_grad[:, 1:2] * u_y
+        visc_x, visc_y = _viscous_stress_divergence_2d(
+            mu_eff, mu_eff_grad, x, u_grad, v_grad, u, v
+        )
 
         mom_x = (
             self.rho * (u * u_x + v * u_y)
@@ -212,9 +248,6 @@ class KOmegaSSTResiduals:
             - visc_x
         )
 
-        # ---- momentum-y ----
-        lap_v = _laplacian(v, x)
-        visc_y = mu_eff * lap_v + mu_eff_grad[:, 0:1] * v_x + mu_eff_grad[:, 1:2] * v_y
         mom_y = (
             self.rho * (u * v_x + v * v_y)
             + p_y
@@ -417,19 +450,20 @@ class SpalartAllmarasResiduals:
         # ---- RANS momentum with SA eddy viscosity ----
         nu_turb = nu_t * fv1                      # actual eddy viscosity
         nu_total = self.nu + nu_turb
-        lap_u = _laplacian(u, x)
-        lap_v = _laplacian(v, x)
         nu_tot_grad = _grad1(nu_total, x)
+        visc_x, visc_y = _viscous_stress_divergence_2d(
+            nu_total, nu_tot_grad, x, u_grad, v_grad, u, v
+        )
 
         mom_x = (
             u * u_x + v * u_y
             + p_x
-            - (nu_total * lap_u + nu_tot_grad[:, 0:1] * u_x + nu_tot_grad[:, 1:2] * u_y)
+            - visc_x
         )
         mom_y = (
             u * v_x + v * v_y
             + p_y
-            - (nu_total * lap_v + nu_tot_grad[:, 0:1] * v_x + nu_tot_grad[:, 1:2] * v_y)
+            - visc_y
         )
         cont = u_x + v_y
 

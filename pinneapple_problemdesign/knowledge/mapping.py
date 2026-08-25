@@ -2,15 +2,12 @@
 from __future__ import annotations
 
 from typing import List
-from ..schema import ProblemSpec, Plan, PlanStep, Gap
-
-# Task types that are better served by a PINN-first plan
-_PINN_TASK_TYPES = {"pde_solution", "inverse_problem"}
+from ..schema import ProblemSpec, Plan, PlanStep, Gap, uses_pinn_approach
 
 
 def build_plan(spec: ProblemSpec, gaps: List[Gap]) -> Plan:
     """Dispatch to the appropriate plan builder based on spec.task_type."""
-    if spec.task_type in _PINN_TASK_TYPES:
+    if uses_pinn_approach(spec):
         return build_plan_pinn_first(spec, gaps)
     return build_plan_fno_first(spec, gaps)
 

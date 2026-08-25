@@ -394,13 +394,17 @@ def register_topk_hook(model: nn.Module, *, compression_ratio: float = 0.1) -> N
         return
 
     def _topk_hook(state, bucket):
-        tensor = bucket.get_gradients()[0].view(-1)
+        import torch.distributed as dist
+
+        buffer = bucket.buffer()
+        tensor = buffer.view(-1)
         k = max(1, int(len(tensor) * compression_ratio))
         _, top_idx = torch.topk(tensor.abs(), k)
         mask = torch.zeros_like(tensor)
         mask[top_idx] = 1.0
         tensor.mul_(mask)
-        fut = torch.distributed.all_reduce(tensor, async_op=True).get_future()
+        tensor.div_(dist.get_world_size())
+        fut = dist.all_reduce(buffer, async_op=True).get_future()
         return fut.then(lambda f: [f.value()[0]])
 
     model.register_comm_hook(None, _topk_hook)

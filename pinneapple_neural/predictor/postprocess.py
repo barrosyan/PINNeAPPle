@@ -586,7 +586,7 @@ class FlowVisualizer:
         """2D streamline plot. Model must output (u, v, ...) as first two fields."""
         if self._dim != 2:
             raise ValueError("streamlines() requires a 2D domain (2 coord axes)")
-        return plot_streamlines_2d(
+        return plot_streamlines_2d_from_model(
             self.model,
             x_range=self._x_range(),
             y_range=self._y_range(),
@@ -724,8 +724,8 @@ class FlowVisualizer:
             out = _model_on_grid(self.model, pts_np, device=self.device)
             u_g = out[:, 0].reshape(n_grid, n_grid)
             v_g = out[:, 1].reshape(n_grid, n_grid)
-            du_dy = np.gradient(u_g, y_lin, axis=1)
-            dv_dx = np.gradient(v_g, x_lin, axis=0)
+            du_dy = np.gradient(u_g, y_lin, axis=0)
+            dv_dx = np.gradient(v_g, x_lin, axis=1)
             vort_grid = dv_dx - du_dy
 
         vmax = float(np.max(np.abs(vort_grid))) or 1.0

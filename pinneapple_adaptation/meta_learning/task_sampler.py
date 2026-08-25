@@ -49,8 +49,27 @@ class PDETaskSampler:
         E.g. ``{"nu": (0.001, 0.1), "Re": (100.0, 1000.0)}``.
     physics_fn_factory:
         A callable ``factory(params: dict) -> physics_loss_fn`` that, given
-        a concrete parameter dict, returns a physics loss function with
-        signature ``physics_fn(model, x_collocation) -> scalar_tensor``.
+        a concrete parameter dict, returns a physics loss function.  The
+        expected signature of that function depends on which trainer will
+        consume it — the two meta-learning trainers in this package do
+        *not* share a physics_fn contract:
+
+        * :class:`~pinneapple_adaptation.meta_learning.maml.MAMLTrainer`
+          calls it as ``physics_fn(forward_or_model, x_collocation) ->
+          scalar_tensor``, where ``forward_or_model`` is either the model
+          itself or a stateless forward callable (when adapting via
+          ``torch.func.functional_call``).
+        * :class:`~pinneapple_adaptation.meta_learning.reptile.ReptileTrainer`
+          calls it as ``physics_fn(model, batch) -> (scalar_tensor, dict)``,
+          where ``batch`` is the task's batch dict (e.g. ``{"x_col":
+          Tensor}``) and the second return value is an optional dict of
+          loss components.
+
+        A ``physics_fn_factory`` intended for both trainers must build a
+        closure that supports both call shapes, or two separate factories
+        should be used (see ``pinneapple_tools/benchmark_suite/
+        meta_benchmark.py`` for an example of building one sampler per
+        trainer from a shared task family).
     data_factory:
         Optional callable ``factory(params: dict) -> dict`` that returns a
         dict of tensors used as support/query data.  The returned dict must

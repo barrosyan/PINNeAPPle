@@ -22,9 +22,13 @@ import torch.nn as nn
 # ---------------------------------------------------------------------------
 
 def _matches_any(name: str, prefixes: List[str]) -> bool:
-    """Return True if *name* starts with any prefix in *prefixes*."""
-    return any(name == p or name.startswith(p + ".") or name.startswith(p)
-               for p in prefixes)
+    """Return True if *name* equals, or is a dotted sub-path of, any prefix.
+
+    A prefix only matches at a ``"."`` component boundary, so ``"net.1"``
+    matches ``"net.1.weight"`` but not ``"net.10.weight"``, and
+    ``"encoder"`` matches ``"encoder.0.bias"`` but not ``"encoder2.bias"``.
+    """
+    return any(name == p or name.startswith(p + ".") for p in prefixes)
 
 
 # ---------------------------------------------------------------------------

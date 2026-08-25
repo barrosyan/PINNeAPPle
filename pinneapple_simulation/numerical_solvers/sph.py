@@ -19,21 +19,27 @@ from .sph_boundaries import BoxBoundary, wall_repulsion_force
 from .registry import SolverRegistry
 
 
-def _poly6(r: torch.Tensor, h: float) -> torch.Tensor:
+def _poly6(r: torch.Tensor, h: float, dim: int = 3) -> torch.Tensor:
     # r: (...)
     h2 = h * h
     mask = (r >= 0) & (r <= h)
     out = torch.zeros_like(r)
-    c = 315.0 / (64.0 * torch.pi * (h**9))
+    if dim == 2:
+        c = 4.0 / (torch.pi * (h**8))
+    else:
+        c = 315.0 / (64.0 * torch.pi * (h**9))
     out[mask] = c * (h2 - r[mask] ** 2) ** 3
     return out
 
 
-def _spiky_grad(r_vec: torch.Tensor, r: torch.Tensor, h: float) -> torch.Tensor:
+def _spiky_grad(r_vec: torch.Tensor, r: torch.Tensor, h: float, dim: int = 3) -> torch.Tensor:
     # r_vec: (E,D), r: (E,)
     mask = (r > 1e-12) & (r <= h)
     out = torch.zeros_like(r_vec)
-    c = -45.0 / (torch.pi * (h**6))
+    if dim == 2:
+        c = -30.0 / (torch.pi * (h**5))
+    else:
+        c = -45.0 / (torch.pi * (h**6))
     out[mask] = c * ((h - r[mask]) ** 2).unsqueeze(1) * (r_vec[mask] / r[mask].unsqueeze(1))
     return out
 
@@ -83,7 +89,7 @@ class SPHSolver(SolverBase):
         nl = build_neighbor_list(pos, h=self.h)
 
         # density
-        rho = torch.full((N,), self.mass * _poly6(torch.zeros(1, device=device), self.h).item(), device=device)
+        rho = torch.full((N,), self.mass * _poly6(torch.zeros(1, device=device), self.h, dim=D).item(), device=device)
         # accumulate
         # iterate CSR
         for i in range(N):
@@ -92,16 +98,19 @@ class SPHSolver(SolverBase):
                 continue
             rij = pos[i].unsqueeze(0) - pos[js]
             r = torch.norm(rij, dim=1)
-            rho[i] = rho[i] + self.mass * torch.sum(_poly6(r, self.h))
+            rho[i] = rho[i] + self.mass * torch.sum(_poly6(r, self.h, dim=D))
 
         # equation of state (Tait)
         gamma = 7.0
         p = self.c0**2 * self.rho0 / gamma * ((rho / self.rho0) ** gamma - 1.0)
 
-        # forces
+        # forces (all terms accumulated as accelerations, i.e. dv/dt)
         f = torch.zeros_like(pos)
         g = torch.tensor(self.gravity if self.gravity is not None else [0.0] * (D - 1) + [-9.81], device=device, dtype=pos.dtype)
-        f = f + rho[:, None] * g[None, :]
+        f = f + g[None, :]
+
+        # viscous smoothing regularizer (Morris et al. 1997), scaled by h^2
+        eta2 = 0.01 * self.h * self.h
 
         for i in range(N):
             js = nl.j[nl.indptr[i] : nl.indptr[i + 1]]
@@ -110,20 +119,22 @@ class SPHSolver(SolverBase):
             rij = pos[i].unsqueeze(0) - pos[js]
             vij = vel[i].unsqueeze(0) - vel[js]
             r = torch.norm(rij, dim=1)
-            gradW = _spiky_grad(rij, r, self.h)
-            # pressure
+            gradW = _spiky_grad(rij, r, self.h, dim=D)
+            # pressure (already an acceleration: -sum_j m_j (p_i/rho_i^2 + p_j/rho_j^2) grad W_ij)
             f_p = -self.mass * torch.sum((p[i] / (rho[i] ** 2) + p[js] / (rho[js] ** 2))[:, None] * gradW, dim=0)
-            # viscosity (simple)
-            f_v = self.mu * self.mass * torch.sum(vij, dim=0)
+            # viscosity: Morris (1997) laminar-viscosity SPH Laplacian, also an acceleration
+            r_dot_gradW = torch.sum(rij * gradW, dim=1)
+            visc_weight = (2.0 * self.mu / (rho[i] * rho[js])) * (r_dot_gradW / (r**2 + eta2))
+            f_v = self.mass * torch.sum(visc_weight[:, None] * vij, dim=0)
             f[i] = f[i] + f_p + f_v
 
         # boundaries
         if self.boundary_lo is not None and self.boundary_hi is not None:
             bd = BoxBoundary.from_bounds(self.boundary_lo, self.boundary_hi, device=device, dtype=pos.dtype)
-            f = f + wall_repulsion_force(pos, vel, bd)
+            f = f + wall_repulsion_force(pos, vel, bd) / (rho[:, None] + 1e-12)
 
         # integrate (symplectic Euler)
-        vel_new = vel + dt * (f / (rho[:, None] + 1e-12))
+        vel_new = vel + dt * f
         pos_new = pos + dt * vel_new
         return SPHState(pos=pos_new, vel=vel_new, rho=rho, p=p)
 

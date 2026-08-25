@@ -148,8 +148,10 @@ class RigidBody(nn.Module):
     ) -> RigidBodyState:
         """Advance the state by *dt* using symplectic Euler integration.
 
-        Symplectic Euler is first-order accurate and energy-preserving (for
-        conservative systems), making it suitable for long-horizon simulations.
+        Symplectic Euler is first-order accurate; for conservative, separable
+        systems it exhibits bounded energy oscillation rather than secular
+        drift (though it does not exactly conserve energy), making it
+        suitable for long-horizon simulations.
 
         Parameters
         ----------
@@ -186,11 +188,15 @@ class RigidBody(nn.Module):
             new_state.omega = state.omega + dt * alpha
             new_state.angle = state.angle + dt * new_state.omega
         else:
-            # 3-D: omega in body frame, integrate with explicit Euler
-            alpha = (I_inv @ torque.unsqueeze(-1)).squeeze(-1)
+            # 3-D: omega in body frame, integrate with explicit Euler.
+            # Euler's equations: I * dw/dt = torque - w x (I * w)
+            I = self.inertia
+            L = (I @ state.omega.unsqueeze(-1)).squeeze(-1)      # angular momentum
+            gyro = torch.linalg.cross(state.omega, L, dim=-1)    # w x (I w)
+            alpha = (I_inv @ (torque - gyro).unsqueeze(-1)).squeeze(-1)
             new_state.omega = state.omega + dt * alpha
 
-            # Quaternion integration: q_new = q + 0.5 * dt * [0, omega] ⊗ q
+            # Quaternion integration (body-frame omega): q_new = q + 0.5 * dt * q ⊗ [0, omega]
             q = state.quat                   # (n_bodies, 4)
             w_body = new_state.omega         # (n_bodies, 3)
             # Build pure-quaternion form of angular velocity

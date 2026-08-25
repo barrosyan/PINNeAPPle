@@ -15,6 +15,7 @@ def genesis_traj_to_upd(
     time_array: Optional[np.ndarray] = None,
     field_map: Optional[Dict[str, str]] = None,
     meta_extra: Optional[dict] = None,
+    dt: Optional[float] = None,
 ):
     """Convert a Genesis AI trajectory dict to a UPD PhysicalSample.
 
@@ -23,9 +24,15 @@ def genesis_traj_to_upd(
     traj : output from GenesisRunner.simulate().
         Keys are field names (e.g. "robot_pos", "robot_vel", "step").
     time_array : (T,) float array of simulation timestamps.
-        If None and "step" is present, steps are used as the time coordinate.
+        If None and "step" is present, the time coordinate is derived from
+        the step index (see ``dt``).
     field_map : optional rename map {traj_key: upd_field_name}.
     meta_extra : extra keys merged into the UPD meta dict.
+    dt : simulated seconds per ``scene.step()`` call (``GenesisConfig.dt``).
+        Used to convert the raw step index into elapsed sim time
+        (``time = step * dt``) when ``time_array`` is not supplied. If not
+        given, the step index is exposed under a "step" coordinate instead
+        of "time", since a bare step count is not a time value.
 
     Returns
     -------
@@ -50,19 +57,26 @@ def genesis_traj_to_upd(
     if time_array is not None:
         coords = {"time": np.asarray(time_array, dtype=np.float32)}
     elif "step" in traj:
-        coords = {"time": np.asarray(traj["step"], dtype=np.float32)}
+        step_idx = np.asarray(traj["step"], dtype=np.float32)
+        if dt is not None:
+            coords = {"time": step_idx * float(dt)}
+        else:
+            coords = {"step": step_idx}
     else:
         coords = {}
 
-    meta = {
-        "upd": {"version": "0.1", "source": "genesis"},
-        "provenance": {"solver": "genesis.scene.step"},
-        "units": {},
-    }
+    provenance = {"version": "0.1", "source": "genesis", "solver": "genesis.scene.step"}
+    units: Dict[str, str] = {}
     if meta_extra:
-        meta.update(meta_extra)
+        provenance.update(meta_extra.get("provenance", meta_extra))
+        units.update(meta_extra.get("units", {}))
 
-    return PhysicalSample(fields=fields, coords=coords, meta=meta)
+    return PhysicalSample(
+        state=fields,
+        domain={"type": "grid", "coords": coords},
+        provenance=provenance,
+        schema={"units": units},
+    )
 
 
 def genesis_trajs_to_upd(
@@ -70,9 +84,12 @@ def genesis_trajs_to_upd(
     time_array: Optional[np.ndarray] = None,
     field_map: Optional[Dict[str, str]] = None,
     meta_extra: Optional[dict] = None,
+    dt: Optional[float] = None,
 ) -> list:
     """Convert a list of Genesis trajectory dicts to PhysicalSamples."""
     return [
-        genesis_traj_to_upd(t, time_array=time_array, field_map=field_map, meta_extra=meta_extra)
+        genesis_traj_to_upd(
+            t, time_array=time_array, field_map=field_map, meta_extra=meta_extra, dt=dt
+        )
         for t in trajs
     ]

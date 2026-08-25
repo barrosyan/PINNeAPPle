@@ -9,8 +9,10 @@ Execution model:
 
 Differentiability:
   Torch computational graphs are preserved through every ``step()`` call by
-  default.  Set ``retain_graph=True`` if you need BPTT across time steps
-  (required when unrolling a training loop over multiple simulation steps).
+  default.  ``CoSimTrainer`` forwards ``retain_graph`` to its ``backward()``
+  call, so set ``retain_graph=True`` here if something else (a weight
+  scheduler, a second loss, manual inspection) needs to walk the same
+  autograd graph again after that backward pass.
 
 Usage::
 
@@ -22,6 +24,7 @@ Usage::
 """
 from __future__ import annotations
 
+import warnings
 from typing import Dict, List, Optional
 
 import torch
@@ -41,8 +44,9 @@ class CoSimEngine:
                       ``"jacobi"`` (parallel, more faithful to true parallelism).
         max_iter:     Maximum iterations per algebraic loop per time step.
         tol:          Convergence tolerance (max absolute change across all ports).
-        retain_graph: Keep PyTorch computational graph after each step (needed
-                      for BPTT; increases memory usage).
+        retain_graph: Forwarded by ``CoSimTrainer`` to ``loss.backward()``;
+                      set True if the autograd graph is needed again after
+                      that backward pass (increases memory usage).
     """
 
     def __init__(
@@ -65,10 +69,15 @@ class CoSimEngine:
         self.tol = tol
         self.retain_graph = retain_graph
 
-        # Current port values: {node_name: {port_name: tensor}}
+        # Current port values: {node_name: {port_name: tensor}}.
+        # Holds BOTH each node's most recently consumed input-port values
+        # and its most recently produced output-port values, so downstream
+        # consumers (e.g. CouplingLoss) can compare a source's output
+        # against a destination's actual consumed input by name.
         self._vals: Dict[str, Dict[str, torch.Tensor]] = {
             name: {} for name in graph.nodes
         }
+        self._last_step_converged = True
 
     # ------------------------------------------------------------------
     # Public API
@@ -78,6 +87,7 @@ class CoSimEngine:
         """Reset engine state and all nodes. Call before each new simulation."""
         self.graph.reset_all()
         self._vals = {name: {} for name in self.graph.nodes}
+        self._last_step_converged = True
         if self.recorder is not None:
             self.recorder.reset()
 
@@ -106,6 +116,7 @@ class CoSimEngine:
         Returns:
             Current port values ``{node_name: {port_name: tensor}}``.
         """
+        self._last_step_converged = True
         for scc in self.graph.execution_order():
             if len(scc) == 1:
                 self._step_single(scc[0], t, dt)
@@ -156,6 +167,12 @@ class CoSimEngine:
         """Current snapshot of all port values."""
         return {n: dict(p) for n, p in self._vals.items()}
 
+    @property
+    def converged(self) -> bool:
+        """Whether every algebraic loop in the most recent ``step()`` call
+        satisfied ``tol`` within ``max_iter`` iterations."""
+        return self._last_step_converged
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
@@ -172,7 +189,8 @@ class CoSimEngine:
     def _step_single(self, node_name: str, t: float, dt: float) -> None:
         node = self.graph.node(node_name)
         inputs = self._gather_inputs(node_name)
-        self._vals[node_name] = node.step(inputs, t, dt)
+        outputs = node.step(inputs, t, dt)
+        self._vals[node_name] = {**inputs, **outputs}
 
     def _step_loop(self, scc: List[str], t: float, dt: float) -> None:
         if self.loop_solver == "gauss_seidel":
@@ -182,26 +200,45 @@ class CoSimEngine:
 
     def _gauss_seidel(self, scc: List[str], t: float, dt: float) -> None:
         """Sequential update — each node immediately sees neighbours' new values."""
+        converged = False
         for _ in range(self.max_iter):
             prev = {n: dict(self._vals[n]) for n in scc}
             for name in scc:
                 self._step_single(name, t, dt)
             if self._converged(scc, prev):
+                converged = True
                 break
+        self._note_convergence(scc, converged)
 
     def _jacobi(self, scc: List[str], t: float, dt: float) -> None:
         """Parallel update — all nodes see last iteration's values."""
+        converged = False
         for _ in range(self.max_iter):
             prev = {n: dict(self._vals[n]) for n in scc}
             new: Dict[str, Dict[str, torch.Tensor]] = {}
             for name in scc:
                 node = self.graph.node(name)
                 inputs = self._gather_inputs(name)
-                new[name] = node.step(inputs, t, dt)
+                outputs = node.step(inputs, t, dt)
+                new[name] = {**inputs, **outputs}
             for name, vals in new.items():
                 self._vals[name] = vals
             if self._converged(scc, prev):
+                converged = True
                 break
+        self._note_convergence(scc, converged)
+
+    def _note_convergence(self, scc: List[str], converged: bool) -> None:
+        self._last_step_converged = self._last_step_converged and converged
+        if not converged:
+            warnings.warn(
+                f"Algebraic loop {scc} did not converge within "
+                f"{self.max_iter} iterations (tol={self.tol}); port values "
+                "for this step may violate the coupling constraint. Check "
+                "engine.converged, increase max_iter, or relax tol.",
+                RuntimeWarning,
+                stacklevel=3,
+            )
 
     def _converged(
         self,

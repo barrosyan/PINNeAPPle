@@ -71,10 +71,16 @@ class DerivativeComputer:
         independent_vars: List[str],
         dependent_vars: List[str],
         device: torch.device,
+        coord_scales: Union[Dict[str, float], None] = None,
     ) -> None:
         self.independent_vars = list(independent_vars)
         self.dependent_vars = list(dependent_vars)
         self.device = device
+        # Optional {var -> d(normalized coord)/d(physical coord)}. When set, a
+        # derivative computed w.r.t. an independent var that autograd sees as
+        # already-normalized network input is rescaled to the physical-unit
+        # derivative a PDE residual with physical coefficients expects.
+        self.coord_scales = dict(coord_scales) if coord_scales else {}
 
         self._ind_index = {name: i for i, name in enumerate(self.independent_vars)}
 
@@ -149,6 +155,9 @@ class DerivativeComputer:
                 x = inputs[idx]
                 for _ in range(order):
                     g = _safe_grad(g, x)
+                scale = self.coord_scales.get(var_name)
+                if scale is not None and scale != 1.0:
+                    g = g * (scale ** order)
 
             torch_cache[key] = g
             cache[d] = g

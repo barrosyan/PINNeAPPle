@@ -5,6 +5,18 @@ Reference: Pfaff et al., ICLR 2021
   "Learning Mesh-Based Simulation with Graph Networks"
   https://arxiv.org/abs/2010.03409
 
+Scope
+-----
+This implements the single-edge-type variant of MeshGraphNet, appropriate
+for domains without external contact (e.g. CFD / continuum meshes where a
+single fixed mesh connectivity fully determines interactions). The full
+paper additionally defines a *world-space* edge set — dynamically rebuilt
+each step from spatial proximity, with its own edge encoder/embedding — to
+let the network learn contact effects (e.g. cloth self-collision) that are
+not captured by mesh-space (rest-pose) connectivity alone. That second edge
+type is not implemented here; ``edge_index``/``edge_attr`` are treated as a
+single, fixed mesh-space edge set for the whole rollout.
+
 Architecture
 ------------
 1. Node encoder  : MLP(node_in_dim [+ pos_dim]) → hidden_dim, LayerNorm
@@ -96,6 +108,11 @@ class _ProcessorBlock(nn.Module):
 
 class MeshGraphNet(GraphModelBase):
     """Encoder-Process-Decoder GNN for unstructured mesh simulation.
+
+    Single-edge-type variant: one fixed ``edge_index`` carries mesh-space
+    connectivity for the whole rollout. Contact-rich domains (e.g. cloth)
+    that need a dynamically-rebuilt world-space edge set with its own
+    encoder, per the full paper, are not covered by this class.
 
     All encoders are built eagerly at construction time — they are proper
     ``nn.Module`` children so they appear in ``parameters()``, ``state_dict()``,

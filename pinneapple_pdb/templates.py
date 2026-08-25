@@ -16,7 +16,10 @@ def schema_templates() -> Dict[str, Dict[str, Any]]:
             "ics": {"type": "windowed_time_series"},
             "bcs": {"type": "global_sphere_periodic_lon"},
             "forcings": {"notes": "implicit in reanalysis/model system"},
-            "units_policy": {"require_units": True, "convert_to": "SI"},
+            # "convert_to" states the target unit system for this schema; no automatic
+            # conversion is performed by the builder/validator, so `converted` stays
+            # False and source-granule units are written through unchanged.
+            "units_policy": {"require_units": True, "convert_to": "SI", "converted": False},
             "regime_tags": [],
             "validity": {"notes": "Assimilated/model state estimate; not direct observation."},
             "version": "upd/v1",

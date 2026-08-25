@@ -130,7 +130,7 @@ class KoopmanOperator(RCBase):
 
         xs = [x0]
         for _ in range(int(steps)):
-            z = z @ self.K.t()
+            z = z @ self.K
             xhat = self.decoder(z)
             xs.append(xhat)
 

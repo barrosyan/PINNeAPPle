@@ -12,10 +12,13 @@ Quick start::
     set_backend("jax")
     print(get_backend())  # "jax"
 
-    # JIT-compile a PINN (model_fn + residual_fn must use JAX arrays)
+    # JIT-compile a PINN. residual_fn receives (u_fn, x), where u_fn is
+    # model_fn bound to params (x -> u(x)), so it can take derivatives via
+    # jax.grad/jax.hessian -- not a precomputed value, which JAX cannot
+    # differentiate.
     compiled = JAXBackend.jit_pinn(model_fn, residual_fn)
 
-    # Vectorise a single-point residual over a batch
+    # Vectorise a single-point residual over a batch of collocation points
     batched = JAXBackend.vmap_residual(single_pt_residual)
 
     # Convert between PyTorch and JAX

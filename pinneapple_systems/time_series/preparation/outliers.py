@@ -13,6 +13,20 @@ class OutlierDetector:
     """
     Outlier detection (Rolling IQR / Z-Score) with 6 treatment options.
 
+    All rolling windows are trailing/causal (they only look at the current
+    point and points before it), and `interpolate` only fills using past
+    values (`limit_direction="forward"`). This matters because this
+    detector is commonly fit on a full series before it is split into
+    train/val/test for a forecasting pipeline: a centered window or a
+    both-directions fill would let a flagged point in the training portion
+    be "cleaned" using values from the validation/test period, leaking
+    information that would not be available at real deployment time.
+    Note that linear interpolation of a single isolated flagged point still
+    uses the next valid observation as one of its two anchors (that is
+    inherent to linear interpolation, not to the rolling windows here);
+    when strict causality for every flagged point matters, prefer
+    treatment="mean_replace" or a forward-fill instead.
+
     Detection methods:
       rolling_iqr    — IQR computed in a rolling window; flags points outside
                        [Q1 - iqr_factor*IQR, Q3 + iqr_factor*IQR]
@@ -64,8 +78,8 @@ class OutlierDetector:
         if not mask.any():
             return out
         if self.treatment == "clip":
-            q1 = s.rolling(self.window, min_periods=3, center=True).quantile(0.25)
-            q3 = s.rolling(self.window, min_periods=3, center=True).quantile(0.75)
+            q1 = s.rolling(self.window, min_periods=3, center=False).quantile(0.25)
+            q3 = s.rolling(self.window, min_periods=3, center=False).quantile(0.75)
             iqr = q3 - q1
             lo = q1 - self.iqr_factor * iqr
             hi = q3 + self.iqr_factor * iqr
@@ -74,7 +88,7 @@ class OutlierDetector:
             out[mask] = np.nan
         elif self.treatment == "interpolate":
             out[mask] = np.nan
-            out = out.interpolate(method="linear", limit_direction="both")
+            out = out.interpolate(method="linear", limit_direction="forward")
         elif self.treatment == "winsorize":
             lo_p = s.quantile(self.winsorize_pct)
             hi_p = s.quantile(1 - self.winsorize_pct)
@@ -82,7 +96,7 @@ class OutlierDetector:
         elif self.treatment == "flag":
             pass  # user handles externally
         elif self.treatment == "mean_replace":
-            roll_mean = s.rolling(self.window, min_periods=1, center=True).mean()
+            roll_mean = s.rolling(self.window, min_periods=1, center=False).mean()
             out[mask] = roll_mean[mask]
         return out
 
@@ -114,22 +128,22 @@ class OutlierDetector:
     # ------------------------------------------------------------------
     def _rolling_iqr(self, s: pd.Series) -> pd.Series:
         w = self.window
-        q1 = s.rolling(w, min_periods=3, center=True).quantile(0.25)
-        q3 = s.rolling(w, min_periods=3, center=True).quantile(0.75)
+        q1 = s.rolling(w, min_periods=3, center=False).quantile(0.25)
+        q3 = s.rolling(w, min_periods=3, center=False).quantile(0.75)
         iqr = (q3 - q1).clip(lower=1e-10)
         lo = q1 - self.iqr_factor * iqr
         hi = q3 + self.iqr_factor * iqr
         return (s < lo) | (s > hi)
 
     def _zscore(self, s: pd.Series) -> pd.Series:
-        mu = s.rolling(self.window, min_periods=3, center=True).mean()
-        sigma = s.rolling(self.window, min_periods=3, center=True).std().clip(lower=1e-10)
+        mu = s.rolling(self.window, min_periods=3, center=False).mean()
+        sigma = s.rolling(self.window, min_periods=3, center=False).std().clip(lower=1e-10)
         z = (s - mu) / sigma
         return z.abs() > self.z_threshold
 
     def _modified_zscore(self, s: pd.Series) -> pd.Series:
-        median = s.rolling(self.window, min_periods=3, center=True).median()
-        mad = (s - median).abs().rolling(self.window, min_periods=3, center=True).median()
+        median = s.rolling(self.window, min_periods=3, center=False).median()
+        mad = (s - median).abs().rolling(self.window, min_periods=3, center=False).median()
         mad = mad.clip(lower=1e-10)
         mz = 0.6745 * (s - median) / mad
         return mz.abs() > self.z_threshold

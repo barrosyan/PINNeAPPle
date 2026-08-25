@@ -126,7 +126,12 @@ class ExtendedKalmanFilter:
         S = H @ self.P @ H.T + self.R
         K = self.P @ H.T @ np.linalg.solve(S, np.eye(len(y)))
         self.x = self.x + K @ innovation
-        self.P = (np.eye(self.n_state) - K @ H) @ self.P
+        # Joseph-form update: numerically robust to the linearization error
+        # in H and to roundoff accumulated over long-running online filtering,
+        # unlike the algebraically-equivalent (I - KH) P, it stays symmetric
+        # and PSD even when K is not exactly the optimal gain.
+        I_KH = np.eye(self.n_state) - K @ H
+        self.P = I_KH @ self.P @ I_KH.T + K @ self.R @ K.T
         return {
             "x": self.x.copy(),
             "P": self.P.copy(),

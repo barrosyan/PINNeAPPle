@@ -126,7 +126,11 @@ class SymbolicPDE:
     expr : sympy expression equal to 0 (the PDE residual).
     coord_syms : list of SymPy symbols for independent variables (e.g. [x, y, t]).
     field_syms : list of SymPy *Function* objects for dependent variables (e.g. [u, v]).
-    param_syms : optional list of SymPy symbols for parameters.
+    param_syms : optional list of SymPy symbols for (possibly learnable) parameters,
+        e.g. an unknown diffusivity in an inverse PDE problem. Their numeric values
+        are not fixed at construction time — supply them via ``to_residual_fn(model,
+        params={...})`` (or per-call via ``residual_fn(coords, params={...})``) so
+        that a ``torch.nn.Parameter`` can be optimized jointly with the model.
     """
 
     def __init__(
@@ -136,7 +140,11 @@ class SymbolicPDE:
         field_syms: List[sp.Function],
         param_syms: Optional[List[sp.Symbol]] = None,
     ) -> None:
-        self.expr = expr
+        # .doit() reduces any unevaluated Derivative (e.g. Derivative(u(x)**2, x,
+        # evaluate=False)) via the chain rule into derivatives of bare field
+        # applications (e.g. 2*u(x)*Derivative(u(x), x)); it is a no-op for
+        # expressions already built via plain chained .diff() calls.
+        self.expr = expr.doit()
         self.coord_syms = coord_syms
         self.field_syms = field_syms
         self.param_syms = param_syms or []
@@ -145,28 +153,53 @@ class SymbolicPDE:
         self._field_names: List[str] = [
             f.__name__ if hasattr(f, "__name__") else str(f) for f in field_syms
         ]
-        self._deriv_ops: List[_DerivativeOp] = _extract_derivative_ops(expr, field_syms)
+        self._param_names: List[str] = [str(s) for s in self.param_syms]
+        self._deriv_ops: List[_DerivativeOp] = _extract_derivative_ops(self.expr, field_syms)
 
     # ------------------------------------------------------------------
     # Public interface
     # ------------------------------------------------------------------
 
-    def to_residual_fn(self, model: nn.Module) -> Callable[[torch.Tensor], torch.Tensor]:
+    def to_residual_fn(
+        self,
+        model: nn.Module,
+        params: Optional[Dict[str, torch.Tensor]] = None,
+    ) -> Callable[..., torch.Tensor]:
         """Return a callable that computes the PDE residual using autograd.
 
         Parameters
         ----------
         model : nn.Module — takes (N, D) coords tensor, returns (N, F) fields tensor.
+        params : optional dict mapping parameter-symbol name -> scalar tensor,
+            used as the default values for any ``param_syms`` appearing in the
+            expression (e.g. ``{"nu": nu_param}`` for a learnable diffusivity).
+            Pass a ``torch.nn.Parameter`` here to jointly optimize it with the
+            model; the same tensor object is read on every call, so updates
+            from an optimizer step are picked up automatically.
 
         Returns
         -------
-        residual_fn(coords_tensor) -> (N, 1) residual tensor.
+        residual_fn(coords_tensor, params=None) -> (N, 1) residual tensor.
+            ``params`` passed to the returned callable overrides the defaults
+            given here for that call only.
         """
         coord_names = self._coord_names
         field_names = self._field_names
+        param_names = self._param_names
         expr = self.expr
 
-        def residual_fn(coords: torch.Tensor) -> torch.Tensor:
+        def residual_fn(
+            coords: torch.Tensor,
+            params: Optional[Dict[str, torch.Tensor]] = params,
+        ) -> torch.Tensor:
+            if param_names:
+                missing = [p for p in param_names if not (params and p in params)]
+                if missing:
+                    raise ValueError(
+                        f"Missing values for PDE parameter(s) {missing}; pass them via "
+                        f"to_residual_fn(model, params={{...}}) or residual_fn(coords, params={{...}})."
+                    )
+
             coords = coords.clone().requires_grad_(True)
             raw = model(coords)
             if raw.ndim == 1:
@@ -193,7 +226,7 @@ class SymbolicPDE:
                 )
 
             # Evaluate the symbolic expression numerically
-            return _eval_expr_torch(expr, coords, fields, deriv_cache, coord_names)
+            return _eval_expr_torch(expr, coords, fields, deriv_cache, coord_names, params)
 
         return residual_fn
 
@@ -225,11 +258,13 @@ def _eval_expr_torch(
     fields: Dict[str, torch.Tensor],
     deriv_cache: Dict[Tuple[str, Tuple[str, ...]], torch.Tensor],
     coord_names: List[str],
+    params: Optional[Dict[str, torch.Tensor]] = None,
 ) -> torch.Tensor:
     """Recursively evaluate a SymPy expression as a PyTorch tensor.
 
-    Supports: Add, Mul, Pow, Number, Symbol (coords), AppliedUndef (fields),
-    Derivative, sin, cos, exp, log, Abs, sign, and basic constants.
+    Supports: Add, Mul, Pow, Number, Symbol (coords or parameters),
+    AppliedUndef (fields), Derivative, sin, cos, exp, log, Abs, sign, and
+    basic constants.
     """
     N = coords.shape[0]
     device = coords.device
@@ -249,13 +284,22 @@ def _eval_expr_torch(
         if e is sp.E:
             return _const(float(sp.E))
 
-        # ---- coordinate symbol ----
+        # ---- coordinate or parameter symbol ----
         if isinstance(e, sp.Symbol):
             s = str(e)
             if s in coord_names:
                 idx = coord_names.index(s)
                 return coords[:, idx : idx + 1]
-            raise ValueError(f"Unknown symbol '{s}' — not in coords {coord_names}")
+            if params is not None and s in params:
+                val = params[s]
+                if not torch.is_tensor(val):
+                    val = torch.as_tensor(val, device=device, dtype=dtype)
+                val = val.to(device=device, dtype=dtype).reshape(1, 1)
+                return val.expand(N, 1)
+            raise ValueError(
+                f"Unknown symbol '{s}' — not in coords {coord_names} or "
+                f"params {list((params or {}).keys())}"
+            )
 
         # ---- applied function (field value) ----
         if isinstance(e, _SpAppliedUndef):
@@ -332,8 +376,9 @@ def _eval_expr_torch(
         if isinstance(e, sp.sign):
             return torch.sign(_eval(e.args[0]))
 
-        if isinstance(e, sp.sqrt):
-            return torch.sqrt(_eval(e.args[0]))
+        # Note: sp.sqrt is a factory function, not a class (SymPy normalizes
+        # sqrt(x) to Pow(x, Rational(1, 2))), so it can't appear here as an
+        # isinstance check — it's already handled by the sp.Pow branch above.
 
         if isinstance(e, sp.tanh):
             return torch.tanh(_eval(e.args[0]))

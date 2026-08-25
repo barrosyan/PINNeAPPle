@@ -40,6 +40,10 @@ class HHTNNForecaster:
         self._inst_amps:  Optional[np.ndarray] = None
         self._residual_nn = None
         self._y_train: Optional[np.ndarray] = None
+        self._n_fit: int = 0
+        self._trend: Optional[np.ndarray] = None
+        self._trend_slope: float = 0.0
+        self._trend_intercept: float = 0.0
 
     # ------------------------------------------------------------------
     def _default_nn(self):
@@ -56,8 +60,23 @@ class HHTNNForecaster:
         except ImportError:
             raise ImportError("pip install EMD-signal")
         emd  = EMD()
-        imfs = emd(y)  # shape (n_found, N)
+        imfs = emd(y)  # shape (n_found, N); last row is the non-oscillatory residual
         return imfs
+
+    @staticmethod
+    def _is_oscillatory(imf: np.ndarray) -> bool:
+        """True if `imf` actually crosses zero enough to be a real IMF.
+
+        A monotonic (or nearly monotonic) trend has essentially no zero
+        crossings around its own mean; the Hilbert instantaneous
+        frequency of such a component has no physical meaning per the
+        IMF definition of Huang et al. (1998), so it must be routed to
+        a plain trend extrapolation instead.
+        """
+        centered = imf - np.mean(imf)
+        signs = np.sign(centered)
+        zero_crossings = int(np.sum(np.diff(signs) != 0))
+        return zero_crossings >= 2
 
     def _hilbert_extrapolate(self, imf: np.ndarray, horizon: int) -> np.ndarray:
         """Extrapolate a single IMF using last instantaneous frequency + amplitude."""
@@ -81,12 +100,41 @@ class HHTNNForecaster:
         y = np.asarray(y, dtype=float).ravel()
         self._y_train = y
 
+        self._n_fit = len(y)
         imfs = self._emd_decompose(y)
-        k    = min(self.n_imfs, len(imfs))
-        self._imfs = imfs[:k]
 
-        # Build HHT reconstruction of dominant IMFs
-        hht_recon = self._imfs.sum(axis=0)
+        # PyEMD always appends the non-oscillatory residual/trend as the
+        # final row so that sum(imfs) reconstructs the signal exactly; it
+        # is not a true IMF and must not be Hilbert-extrapolated.
+        if len(imfs) > 1:
+            candidates, trend = imfs[:-1], np.array(imfs[-1], dtype=float, copy=True)
+        else:
+            candidates, trend = imfs, np.zeros_like(y)
+
+        oscillatory = []
+        for imf in candidates:
+            if self._is_oscillatory(imf):
+                oscillatory.append(imf)
+            else:
+                # Degenerate "IMF" that never actually oscillates: fold it
+                # into the trend so it gets a linear extrapolation instead
+                # of a spurious Hilbert-derived cosine.
+                trend = trend + imf
+
+        k = min(self.n_imfs, len(oscillatory))
+        self._imfs = np.array(oscillatory[:k]) if oscillatory else np.zeros((0, len(y)))
+        self._trend = trend
+
+        t = np.arange(self._n_fit, dtype=float)
+        if self._n_fit > 1:
+            p = np.polyfit(t, trend, 1)
+            self._trend_slope, self._trend_intercept = float(p[0]), float(p[1])
+        else:
+            self._trend_slope = 0.0
+            self._trend_intercept = float(trend[0]) if self._n_fit else 0.0
+
+        # Build HHT reconstruction of dominant IMFs + trend
+        hht_recon = self._imfs.sum(axis=0) + trend
         residual  = y - hht_recon
 
         # NN on residual
@@ -106,8 +154,11 @@ class HHTNNForecaster:
         for imf in self._imfs:
             hht_pred += self._hilbert_extrapolate(imf, self.horizon)
 
+        t_future = np.arange(self._n_fit, self._n_fit + self.horizon, dtype=float)
+        hht_pred += self._trend_slope * t_future + self._trend_intercept
+
         # NN residual prediction from last training window
-        hht_recon = self._imfs.sum(axis=0)
+        hht_recon = self._imfs.sum(axis=0) + self._trend
         residual  = self._y_train - hht_recon
         last_win  = residual[-self.input_len:].reshape(1, -1)
         nn_pred   = self._residual_nn.predict(last_win).ravel()

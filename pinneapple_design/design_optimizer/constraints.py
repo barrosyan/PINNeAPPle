@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -61,31 +61,76 @@ class BoxConstraint(ConstraintBase):
 class MassConservationConstraint(ConstraintBase):
     """Divergence-free (mass conservation) constraint.
 
-    Estimates the velocity divergence via first-order finite differences and
-    penalises its mean squared value.  Accepts *u* of shape ``(N, d)``
-    (point cloud) or ``(nx, ny, d)`` (structured 2-D grid).
+    Estimates the velocity divergence and penalises its mean squared value.
+    Accepts *u* of shape ``(N, d)`` (point cloud) or ``(nx, ny, d)``
+    (structured 2-D grid).
+
+    For the point-cloud case there is no array-index/spatial-axis
+    correspondence to exploit (points are in arbitrary order), so the
+    divergence is estimated with a meshless generalised finite-difference:
+    at each point, a local linear model ``u(x) ≈ u_i + G (x - x_i)`` is
+    least-squares fit over its ``n_neighbors`` nearest neighbours (found
+    from *coords*), and ``div u = trace(G)``.
 
     Parameters
     ----------
+    coords:
+        Fixed spatial coordinates of the point cloud, shape ``(N, d)``,
+        matching the (fixed) collocation points that produce ``u`` of shape
+        ``(N, d)``.  Required for the point-cloud branch -- unused for the
+        structured-grid branch, where axis 0 / 1 already are the spatial
+        directions.
+    n_neighbors:
+        Number of nearest neighbours used for the local gradient fit.
+        Defaults to ``2 * d + 3`` (comfortably over-determined), clamped to
+        ``N - 1``.
     weight:
         Penalty coefficient.
     """
 
-    def __init__(self, weight: float = 10.0) -> None:
+    def __init__(
+        self,
+        weight: float = 10.0,
+        coords: Optional[Tensor] = None,
+        n_neighbors: Optional[int] = None,
+    ) -> None:
         self.weight = weight
+        self.coords = coords
+        self.n_neighbors = n_neighbors
 
     def _divergence(self, u: Tensor) -> Tensor:
         """Estimate divergence; works for (N, d) and (nx, ny, d)."""
         if u.ndim == 2:
-            # Unstructured: treat rows as spatial points in sequence.
-            # div ≈ sum of central differences across spatial channels.
             N, d = u.shape
-            div = torch.zeros(N, device=u.device, dtype=u.dtype)
-            for ch in range(min(d, u.shape[0])):
-                # Finite difference along the point index as a proxy for ∂u/∂x.
-                padded = F.pad(u[:, ch].unsqueeze(0).unsqueeze(0), (1, 1), mode="replicate")
-                grad = (padded[0, 0, 2:] - padded[0, 0, :-2]) / 2.0
-                div = div + grad
+            if self.coords is None:
+                raise ValueError(
+                    "MassConservationConstraint on a point cloud (u.ndim == 2) "
+                    "requires spatial `coords` (N, d) -- point order carries no "
+                    "spatial meaning, so divergence cannot be estimated from "
+                    "`u` alone. Pass `coords=` at construction."
+                )
+            coords = self.coords.to(device=u.device, dtype=u.dtype)
+            if coords.shape != (N, d):
+                raise ValueError(
+                    f"coords must have shape {(N, d)} to match u, got {tuple(coords.shape)}."
+                )
+
+            k = self.n_neighbors or min(2 * d + 3, N - 1)
+            k = max(d, min(k, N - 1))
+
+            # k nearest neighbours (excluding self) by Euclidean distance.
+            dist = torch.cdist(coords, coords)
+            dist.fill_diagonal_(float("inf"))
+            nbr_idx = torch.topk(dist, k, largest=False).indices  # (N, k)
+
+            dx = coords[nbr_idx] - coords.unsqueeze(1)  # (N, k, d)
+            du = u[nbr_idx] - u.unsqueeze(1)             # (N, k, d)
+
+            # Local linear fit du ≈ dx @ G, solved in the least-squares
+            # sense per point; G[:, c] is the gradient of component c, so
+            # div = trace(G) = sum_c dG_c/dx_c.
+            G = torch.linalg.lstsq(dx, du).solution       # (N, d, d)
+            div = torch.diagonal(G, dim1=-2, dim2=-1).sum(-1)  # (N,)
             return div
         elif u.ndim == 3:
             # Structured grid (nx, ny, d): use spatial dims 0 and 1.

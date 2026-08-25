@@ -90,15 +90,14 @@ def fmu_to_upd(
         for k, v in results.items()
     }
     return PhysicalSample(
-        fields=fields,
-        coords=coords,
-        meta={
-            "upd": {"version": "0.1", "source": "modelica_fmu"},
-            "provenance": {
-                "fmu_path": str(Path(fmu_path).resolve()),
-                "start_time": config.start_time,
-                "stop_time": config.stop_time,
-            },
-            "units": {},
+        state=fields,
+        domain={"type": "grid", "coords": coords},
+        provenance={
+            "version": "0.1",
+            "source": "modelica_fmu",
+            "fmu_path": str(Path(fmu_path).resolve()),
+            "start_time": config.start_time,
+            "stop_time": config.stop_time,
         },
+        schema={"units": {}},
     )

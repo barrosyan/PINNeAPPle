@@ -309,9 +309,11 @@ class LCurveSelector:
             dy1 = y[i] - y[i - 1]
             dy2 = y[i + 1] - y[i]
             # Menger curvature (triangle-based)
+            slope1 = dy1 / (dx1 + 1e-30)
+            slope2 = dy2 / (dx2 + 1e-30)
             dxdx = (dx1 + dx2) / 2
-            dxdy = (dy1 / (dx1 + 1e-30) - dy2 / (dx2 + 1e-30)) / (dxdx + 1e-30)
-            kappa[i] = abs(dxdy) / (1 + ((dy1 + dy2) / 2) ** 2) ** 1.5
+            dxdy = (slope1 - slope2) / (dxdx + 1e-30)
+            kappa[i] = abs(dxdy) / (1 + ((slope1 + slope2) / 2) ** 2) ** 1.5
         return kappa
 
 

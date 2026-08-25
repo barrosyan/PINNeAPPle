@@ -202,22 +202,33 @@ class DDPPINNTrainer:
         rank = get_rank()
         history: Dict[str, List[float]] = {"total": [], "epoch": []}
 
+        accum_steps = max(1, cfg.gradient_sync_every)
+
         for epoch in range(1, n_epochs + 1):
             # -- gradient accumulation across ranks --
+            is_sync_step = epoch % accum_steps == 0 or epoch == n_epochs
             sync_context = (
                 active_model.no_sync()  # type: ignore[union-attr]
-                if isinstance(active_model, DDP) and epoch % cfg.gradient_sync_every != 0
+                if isinstance(active_model, DDP) and not is_sync_step
                 else _null_context()
             )
 
-            with sync_context:
+            if (epoch - 1) % accum_steps == 0:
                 optimizer.zero_grad(set_to_none=True)
 
+            with sync_context:
                 if cfg.amp and self._scaler is not None:
                     with torch.cuda.amp.autocast():  # type: ignore[attr-defined]
                         loss_out = loss_fn(active_model, epoch)
                     total = _extract_total(loss_out)
-                    self._scaler.scale(total).backward()
+                    self._scaler.scale(total / accum_steps).backward()
+                else:
+                    loss_out = loss_fn(active_model, epoch)
+                    total = _extract_total(loss_out)
+                    (total / accum_steps).backward()
+
+            if is_sync_step:
+                if cfg.amp and self._scaler is not None:
                     if cfg.grad_clip > 0.0:
                         self._scaler.unscale_(optimizer)
                         nn.utils.clip_grad_norm_(
@@ -226,9 +237,6 @@ class DDPPINNTrainer:
                     self._scaler.step(optimizer)
                     self._scaler.update()
                 else:
-                    loss_out = loss_fn(active_model, epoch)
-                    total = _extract_total(loss_out)
-                    total.backward()
                     if cfg.grad_clip > 0.0:
                         nn.utils.clip_grad_norm_(
                             active_model.parameters(), cfg.grad_clip

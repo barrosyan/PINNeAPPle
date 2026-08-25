@@ -74,12 +74,26 @@ _reg(PDEFamily(
 # Burgers
 _reg(PDEFamily(
     kind="burgers",
-    aliases=["burgers_1d", "viscous burgers", "burgers equation", "inviscid burgers"],
-    description="Burgers equation: u_t + u * u_x = nu * u_xx",
+    aliases=["burgers_1d", "viscous burgers"],
+    description="Viscous Burgers equation: u_t + u * u_x = nu * u_xx",
     default_params={"nu": 0.01},
     coords_hint=["x", "t"],
     fields_hint=["u"],
     tags=["cfd", "nonlinear"],
+))
+
+# Inviscid Burgers — genuinely hyperbolic (no diffusion term), so it is kept
+# as its own kind rather than aliased into "burgers" with nu defaulted away:
+# shock formation and entropy-consistent solutions depend on nu being exactly
+# zero, not just small.
+_reg(PDEFamily(
+    kind="inviscid_burgers",
+    aliases=["inviscid burgers", "inviscid_burgers", "burgers inviscid"],
+    description="Inviscid Burgers equation: u_t + u * u_x = 0",
+    default_params={},
+    coords_hint=["x", "t"],
+    fields_hint=["u"],
+    tags=["cfd", "nonlinear", "hyperbolic"],
 ))
 
 # Poisson
@@ -140,14 +154,32 @@ _reg(PDEFamily(
     tags=["wave", "elliptic"],
 ))
 
-# Reaction-diffusion
+# Fisher-KPP — single scalar reaction-diffusion field
+_reg(PDEFamily(
+    kind="fisher_kpp",
+    aliases=["fisher", "fisher-kpp", "fisher kpp", "kpp"],
+    description="Fisher-KPP equation: u_t = D * nabla^2 u + r * u * (1 - u)",
+    default_params={"D": 0.001, "r": 1.0},
+    coords_hint=["x", "t"],
+    fields_hint=["u"],
+    tags=["diffusion", "biology"],
+))
+
+# Gray-Scott / Turing patterns — two coupled activator-inhibitor fields;
+# the differential diffusivity Du != Dv (not a single scalar D) is what
+# actually produces the patterns, so these need their own two-field kind
+# rather than sharing Fisher-KPP's single-field template.
 _reg(PDEFamily(
     kind="reaction_diffusion",
-    aliases=["reaction diffusion", "fisher", "gray scott", "turing"],
-    description="Reaction-diffusion: u_t = D * nabla^2 u + R(u)",
-    default_params={"D": 0.001, "k": 0.1},
+    aliases=["reaction diffusion", "gray scott", "gray-scott", "turing", "turing pattern"],
+    description=(
+        "Gray-Scott reaction-diffusion: "
+        "u_t = Du * nabla^2 u - u*v^2 + F*(1-u); "
+        "v_t = Dv * nabla^2 v + u*v^2 - (F+k)*v"
+    ),
+    default_params={"Du": 2e-5, "Dv": 1e-5, "F": 0.04, "k": 0.06},
     coords_hint=["x", "y", "t"],
-    fields_hint=["u"],
+    fields_hint=["u", "v"],
     tags=["diffusion", "biology"],
 ))
 

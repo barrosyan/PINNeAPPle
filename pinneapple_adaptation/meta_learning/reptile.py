@@ -30,10 +30,12 @@ class ReptileTrainer:
     """Reptile meta-learning trainer.
 
     The Reptile outer update is:
-        θ ← θ + ε · (θ_task − θ)
+        θ ← θ + (outer_lr · schedule) · ε · (θ_task − θ)
 
-    where θ_task is obtained by running ``n_inner_steps`` gradient descent
-    steps on a single sampled task using the task-specific physics / data loss.
+    where θ_task is the average of the task-adapted parameters obtained by
+    running ``n_inner_steps`` gradient descent steps on each task in the
+    batch using the task-specific physics / data loss, and ``schedule``
+    linearly anneals from 1 to 0 over ``n_meta_epochs``.
 
     Parameters
     ----------
@@ -128,9 +130,9 @@ class ReptileTrainer:
     # Outer loop
     # ------------------------------------------------------------------
 
-    def _outer_update(self, task_params: dict) -> None:
-        """Reptile outer update: θ ← θ + ε (θ_task − θ)."""
-        eps = self.config.epsilon
+    def _outer_update(self, task_params: dict, step_scale: float = 1.0) -> None:
+        """Reptile outer update: θ ← θ + step_scale · ε · (θ_task − θ)."""
+        eps = self.config.epsilon * step_scale
         current_sd = self.model.state_dict()
         new_sd = {}
         for k in current_sd:
@@ -140,10 +142,20 @@ class ReptileTrainer:
                 new_sd[k] = current_sd[k]
         self.model.load_state_dict(new_sd)
 
-    def meta_update(self, tasks: List[dict]) -> dict:
+    def meta_update(self, tasks: List[dict], step_scale: float = 1.0) -> dict:
         """Run outer update for a batch of tasks.
 
-        For Reptile, typically ``len(tasks) == 1`` per outer step.
+        The task-adapted parameters are averaged across ``tasks`` before
+        interpolating toward the meta-parameters, which is what lets the
+        Reptile update approximate the (negative) MAML gradient direction.
+
+        Parameters
+        ----------
+        tasks:
+            Batch of tasks to average over.
+        step_scale:
+            Multiplier on ``config.epsilon`` for this outer step (used by
+            :meth:`train` to anneal ``config.outer_lr`` over training).
         """
         task_losses = []
         merged_params: Optional[dict] = None
@@ -162,7 +174,7 @@ class ReptileTrainer:
             if n > 1:
                 for k in merged_params:
                     merged_params[k] = merged_params[k] / n
-            self._outer_update(merged_params)
+            self._outer_update(merged_params, step_scale=step_scale)
 
         return {"meta_loss": float(sum(task_losses) / max(len(task_losses), 1)), "task_losses": task_losses}
 
@@ -185,8 +197,10 @@ class ReptileTrainer:
         self._history = []
 
         for epoch in range(1, cfg.n_meta_epochs + 1):
+            frac_done = (epoch - 1) / cfg.n_meta_epochs
+            step_scale = cfg.outer_lr * (1.0 - frac_done)
             tasks = self.task_sampler.sample_batch(cfg.n_tasks_per_batch)
-            info = self.meta_update(tasks)
+            info = self.meta_update(tasks, step_scale=step_scale)
             record = {"epoch": epoch, **info}
             self._history.append(record)
 

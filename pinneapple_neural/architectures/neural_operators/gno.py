@@ -13,6 +13,13 @@ class GalerkinNeuralOperator(NeuralOperatorBase):
       - Apply operator in coefficient space
       - Reconstruct y = Phi * c_out
 
+    This is a global (all-to-all) Galerkin/POD-style projection operator, not
+    the graph-kernel "Graph Neural Operator" of Li et al. 2020 (message passing
+    over a k-nearest-neighbor mesh graph). It is registered under the "gno"
+    key for backward compatibility, but does not build a graph or restrict
+    interactions to a local neighborhood; use `PointKernelOperator`
+    (`neural_operators/uno.py`) for a kNN message-passing operator.
+
     Inputs
     ------
     u:      (B,N,in_dim) or (N,in_dim)

@@ -258,7 +258,7 @@ class CoSimTrainer:
                 mean_loss = weight_scheduler.step(raw)
 
             optimizer.zero_grad()
-            mean_loss.backward()
+            mean_loss.backward(retain_graph=self.engine.retain_graph)
             if grad_clip > 0:
                 nn.utils.clip_grad_norm_(
                     list(self.graph.trainable_parameters()), grad_clip

@@ -50,40 +50,52 @@ def add_vorticity_divergence(
 
     lat = ds["lat"].values.astype(float)
     lon = ds["lon"].values.astype(float)
+    lat_rad = np.deg2rad(lat)
 
     # radians spacing (assumes regular-ish grids)
-    dlat = np.deg2rad(np.gradient(lat))
+    dlat = np.gradient(lat_rad)
     dlon = np.deg2rad(np.gradient(lon))
 
-    coslat = np.cos(np.deg2rad(lat))
+    coslat = np.cos(lat_rad)
     coslat = np.clip(coslat, 1e-6, None)
-
-    def grad_lon(A):
-        return np.gradient(A, axis=-1) / dlon  # per rad
-    def grad_lat(A):
-        return np.gradient(A, axis=-2) / dlat  # per rad
+    tanlat = np.sin(lat_rad) / coslat
 
     u = U.values
     v = V.values
+
+    # broadcast lat-indexed 1-D arrays (dlat, cos(lat), tan(lat)) to match (..., lat, lon)
+    def _broadcast_lat(arr1d):
+        if u.ndim >= 3:
+            return arr1d[None, ..., None]
+        return arr1d[..., None]
+
+    dlat_b = _broadcast_lat(dlat)
+    cos_b = _broadcast_lat(coslat)
+    tan_b = _broadcast_lat(tanlat)
+
+    lon_is_global = lon.size > 1 and (lon.max() - lon.min() + np.median(np.abs(np.diff(lon)))) >= 359.0
+
+    def grad_lon(A):
+        if lon_is_global:
+            dlon_uniform = np.deg2rad(np.median(np.diff(lon)))
+            return (np.roll(A, -1, axis=-1) - np.roll(A, 1, axis=-1)) / (2 * dlon_uniform)
+        return np.gradient(A, axis=-1) / dlon  # per rad
+    def grad_lat(A):
+        return np.gradient(A, axis=-2) / dlat_b  # per rad
 
     dv_dlon = grad_lon(v)
     du_dlon = grad_lon(u)
     dv_dlat = grad_lat(v)
     du_dlat = grad_lat(u)
 
-    # broadcast cos(lat) to match (..., lat, lon)
-    if u.ndim >= 3:
-        cos_b = coslat[None, ..., None]
-    else:
-        cos_b = coslat[..., None]
-
     dv_dx = dv_dlon / (EARTH_R * cos_b)
     du_dx = du_dlon / (EARTH_R * cos_b)
     dv_dy = dv_dlat / EARTH_R
     du_dy = du_dlat / EARTH_R
 
-    zeta = dv_dx - du_dy
-    div = du_dx + dv_dy
+    # metric terms from meridian convergence toward the poles (Holton, spherical curl/div)
+    zeta = dv_dx - du_dy + u * tan_b / EARTH_R
+    div = du_dx + dv_dy - v * tan_b / EARTH_R
 
     zeta_da = xr.DataArray(zeta, dims=U.dims, coords=U.coords, name="vorticity")
     div_da  = xr.DataArray(div,  dims=U.dims, coords=U.coords, name="divergence")

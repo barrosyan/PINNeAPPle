@@ -138,6 +138,8 @@ def validate_against_solver(
 
     results: dict = {"n_points": N, "field_errors": {}}
     all_rmse = []
+    pooled_errors = []
+    pooled_refs = []
 
     for i, fname in enumerate(field_names):
         if fname not in solver_data:
@@ -156,9 +158,28 @@ def validate_against_solver(
             "mean_error": float(np.abs(e).mean()),
         }
         all_rmse.append(rmse)
+        pooled_errors.append(e)
+        pooled_refs.append(y_ref)
 
-    results["rmse"] = float(np.mean(all_rmse)) if all_rmse else float("nan")
-    results["rel_l2"] = float(np.mean([
+    # Genuine pooled norms over the concatenated (all fields, all points)
+    # error/reference vectors -- NOT the same quantity as the mean of the
+    # per-field norms above (fields with different magnitudes/point counts
+    # make those two aggregates diverge, sometimes substantially).
+    if pooled_errors:
+        pooled_err = np.concatenate(pooled_errors)
+        pooled_ref = np.concatenate(pooled_refs)
+        results["rmse"] = float(np.sqrt(np.mean(pooled_err ** 2)))
+        results["rel_l2"] = float(
+            np.linalg.norm(pooled_err) / (np.linalg.norm(pooled_ref) + 1e-12)
+        )
+    else:
+        results["rmse"] = float("nan")
+        results["rel_l2"] = float("nan")
+
+    # Unweighted means of the per-field norms, kept under explicit names so
+    # they are not mistaken for the combined/pooled norms above.
+    results["mean_field_rmse"] = float(np.mean(all_rmse)) if all_rmse else float("nan")
+    results["mean_field_rel_l2"] = float(np.mean([
         v["rel_l2"] for v in results["field_errors"].values()
     ])) if results["field_errors"] else float("nan")
 

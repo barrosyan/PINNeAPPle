@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Optional
 
 import math
+import warnings
 import torch
 
 from .base import SynthConfig, SynthOutput
@@ -401,6 +402,49 @@ class SymbolicFDSynthGenerator:
 
         rhs_fn = _build_rhs_from_equation(equation, parameters=params)
         residual_fn = make_fd_residual_fn(equation, parameters=params, bc=bc)
+
+        # Estimate an explicit-Euler stability bound for dt via local
+        # linearization of the RHS around a representative initial condition:
+        # c_eff = d(rhs)/d(u_x) gives an advective CFL bound dt<=dx/|c_eff|,
+        # alpha_eff = d(rhs)/d(u_xx) gives a diffusive bound dt<=0.5*dx^2/|alpha_eff|.
+        # This generalizes the explicit CFL checks used for heat1d/advection1d
+        # in pde.py to arbitrary symbolic equations. Equations with no u_x/u_xx
+        # dependence (e.g. pure reaction ODEs) yield no gradient and no bound.
+        dt = float(dt)
+        try:
+            probe_rng = self._rng()
+            u0_probe = ic(x, probe_rng).detach()
+            ux_probe = _fd_u_x(u0_probe[None, :], float(dx), bc)[0].detach().requires_grad_(True)
+            uxx_probe = _fd_u_xx(u0_probe[None, :], float(dx), bc)[0].detach().requires_grad_(True)
+            t0_probe = torch.tensor(0.0, device=device, dtype=dtype)
+            rhs_probe = rhs_fn(u0_probe, t0_probe, x, {"u_x": ux_probe, "u_xx": uxx_probe})
+            grad_ux, grad_uxx = torch.autograd.grad(
+                rhs_probe.sum(), [ux_probe, uxx_probe], allow_unused=True, retain_graph=False,
+            )
+        except Exception:
+            grad_ux = grad_uxx = None
+
+        dt_bounds = []
+        if grad_ux is not None:
+            c_eff = float(grad_ux.detach().abs().max())
+            if c_eff > 0:
+                dt_bounds.append(("advective (dt<=dx/|c_eff|)", dx / c_eff))
+        if grad_uxx is not None:
+            alpha_eff = float(grad_uxx.detach().abs().max())
+            if alpha_eff > 0:
+                dt_bounds.append(("diffusive (dt<=0.5*dx^2/|alpha_eff|)", 0.5 * dx * dx / alpha_eff))
+
+        if dt_bounds:
+            label, dt_max = min(dt_bounds, key=lambda lb: lb[1])
+            if dt > dt_max:
+                warnings.warn(
+                    f"pde_symbolic.py SymbolicFDSynthGenerator: requested dt={dt:g} "
+                    f"exceeds the estimated explicit-Euler stability bound {label}="
+                    f"{dt_max:g} for equation {equation!r} (dx={dx:g}); clipping dt "
+                    f"to {dt_max:g}.",
+                    RuntimeWarning,
+                )
+                dt = dt_max
 
         samples = []
         residuals = []

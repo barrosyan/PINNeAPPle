@@ -261,11 +261,19 @@ class GradNormBalancer:
 
         mean_norm = sum(grad_norms.values()) / len(grad_norms)
 
-        for name, gn in grad_norms.items():
+        # Inverse training rate L~_i(t) = L_i(t) / L_i(0) per task, normalised
+        # by its mean across tasks to give the relative rate r_i(t) that
+        # GradNorm's target-norm formula is defined in terms of.
+        loss_ratios: Dict[str, float] = {}
+        for name in grad_norms:
             l0 = self._initial_task_losses.get(name) or 1.0
             l_cur = float(losses[name].item()) + 1e-12
-            loss_ratio = l_cur / l0
-            target_norm = mean_norm * (loss_ratio ** self.alpha)
+            loss_ratios[name] = l_cur / l0
+        mean_loss_ratio = sum(loss_ratios.values()) / len(loss_ratios)
+
+        for name, gn in grad_norms.items():
+            relative_rate = loss_ratios[name] / (mean_loss_ratio + 1e-12)
+            target_norm = mean_norm * (relative_rate ** self.alpha)
             if gn > 1e-10:
                 self._weights[name] = float(
                     max(self.config.clip_min, min(self.config.clip_max, target_norm / gn))

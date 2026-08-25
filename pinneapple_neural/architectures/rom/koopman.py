@@ -54,8 +54,12 @@ class KoopmanOperator(nn.Module):
     Structure options:
     - "full"   : unconstrained (K_dim x K_dim) dense matrix
     - "block"  : block-diagonal with num_blocks blocks of size block_size
-    - "stable" : full matrix constrained to have spectral radius <= 1
-                 via normalisation (for bounded dynamics)
+    - "stable" : full matrix constrained to have operator (spectral) norm <= 1
+                 via normalisation, i.e. a non-expansive map (||K z|| <= ||z||),
+                 which bounds ||K^n|| <= 1 for all n. Note this is a stronger
+                 condition than spectral radius <= 1: it can suppress transient
+                 non-normal growth even when the eigenvalues of K already lie
+                 within the unit disk.
     """
 
     def __init__(
@@ -84,7 +88,9 @@ class KoopmanOperator(nn.Module):
             out = torch.einsum("...bi,bji->...bj", z_blocks, self.K_blocks)
             return out.reshape(*z.shape[:-1], self.k_dim)
         elif self.structure == "stable":
-            # spectral normalisation: K / max(1, rho(K))
+            # spectral normalisation: K / max(1, ||K||_2) bounds the operator norm,
+            # not the spectral radius (rho(K) <= ||K||_2, generally with strict
+            # inequality for non-normal K)
             sv = torch.linalg.matrix_norm(self.K, ord=2)
             K_stable = self.K / sv.clamp_min(1.0)
             return z @ K_stable.t()

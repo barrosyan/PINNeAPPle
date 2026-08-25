@@ -53,23 +53,11 @@ class Wave1DTask(BenchmarkTaskBase):
         rng = np.random.default_rng(seed)
         x = rng.uniform(0.0, 1.0, n)
 
-        # u(x,0) and u_t(x,0)=0 — encode both as IC
-        # Half points for u, half for u_t=0 (we enforce u_t=0 via IC residual)
-        n_u = n // 2
-        n_ut = n - n_u
-
-        x_u = rng.uniform(0.0, 1.0, n_u)
-        x_ut = rng.uniform(0.0, 1.0, n_ut)
-
-        X_ic = np.stack([
-            np.concatenate([x_u, x_ut]),
-            np.zeros(n),
-        ], axis=-1).astype(np.float32)
-
-        # For n_u points: target = sin(pi*x)
-        # For n_ut points: target = 0 (will use u_t=0 via ic in training)
-        # Simplification: just use u IC for all points
-        U_ic = np.sin(np.pi * X_ic[:, 0]).reshape(-1, 1).astype(np.float32)
+        # u(x,0) = sin(pi*x). The second wave-equation IC, u_t(x,0)=0, is a
+        # derivative constraint that sample_ic's (X, target-value) contract
+        # can't express — it's enforced separately in pde_residual().
+        X_ic = np.stack([x, np.zeros(n)], axis=-1).astype(np.float32)
+        U_ic = np.sin(np.pi * x).reshape(-1, 1).astype(np.float32)
         return X_ic, U_ic
 
     # ── PDE residual ──────────────────────────────────────────────────────────
@@ -87,7 +75,20 @@ class Wave1DTask(BenchmarkTaskBase):
         u_tt = torch.autograd.grad(u_t.sum(), X, create_graph=True)[0][:, 1:2]
 
         res = u_tt - (self.c ** 2) * u_xx
-        return (res ** 2).mean()
+        pde_loss = (res ** 2).mean()
+
+        # Second-order wave equation needs both u(x,0) and u_t(x,0)=0 to be
+        # well-posed; sample_ic() only supplies the value IC, so enforce the
+        # zero-initial-velocity IC here via autograd on a fresh t=0 batch.
+        x_ic = torch.rand(64, 1, device=X.device, dtype=X.dtype)
+        X_ic_deriv = torch.cat([x_ic, torch.zeros_like(x_ic)], dim=-1).requires_grad_(True)
+        u_ic = model(X_ic_deriv)
+        if hasattr(u_ic, "y"):
+            u_ic = u_ic.y
+        u_t_ic = torch.autograd.grad(u_ic.sum(), X_ic_deriv, create_graph=True)[0][:, 1:2]
+        ic_deriv_loss = (u_t_ic ** 2).mean()
+
+        return pde_loss + ic_deriv_loss
 
     # ── Evaluation ────────────────────────────────────────────────────────────
 

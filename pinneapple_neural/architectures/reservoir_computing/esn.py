@@ -53,6 +53,16 @@ class EchoStateNetwork(RCBase):
     Tensors:
       x: (B,T,in_dim)
       y: (B,T,out_dim)   (optional in fit; can train to predict x_{t+1} when y is None)
+
+    Note on ``spectral_radius``: this parameter scales the *reservoir* matrix
+    ``W`` to the requested spectral radius directly. The echo-state property
+    is actually governed by the spectral radius of the linearized state
+    transition map ``J = (1-leak)*I + leak*W`` (tanh's local slope near 0),
+    whose eigenvalues are ``(1-leak) + leak*lambda_i(W)`` for each eigenvalue
+    ``lambda_i(W)``. ``spectral_radius(J) == spectral_radius(W)`` only when
+    ``leak == 1``; for ``leak < 1`` (especially with complex or negative
+    dominant eigenvalues of ``W``) the true contraction/memory behavior of
+    the reservoir can differ from the requested ``spectral_radius`` value.
     """
     def __init__(
         self,
@@ -101,7 +111,8 @@ class EchoStateNetwork(RCBase):
             mask = _make_sparse_mask(self.reservoir_dim, self.reservoir_density, W.device, W.dtype)
             W = W * mask
 
-        # Scale to desired spectral radius
+        # Scale to desired spectral radius (of W itself; exact for the
+        # state-transition map only when leak == 1 — see class docstring)
         with torch.no_grad():
             Wf = W.float()
             method = self.spectral_method

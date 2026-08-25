@@ -45,7 +45,13 @@ def stage_case_for_scenario(
 
     Tin = float(scenario["T_inlet"])
     Tout = float(scenario.get("T_outlet", 0.0))
-    k = float(scenario.get("k", 1.0))
+    # "k" is kept only as a legacy alias: this value is used directly as the
+    # laplacianFoam diffusivity DT (m^2/s), NOT as thermal conductivity
+    # (W/(m*K)) — the scenario schema carries no density/specific-heat to
+    # convert conductivity to diffusivity. Prefer "diffusivity"/"alpha".
+    diffusivity = float(
+        scenario.get("diffusivity", scenario.get("alpha", scenario.get("k", 1.0)))
+    )
 
     # Write 0/T with scenario values
     Ttxt = f"""/*--------------------------------*- C++ -*----------------------------------*\\
@@ -84,8 +90,7 @@ boundaryField
 """
     (out_case_dir / "0" / "T").write_text(Ttxt)
 
-    # transportProperties: laplacianFoam uses diffusivity "DT"
-    # We'll map k -> DT (since PDE is Laplace-like). For pure Laplace, DT=1 is fine.
+    # transportProperties: laplacianFoam uses diffusivity "DT" [m^2/s].
     tr = f"""/*--------------------------------*- C++ -*----------------------------------*\\
 FoamFile
 {{
@@ -95,6 +100,6 @@ FoamFile
     location    "constant";
     object      transportProperties;
 }}
-DT  [0 2 -1 0 0 0 0]  {k};
+DT  [0 2 -1 0 0 0 0]  {diffusivity};
 """
     (out_case_dir / "constant" / "transportProperties").write_text(tr)

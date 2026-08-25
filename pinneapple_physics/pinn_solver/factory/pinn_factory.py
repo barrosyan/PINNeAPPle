@@ -148,6 +148,12 @@ class PINNProblemSpec:
     conditions: List[Dict[str, Any]] = field(default_factory=list)
     inverse_params: List[str] = field(default_factory=list)
     loss_weights: Dict[str, float] = field(default_factory=dict)
+    # Optional {independent var -> d(normalized coord)/d(physical coord)} chain-rule
+    # correction, e.g. from PINNMapping.derivative_scales(), applied when independent_vars
+    # are fed to the model in normalized units but pde_residuals use physical-unit
+    # coefficients. Empty (default) means no correction, i.e. residuals are evaluated
+    # directly in whatever units `independent_vars` are sampled in.
+    coord_scales: Dict[str, float] = field(default_factory=dict)
     verbose: bool = False
 
 
@@ -249,7 +255,12 @@ class PINNFactory:
                     raise KeyError(f"Model is missing inverse param '{name}'")
                 inv_vals.append(model.inverse_params[name])
 
-            deriv_comp = DerivativeComputer(independent_vars=ind_vars, dependent_vars=dep_vars, device=device)
+            deriv_comp = DerivativeComputer(
+                independent_vars=ind_vars,
+                dependent_vars=dep_vars,
+                device=device,
+                coord_scales=self.spec.coord_scales,
+            )
 
             # ---- PDE Residual Loss (collocation) ----
             if "collocation" in batch and batch["collocation"] is not None:

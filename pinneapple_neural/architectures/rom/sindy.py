@@ -156,21 +156,34 @@ class SINDy(ROMBase):
             return torch.linalg.solve(K, RHS)
 
     def _stlsq(self, Theta: torch.Tensor, Adot: torch.Tensor) -> torch.Tensor:
-        """Sequential thresholded least squares."""
-        Xi = self._ridge(Theta, Adot)
-        F = Xi.shape[0]
-        active = torch.ones(F, dtype=torch.bool, device=Xi.device)
+        """Sequential thresholded least squares.
 
-        for _ in range(self.n_iter):
-            small = Xi.abs().max(dim=1).values < self.threshold
-            Xi[small] = 0.0
-            active = ~small & active
-            if active.sum() == 0:
-                break
-            # re-fit on active subset
-            Th_sub = Theta[:, active]
-            Xi_sub = self._ridge(Th_sub, Adot)
-            Xi[active] = Xi_sub
+        Each output state equation (column of Xi) is thresholded and refit
+        independently, since different state variables generally have
+        different active terms in their governing equation.
+        """
+        Xi = self._ridge(Theta, Adot)
+        F, r = Xi.shape
+
+        for k in range(r):
+            xi_k = Xi[:, k:k+1]
+            adot_k = Adot[:, k:k+1]
+            active = torch.ones(F, dtype=torch.bool, device=Xi.device)
+
+            for _ in range(self.n_iter):
+                small = xi_k.abs().reshape(-1) < self.threshold
+                xi_k = xi_k.clone()
+                xi_k[small] = 0.0
+                active = ~small & active
+                if active.sum() == 0:
+                    break
+                # re-fit on active subset
+                Th_sub = Theta[:, active]
+                xi_sub = self._ridge(Th_sub, adot_k)
+                xi_k = torch.zeros((F, 1), device=Xi.device, dtype=Xi.dtype)
+                xi_k[active] = xi_sub
+
+            Xi[:, k:k+1] = xi_k
 
         return Xi
 

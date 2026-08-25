@@ -6,6 +6,8 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
+from .pareto import crowding_distance, fast_non_dominated_sort
+
 
 # ---------------------------------------------------------------------------
 # Parameter space (canonical location — pinneapple_geom.optimize.loop re-exports)
@@ -247,7 +249,11 @@ class _NumpyGP:
             var = K_ss - np.sum(v ** 2, axis=0)
         else:
             K = self._kernel(self._X, self._X) + self.noise * np.eye(len(self._X))
-            var = K_ss - np.sum(K_s @ np.linalg.solve(K, K_s.T), axis=1)
+            Kinv_Ks_T = np.linalg.solve(K, K_s.T)      # (n, m)
+            # Per-point variance is the diagonal of K_s @ K^-1 @ K_s.T, not
+            # its row sums -- extract it without forming the full (m, m)
+            # matrix (mirrors the Cholesky path's np.sum(v**2, axis=0)).
+            var = K_ss - np.sum(K_s * Kinv_Ks_T.T, axis=1)
 
         std = np.sqrt(np.maximum(var, 0.0))
         return mu, std
@@ -277,6 +283,8 @@ class BayesianDesignOptimizer:
         self.rng = np.random.default_rng(int(seed))
         self.X_obs: List[np.ndarray] = []
         self.y_obs: List[float] = []
+        self.Y_obs: List[np.ndarray] = []
+        self._penalties: List[float] = []
         self._gp: Optional[object] = None
         self._use_sklearn = False
 
@@ -357,6 +365,24 @@ class BayesianDesignOptimizer:
         if n < self.cfg.n_initial_random:
             return self.rng.uniform(lo, hi)
 
+        n_obj = self.Y_obs[0].shape[0] if self.Y_obs else 1
+        if n_obj > 1:
+            # ParEGO: resample the scalarisation weight on every proposal
+            # so successive iterations pull towards different trade-offs
+            # along the Pareto front, instead of a fixed acquisition that
+            # always chases the first objective alone.
+            w = self.rng.exponential(size=n_obj)
+            w = w / w.sum()
+            Y = np.stack(self.Y_obs)
+            lo_y, hi_y = Y.min(axis=0), Y.max(axis=0)
+            span = np.maximum(hi_y - lo_y, 1e-12)
+            normed = (Y - lo_y) / span
+            self.y_obs = list(normed @ w + np.asarray(self._penalties))
+        else:
+            self.y_obs = [
+                float(y[0]) + p for y, p in zip(self.Y_obs, self._penalties)
+            ]
+
         self._fit_gp()
 
         # Random multi-start maximisation of the acquisition.
@@ -365,10 +391,26 @@ class BayesianDesignOptimizer:
         acq_vals = np.array([self._acquisition(x) for x in Xs])
         return Xs[int(np.argmax(acq_vals))]
 
-    def update(self, x: np.ndarray, y: float) -> None:
-        """Record a new design/objective observation."""
+    def update(self, x: np.ndarray, obj_vals: "float | List[float]", penalty: float = 0.0) -> None:
+        """Record a new design/objective observation.
+
+        Parameters
+        ----------
+        x:
+            Evaluated design vector.
+        obj_vals:
+            Either a single scalar objective value, or the raw per-objective
+            vector for multi-objective problems (unscalarized -- scalarized
+            fresh with a new random weight on each :meth:`propose` call).
+        penalty:
+            Constraint-violation penalty, added post-scalarization.
+        """
+        obj_arr = np.atleast_1d(np.asarray(obj_vals, dtype=np.float64))
         self.X_obs.append(x.copy())
-        self.y_obs.append(float(y))
+        self.Y_obs.append(obj_arr)
+        self._penalties.append(float(penalty))
+        if obj_arr.shape[0] == 1:
+            self.y_obs.append(float(obj_arr[0]) + float(penalty))
 
 
 # ---------------------------------------------------------------------------
@@ -383,28 +425,49 @@ class EvolutionaryDesignOptimizer:
     runs a ``(μ+λ)`` genetic algorithm with tournament selection, uniform
     crossover, and Gaussian mutation.
 
+    CMA-ES is inherently single-objective, so it is only used when
+    ``multi_objective=False``; a multi-objective run always uses the GA
+    path (both ``ask`` and ``tell``) so NSGA-II survivor selection in
+    :meth:`tell` actually drives the population that :meth:`ask` samples
+    from -- mixing CMA-ES's own internal (un-updated) distribution into
+    ``ask`` while NSGA-II selects survivors elsewhere would silently
+    decouple the two and reproduce the original single-objective collapse.
+
     Parameters
     ----------
     cfg:
         Optimizer configuration.
     seed:
         Random seed.
+    multi_objective:
+        When True, disables the CMA-ES backend even if ``cma`` is
+        installed, so multi-objective NSGA-II survivor selection (see
+        :meth:`tell`) stays in effect across both ``ask`` and ``tell``.
     """
 
-    def __init__(self, cfg: DesignOptimizerConfig, seed: int = 0) -> None:
+    def __init__(
+        self,
+        cfg: DesignOptimizerConfig,
+        seed: int = 0,
+        multi_objective: bool = False,
+    ) -> None:
         self.cfg = cfg
         self.rng = np.random.default_rng(int(seed))
+        self._multi_objective = multi_objective
         self._use_cma = False
         self._cma_es = None
         self._population: List[np.ndarray] = []
         self._fitness: List[float] = []
+        self._obj_vecs: Optional[List[List[float]]] = None
+        self._penalties: Optional[List[float]] = None
 
-        try:
-            import cma  # type: ignore
-            self._cma_mod = cma
-            self._use_cma = True
-        except ImportError:
-            self._use_cma = False
+        if not multi_objective:
+            try:
+                import cma  # type: ignore
+                self._cma_mod = cma
+                self._use_cma = True
+            except ImportError:
+                self._use_cma = False
 
     def _init_cma(self, x0: np.ndarray) -> None:
         opts = {
@@ -470,7 +533,13 @@ class EvolutionaryDesignOptimizer:
 
         return candidates
 
-    def tell(self, xs: List[np.ndarray], ys: List[float]) -> None:
+    def tell(
+        self,
+        xs: List[np.ndarray],
+        ys: List[float],
+        obj_vecs: Optional[List[List[float]]] = None,
+        penalties: Optional[List[float]] = None,
+    ) -> None:
         """Inform the optimizer of objective values for the last candidates.
 
         Parameters
@@ -478,17 +547,79 @@ class EvolutionaryDesignOptimizer:
         xs:
             Candidate design vectors (same list returned by :meth:`ask`).
         ys:
-            Corresponding scalar objective values.
+            Corresponding scalar objective values (used as-is for CMA-ES,
+            and as the single-objective GA fallback below).
+        obj_vecs:
+            Raw per-objective vectors, one per candidate. When given with
+            more than one objective, survivor selection uses NSGA-II
+            non-dominated sorting + crowding distance over the *whole*
+            objective vector instead of ``argsort(ys)`` -- otherwise the
+            population only ever tracks the minimum of a single scalar and
+            never spreads out along the true Pareto front.
+        penalties:
+            Optional total constraint-violation per candidate, used with
+            Deb's constrained-domination rule (feasible always beats
+            infeasible; among infeasible, lower violation wins).
         """
-        if self._use_cma and self._cma_es is not None:
+        is_multi_objective = obj_vecs is not None and len(obj_vecs) > 0 and len(obj_vecs[0]) > 1
+
+        if self._use_cma and self._cma_es is not None and not is_multi_objective:
             self._cma_es.tell(xs, ys)
             return
 
         # GA (μ+λ): merge candidates with existing population, keep best μ.
         combined_x = list(self._population) + list(xs)
         combined_y = list(self._fitness if self._fitness else [float("inf")] * len(self._population)) + list(ys)
-
         mu = self.cfg.population_size
-        idx = np.argsort(combined_y)[:mu]
+
+        if is_multi_objective:
+            n_obj = len(obj_vecs[0])
+            prev_obj = self._obj_vecs if self._obj_vecs else [[float("inf")] * n_obj] * len(self._population)
+            prev_pen = self._penalties if self._penalties else [0.0] * len(self._population)
+            combined_obj = np.array(list(prev_obj) + list(obj_vecs), dtype=np.float64)
+            combined_pen = np.array(list(prev_pen) + list(penalties or [0.0] * len(xs)), dtype=np.float64)
+
+            idx = self._nsga2_select(combined_obj, combined_pen, mu)
+            self._obj_vecs = combined_obj[idx].tolist()
+            self._penalties = combined_pen[idx].tolist()
+        else:
+            idx = np.argsort(combined_y)[:mu]
+            self._obj_vecs = None
+            self._penalties = None
+
         self._population = [combined_x[i] for i in idx]
         self._fitness = [combined_y[i] for i in idx]
+
+    @staticmethod
+    def _nsga2_select(objectives: np.ndarray, penalties: np.ndarray, mu: int) -> np.ndarray:
+        """NSGA-II survivor selection with Deb's constrained-domination rule.
+
+        Feasible solutions (penalty <= 0) are ranked by non-dominated front
+        + crowding distance; infeasible ones are only used to fill any
+        remaining slots, ordered by ascending total violation.
+        """
+        feasible = penalties <= 0.0
+        feas_idx = np.where(feasible)[0]
+        infeas_idx = np.where(~feasible)[0]
+
+        selected: List[int] = []
+        if len(feas_idx) > 0:
+            fronts = fast_non_dominated_sort(objectives[feas_idx])
+            for front in fronts:
+                front_global = feas_idx[front]
+                if len(selected) + len(front_global) <= mu:
+                    selected.extend(front_global.tolist())
+                else:
+                    remaining = mu - len(selected)
+                    if remaining > 0:
+                        cd = crowding_distance(objectives[front_global])
+                        order = np.argsort(-cd)  # larger crowding distance preferred
+                        selected.extend(front_global[order[:remaining]].tolist())
+                    break
+
+        if len(selected) < mu and len(infeas_idx) > 0:
+            remaining = mu - len(selected)
+            order = infeas_idx[np.argsort(penalties[infeas_idx])]
+            selected.extend(order[:remaining].tolist())
+
+        return np.array(selected[:mu], dtype=int)

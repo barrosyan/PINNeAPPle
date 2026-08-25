@@ -173,14 +173,15 @@ def _fvm_euler_explicit(
 # ---------------------------------------------------------------------------
 
 def _cfl_diffusion(dx: float, dy: float, alpha: float, safety: float = 0.4) -> float:
-    return safety * min(dx, dy) ** 2 / (2.0 * alpha + 1e-14)
+    # explicit FTCS on the 5-point 2-D Laplacian is stable only for
+    # alpha*dt*(1/dx^2 + 1/dy^2) <= 1/2, not the looser 1-D bound
+    return safety / (2.0 * alpha * (1.0 / dx ** 2 + 1.0 / dy ** 2) + 1e-14)
 
 
 def _cfl_convection(dx: float, dy: float, vx: float, vy: float, nu: float, safety: float = 0.4) -> float:
-    v_max = max(abs(vx), abs(vy), 1e-12)
-    dt_adv  = safety * min(dx, dy) / v_max
-    dt_diff = safety * min(dx, dy) ** 2 / (2.0 * nu + 1e-14)
-    return min(dt_adv, dt_diff)
+    # combined x/y advection (Courant) + diffusion bound, not a single-axis one
+    denom = abs(vx) / dx + abs(vy) / dy + 2.0 * nu * (1.0 / dx ** 2 + 1.0 / dy ** 2)
+    return safety / (denom + 1e-14)
 
 
 # ---------------------------------------------------------------------------

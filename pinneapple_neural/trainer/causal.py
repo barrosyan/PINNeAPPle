@@ -318,7 +318,7 @@ class CausalPINNTrainer:
 
             # Recompute weights periodically; otherwise use cached
             if epoch % update_every == 1:
-                loss_pde = self.scheduler.weighted_loss(t_pts, res.detach())
+                loss_pde = self.scheduler.weighted_loss(t_pts, res)
             else:
                 loss_pde = self.scheduler.weighted_loss(t_pts, res)
 

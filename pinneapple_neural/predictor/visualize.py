@@ -796,7 +796,8 @@ def plot_vorticity_slice(
         v2 = v[:, slice_idx, :]
         h_coord, v_coord = z, x
         xlabel, ylabel = "z", "x"
-        dv_dx = np.zeros_like(u2)
+        dv_dx = np.gradient(v2, x, axis=0)
+        # du/dy not computable (sliced); approximate with zeros
         du_dy = np.zeros_like(u2)
     else:
         u2 = u[:, :, slice_idx]   # (nx, ny)
@@ -894,13 +895,15 @@ def plot_internal_flow_summary(
         ux2 = ux[mid_idx, :, :]   # (ny, nz) — use y,z plane
         uy2 = uy[mid_idx, :, :]
         h_coord, v_coord = z, y
-        cl_u = ux[mid_idx, :, mid_idx]   # u along y-axis at x=mid, z=mid
+        z_mid = ux.shape[2] // 2
+        cl_u = ux[mid_idx, :, z_mid]   # u along y-axis at x=mid, z=mid
         cl_coord = y / (y[-1] if y[-1] != 0 else 1.0)
     elif ax_idx == 1:
         ux2 = ux[:, mid_idx, :]   # (nx, nz)
         uy2 = uy[:, mid_idx, :]
         h_coord, v_coord = z, x
-        cl_u = ux[:, mid_idx, mid_idx]
+        z_mid = ux.shape[2] // 2
+        cl_u = ux[:, mid_idx, z_mid]
         cl_coord = x / (x[-1] if x[-1] != 0 else 1.0)
     else:
         ux2 = ux[:, :, mid_idx]   # (nx, ny)

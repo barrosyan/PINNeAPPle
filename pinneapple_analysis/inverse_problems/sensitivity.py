@@ -176,7 +176,13 @@ class IdentifiabilityResult:
     condition_number : float
         κ(FIM) = λ_max / λ_min (large → ill-conditioned).
     d_optimality : float
-        det(FIM) — larger is better (D-optimal design criterion).
+        det(FIM) — larger is better (D-optimal design criterion). Exactly 0
+        for a rank-deficient / partially non-identifiable FIM.
+    pseudo_d_optimality : float
+        Product of the strictly-positive eigenvalues only, i.e. det(FIM)
+        restricted to the identifiable subspace. Can be nonzero even when
+        ``d_optimality`` is 0, but does *not* by itself signal full
+        identifiability — check ``unidentifiable_indices`` for that.
     a_optimality : float
         trace(FIM⁻¹) — smaller is better (A-optimal).
     e_optimality : float
@@ -191,6 +197,7 @@ class IdentifiabilityResult:
     eigenvectors: np.ndarray
     condition_number: float
     d_optimality: float
+    pseudo_d_optimality: float
     a_optimality: float
     e_optimality: float
     identifiable_indices: List[int]
@@ -201,6 +208,7 @@ class IdentifiabilityResult:
         lines = ["Identifiability Analysis", "=" * 40]
         lines.append(f"  Condition number : {self.condition_number:.3e}")
         lines.append(f"  D-optimality     : {self.d_optimality:.3e}")
+        lines.append(f"  Pseudo D-opt.    : {self.pseudo_d_optimality:.3e} (identifiable subspace)")
         lines.append(f"  A-optimality     : {self.a_optimality:.3e}")
         lines.append(f"  E-optimality     : {self.e_optimality:.3e}")
         lines.append(f"  Identifiable     : {[self.param_names[i] for i in self.identifiable_indices]}")
@@ -247,9 +255,13 @@ class IdentifiabilityAnalyzer:
         identifiable = [i for i, ev in enumerate(eigenvalues) if ev > threshold]
         not_identifiable = [i for i, ev in enumerate(eigenvalues) if ev <= threshold]
 
-        # D-optimality: det(FIM); use sum of log eigenvalues for numerical stability
+        # D-optimality: det(FIM), 0 whenever the FIM is rank-deficient.
+        # Also report the pseudo-determinant over the identifiable subspace
+        # (product of strictly-positive eigenvalues only), which can stay
+        # nonzero even when the true determinant collapses to 0.
         pos_eigs = eigenvalues[eigenvalues > 0]
-        d_opt = float(np.exp(np.sum(np.log(pos_eigs)))) if len(pos_eigs) > 0 else 0.0
+        pseudo_d_opt = float(np.exp(np.sum(np.log(pos_eigs)))) if len(pos_eigs) > 0 else 0.0
+        d_opt = pseudo_d_opt if len(pos_eigs) == p else 0.0
 
         # A-optimality: trace(FIM^{-1})
         try:
@@ -269,6 +281,7 @@ class IdentifiabilityAnalyzer:
             eigenvectors=eigenvectors,
             condition_number=cond,
             d_optimality=d_opt,
+            pseudo_d_optimality=pseudo_d_opt,
             a_optimality=a_opt,
             e_optimality=e_opt,
             identifiable_indices=identifiable,
@@ -327,7 +340,9 @@ class GlobalSensitivity:
     param_bounds : list of (lo, hi)
         Uniform prior bounds for each parameter.
     n_samples : int
-        Base sample count N.  Total evaluations = N * (p + 2).
+        Base sample count N.  Total evaluations = N * (2 + 2p): N for A, N
+        for B, and N each for AB_i and BA_i per parameter (both AB_i and
+        BA_i are used, averaged together for a lower-variance estimate).
     seed : int, optional
     """
 
@@ -388,9 +403,15 @@ class GlobalSensitivity:
             BA_i[:, i] = A[:, i]
             yBA_i = self._eval(BA_i)
 
-            # Saltelli (2010) estimators
-            S1[i] = float(np.mean(yB * (yAB_i - yA)) / total_var)
-            ST[i] = float(np.mean((yA - yAB_i) ** 2) / (2 * total_var))
+            # Saltelli (2010) / Jansen (1999) estimators, computed from both
+            # the AB_i and BA_i pairs and averaged for variance reduction.
+            s1_ab = np.mean(yB * (yAB_i - yA))
+            s1_ba = np.mean(yA * (yBA_i - yB))
+            S1[i] = float((s1_ab + s1_ba) / (2 * total_var))
+
+            st_ab = np.mean((yA - yAB_i) ** 2)
+            st_ba = np.mean((yB - yBA_i) ** 2)
+            ST[i] = float((st_ab + st_ba) / (4 * total_var))
 
         # Clamp to [0, 1]
         S1 = np.clip(S1, 0, 1)

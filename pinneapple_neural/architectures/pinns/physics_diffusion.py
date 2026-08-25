@@ -514,8 +514,17 @@ def _ddim_step(
 
     # DDIM update
     eps_hat = (xt - a_c * x0_hat) / scheduler.sigma(tc).view(-1, *([1] * (xt.ndim - 1))).clamp(1e-8)
-    noise   = torch.randn_like(xt) * eta
-    return a_n * x0_hat + (s_n ** 2 - (eta * s_n) ** 2).clamp(0).sqrt() * eps_hat + s_n * eta * noise
+
+    # σ_t = η·√((1-ᾱ_{t-1})/(1-ᾱ_t))·√(1-ᾱ_t/ᾱ_{t-1}); η=1 reproduces the DDPM
+    # posterior variance, η=0 is deterministic DDIM.
+    ab_c = a_c ** 2
+    ab_n = a_n ** 2
+    sigma_t = eta * torch.sqrt(
+        ((1.0 - ab_n) / (1.0 - ab_c).clamp(min=1e-8)).clamp(min=0)
+        * (1.0 - ab_c / ab_n.clamp(min=1e-8)).clamp(min=0)
+    )
+    noise = torch.randn_like(xt)
+    return a_n * x0_hat + (s_n ** 2 - sigma_t ** 2).clamp(0).sqrt() * eps_hat + sigma_t * noise
 
 
 def _edm_euler_step(

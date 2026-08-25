@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 from pinneapple_quantum.circuits.base import QuantumCircuitConfig
-from pinneapple_quantum.backends.backend import BackendConfig
+from pinneapple_quantum.backends.backend import BackendConfig, get_backend
 from pinneapple_quantum.models.quantum_model import QuantumModel
 from pinneapple_quantum.models.hybrid_model import HybridModel
 from pinneapple_quantum.loss.schrodinger import (
@@ -114,6 +114,7 @@ def vq_pinn(
     # ── Domain
     dim = 1 if "1d" in equation else 2
     x_min, x_max = kwargs.get("x_min", -3.0), kwargs.get("x_max", 3.0)
+    domain_volume = (x_max - x_min) ** dim
 
     if dim == 1:
         x_col, x_bc = sample_domain_1d(x_min, x_max, n_col, n_bc, device=device)
@@ -147,7 +148,7 @@ def vq_pinn(
             hbar=hbar, mass=mass,
             **{k: v for k, v in kwargs.items() if k in ("omega", "charge", "a", "b")},
         )
-        norm_pen = normalization_loss(m, x)
+        norm_pen = normalization_loss(m, x, domain_volume=domain_volume)
         total = energy + lambda_norm * norm_pen
         return total, {"energy": energy, "norm_sq": norm_sq}
 
@@ -235,6 +236,7 @@ def hybrid_pinn(
     torch.manual_seed(seed)
 
     x_min, x_max = kwargs.get("x_min", -3.0), kwargs.get("x_max", 3.0)
+    domain_volume = x_max - x_min
     x_col, x_bc  = sample_domain_1d(x_min, x_max, n_col, n_bc, device=device)
 
     # Classical encoder: R → R^n_qubits
@@ -259,7 +261,7 @@ def hybrid_pinn(
 
     def physics_loss_fn(m, x):
         energy, norm_sq = energy_loss(m, x, potential=V_fn, hbar=hbar, mass=mass)
-        norm_pen = normalization_loss(m, x)
+        norm_pen = normalization_loss(m, x, domain_volume=domain_volume)
         total = energy + 0.5 * norm_pen
         return total, {"energy": energy, "norm_sq": norm_sq}
 
@@ -364,14 +366,21 @@ def quantum_kernel(
     backend: str = "pennylane",
 ) -> torch.Tensor:
     """
-    Compute the quantum kernel matrix K(xᵢ, xⱼ) = |⟨φ(xᵢ)|φ(xⱼ)⟩|².
+    Compute a quantum-feature-map kernel matrix K(xᵢ, xⱼ) for use with classical
+    kernel methods (SVM, GP regression) in an elevated feature space.
 
-    The feature map φ(x) is defined by the quantum encoding circuit. This
-    kernel can be used with classical kernel methods (SVM, GP regression)
-    in an elevated feature space.
+    The feature map φ(x) is defined by the quantum encoding circuit; here φ(x)
+    is taken to be the vector of per-qubit Pauli-Z expectation values produced
+    by the (untrained) circuit, and the kernel is the squared cosine similarity
+    between these normalized feature vectors: K(xᵢ, xⱼ) = (φ̂(xᵢ)·φ̂(xⱼ))². This
+    is a cheap, positive semi-definite proxy for feature-space similarity — it
+    is *not* the exact state-overlap fidelity |⟨φ(xᵢ)|φ(xⱼ)⟩|², which would
+    require full state-vector access (or a SWAP test on real hardware) rather
+    than marginal single-qubit expectation values.
 
-    For the classical fallback backend, uses the RBF kernel as an approximation:
-    K(xᵢ, xⱼ) = exp(−‖xᵢ − xⱼ‖² / 2n_qubits).
+    For the classical fallback backend (no PennyLane/Qiskit installed, or
+    ``backend="classical"`` requested explicitly), uses the RBF kernel instead
+    as a cheap approximation: K(xᵢ, xⱼ) = exp(−‖xᵢ − xⱼ‖² / 2n_qubits).
 
     Parameters
     ----------
@@ -383,13 +392,18 @@ def quantum_kernel(
     -------
     K : Tensor (N, M) or (N, N)
     """
+    x_test_actual = x_test if x_test is not None else x_train
+
+    resolved_backend = get_backend(BackendConfig(provider=backend))
+    if resolved_backend.__class__.__name__ == "ClassicalBackend":
+        d2 = torch.cdist(x_train, x_test_actual).pow(2)
+        return torch.exp(-d2 / (2.0 * n_qubits))
+
     qcfg = QuantumCircuitConfig(
         n_qubits=n_qubits, depth=1, encoding=encoding, n_observables=n_qubits
     )
     qmodel = QuantumModel(qcfg, BackendConfig(provider=backend))
     qmodel.eval()
-
-    x_test_actual = x_test if x_test is not None else x_train
 
     with torch.no_grad():
         phi_train = qmodel(x_train)   # (N, n_qubits)

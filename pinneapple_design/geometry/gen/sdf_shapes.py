@@ -65,19 +65,51 @@ def sdf2d_ellipse(
     p: np.ndarray,
     center: Tuple[float, float],
     semi_axes: Tuple[float, float],
+    iterations: int = 4,
 ) -> np.ndarray:
-    """Approximate SDF for a 2D ellipse (Inigo Quilez formula)."""
+    """SDF for a 2D ellipse via iterative Newton refinement (Inigo Quilez).
+
+    Converges to the true nearest-boundary distance (not just its sign) even
+    for eccentric ellipses; a handful of iterations is enough for
+    near-machine-precision accuracy.
+    """
     c = np.asarray(center, dtype=np.float64)
-    ab = np.asarray(semi_axes, dtype=np.float64)
+    a, b = np.asarray(semi_axes, dtype=np.float64)
     q = p - c
-    # normalize to unit-circle space
-    q_n = q / ab
-    l = _norm(q_n)
-    # approximate distance
-    d = l - 1.0
-    # scale back to world space (approximate)
-    scale = np.min(ab)
-    return d * scale
+    px = np.abs(q[..., 0])
+    py = np.abs(q[..., 1])
+
+    if a == b:
+        # Degenerate (circular) case: the Newton iteration below has an
+        # unresolvable singularity when the query point coincides with the
+        # center exactly (every boundary point is equally nearest), so
+        # short-circuit with the closed-form circle distance instead.
+        return _norm(q) - a
+
+    tx = np.full_like(px, 0.70710678)
+    ty = np.full_like(py, 0.70710678)
+    for _ in range(iterations):
+        x = a * tx
+        y = b * ty
+        ex = (a * a - b * b) * tx ** 3 / a
+        ey = (b * b - a * a) * ty ** 3 / b
+        rx = x - ex
+        ry = y - ey
+        qx = px - ex
+        qy = py - ey
+        r = np.hypot(ry, rx)
+        qq = np.maximum(np.hypot(qy, qx), 1e-12)
+        tx = _clamp((qx * r / qq + ex) / a, 0.0, 1.0)
+        ty = _clamp((qy * r / qq + ey) / b, 0.0, 1.0)
+        t = np.maximum(np.hypot(ty, tx), 1e-12)
+        tx = tx / t
+        ty = ty / t
+
+    nx = a * tx
+    ny = b * ty
+    dist = np.hypot(px - nx, py - ny)
+    inside = (px / a) ** 2 + (py / b) ** 2 < 1.0
+    return np.where(inside, -dist, dist)
 
 
 def sdf2d_capsule(
@@ -124,7 +156,7 @@ def sdf2d_triangle(
 
     def sign_part(pa, pb, pc):
         return (
-            np.sign((p[:, 0] - pa[0]) * (pb[1] - pa[1]) - (p[:, 1] - pa[1]) * (pb[0] - pa[0]))
+            np.sign((pb[0] - pa[0]) * (p[:, 1] - pa[1]) - (pb[1] - pa[1]) * (p[:, 0] - pa[0]))
         )
 
     s = (
@@ -160,7 +192,7 @@ def sdf2d_sector(
     """SDF for a circular sector (pie slice)."""
     c = np.asarray(center, dtype=np.float64)
     q = p - c
-    angle = np.arctan2(q[:, 1], q[:, 0])
+    angle = np.arctan2(q[:, 1], q[:, 0]) % (2 * math.pi)
 
     a_start = float(angle_start) % (2 * math.pi)
     a_end = float(angle_end) % (2 * math.pi)
@@ -299,17 +331,28 @@ def sdf3d_cone(
     height: float,
     radius: float,
 ) -> np.ndarray:
-    """SDF for an upward-pointing cone with apex at `apex`."""
+    """SDF for an upward-pointing, base-capped cone with apex at `apex`."""
     a = np.asarray(apex, dtype=np.float64)
     q = p - a
     d_axial = q[:, 2]
     d_radial = _norm(q[:, :2])
     slope = radius / height
-    q2 = np.stack([d_radial, -d_axial], axis=-1)
-    n = np.array([slope, 1.0]) / math.sqrt(1 + slope**2)
-    d = _dot(q2, n) - 0.0
+
+    def _seg_dist2(r, z, ar, az, br, bz):
+        er, ez = br - ar, bz - az
+        wr, wz = r - ar, z - az
+        t = _clamp((wr * er + wz * ez) / (er * er + ez * ez), 0.0, 1.0)
+        dr = wr - t * er
+        dz = wz - t * ez
+        return dr * dr + dz * dz
+
+    # lateral surface: apex (0, 0) -> base rim (radius, height)
+    d2_lateral = _seg_dist2(d_radial, d_axial, 0.0, 0.0, radius, height)
+    # base cap: rim (radius, height) -> axis (0, height)
+    d2_cap = _seg_dist2(d_radial, d_axial, radius, height, 0.0, height)
+    dist_edge = np.sqrt(np.minimum(d2_lateral, d2_cap))
+
     inside = (d_axial >= 0) & (d_axial <= height) & (d_radial <= slope * d_axial)
-    dist_edge = np.abs(d_radial - slope * d_axial) / math.sqrt(1 + slope**2)
     return np.where(inside, -dist_edge, dist_edge)
 
 
@@ -335,13 +378,13 @@ def sdf_difference(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 def sdf_smooth_union(a: np.ndarray, b: np.ndarray, k: float = 0.1) -> np.ndarray:
     """Smooth minimum (R-function). k controls blend radius."""
     h = np.clip(0.5 + 0.5 * (b - a) / k, 0.0, 1.0)
-    return a * (1.0 - h) + b * h - k * h * (1.0 - h)
+    return b * (1.0 - h) + a * h - k * h * (1.0 - h)
 
 
 def sdf_smooth_intersection(a: np.ndarray, b: np.ndarray, k: float = 0.1) -> np.ndarray:
     """Smooth maximum."""
     h = np.clip(0.5 - 0.5 * (b - a) / k, 0.0, 1.0)
-    return a * (1.0 - h) + b * h + k * h * (1.0 - h)
+    return b * (1.0 - h) + a * h + k * h * (1.0 - h)
 
 
 def sdf_smooth_difference(a: np.ndarray, b: np.ndarray, k: float = 0.1) -> np.ndarray:
@@ -424,10 +467,7 @@ def sdf_elongate_2d(
     """Elongate a 2D SDF shape along x and/or y axes."""
     h = np.array([dx, dy], dtype=np.float64) * 0.5
     def wrapped(p: np.ndarray) -> np.ndarray:
-        q = np.abs(p) - h
-        q_clamped = np.maximum(q, 0.0)
-        q_shifted = np.minimum(q, 0.0)
-        return sdf_fn(q_shifted + q_clamped)
+        return sdf_fn(p - _clamp(p, -h, h))
     return wrapped
 
 
