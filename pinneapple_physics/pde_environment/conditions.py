@@ -17,7 +17,13 @@ class ConditionSpec:
 
     kind:
       - "dirichlet" -> u(x)=g(x)
-      - "neumann"   -> n·∇u(x)=g(x)
+      - "neumann"   -> n·∇u(x)=g(x)  (order=1, the default), or, when order>1,
+                       d^order(u)/d(deriv_coord)^order = g(x) — a plain
+                       repeated single-coordinate derivative (NOT a normal-
+                       dot-gradient contraction generalized to higher tensor
+                       order — deliberately narrow, added specifically for 1D
+                       beam moment/shear conditions where there is only one
+                       spatial coordinate and no directional ambiguity).
       - "robin"     -> a u + b n·∇u = g
       - "initial"   -> u(x,t0)=g(x)
       - "data"      -> supervised constraint at points
@@ -29,6 +35,12 @@ class ConditionSpec:
 
     value_fn:
       - callable returning values for selected points
+
+    order / deriv_coord:
+      - only meaningful for kind="neumann". order=1 (default) is the existing
+        n_bc-based normal derivative, unchanged. order>1 requires
+        deriv_coord to be set (e.g. "z") and ignores n_bc entirely, computing
+        d^order(u)/d(deriv_coord)^order directly via repeated autograd.
     """
     name: str
     kind: str
@@ -37,6 +49,8 @@ class ConditionSpec:
     selector: Optional[Union[Dict[str, Any], Callable[[np.ndarray, Dict[str, Any]], np.ndarray]]] = None
     value_fn: Optional[Callable[[np.ndarray, Dict[str, Any]], np.ndarray]] = None
     weight: float = 1.0
+    order: int = 1
+    deriv_coord: Optional[str] = None
 
     def mask(self, X: np.ndarray, ctx: Dict[str, Any]) -> np.ndarray:
         if self.selector_type == "all":
@@ -150,12 +164,20 @@ def NeumannBC(
     selector: Optional[Union[Dict[str, Any], Callable[[np.ndarray, Dict[str, Any]], np.ndarray]]] = None,
     value_fn: Optional[Callable[[np.ndarray, Dict[str, Any]], np.ndarray]] = None,
     weight: float = 1.0,
+    order: int = 1,
+    deriv_coord: Optional[str] = None,
 ) -> ConditionSpec:
     """Construct a Neumann boundary condition.
 
     Simple dict form::
 
         NeumannBC({"u": 1.0})
+
+    order/deriv_coord: order=1 (default) is the standard normal-derivative
+    condition (needs batch['n_bc'] at training time). order>1 requires
+    deriv_coord (e.g. "z") and computes d^order(u)/d(deriv_coord)^order
+    directly — see ConditionSpec's docstring for the exact scope (single-
+    coordinate repeated derivative, added for 1D beam moment/shear BCs).
     """
     if isinstance(name, dict):
         values = name
@@ -168,6 +190,8 @@ def NeumannBC(
             selector=None,
             value_fn=_value_fn_from_dict(values),
             weight=weight,
+            order=order,
+            deriv_coord=deriv_coord,
         )
     return ConditionSpec(
         name=name,
@@ -177,6 +201,8 @@ def NeumannBC(
         selector=selector,
         value_fn=value_fn,
         weight=weight,
+        order=order,
+        deriv_coord=deriv_coord,
     )
 
 

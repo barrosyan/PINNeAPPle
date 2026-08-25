@@ -246,7 +246,7 @@ def compile_problem(
             if spatial_dim == 3:
                 res_list.append(wt + conv_w + pz - inv_Re * lap_w)
 
-            res_list.append(divergence(U, xcol))
+            res_list.append(divergence(U, xcol, spatial_indices))
 
         elif pde_kind == "linear_elasticity":
             if spatial_dim not in (2, 3):
@@ -307,9 +307,530 @@ def compile_problem(
                     s = torch.as_tensor(s_np, device=device, dtype=pfield.dtype)
                     if s.ndim == 1:
                         s = s[:, None]
-                res_list.append(k * laplacian(pfield, xcol) - s)
+                res_list.append((k / mu) * laplacian(pfield, xcol) - s)
             else:
                 raise ValueError("Darcy mixed mode not implemented in this patch.")
+
+        elif pde_kind == "euler_bernoulli_beam":
+            # EI d^4w/dz^4 - F_axial d^2w/dz^2 - q(z) = 0.
+            # F_axial is a fixed (non-learned) compressive axial load producing
+            # a linear P-Delta amplification term; this branch does NOT cover
+            # geometrically-nonlinear (Von Karman) beams, which need a second,
+            # coupled axial-displacement field and a quadratic strain term —
+            # tracked separately, not handled here.
+            if len(field_names) != 1:
+                raise ValueError("Euler-Bernoulli beam expects 1 scalar field (deflection).")
+            defl = fields[field_names[0]]  # NOTE: intentionally not named "w" — that name is
+            # already bound to the outer LossWeights instance in this closure's scope, and
+            # Python would silently shadow it for the rest of loss_fn otherwise.
+            EI = float(p.get("EI", 1.0))
+            F_axial = float(p.get("F_axial", 0.0))
+            z_idx = _coord_index(coords, "z")
+
+            q_fn = ctx.get("source_fn") or ctx.get("q_fn")
+            if q_fn is not None:
+                q_np = q_fn(xcol.detach().cpu().numpy(), ctx)
+                q = torch.as_tensor(q_np, device=device, dtype=defl.dtype)
+                if q.ndim == 1:
+                    q = q[:, None]
+            elif "q" in p:
+                q = torch.full_like(defl, float(p["q"]))
+            else:
+                q = torch.zeros_like(defl)
+
+            w1 = grad(defl, xcol)[:, z_idx:z_idx + 1]
+            w2 = torch.autograd.grad(
+                outputs=w1, inputs=xcol, grad_outputs=torch.ones_like(w1),
+                create_graph=True, retain_graph=True, allow_unused=False,
+            )[0][:, z_idx:z_idx + 1]
+            w3 = torch.autograd.grad(
+                outputs=w2, inputs=xcol, grad_outputs=torch.ones_like(w2),
+                create_graph=True, retain_graph=True, allow_unused=False,
+            )[0][:, z_idx:z_idx + 1]
+            w4 = torch.autograd.grad(
+                outputs=w3, inputs=xcol, grad_outputs=torch.ones_like(w3),
+                create_graph=True, retain_graph=True, allow_unused=False,
+            )[0][:, z_idx:z_idx + 1]
+
+            res_list.append(EI * w4 - F_axial * w2 - q)
+
+        elif pde_kind == "hyperelasticity_neo_hookean":
+            # Compressible Neo-Hookean, plane-strain assumption (F_33=1) —
+            # documented modeling choice: the source problem is registered
+            # symbolically only (sigma_xx/sigma_xy/sigma_yy divergence form,
+            # E, nu, K) with no numerical solver ever implemented, so neither
+            # plane-stress-vs-strain nor how K relates to E/nu is fixed by
+            # the source itself. Convention used here: mu from E,nu (the
+            # well-defined shear modulus); K used directly as an independent
+            # volumetric/bulk penalty (standard practice for near-
+            # incompressible Neo-Hookean, decoupled from the linear-elastic
+            # lambda). Energy: W = (mu/2)(I1-2-2lnJ) + (K/2)(lnJ)^2, giving
+            # the standard result P = mu(F-F^-T) + K*ln(J)*F^-T, then
+            # sigma = (1/J) P F^T.
+            if spatial_dim != 2:
+                raise ValueError("hyperelasticity_neo_hookean (this branch) expects 2D spatial dims.")
+            for n in ("u", "v"):
+                if n not in fields:
+                    raise ValueError(f"hyperelasticity_neo_hookean expects field '{n}'.")
+            E_mod = float(p.get("E", 210e9))
+            nu = float(p.get("nu", 0.3))
+            K_bulk = float(p.get("K", 1.0))
+            mu = E_mod / (2.0 * (1.0 + nu))
+
+            sp_idx = [coords.index(c) for c in spatial_coord_names]
+            x_idx, y_idx = sp_idx[0], sp_idx[1]
+            U = torch.cat([fields["u"], fields["v"]], dim=1)
+            JU = jacobian(U, xcol)
+            Gu = JU[:, :, sp_idx]
+
+            eye2 = torch.eye(2, device=device, dtype=xcol.dtype).unsqueeze(0)
+            F = eye2 + Gu
+
+            F00, F01 = F[:, 0, 0], F[:, 0, 1]
+            F10, F11 = F[:, 1, 0], F[:, 1, 1]
+            detF = F00 * F11 - F01 * F10
+            detF_safe = torch.clamp(detF, min=1e-6)
+            lnJ = torch.log(detF_safe)
+
+            invT00 = F11 / detF_safe
+            invT01 = -F10 / detF_safe
+            invT10 = -F01 / detF_safe
+            invT11 = F00 / detF_safe
+
+            P00 = mu * (F00 - invT00) + K_bulk * lnJ * invT00
+            P01 = mu * (F01 - invT01) + K_bulk * lnJ * invT01
+            P10 = mu * (F10 - invT10) + K_bulk * lnJ * invT10
+            P11 = mu * (F11 - invT11) + K_bulk * lnJ * invT11
+
+            s00 = (P00 * F00 + P01 * F01) / detF_safe
+            s01 = (P00 * F10 + P01 * F11) / detF_safe
+            s10 = (P10 * F00 + P11 * F01) / detF_safe
+            s11 = (P10 * F10 + P11 * F11) / detF_safe
+
+            sigma_xx = s00.unsqueeze(1)
+            sigma_xy = (0.5 * (s01 + s10)).unsqueeze(1)  # enforce symmetry numerically
+            sigma_yy = s11.unsqueeze(1)
+
+            b_fn = ctx.get("body_force_fn")
+            fx = torch.zeros((xcol.shape[0], 1), device=device, dtype=xcol.dtype)
+            fy = torch.zeros((xcol.shape[0], 1), device=device, dtype=xcol.dtype)
+            if b_fn is not None:
+                b_np = b_fn(xcol.detach().cpu().numpy(), ctx)
+                b_t = torch.as_tensor(b_np, device=device, dtype=xcol.dtype)
+                if b_t.ndim == 1:
+                    b_t = b_t[:, None].repeat(1, 2)
+                fx, fy = b_t[:, 0:1], b_t[:, 1:2]
+
+            dsxx_dx = grad(sigma_xx, xcol)[:, x_idx:x_idx + 1]
+            dsxy_dy = grad(sigma_xy, xcol)[:, y_idx:y_idx + 1]
+            dsxy_dx = grad(sigma_xy, xcol)[:, x_idx:x_idx + 1]
+            dsyy_dy = grad(sigma_yy, xcol)[:, y_idx:y_idx + 1]
+
+            res_list.append(dsxx_dx + dsxy_dy + fx)
+            res_list.append(dsxy_dx + dsyy_dy + fy)
+
+        elif pde_kind == "buckley_leverett_two_phase":
+            # Immiscible two-phase (water-oil) Darcy flow: water-saturation
+            # transport coupled to a pressure equation via total mobility and
+            # fractional flow. Uses a standard quadratic Corey relative-
+            # permeability model (krw=Sw^2, kro=(1-Sw)^2) since the exact
+            # relperm law is a modeling choice not fixed by the governing
+            # equation itself; this is a documented default, not a fabricated
+            # unknown.
+            if not has_t:
+                raise ValueError("Two-phase reservoir flow expects time coord 't'.")
+            for n in ("Sw", "p"):
+                if n not in fields:
+                    raise ValueError(f"Two-phase reservoir flow expects field '{n}'.")
+            phi = float(p.get("phi", 0.2))
+            k_perm = float(p.get("k", 1e-13))
+            mu_w = float(p.get("mu_w", 1e-3))
+            mu_o = float(p.get("mu_o", 5e-3))
+            q_well = float(p.get("q_well", 0.0))
+
+            sp_idx = [coords.index(c) for c in spatial_coord_names]
+
+            Sw, p_res = fields["Sw"], fields["p"]
+            Sw_c = torch.clamp(Sw, 1e-4, 1.0 - 1e-4)
+            krw = Sw_c ** 2
+            kro = (1.0 - Sw_c) ** 2
+            lambda_w = krw / mu_w
+            lambda_o = kro / mu_o
+            lambda_t = lambda_w + lambda_o
+            fw = lambda_w / lambda_t
+
+            grad_p = grad(p_res, xcol)
+            q_vec = [-k_perm * lambda_t * grad_p[:, idx:idx + 1] for idx in sp_idx]
+
+            Sw_t = time_derivative(Sw, xcol, t_index)  # type: ignore[arg-type]
+            div_flux = torch.zeros_like(Sw)
+            for idx, qc in zip(sp_idx, q_vec):
+                g = grad(fw * qc, xcol)
+                div_flux = div_flux + g[:, idx:idx + 1]
+            res_list.append(phi * Sw_t + div_flux)
+
+            kflux = [k_perm * lambda_t * grad_p[:, idx:idx + 1] for idx in sp_idx]
+            div_kflux = torch.zeros_like(p_res)
+            for idx, fc in zip(sp_idx, kflux):
+                g = grad(fc, xcol)
+                div_kflux = div_kflux + g[:, idx:idx + 1]
+            res_list.append(div_kflux + q_well)
+
+        elif pde_kind == "biot_poroelasticity":
+            # Linear poroelastic consolidation (Biot theory): elastic skeleton
+            # momentum coupled to transient pore-pressure diffusion. Fully
+            # linear, no internal state/history variables — unlike plasticity,
+            # this is a straightforward extension of the existing
+            # linear_elasticity residual plus a diffusion equation.
+            if not has_t:
+                raise ValueError("Biot poroelasticity expects time coord 't'.")
+            for n in ("u", "v", "p"):
+                if n not in fields:
+                    raise ValueError(f"Biot poroelasticity expects field '{n}'.")
+            if spatial_dim != 2:
+                raise ValueError("Biot poroelasticity (this branch) expects 2D spatial dims.")
+
+            lam = float(p.get("lambda", 1.0))
+            mu = float(p.get("mu", 1.0))
+            alpha = float(p.get("alpha", 1.0))
+            M_biot = float(p.get("M", 1.0))
+            k_perm = float(p.get("k", 1.0))
+            mu_f = float(p.get("mu_f", 1.0))
+
+            sp_idx = [coords.index(c) for c in spatial_coord_names]
+            x_idx, y_idx = sp_idx[0], sp_idx[1]
+
+            u_f, v_f, p_f = fields["u"], fields["v"], fields["p"]
+
+            U = torch.cat([u_f, v_f], dim=1)
+            JU = jacobian(U, xcol)
+            Gu = JU[:, :, sp_idx]
+            eps = 0.5 * (Gu + torch.transpose(Gu, 1, 2))
+            tr = eps[:, 0:1, 0:1].reshape(-1, 1) + eps[:, 1:2, 1:2].reshape(-1, 1)
+
+            sigma = torch.zeros_like(eps)
+            for i in range(spatial_dim):
+                sigma[:, i, i] = sigma[:, i, i] + lam * tr[:, 0]
+            sigma = sigma + 2.0 * mu * eps
+
+            grad_p = grad(p_f, xcol)
+            dp = [grad_p[:, x_idx:x_idx + 1], grad_p[:, y_idx:y_idx + 1]]
+
+            for i in range(spatial_dim):
+                div_si = torch.zeros((xcol.shape[0], 1), device=device, dtype=xcol.dtype)
+                for j in range(spatial_dim):
+                    sij = sigma[:, i:i + 1, j:j + 1].reshape(-1, 1)
+                    g = grad(sij, xcol)
+                    div_si = div_si + g[:, sp_idx[j]:sp_idx[j] + 1]
+                res_list.append(div_si - alpha * dp[i])
+
+            u_t = time_derivative(u_f, xcol, t_index)  # type: ignore[arg-type]
+            v_t = time_derivative(v_f, xcol, t_index)  # type: ignore[arg-type]
+            d_ut_dx = grad(u_t, xcol)[:, x_idx:x_idx + 1]
+            d_vt_dy = grad(v_t, xcol)[:, y_idx:y_idx + 1]
+            p_t = time_derivative(p_f, xcol, t_index)  # type: ignore[arg-type]
+            lap_p = laplacian(p_f, xcol, sp_idx)
+
+            res_list.append((1.0 / M_biot) * p_t + alpha * (d_ut_dx + d_vt_dy) - (k_perm / mu_f) * lap_p)
+
+        elif pde_kind == "maxwell_te":
+            # 2D transverse-electric Maxwell curl equations with conductive loss:
+            #   eps dEx/dt - dHz/dy + sigma Ex = 0
+            #   eps dEy/dt + dHz/dx + sigma Ey = 0
+            #   mu  dHz/dt - dEx/dy + dEy/dx   = 0
+            if not has_t:
+                raise ValueError("Maxwell TE expects time coord 't'.")
+            for n in ("Ex", "Ey", "Hz"):
+                if n not in fields:
+                    raise ValueError(f"Maxwell TE expects field '{n}'.")
+            epsilon = float(p.get("epsilon", 1.0))
+            mu = float(p.get("mu", 1.0))
+            sigma = float(p.get("sigma", 0.0))
+            x_idx = _coord_index(coords, "x")
+            y_idx = _coord_index(coords, "y")
+
+            Ex, Ey, Hz = fields["Ex"], fields["Ey"], fields["Hz"]
+            dEx_dt = time_derivative(Ex, xcol, t_index)  # type: ignore[arg-type]
+            dEy_dt = time_derivative(Ey, xcol, t_index)  # type: ignore[arg-type]
+            dHz_dt = time_derivative(Hz, xcol, t_index)  # type: ignore[arg-type]
+
+            grad_Hz = grad(Hz, xcol)
+            dHz_dy = grad_Hz[:, y_idx:y_idx + 1]
+            dHz_dx = grad_Hz[:, x_idx:x_idx + 1]
+
+            grad_Ex = grad(Ex, xcol)
+            dEx_dy = grad_Ex[:, y_idx:y_idx + 1]
+            grad_Ey = grad(Ey, xcol)
+            dEy_dx = grad_Ey[:, x_idx:x_idx + 1]
+
+            res_list.append(epsilon * dEx_dt - dHz_dy + sigma * Ex)
+            res_list.append(epsilon * dEy_dt + dHz_dx + sigma * Ey)
+            res_list.append(mu * dHz_dt - dEx_dy + dEy_dx)
+
+        elif pde_kind == "axisymmetric_linear_elasticity":
+            # Static axisymmetric (r,z) linear elasticity, no torsional (u_theta)
+            # coupling — the hoop strain eps_tt = u_r/r term has no Cartesian
+            # equivalent, which is exactly why this is its own kind rather than
+            # reusing "linear_elasticity". Classical formulation, e.g.
+            # Timoshenko & Goodier, Theory of Elasticity.
+            if "r" not in coords or "z" not in coords:
+                raise ValueError("Axisymmetric linear elasticity expects coords ('r','z').")
+            for n in ("u_r", "u_z"):
+                if n not in fields:
+                    raise ValueError(f"Axisymmetric elasticity expects field '{n}'.")
+
+            lam = float(p.get("lambda", 1.0))
+            mu = float(p.get("mu", 1.0))
+
+            r_idx = _coord_index(coords, "r")
+            z_idx = _coord_index(coords, "z")
+            r_col = xcol[:, r_idx:r_idx + 1]
+
+            u_r, u_z = fields["u_r"], fields["u_z"]
+            grad_ur = grad(u_r, xcol)
+            grad_uz = grad(u_z, xcol)
+
+            dur_dr = grad_ur[:, r_idx:r_idx + 1]
+            dur_dz = grad_ur[:, z_idx:z_idx + 1]
+            duz_dr = grad_uz[:, r_idx:r_idx + 1]
+            duz_dz = grad_uz[:, z_idx:z_idx + 1]
+
+            eps_rr = dur_dr
+            eps_tt = u_r / r_col
+            eps_zz = duz_dz
+            eps_rz = 0.5 * (dur_dz + duz_dr)
+
+            tr_eps = eps_rr + eps_tt + eps_zz
+            sigma_rr = lam * tr_eps + 2.0 * mu * eps_rr
+            sigma_tt = lam * tr_eps + 2.0 * mu * eps_tt
+            sigma_zz = lam * tr_eps + 2.0 * mu * eps_zz
+            sigma_rz = 2.0 * mu * eps_rz
+
+            grad_srr = grad(sigma_rr, xcol)
+            grad_srz = grad(sigma_rz, xcol)
+            grad_szz = grad(sigma_zz, xcol)
+
+            dsrr_dr = grad_srr[:, r_idx:r_idx + 1]
+            dsrz_dz = grad_srz[:, z_idx:z_idx + 1]
+            dsrz_dr = grad_srz[:, r_idx:r_idx + 1]
+            dszz_dz = grad_szz[:, z_idx:z_idx + 1]
+
+            res_r = dsrr_dr + dsrz_dz + (sigma_rr - sigma_tt) / r_col
+            res_z = dsrz_dr + dszz_dz + sigma_rz / r_col
+
+            res_list.append(res_r)
+            res_list.append(res_z)
+
+        elif pde_kind == "stokes":
+            # Steady creeping (zero-inertia) flow: momentum without the
+            # convective term, plus continuity.
+            if spatial_dim != 2:
+                raise ValueError("Stokes (this branch) expects 2D spatial dims.")
+            for n in ("u", "v", "p"):
+                if n not in fields:
+                    raise ValueError(f"Stokes expects field '{n}'.")
+            mu = float(p.get("mu", 1.0))
+            sp_idx = [coords.index(c) for c in spatial_coord_names]
+            u_f, v_f, p_f = fields["u"], fields["v"], fields["p"]
+            gp = grad(p_f, xcol)
+            px = gp[:, sp_idx[0]:sp_idx[0] + 1]
+            py = gp[:, sp_idx[1]:sp_idx[1] + 1]
+            res_list.append(-mu * laplacian(u_f, xcol, sp_idx) + px)
+            res_list.append(-mu * laplacian(v_f, xcol, sp_idx) + py)
+            res_list.append(divergence(torch.cat([u_f, v_f], dim=1), xcol, sp_idx))
+
+        elif pde_kind == "brinkman":
+            # Stokes-like viscous term plus Darcy drag: bridges free flow and
+            # porous-media flow.
+            if spatial_dim != 2:
+                raise ValueError("Brinkman (this branch) expects 2D spatial dims.")
+            for n in ("u", "v", "p"):
+                if n not in fields:
+                    raise ValueError(f"Brinkman expects field '{n}'.")
+            mu = float(p.get("mu", 1.0))
+            mu_eff = float(p.get("mu_eff", 1.0))
+            K_perm = float(p.get("K", 1.0))
+            sp_idx = [coords.index(c) for c in spatial_coord_names]
+            u_f, v_f, p_f = fields["u"], fields["v"], fields["p"]
+            gp = grad(p_f, xcol)
+            px = gp[:, sp_idx[0]:sp_idx[0] + 1]
+            py = gp[:, sp_idx[1]:sp_idx[1] + 1]
+            res_list.append(-mu_eff * laplacian(u_f, xcol, sp_idx) + (mu / K_perm) * u_f + px)
+            res_list.append(-mu_eff * laplacian(v_f, xcol, sp_idx) + (mu / K_perm) * v_f + py)
+            res_list.append(divergence(torch.cat([u_f, v_f], dim=1), xcol, sp_idx))
+
+        elif pde_kind == "shallow_water":
+            # Depth-averaged free-surface flow (Saint-Venant), flat bottom by
+            # default (ctx['bathymetry_grad_fn'] may supply real db/dx, db/dy).
+            if not has_t:
+                raise ValueError("Shallow water expects time coord 't'.")
+            for n in ("h", "hu", "hv"):
+                if n not in fields:
+                    raise ValueError(f"Shallow water expects field '{n}'.")
+            g_grav = float(p.get("g", 9.81))
+            x_idx = _coord_index(coords, "x")
+            y_idx = _coord_index(coords, "y")
+            h, hu, hv = fields["h"], fields["hu"], fields["hv"]
+            u_vel, v_vel = hu / h, hv / h
+
+            b_fn = ctx.get("bathymetry_grad_fn")
+            bx = torch.zeros_like(h)
+            by = torch.zeros_like(h)
+            if b_fn is not None:
+                b_np = b_fn(xcol.detach().cpu().numpy(), ctx)
+                b_t = torch.as_tensor(b_np, device=device, dtype=h.dtype)
+                bx, by = b_t[:, 0:1], b_t[:, 1:2]
+
+            F1x, F2x, F3x = hu, hu * u_vel + 0.5 * g_grav * h * h, hu * v_vel
+            F1y, F3y = hv, hv * v_vel + 0.5 * g_grav * h * h
+            F2y = hu * v_vel
+
+            ht = time_derivative(h, xcol, t_index)  # type: ignore[arg-type]
+            hut = time_derivative(hu, xcol, t_index)  # type: ignore[arg-type]
+            hvt = time_derivative(hv, xcol, t_index)  # type: ignore[arg-type]
+
+            res_list.append(ht + grad(F1x, xcol)[:, x_idx:x_idx + 1] + grad(F1y, xcol)[:, y_idx:y_idx + 1])
+            res_list.append(hut + grad(F2x, xcol)[:, x_idx:x_idx + 1] + grad(F2y, xcol)[:, y_idx:y_idx + 1] + g_grav * h * bx)
+            res_list.append(hvt + grad(F3x, xcol)[:, x_idx:x_idx + 1] + grad(F3y, xcol)[:, y_idx:y_idx + 1] + g_grav * h * by)
+
+        elif pde_kind == "euler_compressible":
+            # Inviscid compressible flow, conservative form, ideal gas (gamma-law).
+            if not has_t:
+                raise ValueError("Euler compressible expects time coord 't'.")
+            for n in ("rho", "rho_u", "rho_v", "E"):
+                if n not in fields:
+                    raise ValueError(f"Euler compressible expects field '{n}'.")
+            gamma = float(p.get("gamma", 1.4))
+            x_idx = _coord_index(coords, "x")
+            y_idx = _coord_index(coords, "y")
+            rho, rho_u, rho_v, E_f = fields["rho"], fields["rho_u"], fields["rho_v"], fields["E"]
+            u_vel, v_vel = rho_u / rho, rho_v / rho
+            p_pres = (gamma - 1.0) * (E_f - 0.5 * rho * (u_vel * u_vel + v_vel * v_vel))
+
+            F1x, F2x, F3x, F4x = rho_u, rho_u * u_vel + p_pres, rho_u * v_vel, (E_f + p_pres) * u_vel
+            F1y, F2y, F3y, F4y = rho_v, rho_u * v_vel, rho_v * v_vel + p_pres, (E_f + p_pres) * v_vel
+
+            rho_t = time_derivative(rho, xcol, t_index)  # type: ignore[arg-type]
+            rhou_t = time_derivative(rho_u, xcol, t_index)  # type: ignore[arg-type]
+            rhov_t = time_derivative(rho_v, xcol, t_index)  # type: ignore[arg-type]
+            E_t = time_derivative(E_f, xcol, t_index)  # type: ignore[arg-type]
+
+            res_list.append(rho_t + grad(F1x, xcol)[:, x_idx:x_idx + 1] + grad(F1y, xcol)[:, y_idx:y_idx + 1])
+            res_list.append(rhou_t + grad(F2x, xcol)[:, x_idx:x_idx + 1] + grad(F2y, xcol)[:, y_idx:y_idx + 1])
+            res_list.append(rhov_t + grad(F3x, xcol)[:, x_idx:x_idx + 1] + grad(F3y, xcol)[:, y_idx:y_idx + 1])
+            res_list.append(E_t + grad(F4x, xcol)[:, x_idx:x_idx + 1] + grad(F4y, xcol)[:, y_idx:y_idx + 1])
+
+        elif pde_kind == "reaction_diffusion":
+            # Two-species autocatalytic reaction-diffusion (Gray-Scott form);
+            # fills in one of the 3 PDE families declared in capabilities.py
+            # that had no compile_problem implementation before this branch.
+            if not has_t:
+                raise ValueError("Reaction-diffusion expects time coord 't'.")
+            for n in ("u", "v"):
+                if n not in fields:
+                    raise ValueError(f"Reaction-diffusion expects field '{n}'.")
+            Du = float(p.get("Du", 2e-5))
+            Dv = float(p.get("Dv", 1e-5))
+            F_feed = float(p.get("F", 0.04))
+            k_kill = float(p.get("k", 0.06))
+            u_f, v_f = fields["u"], fields["v"]
+            ut = time_derivative(u_f, xcol, t_index)  # type: ignore[arg-type]
+            vt = time_derivative(v_f, xcol, t_index)  # type: ignore[arg-type]
+            lap_u = laplacian(u_f, xcol, spatial_indices)
+            lap_v = laplacian(v_f, xcol, spatial_indices)
+            res_list.append(ut - Du * lap_u + u_f * v_f * v_f - F_feed * (1.0 - u_f))
+            res_list.append(vt - Dv * lap_v - u_f * v_f * v_f + (F_feed + k_kill) * v_f)
+
+        elif pde_kind == "euler_bernoulli_beam_von_karman":
+            # Geometrically nonlinear (Von Karman) beam-column: axial and
+            # transverse displacement fields coupled through the Von Karman
+            # strain N = EA*(u' + 0.5*w'^2). Unlike plasticity/fracture, this
+            # has one standard, unambiguous formulation (no competing
+            # constitutive-modeling convention to choose between) — it's
+            # calculus (nested/product derivatives), which autograd computes
+            # exactly, so this is a natural extension of the already-verified
+            # "euler_bernoulli_beam" branch rather than new open modeling risk.
+            #   Axial equilibrium:      dN/dz = 0            (no distributed axial load)
+            #   Transverse equilibrium: EI*w'''' - d/dz(N*w') - q(z) = 0
+            #   Constitutive:           N = EA*(u' + 0.5*(w')^2)
+            if "u" not in fields or "w" not in fields:
+                raise ValueError("Von Karman beam expects fields 'u' (axial) and 'w' (transverse).")
+            u_f, w_f = fields["u"], fields["w"]
+            EA = float(p.get("EA", 1.0))
+            EI = float(p.get("EI", 1.0))
+            z_idx = _coord_index(coords, "z")
+
+            q_fn = ctx.get("source_fn") or ctx.get("q_fn")
+            if q_fn is not None:
+                q_np = q_fn(xcol.detach().cpu().numpy(), ctx)
+                q = torch.as_tensor(q_np, device=device, dtype=w_f.dtype)
+                if q.ndim == 1:
+                    q = q[:, None]
+            elif "q" in p:
+                q = torch.full_like(w_f, float(p["q"]))
+            else:
+                q = torch.zeros_like(w_f)
+
+            u1 = grad(u_f, xcol)[:, z_idx:z_idx + 1]
+            w1 = grad(w_f, xcol)[:, z_idx:z_idx + 1]
+            w2 = torch.autograd.grad(
+                outputs=w1, inputs=xcol, grad_outputs=torch.ones_like(w1),
+                create_graph=True, retain_graph=True, allow_unused=False,
+            )[0][:, z_idx:z_idx + 1]
+            w3 = torch.autograd.grad(
+                outputs=w2, inputs=xcol, grad_outputs=torch.ones_like(w2),
+                create_graph=True, retain_graph=True, allow_unused=False,
+            )[0][:, z_idx:z_idx + 1]
+            w4 = torch.autograd.grad(
+                outputs=w3, inputs=xcol, grad_outputs=torch.ones_like(w3),
+                create_graph=True, retain_graph=True, allow_unused=False,
+            )[0][:, z_idx:z_idx + 1]
+
+            N_force = EA * (u1 + 0.5 * w1 * w1)
+            dN_dz = torch.autograd.grad(
+                outputs=N_force, inputs=xcol, grad_outputs=torch.ones_like(N_force),
+                create_graph=True, retain_graph=True, allow_unused=False,
+            )[0][:, z_idx:z_idx + 1]
+
+            Nw1 = N_force * w1
+            d_Nw1_dz = torch.autograd.grad(
+                outputs=Nw1, inputs=xcol, grad_outputs=torch.ones_like(Nw1),
+                create_graph=True, retain_graph=True, allow_unused=False,
+            )[0][:, z_idx:z_idx + 1]
+
+            res_list.append(dN_dz)
+            res_list.append(EI * w4 - d_Nw1_dz - q)
+
+        elif pde_kind == "reaction_kinetics_network":
+            # Generic well-mixed (0D-in-space) reaction-network residual: each
+            # field is a species concentration C_i(t[, other coords]); the
+            # network-specific stoichiometry/rate law lives entirely in a
+            # user-supplied callable, not in this dispatch branch, so one
+            # implementation serves any reaction network (disinfection
+            # kinetics, degradation kinetics, corrosion, adsorption, or any
+            # other well-mixed chemical/biological reaction system).
+            if not has_t:
+                raise ValueError("reaction_kinetics_network expects a time coord 't'.")
+            rate_fn = ctx.get("rate_fn") or spec.pde.meta.get("rate_fn")
+            if rate_fn is None:
+                raise ValueError(
+                    "reaction_kinetics_network requires meta['rate_fn'] or "
+                    "ctx['rate_fn']: a callable "
+                    "(fields: Dict[str, Tensor], coords: Dict[str, Tensor], params: dict) "
+                    "-> Dict[str, Tensor] returning the target dC_i/dt for each "
+                    "field name. Unlike source_fn/f_fn/q_fn elsewhere in this "
+                    "compiler, rate_fn receives live (non-detached) field "
+                    "tensors and MUST use torch ops so gradients flow back "
+                    "into the model."
+                )
+            coords_dict = {name: xcol[:, i:i + 1] for i, name in enumerate(coords)}
+            rhs = rate_fn(fields, coords_dict, p)
+            for fname in field_names:
+                dCi_dt = time_derivative(fields[fname], xcol, t_index)  # type: ignore[arg-type]
+                if fname not in rhs:
+                    raise ValueError(f"rate_fn did not return a target rate for field '{fname}'")
+                res_list.append(dCi_dt - rhs[fname])
+
 
         else:
             raise ValueError(f"Unsupported PDE kind: {pde_kind}")
@@ -363,7 +884,7 @@ def compile_problem(
                 out[f"bc_{cond.name}"] = l.detach()
                 total = total + (w.w_bc * float(cond.weight)) * l
 
-            elif cond.kind == "neumann":
+            elif cond.kind == "neumann" and cond.order <= 1:
                 n = batch.get("n_bc")
                 if n is None:
                     raise KeyError("NeumannBC requires batch['n_bc']")
@@ -375,6 +896,29 @@ def compile_problem(
                     Xr = Xc.clone().detach().requires_grad_(True)
                     u = eval_fields(Xr)[fname]
                     parts.append(norm_dot_grad(u, Xr, n))
+                flux_pred = torch.cat(parts, dim=1)
+                l = mse(flux_pred, Yc)
+                out[f"bc_{cond.name}"] = l.detach()
+                total = total + (w.w_bc * float(cond.weight)) * l
+
+            elif cond.kind == "neumann" and cond.order > 1:
+                # Repeated single-coordinate derivative (e.g. beam moment
+                # M=EI*d^2w/dz^2 or shear V=EI*d^3w/dz^3) — NOT a generalized
+                # normal-dot-gradient contraction; see ConditionSpec's
+                # docstring for the deliberately narrow scope.
+                if cond.deriv_coord is None:
+                    raise KeyError(f"Condition '{cond.name}' has order={cond.order} but no deriv_coord")
+                d_idx = _coord_index(coords, cond.deriv_coord)
+                parts = []
+                for fname in cond.fields:
+                    Xr = Xc.clone().detach().requires_grad_(True)
+                    g = eval_fields(Xr)[fname]
+                    for _ in range(cond.order):
+                        g = torch.autograd.grad(
+                            outputs=g, inputs=Xr, grad_outputs=torch.ones_like(g),
+                            create_graph=True, retain_graph=True, allow_unused=False,
+                        )[0][:, d_idx:d_idx + 1]
+                    parts.append(g)
                 flux_pred = torch.cat(parts, dim=1)
                 l = mse(flux_pred, Yc)
                 out[f"bc_{cond.name}"] = l.detach()

@@ -97,6 +97,13 @@ def register_all() -> None:
 
     from . import meshfree as _meshfree  # noqa: F401
 
+    from . import xtfc_ivp as _xtfc_ivp  # noqa: F401
+    from . import eddy_current_fdm as _eddy_current_fdm  # noqa: F401
+    from . import immersed_boundary_fdm as _immersed_boundary_fdm  # noqa: F401
+    from . import beam_bvp_fdm as _beam_bvp_fdm  # noqa: F401
+    from . import elasticity3d_fdm as _elasticity3d_fdm  # noqa: F401
+    from . import nonlinear_beam_fem as _nonlinear_beam_fem  # noqa: F401
+
 
 @dataclass
 class SolverCatalog:
