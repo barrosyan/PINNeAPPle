@@ -7,7 +7,7 @@ Supported materials
 -------------------
 - ``"elastic"``  – Neo-Hookean elastic solid (snow / sand approximation)
 - ``"fluid"``    – Weakly-compressible Newtonian fluid (water)
-- ``"snow"``     – Drucker-Prager plasticity model
+- ``"snow"``     – Critical-stretch snow plasticity (Stomakhin et al. 2013)
 
 All operations use standard PyTorch, enabling gradients to flow through
 the entire simulation for inverse problems and differentiable physics.
@@ -111,6 +111,11 @@ class MPMSimulator(nn.Module):
         Reference density (kg/m³ or non-dimensionalised).
     gravity:
         Gravitational acceleration vector ``(dim,)``.
+    particle_volume:
+        Explicit per-particle volume. If ``None`` (default), it is inferred
+        on the first forward call as the bounding-box volume of the seeded
+        particle positions divided by the particle count, so it adapts to
+        both a full-domain fill and a localized particle block.
     """
 
     def __init__(
@@ -123,6 +128,7 @@ class MPMSimulator(nn.Module):
         nu: float = 0.2,
         rho: float = 1.0,
         gravity: Optional[Tuple[float, ...]] = None,
+        particle_volume: Optional[float] = None,
     ) -> None:
         super().__init__()
         self.res = grid_resolution
@@ -138,6 +144,7 @@ class MPMSimulator(nn.Module):
         self.register_buffer("gravity", _gravity_tensor(dim, gravity))
 
         # Volume per particle initialised during first forward call
+        self._vol_override = particle_volume
         self._vol: Optional[float] = None
         self._dx: float = 1.0 / grid_resolution
 
@@ -147,7 +154,7 @@ class MPMSimulator(nn.Module):
 
     def _stress(
         self, F: torch.Tensor, Jp: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Compute Kirchhoff stress P for the configured material.
 
         Parameters
@@ -159,6 +166,7 @@ class MPMSimulator(nn.Module):
         -------
         P : ``(n_p, d, d)``   –  first Piola-Kirchhoff stress
         F_new : same shape as F  –  updated deformation gradient (after projection)
+        Jp_new : ``(n_p,)``    –  updated plastic deformation ratio
         """
         n_p, d, _ = F.shape
         mu = self.mu_0
@@ -170,32 +178,48 @@ class MPMSimulator(nn.Module):
             # Weakly compressible: P = (J - 1) * lam * I
             P = lam * (J - 1.0).view(n_p, 1, 1) * \
                 torch.eye(d, device=F.device, dtype=F.dtype).unsqueeze(0)
-            F_new = F
+            # Fluids carry no elastic memory of shape: reset F to the
+            # isotropic, volume-matching tensor so it never accumulates
+            # unbounded shear from the velocity gradient.
+            F_new = torch.eye(d, device=F.device, dtype=F.dtype).unsqueeze(0) * \
+                J.view(n_p, 1, 1).pow(1.0 / d)
+            Jp_new = Jp
         elif self.material == "snow":
-            # Drucker-Prager: SVD-based clamping of singular values
+            # Critical-stretch snow plasticity (Stomakhin et al. 2013):
+            # SVD-clamp the singular values of F to a narrow stretch range.
             try:
                 U, sig, Vh = torch.linalg.svd(F)
                 sig_clamp = sig.clamp(1.0 - 2.5e-2, 1.0 + 4.5e-3)
+                # Jp tracks the volume lost/gained to the clamp so the
+                # material hardens when crushed and softens when stretched.
+                Jp_new = (Jp * (sig.prod(dim=-1) / sig_clamp.prod(dim=-1))).clamp(0.1, 20.0)
                 F_proj = U @ torch.diag_embed(sig_clamp) @ Vh
-                # Neo-Hookean on projected deformation
+                # Neo-Hookean on projected deformation, with exponential
+                # hardening driven by the accumulated plastic ratio.
+                xi = 10.0
+                hardening = torch.exp(xi * (1.0 - Jp_new)).clamp(min=0.1, max=5.0)
+                mu_h = (mu * hardening).view(n_p, 1, 1)
+                lam_h = (lam * hardening).view(n_p, 1, 1)
                 J_e = torch.linalg.det(F_proj).clamp(min=1e-8)
                 F_T_inv = torch.linalg.inv(F_proj).mT
-                P = mu * (F_proj - F_T_inv) + lam * (J_e - 1.0).view(n_p, 1, 1) * F_T_inv
+                P = mu_h * (F_proj - F_T_inv) + lam_h * torch.log(J_e).view(n_p, 1, 1) * F_T_inv
                 F_new = F_proj
             except Exception:
-                # Fallback: elastic model
+                # Fallback: elastic model, no plasticity update
+                Jp_new = Jp
                 J_e = J
                 F_T_inv = torch.linalg.inv(F).mT
-                P = mu * (F - F_T_inv) + lam * (J_e - 1.0).view(n_p, 1, 1) * F_T_inv
+                P = mu * (F - F_T_inv) + lam * torch.log(J_e).view(n_p, 1, 1) * F_T_inv
                 F_new = F
         else:
             # Neo-Hookean elastic solid
             F_T_inv = torch.linalg.inv(F).mT      # (n_p, d, d)
             P = mu * (F - F_T_inv) + \
-                lam * (J - 1.0).view(n_p, 1, 1) * F_T_inv
+                lam * torch.log(J).view(n_p, 1, 1) * F_T_inv
             F_new = F
+            Jp_new = Jp
 
-        return P, F_new
+        return P, F_new, Jp_new
 
     # ------------------------------------------------------------------
     # Grid helpers
@@ -248,12 +272,28 @@ class MPMSimulator(nn.Module):
         dt = self.dt
 
         if self._vol is None:
-            self._vol = (dx ** d) * 0.5  # approximate particle volume
+            if self._vol_override is not None:
+                self._vol = self._vol_override
+            else:
+                # Estimate the per-particle volume from the actual region
+                # the seeded particles occupy (their bounding box), divided
+                # evenly by particle count. This matches 1/n_p for the
+                # common case of particles filling the full unit hypercube
+                # domain, but also stays correct when particles are seeded
+                # only within a smaller sub-region (e.g. a falling block),
+                # which the previous "always assume the full unit domain"
+                # approximation would silently over-estimate by orders of
+                # magnitude.
+                extent = (state.pos.max(dim=0).values
+                          - state.pos.min(dim=0).values).clamp(min=dx)
+                domain_vol = extent.prod().item()
+                self._vol = domain_vol / n_p
 
         vol = self._vol
-        P, F_new = self._stress(state.F, state.Jp)
-        # Update deformation gradient
+        P, F_new, Jp_new = self._stress(state.F, state.Jp)
+        # Update deformation gradient and plastic ratio
         state.F = F_new
+        state.Jp = Jp_new
 
         # Affine contribution to stress: -vol * P * F^T * 4 / dx^2
         stress = -dt * vol * (4.0 / dx ** 2) * P @ state.F.mT  # (n_p, d, d)

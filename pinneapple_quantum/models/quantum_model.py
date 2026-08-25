@@ -6,7 +6,9 @@ from typing import Optional, Literal
 import torch
 import torch.nn as nn
 
-from pinneapple_quantum.circuits.base import QuantumCircuitConfig, ClassicalVQC, build_pennylane_circuit
+from pinneapple_quantum.circuits.base import (
+    QuantumCircuitConfig, build_pennylane_circuit, build_classical_circuit,
+)
 from pinneapple_quantum.backends.backend import BackendConfig, get_backend
 
 
@@ -53,17 +55,18 @@ class QuantumModel(nn.Module):
         self._backend = get_backend(self.backend_config)
         self._use_pennylane = self._backend.__class__.__name__ == "PennyLaneBackend"
         self._use_qiskit    = self._backend.__class__.__name__ == "QiskitBackend"
+        self._use_classical = self._backend.__class__.__name__ == "ClassicalBackend"
 
         if self._use_pennylane or self._use_qiskit:
-            self._qnode   = build_pennylane_circuit(circuit_config, self._backend)
-            self._weights = nn.Parameter(
-                torch.randn(circuit_config.n_params) * 0.1
-            )
-            self._classical_vqc = None
+            self._qnode = build_pennylane_circuit(circuit_config, self._backend)
+        elif self._use_classical:
+            self._qnode = build_classical_circuit(circuit_config, self._backend)
         else:
-            self._qnode         = None
-            self._weights       = None
-            self._classical_vqc = ClassicalVQC(circuit_config)
+            raise ValueError(f"Unsupported quantum backend: {self._backend!r}")
+
+        self._weights = nn.Parameter(
+            torch.randn(circuit_config.n_params) * 0.1
+        )
 
     # ── Properties ────────────────────────────────────────────────────────────
 
@@ -96,22 +99,25 @@ class QuantumModel(nn.Module):
         Tensor of shape ``(batch, n_observables)``
             Expectation values of Pauli-Z observables, scaled by ``output_scale``.
         """
-        if self._classical_vqc is not None:
-            return self._classical_vqc(x) * self.output_scale
-
-        # PennyLane / Qiskit path — run circuit per sample (batching via vmap
-        # or explicit loop depending on PennyLane version).
-        try:
-            import pennylane as qml
-            batched = qml.batch_input(self._qnode, argnum=0)
-            out = batched(x, self._weights)
-        except (AttributeError, TypeError):
-            # Fallback: loop over batch
-            outs = [
-                torch.stack(self._qnode(x[i], self._weights))
-                for i in range(x.shape[0])
-            ]
+        if self._use_classical:
+            # ClassicalQNode evaluates one sample at a time (returns a Tensor
+            # already, not a list of scalars).
+            outs = [self._qnode(x[i], self._weights) for i in range(x.shape[0])]
             out = torch.stack(outs, dim=0)
+        else:
+            # PennyLane / Qiskit path — run circuit per sample (batching via vmap
+            # or explicit loop depending on PennyLane version).
+            try:
+                import pennylane as qml
+                batched = qml.batch_input(self._qnode, argnum=0)
+                out = batched(x, self._weights)
+            except (AttributeError, TypeError):
+                # Fallback: loop over batch
+                outs = [
+                    torch.stack(self._qnode(x[i], self._weights))
+                    for i in range(x.shape[0])
+                ]
+                out = torch.stack(outs, dim=0)
 
         if out.ndim == 1:
             out = out.unsqueeze(-1)

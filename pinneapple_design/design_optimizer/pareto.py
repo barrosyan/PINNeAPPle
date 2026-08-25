@@ -48,6 +48,86 @@ def compute_pareto_front(objectives: np.ndarray) -> np.ndarray:
     return is_pareto
 
 
+def fast_non_dominated_sort(objectives: np.ndarray) -> List[np.ndarray]:
+    """Partition solutions into successive Pareto fronts (NSGA-II).
+
+    Parameters
+    ----------
+    objectives:
+        Array of shape (N, M), all minimized.
+
+    Returns
+    -------
+    list of np.ndarray
+        Index arrays into *objectives*; ``fronts[0]`` is the non-dominated
+        set, ``fronts[1]`` is non-dominated after removing ``fronts[0]``,
+        and so on.
+    """
+    n = objectives.shape[0]
+    dominated_counts = np.zeros(n, dtype=int)
+    dominates_lists: List[List[int]] = [[] for _ in range(n)]
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            if pareto_dominates(objectives[i], objectives[j]):
+                dominates_lists[i].append(j)
+                dominated_counts[j] += 1
+            elif pareto_dominates(objectives[j], objectives[i]):
+                dominates_lists[j].append(i)
+                dominated_counts[i] += 1
+
+    fronts: List[List[int]] = []
+    current = [i for i in range(n) if dominated_counts[i] == 0]
+    while current:
+        fronts.append(current)
+        nxt: List[int] = []
+        for i in current:
+            for j in dominates_lists[i]:
+                dominated_counts[j] -= 1
+                if dominated_counts[j] == 0:
+                    nxt.append(j)
+        current = nxt
+
+    return [np.array(f, dtype=int) for f in fronts]
+
+
+def crowding_distance(objectives: np.ndarray) -> np.ndarray:
+    """Compute the NSGA-II crowding distance within a single front.
+
+    Parameters
+    ----------
+    objectives:
+        Objective values of the solutions in one non-dominated front,
+        shape (n, m).
+
+    Returns
+    -------
+    np.ndarray
+        Crowding distance per solution, shape (n,).  Boundary (extreme)
+        points on each objective get ``inf`` so they are always preferred,
+        preserving the spread of the front.
+    """
+    n, m = objectives.shape
+    if n <= 2:
+        return np.full(n, np.inf)
+
+    dist = np.zeros(n)
+    for k in range(m):
+        order = np.argsort(objectives[:, k])
+        dist[order[0]] = np.inf
+        dist[order[-1]] = np.inf
+        f_min, f_max = objectives[order[0], k], objectives[order[-1], k]
+        span = f_max - f_min
+        if span <= 0:
+            continue
+        for idx in range(1, n - 1):
+            dist[order[idx]] += (
+                objectives[order[idx + 1], k] - objectives[order[idx - 1], k]
+            ) / span
+
+    return dist
+
+
 @dataclass
 class ParetoFront:
     """Container for a multi-objective Pareto front.

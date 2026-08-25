@@ -70,7 +70,7 @@ class ParticleSystem(nn.Module):
         r_ij         : ``(n_pairs, d)``  –  displacement vectors r_i - r_j
         """
         # Pairwise displacement (N x N x d)
-        r = pos.unsqueeze(0) - pos.unsqueeze(1)         # (N, N, d)
+        r = pos.unsqueeze(1) - pos.unsqueeze(0)         # (N, N, d), r[i, j] = pos_i - pos_j
         dist = r.norm(dim=-1)                            # (N, N)
         mask = (dist < h) & (dist > 0.0)                # exclude self
         i_idx, j_idx = torch.where(mask)
@@ -260,7 +260,7 @@ class SPHParticles(ParticleSystem):
 
         F_press_i = -sum_j m_j (p_i/rho_i^2 + p_j/rho_j^2) * grad W_ij
         """
-        i_idx, j_idx, r_ij = self._find_neighbours(pos, self.h)
+        i_idx, j_idx, r_ij = self._find_neighbours(pos, 2.0 * self.h)
         dist = r_ij.norm(dim=-1)
         dW = _cubic_kernel_grad(r_ij, dist, self.h, self.dim)
 
@@ -281,7 +281,7 @@ class SPHParticles(ParticleSystem):
 
         F_visc_i = nu * sum_j m_j (vel_j - vel_i) / rho_j * laplacian(W)_ij
         """
-        i_idx, j_idx, r_ij = self._find_neighbours(pos, self.h)
+        i_idx, j_idx, r_ij = self._find_neighbours(pos, 2.0 * self.h)
         dist = r_ij.norm(dim=-1).clamp(min=1e-10)
         dW = _cubic_kernel_grad(r_ij, dist, self.h, self.dim)
 

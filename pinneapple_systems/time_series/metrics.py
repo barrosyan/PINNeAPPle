@@ -28,7 +28,14 @@ def rmse(y_hat, batch):
 
 
 def mape(y_hat, batch):
-    """Mean Absolute Percentage Error (%).  Returns NaN when any |y|=0."""
+    """Mean Absolute Percentage Error (%).
+
+    The denominator uses a small epsilon (1e-8) for numerical stability, so
+    a zero (or near-zero) target does not raise or produce NaN -- instead
+    it contributes a very large but finite term that can dominate the mean.
+    Avoid this metric when the target series contains zeros or values near
+    zero; prefer sMAPE in that case.
+    """
     y = batch[1]
     return torch.mean(torch.abs((y - y_hat) / (torch.abs(y) + 1e-8))) * 100.0
 
@@ -63,6 +70,12 @@ def rmse_fn(y_hat: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
 
 def mape_fn(y_hat: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """Mean Absolute Percentage Error (%).
+
+    Denominator uses a small epsilon (1e-8) for numerical stability: a zero
+    (or near-zero) target does not raise or produce NaN, but instead
+    contributes a very large finite term that can dominate the mean.
+    """
     return torch.mean(torch.abs((y - y_hat) / (torch.abs(y) + 1e-8))) * 100.0
 
 

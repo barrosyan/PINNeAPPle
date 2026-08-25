@@ -20,6 +20,41 @@ from .refinement import PINNRefinement, RefinementResult
 from .surrogate import PhysicsSurrogate
 
 
+class _ScalarizedObjective:
+    """Weighted-sum, min-max-normalized combination of several objectives.
+
+    A single gradient trajectory needs one scalar to descend; always using
+    ``objectives[0]`` collapses the search onto that objective's optimum.
+    Re-sampling *weights* from the simplex every iteration (see
+    :meth:`DesignOptLoop._sample_weights`) and normalizing each objective
+    by its observed range instead lets successive steps pull towards
+    different trade-offs, tracing out the Pareto front rather than a single
+    point on it.
+    """
+
+    def __init__(
+        self,
+        objectives: List[ObjectiveBase],
+        weights: np.ndarray,
+        lo: np.ndarray,
+        hi: np.ndarray,
+    ) -> None:
+        self.objectives = objectives
+        self.weights = weights
+        self.lo = lo
+        self.hi = hi
+
+    def __call__(self, theta: Any, u: Any) -> Any:
+        total = None
+        for i, obj in enumerate(self.objectives):
+            v = obj(theta, u)
+            span = max(float(self.hi[i] - self.lo[i]), 1e-12)
+            normed = (v - float(self.lo[i])) / span
+            term = float(self.weights[i]) * normed
+            total = term if total is None else total + term
+        return total
+
+
 @dataclass
 class DesignOptConfig:
     """Top-level configuration for :class:`DesignOptLoop`.
@@ -225,14 +260,17 @@ class DesignOptLoop:
             list(self.param_space.bounds.values()), dtype=np.float64
         )
 
-    def _evaluate(self, theta_np: np.ndarray) -> tuple[float, list[float]]:
+    def _evaluate(self, theta_np: np.ndarray) -> tuple[float, list[float], float]:
         """Predict u and evaluate all objectives + constraint penalties.
 
         Returns
         -------
         tuple
-            ``(primary_scalar, [obj_1, obj_2, ...])`` where ``primary_scalar``
-            already includes constraint penalties.
+            ``(primary_scalar, [obj_1, obj_2, ...], penalty)`` where
+            ``primary_scalar`` already includes ``penalty`` (added to the
+            first objective) and ``[obj_1, ...]`` are the raw, unpenalized
+            per-objective values -- the form the multi-objective optimizer
+            back-ends (ParEGO / NSGA-II) need.
         """
         import torch
 
@@ -244,13 +282,19 @@ class DesignOptLoop:
             v = obj(theta_t, u_t)
             obj_vals.append(float(v.item()))
 
-        primary = obj_vals[0]
-
+        penalty = 0.0
         if self.constraints is not None:
             pen = self.constraints.total_penalty(theta_t, u_t)
-            primary = primary + float(pen.item())
+            penalty = float(pen.item())
 
-        return primary, obj_vals
+        primary = obj_vals[0] + penalty
+
+        return primary, obj_vals, penalty
+
+    def _sample_weights(self, n_obj: int) -> np.ndarray:
+        """Sample a scalarization weight vector uniformly from the simplex."""
+        w = self._rng.exponential(size=n_obj)
+        return w / w.sum()
 
     def _build_optimizer(self, theta0: np.ndarray) -> Any:
         cfg = self.cfg.optimizer_cfg
@@ -260,7 +304,9 @@ class DesignOptLoop:
         elif method == "bayesian":
             return BayesianDesignOptimizer(cfg, seed=self.cfg.seed)
         elif method == "evolutionary":
-            return EvolutionaryDesignOptimizer(cfg, seed=self.cfg.seed)
+            return EvolutionaryDesignOptimizer(
+                cfg, seed=self.cfg.seed, multi_objective=self._multi_objective
+            )
         else:
             raise ValueError(
                 f"Unknown optimizer method '{cfg.method}'. "
@@ -283,6 +329,7 @@ class DesignOptLoop:
         cfg = self.cfg
         np.random.seed(cfg.seed)
         torch.manual_seed(cfg.seed)
+        self._rng = np.random.default_rng(cfg.seed)
 
         t_start = time.perf_counter()
 
@@ -310,18 +357,30 @@ class DesignOptLoop:
 
             # ---- propose candidate(s) ----
             if method == "gradient":
-                new_theta, primary = optimizer.step(
-                    self.surrogate, self.objectives[0], self.constraints, theta
+                if self._multi_objective:
+                    n_obj = len(self.objectives)
+                    if all_obj_vecs:
+                        Y_hist = np.array(all_obj_vecs, dtype=np.float64)
+                        lo, hi = Y_hist.min(axis=0), Y_hist.max(axis=0)
+                    else:
+                        lo, hi = np.zeros(n_obj), np.ones(n_obj)
+                    weights = self._sample_weights(n_obj)
+                    step_objective = _ScalarizedObjective(self.objectives, weights, lo, hi)
+                else:
+                    step_objective = self.objectives[0]
+
+                new_theta, _ = optimizer.step(
+                    self.surrogate, step_objective, self.constraints, theta
                 )
-                primary_val, obj_vals = self._evaluate(new_theta)
+                primary_val, obj_vals, _ = self._evaluate(new_theta)
                 theta = new_theta
                 candidates_x = [theta.copy()]
                 candidates_y = [primary_val]
 
             elif method == "bayesian":
                 candidate = optimizer.propose(bounds)
-                primary_val, obj_vals = self._evaluate(candidate)
-                optimizer.update(candidate, primary_val)
+                primary_val, obj_vals, penalty = self._evaluate(candidate)
+                optimizer.update(candidate, obj_vals, penalty)
                 theta = candidate.copy()
                 candidates_x = [candidate]
                 candidates_y = [primary_val]
@@ -331,11 +390,16 @@ class DesignOptLoop:
                 xs = optimizer.ask(bounds, n_pop)
                 ys: List[float] = []
                 all_obj_vecs_iter: List[List[float]] = []
+                penalties_iter: List[float] = []
                 for x in xs:
-                    pv, ov = self._evaluate(x)
+                    pv, ov, pen = self._evaluate(x)
                     ys.append(pv)
                     all_obj_vecs_iter.append(ov)
-                optimizer.tell(xs, ys)
+                    penalties_iter.append(pen)
+                if self._multi_objective:
+                    optimizer.tell(xs, ys, obj_vecs=all_obj_vecs_iter, penalties=penalties_iter)
+                else:
+                    optimizer.tell(xs, ys)
                 best_idx = int(np.argmin(ys))
                 theta = xs[best_idx].copy()
                 primary_val = ys[best_idx]

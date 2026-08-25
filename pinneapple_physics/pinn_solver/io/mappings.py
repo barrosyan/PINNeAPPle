@@ -32,6 +32,10 @@ class CoordMapping:
     coord_transform: Dict[str, str] = field(default_factory=dict)
     # coord_transform values: "identity" | "seconds_since_start" | "deg2rad" | "minmax_-1_1"
     normalize_to_unit: bool = True
+    # d(normalized coord)/d(physical coord), populated by _apply_transform; used to
+    # chain-rule-correct autograd derivatives taken w.r.t. the normalized coordinates
+    # back to the physical units a PDE residual is written in (see derivative_scale()).
+    _deriv_scale: Dict[str, float] = field(default_factory=dict, repr=False)
 
     def _apply_transform(
         self, name: str, arr: np.ndarray, ref: Dict[str, np.ndarray]
@@ -48,13 +52,32 @@ class CoordMapping:
         else:
             out = arr.astype(np.float64)
 
+        scale = 1.0
         if self.normalize_to_unit:
             # min-max to [-1,1] (safe and common for PINNs)
             mn = np.nanmin(out)
             mx = np.nanmax(out)
             if np.isfinite(mn) and np.isfinite(mx) and mx > mn:
-                out = 2.0 * (out - mn) / (mx - mn) - 1.0
+                scale = 2.0 / (mx - mn)
+                out = scale * (out - mn) - 1.0
+        self._deriv_scale[name] = scale
         return out
+
+    def derivative_scale(self, name: str) -> float:
+        """d(normalized coord)/d(physical coord) for independent var `name`.
+
+        A PDE residual autograd-differentiates the network output w.r.t. the
+        normalized coordinates actually fed to the model. To get the derivative
+        w.r.t. the physical-unit coordinate a residual with physical coefficients
+        expects, multiply the raw autograd result by ``derivative_scale(name) **
+        order`` for an order-`order` derivative w.r.t. `name`. Defaults to 1.0
+        (no correction) until `make_coord_arrays` has populated it.
+        """
+        return self._deriv_scale.get(name, 1.0)
+
+    def derivative_scales(self) -> Dict[str, float]:
+        """Mapping {independent var -> derivative_scale(...)} for all ind_vars."""
+        return {v: self.derivative_scale(v) for v in self.ind_vars}
 
     def make_coord_arrays(
         self, ds: xr.Dataset, time0: Optional[np.datetime64] = None
@@ -126,6 +149,11 @@ class PINNMapping:
     def dependent_vars(self) -> List[str]:
         """Return list of dependent variable names."""
         return list(self.var.dep_vars)
+
+    def derivative_scales(self) -> Dict[str, float]:
+        """Chain-rule correction factors for autograd derivatives taken w.r.t.
+        the normalized coordinates; see CoordMapping.derivative_scale()."""
+        return self.coord.derivative_scales()
 
 
 def build_default_mapping_atmosphere(

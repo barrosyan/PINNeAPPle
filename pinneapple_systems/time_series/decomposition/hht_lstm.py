@@ -28,6 +28,20 @@ import torch
 # Internal: single-channel EMD + Hilbert state
 # ---------------------------------------------------------------------------
 
+def _is_oscillatory(imf: np.ndarray) -> bool:
+    """True if `imf` actually crosses zero enough to be a real IMF.
+
+    A monotonic (or nearly monotonic) trend has essentially no zero
+    crossings around its own mean; the Hilbert instantaneous frequency of
+    such a component has no physical meaning per the IMF definition of
+    Huang et al. (1998), so it must not be selected as a "dominant" IMF.
+    """
+    centered = imf - np.mean(imf)
+    signs = np.sign(centered)
+    zero_crossings = int(np.sum(np.diff(signs) != 0))
+    return zero_crossings >= 2
+
+
 class _ChannelHHT:
     """EMD decomposition and Hilbert-based extrapolation for one channel."""
 
@@ -83,8 +97,18 @@ class _ChannelHHT:
         except Exception:
             imfs = y_detrended[None, :]
 
+        # PyEMD always appends the non-oscillatory residual/trend as the
+        # final row so that sum(imfs) reconstructs the signal exactly; it
+        # is not a true IMF (after only a linear detrend it can still carry
+        # large residual energy) and must be excluded from Hilbert-based
+        # "dominant IMF" selection.
+        if len(imfs) > 1:
+            candidates = imfs[:-1]
+        else:
+            candidates = imfs
+
         # Select dominant IMFs by cumulative energy ratio
-        energies = np.array([float(np.sum(imf ** 2)) for imf in imfs])
+        energies = np.array([float(np.sum(imf ** 2)) for imf in candidates])
         total_energy = float(energies.sum())
         sorted_idx = np.argsort(energies)[::-1]
 
@@ -97,7 +121,9 @@ class _ChannelHHT:
         for idx in sorted_idx:
             if len(self._dominant_imfs) >= self.n_imfs:
                 break
-            imf = imfs[int(idx)]
+            imf = candidates[int(idx)]
+            if not _is_oscillatory(imf):
+                continue
             analytic = hilbert(imf)
             inst_amp = np.abs(analytic)
             inst_phase = np.unwrap(np.angle(analytic))

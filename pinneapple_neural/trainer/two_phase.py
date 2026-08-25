@@ -160,29 +160,54 @@ class TwoPhaseTrainer:
         if cfg.seed is not None:
             torch.manual_seed(cfg.seed)
 
-        # Phase 1 — supervised
-        print("[TwoPhaseTrainer] -- Phase 1: supervised ----------------------")
-        self._run_phase(
-            phase_id=1,
-            loader=supervised_loader,
-            loss_fn=self.supervised_loss_fn,
-            epochs=cfg.phase1_epochs,
-            lr=cfg.phase1_lr,
-            device=device,
-            extras=extras,
-        )
+        if cfg.combined:
+            # Phase 1 — supervised + physics, physics weight ramped over phase1_epochs
+            print("[TwoPhaseTrainer] -- Phase 1: combined (supervised + ramped physics) ------")
+            self._run_phase_combined(
+                phase_id=1,
+                supervised_loader=supervised_loader,
+                physics_loader=physics_loader,
+                epochs=cfg.phase1_epochs,
+                lr=cfg.phase1_lr,
+                device=device,
+                extras=extras,
+            )
 
-        # Phase 2 — physics
-        print("[TwoPhaseTrainer] -- Phase 2: physics --------------------------")
-        self._run_phase(
-            phase_id=2,
-            loader=physics_loader,
-            loss_fn=self.physics_loss_fn,
-            epochs=cfg.phase2_epochs,
-            lr=cfg.phase2_lr,
-            device=device,
-            extras=extras,
-        )
+            # Phase 2 — supervised + physics, physics weight held at physics_weight_end
+            print("[TwoPhaseTrainer] -- Phase 2: combined (physics_weight_end) ---------------")
+            self._run_phase_combined(
+                phase_id=2,
+                supervised_loader=supervised_loader,
+                physics_loader=physics_loader,
+                epochs=cfg.phase2_epochs,
+                lr=cfg.phase2_lr,
+                device=device,
+                extras=extras,
+            )
+        else:
+            # Phase 1 — supervised
+            print("[TwoPhaseTrainer] -- Phase 1: supervised ----------------------")
+            self._run_phase(
+                phase_id=1,
+                loader=supervised_loader,
+                loss_fn=self.supervised_loss_fn,
+                epochs=cfg.phase1_epochs,
+                lr=cfg.phase1_lr,
+                device=device,
+                extras=extras,
+            )
+
+            # Phase 2 — physics
+            print("[TwoPhaseTrainer] -- Phase 2: physics --------------------------")
+            self._run_phase(
+                phase_id=2,
+                loader=physics_loader,
+                loss_fn=self.physics_loss_fn,
+                epochs=cfg.phase2_epochs,
+                lr=cfg.phase2_lr,
+                device=device,
+                extras=extras,
+            )
 
         print("[TwoPhaseTrainer] -- Done --------------------------------------")
         return self
@@ -257,6 +282,93 @@ class TwoPhaseTrainer:
                     )
                 else:
                     print(f"{tag}  loss={avg_total:.4e}")
+
+    def _combined_physics_weight(self, epoch: int, phase1_epochs: int) -> float:
+        """Linear ramp physics_weight_start → physics_weight_end over Phase 1."""
+        cfg = self.cfg
+        if phase1_epochs <= 1:
+            return cfg.physics_weight_end
+        frac = min(max((epoch - 1) / (phase1_epochs - 1), 0.0), 1.0)
+        return cfg.physics_weight_start + frac * (cfg.physics_weight_end - cfg.physics_weight_start)
+
+    def _run_phase_combined(
+        self,
+        phase_id: int,
+        supervised_loader,
+        physics_loader,
+        epochs: int,
+        lr: float,
+        device: torch.device,
+        extras: Dict,
+    ) -> None:
+        """Weighted sum of supervised + physics loss (``cfg.combined=True``)."""
+        cfg = self.cfg
+        opt = self._make_optimizer(lr)
+        use_amp = cfg.amp and device.type == "cuda"
+        scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+
+        for epoch in range(1, epochs + 1):
+            self.model.train()
+            w_phys = (
+                self._combined_physics_weight(epoch, cfg.phase1_epochs)
+                if phase_id == 1
+                else cfg.physics_weight_end
+            )
+
+            epoch_total = 0.0
+            epoch_pde = 0.0
+            epoch_bc = 0.0
+            n_batches = 0
+
+            for sup_batch, phys_batch in zip(supervised_loader, physics_loader):
+                sup_batch = self._move_batch(sup_batch, device)
+                phys_batch = self._move_batch(phys_batch, device)
+                opt.zero_grad()
+
+                with torch.autocast(device_type=device.type, enabled=use_amp):
+                    sup_out = self.supervised_loss_fn(self.model, sup_batch, extras)
+                    phys_out = self.physics_loss_fn(self.model, phys_batch, extras)
+                sup_total, _ = self._parse_loss(sup_out)
+                phys_total, phys_rest = self._parse_loss(phys_out)
+
+                total = cfg.supervised_weight * sup_total + w_phys * phys_total
+
+                scaler.scale(total).backward()
+                scaler.unscale_(opt)
+                self._clip_grad()
+                scaler.step(opt)
+                scaler.update()
+
+                epoch_total += float(total.detach())
+                if "pde" in phys_rest:
+                    epoch_pde += float(phys_rest["pde"].detach())
+                if "bc" in phys_rest:
+                    epoch_bc += float(phys_rest["bc"].detach())
+                n_batches += 1
+
+            if n_batches == 0:
+                break
+
+            avg_total = epoch_total / n_batches
+            avg_pde   = epoch_pde   / n_batches
+            avg_bc    = epoch_bc    / n_batches
+
+            if phase_id == 1:
+                self.history.phase1_epochs.append(epoch)
+                self.history.phase1_loss.append(avg_total)
+            else:
+                self.history.phase2_epochs.append(epoch)
+                self.history.phase2_loss.append(avg_total)
+                self.history.phase2_pde_loss.append(avg_pde)
+                self.history.phase2_bc_loss.append(avg_bc)
+
+            if cfg.print_every > 0 and epoch % cfg.print_every == 0:
+                tag = f"  [P{phase_id} {epoch:>5}/{epochs}]"
+                print(
+                    f"{tag}  total={avg_total:.4e}  physics_weight={w_phys:.3f}"
+                    + (f"  pde={avg_pde:.4e}" if avg_pde else "")
+                    + (f"  bc={avg_bc:.4e}"  if avg_bc  else "")
+                )
 
 
 class UnnormModel(nn.Module):

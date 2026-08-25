@@ -6,6 +6,10 @@ industrial furnaces, refractories, and datacenter cooling.
 Each preset returns a ``ProblemSpec`` ready for use with the pinneapple
 training pipeline, data generation, and digital twin modules.
 
+Named regions (inlet, outlet, wall, ...) are resolved via ``selector_type="tag"``
+conditions — the caller's geometry/mesh pipeline is expected to supply
+``ctx["tag_masks"]`` for each tag referenced below.
+
 Domains
 -------
 Aerospace
@@ -38,11 +42,14 @@ Datacenter
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 from ..spec import PDETermSpec, ProblemSpec
-from ..conditions import DirichletBC, NeumannBC
+from ..conditions import DirichletBC, NeumannBC, InitialCondition
 from ..scales import ScaleSpec
+from ..environment_typing import CoordNames
 from .registry import register_preset
 from ._utils import _lame
 
@@ -53,6 +60,43 @@ from ._utils import _lame
 
 def _reynolds(rho: float, U: float, L: float, mu: float) -> float:
     return rho * U * L / mu
+
+
+def _const_value_fn(values: Dict[str, float]):
+    """Return a value_fn emitting the constant values (in dict order) for every selected point."""
+    vals = [float(v) for v in values.values()]
+
+    def _fn(X: np.ndarray, ctx: Dict[str, Any], _vals=vals) -> np.ndarray:
+        out = np.zeros((X.shape[0], len(_vals)), dtype=np.float32)
+        for i, v in enumerate(_vals):
+            out[:, i] = v
+        return out
+
+    return _fn
+
+
+def _tagged_dirichlet(tag: str, values: Dict[str, float], weight: float = 10.0):
+    """Dirichlet condition applied to points carrying ``tag`` in ctx["tag_masks"]."""
+    return DirichletBC(
+        name=tag,
+        fields=tuple(values.keys()),
+        selector_type="tag",
+        selector={"tag": tag},
+        value_fn=_const_value_fn(values),
+        weight=weight,
+    )
+
+
+def _tagged_neumann(tag: str, values: Dict[str, float], weight: float = 5.0):
+    """Neumann condition applied to points carrying ``tag`` in ctx["tag_masks"]."""
+    return NeumannBC(
+        name=tag,
+        fields=tuple(values.keys()),
+        selector_type="tag",
+        selector={"tag": tag},
+        value_fn=_const_value_fn(values),
+        weight=weight,
+    )
 
 
 # ===========================================================================
@@ -85,12 +129,17 @@ def rocket_nozzle_cfd(
     exit_radius   : nozzle exit radius (m)
     nozzle_length : axial length of nozzle (m)
     """
+    coords: CoordNames = ("r", "z")
+    fields = ("rho", "u", "v", "p", "T")
+
     a_exit = math.pi * exit_radius ** 2
     a_throat = math.pi * throat_radius ** 2
     area_ratio = a_exit / a_throat
 
     pde = PDETermSpec(
         kind="compressible_euler_axisymmetric",
+        fields=fields,
+        coords=coords,
         params={
             "gamma": gamma,
             "R_gas": R_gas,
@@ -100,24 +149,28 @@ def rocket_nozzle_cfd(
 
     p_exit = p_inlet * (2 / (gamma + 1)) ** (gamma / (gamma - 1))
 
+    conditions = (
+        _tagged_dirichlet("inlet", {"p": p_inlet, "T": T_inlet}, weight=20.0),
+        _tagged_neumann("outlet", {"p": 0.0}, weight=5.0),
+        _tagged_dirichlet("wall", {"u": 0.0, "v": 0.0}, weight=20.0),  # no-slip on wall
+        _tagged_neumann("axis", {"v": 0.0}, weight=5.0),               # symmetry axis: zero radial vel
+    )
+
     return ProblemSpec(
+        name="rocket_nozzle_cfd",
         problem_id="rocket_nozzle_cfd",
+        dim=2,
+        coords=coords,
+        fields=fields,
         pde=pde,
-        fields=("rho", "u", "v", "p", "T"),
-        coord_names=("r", "z"),
-        conditions={
-            "inlet": DirichletBC({"p": p_inlet, "T": T_inlet}),
-            "outlet": NeumannBC({"p": 0.0}),
-            "wall": DirichletBC({"u": 0.0, "v": 0.0}),  # no-slip on wall
-            "axis": NeumannBC({"v": 0.0}),               # symmetry axis: zero radial vel
-        },
+        conditions=conditions,
         domain_bounds={"r": (0.0, exit_radius * 1.1), "z": (0.0, nozzle_length)},
         solver_spec={
             "name": "openfoam",
             "solver": "rhoCentralFoam",
             "mesh": "structured",
         },
-        scales=ScaleSpec(length=nozzle_length, velocity=math.sqrt(gamma * R_gas * T_inlet)),
+        scales=ScaleSpec(L=nozzle_length, U=math.sqrt(gamma * R_gas * T_inlet)),
         meta={
             "description": "Compressible axisymmetric rocket nozzle flow",
             "throat_radius": throat_radius,
@@ -147,21 +200,32 @@ def rocket_structural(
     PDE: thermoelasticity (linear).
     Fields: ux, uy, T.
     """
+    coords: CoordNames = ("x", "y")
+    fields = ("ux", "uy", "T")
     lam, mu = _lame(E, nu)
+
+    pde = PDETermSpec(
+        kind="thermoelasticity_2d",
+        fields=fields,
+        coords=coords,
+        params={"E": E, "nu": nu, "alpha_T": alpha_T, "lam": lam, "mu": mu},
+    )
+
+    conditions = (
+        _tagged_neumann("inner_wall", {"p_normal": p_internal}, weight=10.0),
+        _tagged_dirichlet("outer_wall", {"ux": 0.0, "uy": 0.0}, weight=20.0),
+        _tagged_dirichlet("T_inner", {"T": T_inner}, weight=20.0),
+        _tagged_dirichlet("T_outer", {"T": T_outer}, weight=20.0),
+    )
+
     return ProblemSpec(
+        name="rocket_structural",
         problem_id="rocket_structural",
-        pde=PDETermSpec(
-            kind="thermoelasticity_2d",
-            params={"E": E, "nu": nu, "alpha_T": alpha_T, "lam": lam, "mu": mu},
-        ),
-        fields=("ux", "uy", "T"),
-        coord_names=("x", "y"),
-        conditions={
-            "inner_wall": NeumannBC({"p_normal": p_internal}),
-            "outer_wall": DirichletBC({"ux": 0.0, "uy": 0.0}),
-            "T_inner": DirichletBC({"T": T_inner}),
-            "T_outer": DirichletBC({"T": T_outer}),
-        },
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (-outer_radius, outer_radius), "y": (-outer_radius, outer_radius)},
         solver_spec={"name": "fenics", "formulation": "thermoelasticity_plane_strain"},
         meta={
@@ -193,26 +257,37 @@ def aircraft_wing_aerodynamics(
     Fields: u, v, p
     Regions: farfield, airfoil_surface, wake_outlet
     """
+    coords: CoordNames = ("x", "y")
+    fields = ("u", "v", "p")
+
+    pde = PDETermSpec(
+        kind="incompressible_navier_stokes_2d",
+        fields=fields,
+        coords=coords,
+        params={"nu": nu_air, "Re": Re},
+    )
+
+    conditions = (
+        _tagged_dirichlet("farfield_inlet", {
+            "u": U_inf * math.cos(math.radians(alpha_deg)),
+            "v": U_inf * math.sin(math.radians(alpha_deg)),
+        }, weight=20.0),
+        _tagged_neumann("farfield_outlet", {"p": 0.0}, weight=5.0),
+        _tagged_dirichlet("airfoil", {"u": 0.0, "v": 0.0}, weight=20.0),   # no-slip
+        _tagged_neumann("wake_outlet", {"u": 0.0, "v": 0.0}, weight=5.0),
+    )
+
     return ProblemSpec(
+        name="aircraft_wing_aerodynamics",
         problem_id="aircraft_wing_aerodynamics",
-        pde=PDETermSpec(
-            kind="incompressible_navier_stokes_2d",
-            params={"nu": nu_air, "Re": Re},
-        ),
-        fields=("u", "v", "p"),
-        coord_names=("x", "y"),
-        conditions={
-            "farfield_inlet": DirichletBC({
-                "u": U_inf * math.cos(math.radians(alpha_deg)),
-                "v": U_inf * math.sin(math.radians(alpha_deg)),
-            }),
-            "farfield_outlet": NeumannBC({"p": 0.0}),
-            "airfoil": DirichletBC({"u": 0.0, "v": 0.0}),   # no-slip
-            "wake_outlet": NeumannBC({"u": 0.0, "v": 0.0}),
-        },
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (-5 * chord, 15 * chord), "y": (-5 * chord, 5 * chord)},
         solver_spec={"name": "openfoam", "solver": "simpleFoam", "turbulence": "kOmegaSST"},
-        scales=ScaleSpec(length=chord, velocity=U_inf),
+        scales=ScaleSpec(L=chord, U=U_inf),
         meta={
             "description": "2D airfoil aerodynamics",
             "alpha_deg": alpha_deg,
@@ -237,20 +312,31 @@ def aircraft_wing_structural(
     Material: Aluminium alloy (default E=70 GPa, nu=0.33).
     Fields: ux (spanwise displacement), uy (vertical displacement).
     """
+    coords: CoordNames = ("x", "y")
+    fields = ("ux", "uy")
     lam, mu = _lame(E, nu)
+
+    pde = PDETermSpec(
+        kind="linear_elasticity_plane_stress",
+        fields=fields,
+        coords=coords,
+        params={"E": E, "nu": nu, "lam": lam, "mu": mu},
+    )
+
+    conditions = (
+        _tagged_dirichlet("root_fixed", {"ux": 0.0, "uy": 0.0}, weight=20.0),
+        _tagged_neumann("tip_load", {"ty": -lift_load}, weight=10.0),
+        _tagged_neumann("free_surface", {"tx": 0.0, "ty": 0.0}, weight=5.0),
+    )
+
     return ProblemSpec(
+        name="aircraft_wing_structural",
         problem_id="aircraft_wing_structural",
-        pde=PDETermSpec(
-            kind="linear_elasticity_plane_stress",
-            params={"E": E, "nu": nu, "lam": lam, "mu": mu},
-        ),
-        fields=("ux", "uy"),
-        coord_names=("x", "y"),
-        conditions={
-            "root_fixed": DirichletBC({"ux": 0.0, "uy": 0.0}),
-            "tip_load": NeumannBC({"ty": -lift_load}),
-            "free_surface": NeumannBC({"tx": 0.0, "ty": 0.0}),
-        },
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (0.0, span), "y": (-thickness / 2, thickness / 2)},
         solver_spec={"name": "fenics", "formulation": "plane_stress"},
         meta={
@@ -283,25 +369,37 @@ def car_external_aero(
 
     Fields: u, v, p
     """
+    coords: CoordNames = ("x", "y")
+    fields = ("u", "v", "p")
+
     Re = _reynolds(rho, U_inf, car_length, nu_air * rho)
+
+    pde = PDETermSpec(
+        kind="incompressible_navier_stokes_2d",
+        fields=fields,
+        coords=coords,
+        params={"nu": nu_air, "Re": Re},
+    )
+
+    conditions = (
+        _tagged_dirichlet("inlet", {"u": U_inf, "v": 0.0}, weight=20.0),
+        _tagged_neumann("outlet", {"p": 0.0}, weight=5.0),
+        _tagged_dirichlet("ground", {"u": U_inf, "v": 0.0}, weight=20.0),  # moving ground
+        _tagged_dirichlet("car_body", {"u": 0.0, "v": 0.0}, weight=20.0),
+        _tagged_neumann("top", {"v": 0.0}, weight=5.0),
+    )
+
     return ProblemSpec(
+        name="car_external_aero",
         problem_id="car_external_aero",
-        pde=PDETermSpec(
-            kind="incompressible_navier_stokes_2d",
-            params={"nu": nu_air, "Re": Re},
-        ),
-        fields=("u", "v", "p"),
-        coord_names=("x", "y"),
-        conditions={
-            "inlet": DirichletBC({"u": U_inf, "v": 0.0}),
-            "outlet": NeumannBC({"p": 0.0}),
-            "ground": DirichletBC({"u": U_inf, "v": 0.0}),  # moving ground
-            "car_body": DirichletBC({"u": 0.0, "v": 0.0}),
-            "top": NeumannBC({"v": 0.0}),
-        },
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (-2 * car_length, 5 * car_length), "y": (0.0, 5 * car_height)},
         solver_spec={"name": "openfoam", "solver": "simpleFoam", "turbulence": "kEpsilon"},
-        scales=ScaleSpec(length=car_length, velocity=U_inf),
+        scales=ScaleSpec(L=car_length, U=U_inf),
         meta={
             "description": "2D car external aerodynamics",
             "Re": Re,
@@ -330,25 +428,46 @@ def car_brake_thermal(
     Fields: T (temperature)
     Regions: friction_surface (heat flux), cooling_surface (convection)
     """
+    coords: CoordNames = ("r", "z", "t")
+    fields = ("T",)
+
     alpha = k_disc / (rho_disc * cp_disc)
-    return ProblemSpec(
-        problem_id="car_brake_thermal",
-        pde=PDETermSpec(
-            kind="heat_equation_transient",
-            params={
-                "k": k_disc,
-                "rho": rho_disc,
-                "cp": cp_disc,
-                "alpha": alpha,
-            },
-        ),
-        fields=("T",),
-        coord_names=("r", "z", "t"),
-        conditions={
-            "friction_surface": NeumannBC({"q_heat": q_friction}),
-            "cooling_surface": NeumannBC({"h": h_conv, "T_ref": T_ambient}),
-            "initial": DirichletBC({"T": T_ambient}),
+
+    pde = PDETermSpec(
+        kind="heat_equation_transient",
+        fields=fields,
+        coords=coords,
+        params={
+            "k": k_disc,
+            "rho": rho_disc,
+            "cp": cp_disc,
+            "alpha": alpha,
         },
+    )
+
+    initial = InitialCondition(
+        name="initial",
+        fields=("T",),
+        selector_type="callable",
+        selector=lambda X, ctx: np.isclose(X[:, 2], 0.0),
+        value_fn=lambda X, ctx, _t=float(T_ambient): np.full((X.shape[0], 1), _t, dtype=np.float32),
+        weight=10.0,
+    )
+
+    conditions = (
+        _tagged_neumann("friction_surface", {"q_heat": q_friction}, weight=10.0),
+        _tagged_neumann("cooling_surface", {"h": h_conv, "T_ref": T_ambient}, weight=5.0),
+        initial,
+    )
+
+    return ProblemSpec(
+        name="car_brake_thermal",
+        problem_id="car_brake_thermal",
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={
             "r": (0.0, disc_radius),
             "z": (0.0, disc_thickness),
@@ -379,20 +498,31 @@ def car_suspension_fatigue(
     PDE: linear elasticity plane stress.
     Fields: ux, uy (displacements) → von Mises stress for fatigue.
     """
+    coords: CoordNames = ("x", "y")
+    fields = ("ux", "uy")
     lam, mu = _lame(E, nu)
+
+    pde = PDETermSpec(
+        kind="linear_elasticity_plane_stress",
+        fields=fields,
+        coords=coords,
+        params={"E": E, "nu": nu, "lam": lam, "mu": mu},
+    )
+
+    conditions = (
+        _tagged_dirichlet("mounting_fixed", {"ux": 0.0, "uy": 0.0}, weight=20.0),
+        _tagged_neumann("wheel_hub_load", {"ty": -F_vertical, "tx": F_lateral}, weight=10.0),
+        _tagged_neumann("free_edges", {"tx": 0.0, "ty": 0.0}, weight=5.0),
+    )
+
     return ProblemSpec(
+        name="car_suspension_fatigue",
         problem_id="car_suspension_fatigue",
-        pde=PDETermSpec(
-            kind="linear_elasticity_plane_stress",
-            params={"E": E, "nu": nu, "lam": lam, "mu": mu},
-        ),
-        fields=("ux", "uy"),
-        coord_names=("x", "y"),
-        conditions={
-            "mounting_fixed": DirichletBC({"ux": 0.0, "uy": 0.0}),
-            "wheel_hub_load": NeumannBC({"ty": -F_vertical, "tx": F_lateral}),
-            "free_edges": NeumannBC({"tx": 0.0, "ty": 0.0}),
-        },
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (0.0, arm_length), "y": (-arm_width / 2, arm_width / 2)},
         solver_spec={"name": "fenics", "formulation": "plane_stress"},
         meta={
@@ -429,20 +559,32 @@ def cpu_heatsink_thermal(
     PDE: Laplace/Poisson for temperature (steady state).
     Fields: T
     """
+    coords: CoordNames = ("x", "y", "z")
+    fields = ("T",)
+
     q_flux = q_cpu / die_area  # W/m²
+
+    pde = PDETermSpec(
+        kind="heat_equation_steady",
+        fields=fields,
+        coords=coords,
+        params={"k": k_aluminium},
+    )
+
+    conditions = (
+        _tagged_neumann("cpu_base", {"q_heat": q_flux}, weight=10.0),
+        _tagged_neumann("fin_surfaces", {"h": h_fin, "T_ref": T_ambient}, weight=5.0),
+        _tagged_neumann("insulated_sides", {"q_heat": 0.0}, weight=5.0),
+    )
+
     return ProblemSpec(
+        name="cpu_heatsink_thermal",
         problem_id="cpu_heatsink_thermal",
-        pde=PDETermSpec(
-            kind="heat_equation_steady",
-            params={"k": k_aluminium},
-        ),
-        fields=("T",),
-        coord_names=("x", "y", "z"),
-        conditions={
-            "cpu_base": NeumannBC({"q_heat": q_flux}),
-            "fin_surfaces": NeumannBC({"h": h_fin, "T_ref": T_ambient}),
-            "insulated_sides": NeumannBC({"q_heat": 0.0}),
-        },
+        dim=3,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={
             "x": (0.0, heatsink_length),
             "y": (0.0, heatsink_width),
@@ -476,25 +618,36 @@ def pcb_thermal(
     Fields: T
     Hotspot temperatures are critical for reliability.
     """
+    coords: CoordNames = ("x", "y")
+    fields = ("T",)
+
     if q_components is None:
         q_components = {"cpu": 85.0, "gpu": 60.0, "vrm": 15.0}
 
     total_power = sum(q_components.values())
     q_flux_avg = total_power / (board_length * board_width)
 
+    pde = PDETermSpec(
+        kind="heat_equation_steady_anisotropic",
+        fields=fields,
+        coords=coords,
+        params={"k_x": k_pcb, "k_y": k_pcb, "k_z": k_z_pcb},
+    )
+
+    conditions = (
+        _tagged_neumann("component_hotspots", {"q_heat": q_flux_avg}, weight=10.0),
+        _tagged_neumann("board_surface", {"h": h_natural, "T_ref": T_ambient}, weight=5.0),
+        _tagged_neumann("board_edges", {"q_heat": 0.0}, weight=5.0),
+    )
+
     return ProblemSpec(
+        name="pcb_thermal",
         problem_id="pcb_thermal",
-        pde=PDETermSpec(
-            kind="heat_equation_steady_anisotropic",
-            params={"k_x": k_pcb, "k_y": k_pcb, "k_z": k_z_pcb},
-        ),
-        fields=("T",),
-        coord_names=("x", "y"),
-        conditions={
-            "component_hotspots": NeumannBC({"q_heat": q_flux_avg}),
-            "board_surface": NeumannBC({"h": h_natural, "T_ref": T_ambient}),
-            "board_edges": NeumannBC({"q_heat": 0.0}),
-        },
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (0.0, board_length), "y": (0.0, board_width)},
         solver_spec={"name": "fenics", "formulation": "steady_heat_anisotropic"},
         meta={
@@ -523,24 +676,35 @@ def fan_cooler_cfd(
     Rotating frame: steady incompressible NS with rotation source term.
     Fields: u_r (radial), u_theta (tangential), p.
     """
+    coords: CoordNames = ("x", "y")
+    fields = ("u", "v", "p")
+
     omega = 2 * math.pi * rpm / 60.0
     U_tip = omega * blade_radius
     Re = _reynolds(rho, U_tip, blade_radius, nu_air * rho)
 
+    pde = PDETermSpec(
+        kind="incompressible_navier_stokes_rotating_frame",
+        fields=fields,
+        coords=coords,
+        params={"nu": nu_air, "omega": omega, "Re": Re},
+    )
+
+    conditions = (
+        _tagged_dirichlet("inlet_eye", {"u": 0.0, "v": 0.0, "p": 0.0}, weight=20.0),
+        _tagged_neumann("outlet_periphery", {"p": 0.0}, weight=5.0),
+        _tagged_dirichlet("blade_wall", {"u": 0.0, "v": 0.0}, weight=20.0),
+        _tagged_dirichlet("hub_wall", {"u": 0.0, "v": 0.0}, weight=20.0),
+    )
+
     return ProblemSpec(
+        name="fan_cooler_cfd",
         problem_id="fan_cooler_cfd",
-        pde=PDETermSpec(
-            kind="incompressible_navier_stokes_rotating_frame",
-            params={"nu": nu_air, "omega": omega, "Re": Re},
-        ),
-        fields=("u", "v", "p"),
-        coord_names=("x", "y"),
-        conditions={
-            "inlet_eye": DirichletBC({"u": 0.0, "v": 0.0, "p": 0.0}),
-            "outlet_periphery": NeumannBC({"p": 0.0}),
-            "blade_wall": DirichletBC({"u": 0.0, "v": 0.0}),
-            "hub_wall": DirichletBC({"u": 0.0, "v": 0.0}),
-        },
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (-blade_radius, blade_radius), "y": (-blade_radius, blade_radius)},
         solver_spec={"name": "openfoam", "solver": "simpleFoam", "MRF": True},
         meta={
@@ -581,24 +745,35 @@ def industrial_furnace_thermal(
 
     Fields: T
     """
+    coords: CoordNames = ("x", "y", "z")
+    fields = ("T",)
+
+    pde = PDETermSpec(
+        kind="heat_equation_steady",
+        fields=fields,
+        coords=coords,
+        params={"k": k_refractory},
+    )
+
+    conditions = (
+        _tagged_neumann("hot_inner_surface", {
+            "h": h_hot_gas,
+            "T_ref": T_hot_gas,
+            "radiation_eps": eps_wall,
+            "radiation_sigma": sigma_SB,
+        }, weight=10.0),
+        _tagged_neumann("outer_surface", {"h": h_ambient, "T_ref": T_ambient}, weight=5.0),
+        _tagged_neumann("insulation_interface", {"k": k_insulation}, weight=5.0),
+    )
+
     return ProblemSpec(
+        name="industrial_furnace_thermal",
         problem_id="industrial_furnace_thermal",
-        pde=PDETermSpec(
-            kind="heat_equation_steady",
-            params={"k": k_refractory},
-        ),
-        fields=("T",),
-        coord_names=("x", "y", "z"),
-        conditions={
-            "hot_inner_surface": NeumannBC({
-                "h": h_hot_gas,
-                "T_ref": T_hot_gas,
-                "radiation_eps": eps_wall,
-                "radiation_sigma": sigma_SB,
-            }),
-            "outer_surface": NeumannBC({"h": h_ambient, "T_ref": T_ambient}),
-            "insulation_interface": NeumannBC({"k": k_insulation}),
-        },
+        dim=3,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={
             "x": (0.0, furnace_width),
             "y": (0.0, furnace_height),
@@ -632,6 +807,9 @@ def refractory_lining(
     PDE: 1D (in z) or 2D steady-state conduction.
     Fields: T
     """
+    coords: CoordNames = ("x", "z")
+    fields = ("T",)
+
     if layers is None:
         layers = [
             {"k": 1.8, "thickness": 0.1, "name": "working_lining"},
@@ -641,18 +819,26 @@ def refractory_lining(
 
     k_eff = total_thickness / sum(lay["thickness"] / lay["k"] for lay in layers)
 
+    pde = PDETermSpec(
+        kind="heat_equation_steady_multilayer",
+        fields=fields,
+        coords=coords,
+        params={"layers": layers, "k_eff": k_eff},
+    )
+
+    conditions = (
+        _tagged_dirichlet("hot_face", {"T": T_hot}, weight=20.0),
+        _tagged_dirichlet("cold_face", {"T": T_cold}, weight=20.0),
+    )
+
     return ProblemSpec(
+        name="refractory_lining",
         problem_id="refractory_lining",
-        pde=PDETermSpec(
-            kind="heat_equation_steady_multilayer",
-            params={"layers": layers, "k_eff": k_eff},
-        ),
-        fields=("T",),
-        coord_names=("x", "z"),
-        conditions={
-            "hot_face": DirichletBC({"T": T_hot}),
-            "cold_face": DirichletBC({"T": T_cold}),
-        },
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (0.0, 1.0), "z": (0.0, total_thickness)},
         solver_spec={"name": "fenics", "formulation": "steady_heat_multilayer"},
         meta={
@@ -683,23 +869,34 @@ def furnace_combustion_zone(
     PDE: Navier-Stokes + energy equation with source term Q.
     Fields: u, v, p, T
     """
-    return ProblemSpec(
-        problem_id="furnace_combustion_zone",
-        pde=PDETermSpec(
-            kind="navier_stokes_energy_2d",
-            params={
-                "nu": nu_flue,
-                "rho": rho_flue,
-                "Q_source": Q_combustion,
-            },
-        ),
-        fields=("u", "v", "p", "T"),
-        coord_names=("x", "y"),
-        conditions={
-            "fuel_inlet": DirichletBC({"u": U_inlet, "v": 0.0, "T": T_flame}),
-            "flue_outlet": NeumannBC({"p": 0.0}),
-            "refractory_wall": DirichletBC({"u": 0.0, "v": 0.0, "T": T_wall}),
+    coords: CoordNames = ("x", "y")
+    fields = ("u", "v", "p", "T")
+
+    pde = PDETermSpec(
+        kind="navier_stokes_energy_2d",
+        fields=fields,
+        coords=coords,
+        params={
+            "nu": nu_flue,
+            "rho": rho_flue,
+            "Q_source": Q_combustion,
         },
+    )
+
+    conditions = (
+        _tagged_dirichlet("fuel_inlet", {"u": U_inlet, "v": 0.0, "T": T_flame}, weight=20.0),
+        _tagged_neumann("flue_outlet", {"p": 0.0}, weight=5.0),
+        _tagged_dirichlet("refractory_wall", {"u": 0.0, "v": 0.0, "T": T_wall}, weight=20.0),
+    )
+
+    return ProblemSpec(
+        name="furnace_combustion_zone",
+        problem_id="furnace_combustion_zone",
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (0.0, furnace_length), "y": (0.0, furnace_height)},
         solver_spec={"name": "openfoam", "solver": "buoyantSimpleFoam", "radiation": "P1"},
         meta={
@@ -735,28 +932,39 @@ def datacenter_airflow_2d(
 
     This is the canonical datacenter digital twin problem.
     """
+    coords: CoordNames = ("x", "y")
+    fields = ("u", "v", "p", "T")
+
     Re = _reynolds(rho_air, U_cold_aisle, aisle_width, nu_air * rho_air)
     q_flux = Q_rack / (rack_height * rack_depth)
 
-    return ProblemSpec(
-        problem_id="datacenter_airflow_2d",
-        pde=PDETermSpec(
-            kind="incompressible_navier_stokes_energy_2d",
-            params={
-                "nu": nu_air,
-                "rho": rho_air,
-                "cp": cp_air,
-                "Re": Re,
-            },
-        ),
-        fields=("u", "v", "p", "T"),
-        coord_names=("x", "y"),
-        conditions={
-            "cold_aisle_inlet": DirichletBC({"u": U_cold_aisle, "v": 0.0, "T": T_cold_air}),
-            "hot_aisle_outlet": NeumannBC({"p": 0.0}),
-            "server_surfaces": NeumannBC({"q_heat": q_flux}),
-            "floor_ceiling": NeumannBC({"u": 0.0, "v": 0.0}),
+    pde = PDETermSpec(
+        kind="incompressible_navier_stokes_energy_2d",
+        fields=fields,
+        coords=coords,
+        params={
+            "nu": nu_air,
+            "rho": rho_air,
+            "cp": cp_air,
+            "Re": Re,
         },
+    )
+
+    conditions = (
+        _tagged_dirichlet("cold_aisle_inlet", {"u": U_cold_aisle, "v": 0.0, "T": T_cold_air}, weight=20.0),
+        _tagged_neumann("hot_aisle_outlet", {"p": 0.0}, weight=5.0),
+        _tagged_neumann("server_surfaces", {"q_heat": q_flux}, weight=10.0),
+        _tagged_neumann("floor_ceiling", {"u": 0.0, "v": 0.0}, weight=5.0),
+    )
+
+    return ProblemSpec(
+        name="datacenter_airflow_2d",
+        problem_id="datacenter_airflow_2d",
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (0.0, n_racks * (rack_depth + aisle_width)), "y": (0.0, rack_height)},
         solver_spec={"name": "openfoam", "solver": "buoyantSimpleFoam"},
         meta={
@@ -789,24 +997,35 @@ def datacenter_server_thermal(
     Models the thermal distribution across a server 1U board.
     Fields: T (temperature map of the board).
     """
+    coords: CoordNames = ("x", "y")
+    fields = ("T",)
+
     total_Q = Q_cpu + Q_gpu + Q_ram
     q_avg = total_Q / (server_length * server_width)
 
+    pde = PDETermSpec(
+        kind="heat_equation_steady",
+        fields=fields,
+        coords=coords,
+        params={"k": k_board},
+    )
+
+    conditions = (
+        _tagged_neumann("cpu_zone", {"q_heat": Q_cpu / (0.04 * 0.04)}, weight=10.0),   # ~4cm die
+        _tagged_neumann("gpu_zone", {"q_heat": Q_gpu / (0.06 * 0.06)}, weight=10.0),
+        _tagged_neumann("ram_zone", {"q_heat": Q_ram / (0.1 * 0.01)}, weight=10.0),
+        _tagged_neumann("board_surface", {"h": h_forced, "T_ref": T_inlet_air}, weight=5.0),
+        _tagged_neumann("board_edges", {"q_heat": 0.0}, weight=5.0),
+    )
+
     return ProblemSpec(
+        name="datacenter_server_thermal",
         problem_id="datacenter_server_thermal",
-        pde=PDETermSpec(
-            kind="heat_equation_steady",
-            params={"k": k_board},
-        ),
-        fields=("T",),
-        coord_names=("x", "y"),
-        conditions={
-            "cpu_zone": NeumannBC({"q_heat": Q_cpu / (0.04 * 0.04)}),   # ~4cm die
-            "gpu_zone": NeumannBC({"q_heat": Q_gpu / (0.06 * 0.06)}),
-            "ram_zone": NeumannBC({"q_heat": Q_ram / (0.1 * 0.01)}),
-            "board_surface": NeumannBC({"h": h_forced, "T_ref": T_inlet_air}),
-            "board_edges": NeumannBC({"q_heat": 0.0}),
-        },
+        dim=2,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={"x": (0.0, server_length), "y": (0.0, server_width)},
         solver_spec={"name": "fenics", "formulation": "steady_heat"},
         meta={
@@ -839,30 +1058,41 @@ def datacenter_cfd_3d(
     Large-scale problem — typically solved with OpenFOAM.
     Fields: u, v, w, p, T
     """
+    coords: CoordNames = ("x", "y", "z")
+    fields = ("u", "v", "w", "p", "T")
+
     total_load = Q_per_rack * n_racks
     Re = _reynolds(rho_air, U_supply, room_height, nu_air * rho_air)
 
+    pde = PDETermSpec(
+        kind="incompressible_navier_stokes_energy_3d",
+        fields=fields,
+        coords=coords,
+        params={"nu": nu_air, "rho": rho_air, "cp": cp_air, "Re": Re},
+    )
+
+    conditions = (
+        _tagged_dirichlet("crac_supply", {"u": 0.0, "v": U_supply, "w": 0.0, "T": T_supply}, weight=20.0),
+        _tagged_neumann("return_air", {"p": 0.0}, weight=5.0),
+        _tagged_neumann("rack_surfaces", {"q_heat": Q_per_rack / (2.0 * 0.6 * 2.0)}, weight=10.0),
+        _tagged_dirichlet("room_walls", {"u": 0.0, "v": 0.0, "w": 0.0}, weight=20.0),
+    )
+
     return ProblemSpec(
+        name="datacenter_cfd_3d",
         problem_id="datacenter_cfd_3d",
-        pde=PDETermSpec(
-            kind="incompressible_navier_stokes_energy_3d",
-            params={"nu": nu_air, "rho": rho_air, "cp": cp_air, "Re": Re},
-        ),
-        fields=("u", "v", "w", "p", "T"),
-        coord_names=("x", "y", "z"),
-        conditions={
-            "crac_supply": DirichletBC({"u": 0.0, "v": U_supply, "w": 0.0, "T": T_supply}),
-            "return_air": NeumannBC({"p": 0.0}),
-            "rack_surfaces": NeumannBC({"q_heat": Q_per_rack / (2.0 * 0.6 * 2.0)}),
-            "room_walls": DirichletBC({"u": 0.0, "v": 0.0, "w": 0.0}),
-        },
+        dim=3,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
         domain_bounds={
             "x": (0.0, room_length),
             "y": (0.0, room_height),
             "z": (0.0, room_width),
         },
         solver_spec={"name": "openfoam", "solver": "buoyantSimpleFoam", "turbulence": "kEpsilon"},
-        scales=ScaleSpec(length=room_height, velocity=U_supply),
+        scales=ScaleSpec(L=room_height, U=U_supply),
         meta={
             "description": "3D datacenter room CFD",
             "total_IT_load_kW": total_load / 1000,

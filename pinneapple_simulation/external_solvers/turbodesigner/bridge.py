@@ -58,7 +58,7 @@ class TurboDesignerConfig:
     rpm                     : shaft speed (rev/min)
     inlet_total_pressure    : Pa
     inlet_total_temperature : K
-    isentropic_efficiency   : stage polytropic efficiency (0–1)
+    isentropic_efficiency   : stage isentropic efficiency (0–1)
     hub_to_tip_ratio        : inlet hub-to-tip radius ratio
     axial_velocity          : mean axial velocity (m/s)
     gamma                   : specific heat ratio (default 1.4 for air)
@@ -125,8 +125,8 @@ class TurboDesignerConfig:
 def _analytical_meanline(cfg: TurboDesignerConfig) -> Dict[str, np.ndarray]:
     """Pure-Python mean-line calculation used when turbodesigner is not installed.
 
-    Computes stage-by-stage total temperature, total pressure, density and
-    axial velocity along the normalised streamwise coordinate s ∈ [0, 1].
+    Computes stage-by-stage total temperature, total pressure, static density
+    and axial velocity along the normalised streamwise coordinate s ∈ [0, 1].
     Returns one station per stage boundary (num_stages + 1 stations).
     """
     gamma = cfg.gamma
@@ -146,9 +146,19 @@ def _analytical_meanline(cfg: TurboDesignerConfig) -> Dict[str, np.ndarray]:
     T_stations = np.array([T_t0 + i * delta_T for i in range(n + 1)], dtype=np.float64)
     # Isentropic pressure from temperature ratio
     p_stations = p_t0 * ((T_stations / T_t0) * eta + (1 - eta)) ** (gamma / (gamma - 1.0))
-    rho_stations = p_stations / (R * T_stations)
-    # Axial velocity scales with 1/rho (constant mass flux, approximate annulus)
-    u_stations = cfg.axial_velocity * (rho_stations[0] / rho_stations)
+    # Mass-flux conservation (rho_static * u = const, approximate constant-area
+    # annulus) uses *static* density, not stagnation density -- at the Mach
+    # numbers typical of axial compressors the two differ by several percent.
+    # T_static = T_t - u^2/(2 c_p) depends on u itself, so iterate to a
+    # self-consistent (rho_static, u) pair from a stagnation-density seed.
+    rho_t_stations = p_stations / (R * T_stations)
+    rho_stations = rho_t_stations
+    u_stations = cfg.axial_velocity * (rho_t_stations[0] / rho_t_stations)
+    for _ in range(6):
+        T_static = T_stations - u_stations ** 2 / (2.0 * c_p)
+        p_static = p_stations * (T_static / T_stations) ** (gamma / (gamma - 1.0))
+        rho_stations = p_static / (R * T_static)
+        u_stations = cfg.axial_velocity * (rho_stations[0] / rho_stations)
     s_stations = np.linspace(0.0, 1.0, n + 1, dtype=np.float64)
 
     return {
@@ -292,15 +302,16 @@ def turbodesigner_to_upd(cfg: TurboDesignerConfig, **run_kwargs):
     }
 
     return PhysicalSample(
-        fields=fields,
-        coords={"s": data["s"]},
-        meta={
-            "upd": {"version": "0.1", "source": "turbodesigner"},
-            "provenance": {
-                "num_stages": cfg.num_stages,
-                "pressure_ratio": cfg.pressure_ratio,
-                "rpm": cfg.rpm,
-            },
+        state=fields,
+        domain={"type": "grid", "coords": {"s": data["s"]}},
+        provenance={
+            "version": "0.1",
+            "source": "turbodesigner",
+            "num_stages": cfg.num_stages,
+            "pressure_ratio": cfg.pressure_ratio,
+            "rpm": cfg.rpm,
+        },
+        schema={
             "units": {
                 "T_t": "K",
                 "p_t": "Pa",

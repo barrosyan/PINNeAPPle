@@ -7,7 +7,7 @@ every quantity is differentiable via autograd:
    integration; suitable for robot learning and PINN-coupling experiments.
 
 2. **Material Point Method (MPM)** – MLS-MPM for elastic solids, viscous
-   fluids, and snow/sand with Drucker-Prager plasticity.
+   fluids, and snow with critical-stretch plasticity (Stomakhin et al. 2013).
 
 3. **Particle-based simulations** – Smoothed Particle Hydrodynamics (SPH)
    for free-surface flows.

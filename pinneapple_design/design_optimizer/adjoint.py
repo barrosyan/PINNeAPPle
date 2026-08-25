@@ -128,6 +128,97 @@ class ShapeParametrization:
 
 
 # ---------------------------------------------------------------------------
+# Matrix-free Krylov solver (used by ``compute_adjoint``)
+# ---------------------------------------------------------------------------
+
+
+def _gmres(
+    matvec: Callable[[torch.Tensor], torch.Tensor],
+    b: torch.Tensor,
+    tol: float = 1e-6,
+    max_iter: int = 50,
+) -> torch.Tensor:
+    """Unrestarted, matrix-free GMRES solving ``A x = b``.
+
+    ``matvec(v)`` must return ``A @ v`` for a tensor *v* shaped like *b*;
+    ``A`` (e.g. ``(dR/du)^T``) is never assembled explicitly, only applied
+    via Jacobian/vector products.
+
+    Returns
+    -------
+    torch.Tensor
+        Approximate solution ``x``, same shape as *b*.
+    """
+    shape = b.shape
+    b_flat = b.reshape(-1).detach()
+    n = b_flat.numel()
+    max_iter = max(1, min(max_iter, n))
+
+    beta = torch.linalg.norm(b_flat)
+    if beta < tol:
+        return torch.zeros_like(b)
+
+    def mv(v_flat: torch.Tensor) -> torch.Tensor:
+        return matvec(v_flat.reshape(shape)).reshape(-1).detach()
+
+    Q = [b_flat / beta]
+    H = torch.zeros(max_iter + 1, max_iter, dtype=b_flat.dtype, device=b_flat.device)
+    x_flat = torch.zeros_like(b_flat)
+
+    for k in range(max_iter):
+        v = mv(Q[k])
+        for j in range(k + 1):
+            H[j, k] = torch.dot(Q[j], v)
+            v = v - H[j, k] * Q[j]
+        H[k + 1, k] = torch.linalg.norm(v)
+        last = k == max_iter - 1
+        if H[k + 1, k] > 1e-14 and not last:
+            Q.append(v / H[k + 1, k])
+        else:
+            Q.append(torch.zeros_like(v))
+
+        e1 = torch.zeros(k + 2, dtype=b_flat.dtype, device=b_flat.device)
+        e1[0] = beta
+        H_k = H[: k + 2, : k + 1]
+        y = torch.linalg.lstsq(H_k, e1.unsqueeze(1)).solution.squeeze(1)
+        resid = torch.linalg.norm(e1 - H_k @ y)
+
+        if resid < tol * beta or last:
+            Q_k = torch.stack(Q[: k + 1], dim=1)
+            x_flat = Q_k @ y
+            break
+
+    return x_flat.reshape(shape)
+
+
+class _CachedForward:
+    """Model wrapper that returns a single cached forward-pass tensor.
+
+    ``objective_fn`` and ``pde_residual_fn`` only receive ``(model, x_col)``
+    and evaluate ``u = model(x_col)`` themselves, so a ``u`` computed
+    separately by the caller is never actually part of their autograd
+    graph -- a fresh call is a distinct graph node, even though it is
+    numerically identical.  Wrapping the model so that calling it again
+    with the *same* ``x_col`` tensor returns the already-computed ``u``
+    keeps everything on one graph, so Jacobian-vector probes against
+    ``u`` (``dJ/du``, ``dR/du``) actually find it as an ancestor.
+    """
+
+    def __init__(self, model: nn.Module, x_ref: torch.Tensor, u_ref: torch.Tensor) -> None:
+        self._model = model
+        self._x_ref = x_ref
+        self._u_ref = u_ref
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        if x is self._x_ref:
+            return self._u_ref
+        return self._model(x)
+
+    def __getattr__(self, name):
+        return getattr(self._model, name)
+
+
+# ---------------------------------------------------------------------------
 # Continuous adjoint solver
 # ---------------------------------------------------------------------------
 
@@ -140,11 +231,21 @@ class ContinuousAdjointSolver:
     - **Objective**     – scalar ``J(u, x_col)``
     - **PDE residual**  – ``R(u, x_col) ≈ 0``
 
-    Computes ``dJ/d(shape)`` via the adjoint identity:
+    ``compute_adjoint`` solves the adjoint equation
 
-        dJ/ds = -lambda^T · dR/ds,   (dR/du)^T lambda = dJ/du
+        (dR/du)^T lambda = dJ/du
 
-    using PyTorch's ``torch.autograd.grad`` for all derivatives.
+    with a matrix-free Krylov (GMRES) solve driven by
+    ``torch.autograd.grad`` Jacobian-vector products -- useful when ``u``
+    is the solution of a primal solve that is *not* differentiated through
+    directly (e.g. a black-box CFD solver).
+
+    ``shape_sensitivity`` (used by ``optimize``) does **not** go through
+    the adjoint equation at all: in this module ``u = model(x_deformed(s))``
+    is a direct, fully differentiable forward pass, so ``dJ/ds`` is simply
+    the total derivative obtained by backpropagating through
+    ``deform_mesh`` and the model -- exact, and cheaper than any adjoint
+    correction.
 
     Parameters
     ----------
@@ -176,37 +277,72 @@ class ContinuousAdjointSolver:
         self,
         x_col: torch.Tensor,
         shape_params: ShapeParametrization,
+        tol: float = 1e-6,
+        max_iter: int = 50,
     ) -> torch.Tensor:
         """Compute the adjoint variable ``lambda`` at *x_col*.
 
-        Uses the implicit function theorem via ``torch.autograd.grad``.
+        Solves ``(dR/du)^T lambda = dJ/du`` with a matrix-free GMRES
+        Krylov solve: both the right-hand side ``dJ/du`` and the
+        ``(dR/du)^T v`` Jacobian-vector products used by GMRES are
+        evaluated with ``torch.autograd.grad`` -- the Jacobian ``dR/du``
+        is never assembled explicitly.
 
         Strategy
         --------
         1. Evaluate ``u = model(x_col)`` with ``requires_grad``.
         2. Compute ``R(u, x_col)`` and ``J(u, x_col)``.
-        3. Solve (approximately) ``(dR/du)^T lambda = dJ/du`` by computing
-           ``dJ/du`` directly (since we cannot form the full Jacobian cheaply,
-           we return ``dJ/du`` as the adjoint approximation for small problems).
-
-        For large-scale use, replace with a Krylov solve or adjoint PINN.
+        3. Compute ``dJ/du`` via ``torch.autograd.grad``.
+        4. If ``R`` is differentiably connected to ``u`` (i.e. a
+           vector-Jacobian product against ``u`` is obtainable), solve
+           ``(dR/du)^T lambda = dJ/du`` with GMRES. Otherwise (``R`` was
+           produced independently of ``u``, so ``dR/du`` cannot be probed)
+           fall back to ``lambda = dJ/du``, i.e. the ``dR/du = I``
+           approximation.
 
         Returns
         -------
         torch.Tensor
-            Adjoint variable approximation, shape matching ``u``.
+            Adjoint variable, shape matching ``u``.
         """
         x_col = x_col.detach().requires_grad_(True)
         u = self.primal(x_col)
+        # objective_fn / pde_residual_fn re-evaluate ``model(x_col)``
+        # internally; route them through the cached forward pass so the
+        # probes below see ``u`` on their graph instead of a disconnected
+        # duplicate.
+        cached_model = _CachedForward(self.primal, x_col, u)
 
-        # dJ/du
-        J = self.objective(self.primal, x_col)
+        J = self.objective(cached_model, x_col)
         dJ_du = torch.autograd.grad(J, u, retain_graph=True,
                                     create_graph=False,
                                     allow_unused=True)[0]
         if dJ_du is None:
-            dJ_du = torch.zeros_like(u)
-        return dJ_du  # approximation of lambda
+            return torch.zeros_like(u)
+
+        R = self.pde_res_fn(cached_model, x_col)
+        if R is None or R.shape != u.shape or not R.requires_grad:
+            return dJ_du
+
+        def rmatvec(v: torch.Tensor) -> Optional[torch.Tensor]:
+            return torch.autograd.grad(
+                R, u, grad_outputs=v, retain_graph=True,
+                create_graph=False, allow_unused=True,
+            )[0]
+
+        probe = rmatvec(torch.ones_like(u))
+        if probe is None:
+            # R was recomputed from x_col independently of this ``u``
+            # (no edge back to it in the autograd graph) -- dR/du cannot
+            # be probed, so fall back to the dR/du = I approximation.
+            return dJ_du
+
+        def rmatvec_safe(v: torch.Tensor) -> torch.Tensor:
+            out = rmatvec(v)
+            return torch.zeros_like(v) if out is None else out
+
+        lam = _gmres(rmatvec_safe, dJ_du, tol=tol, max_iter=max_iter)
+        return lam
 
     def shape_sensitivity(
         self,
@@ -215,8 +351,12 @@ class ContinuousAdjointSolver:
     ) -> torch.Tensor:
         """Compute the shape sensitivity ``dJ/d(control_points)``.
 
-        Uses the adjoint identity:
-        ``dJ/ds = dJ/ds|_fixed_u - lambda^T · dR/ds``
+        ``u = model(x_deformed(control_points))`` is a direct, fully
+        differentiable forward pass through ``deform_mesh`` and the PINN --
+        it is not the implicit solution of a separate primal solve that
+        would need correcting via the adjoint equation. Reverse-mode
+        autodiff through that composition therefore already gives the
+        *exact* total derivative ``dJ/ds``, with no adjoint term to add.
 
         Returns
         -------
@@ -224,45 +364,22 @@ class ContinuousAdjointSolver:
             Gradient w.r.t. ``shape_params.control_points``,
             same shape as ``control_points``.
         """
-        # Deform collocation points using current shape
+        # Deform collocation points using current shape (kept differentiable
+        # w.r.t. control_points, so the objective below backpropagates
+        # through the deformation as well as through the model).
         x_deformed = shape_params.deform_mesh(x_col.detach())
-        x_deformed = x_deformed.requires_grad_(True)
 
-        # Compute objective and residual on deformed domain
-        u = self.primal(x_deformed)
         J = self.objective(self.primal, x_deformed)
-        R = self.pde_res_fn(self.primal, x_deformed)
 
-        # Adjoint approximation lambda
-        lam = self.compute_adjoint(x_deformed.detach(), shape_params)
-
-        # Total sensitivity: dJ/ds - lambda^T dR/ds
-        # Compute dJ/d(ctrl_pts) via chain rule through deform_mesh
         dJ_ds = torch.autograd.grad(
             J, shape_params.control_points,
-            retain_graph=True, create_graph=False,
+            retain_graph=False, create_graph=False,
             allow_unused=True
         )[0]
         if dJ_ds is None:
             dJ_ds = torch.zeros_like(shape_params.control_points)
 
-        # Compute lambda^T * dR/ds (scalar-weighted residual gradient)
-        dR_ds = torch.zeros_like(shape_params.control_points)
-        if R is not None and R.requires_grad:
-            try:
-                R_scalar = (lam.detach() * R).sum()
-                dR_ds_raw = torch.autograd.grad(
-                    R_scalar, shape_params.control_points,
-                    retain_graph=False, create_graph=False,
-                    allow_unused=True
-                )[0]
-                if dR_ds_raw is not None:
-                    dR_ds = dR_ds_raw
-            except RuntimeError:
-                # R has no grad path to control_points – skip residual term
-                pass
-
-        return dJ_ds - dR_ds
+        return dJ_ds
 
     # ------------------------------------------------------------------
     # Optimisation loop
@@ -398,11 +515,34 @@ class DragAdjointObjective:
             vel = torch.zeros(u_s.shape[0], 2, device=u_s.device)
             p = u_s[..., 0]
 
-        # Viscous stress proxy: nu * |grad(vel)| on surface
-        # Approximate via finite differences or simply velocity magnitude
-        viscous = self.nu * (vel ** 2).sum(-1).sqrt()  # (M,)
-        pressure_drag = p * self._drag_dir[0].to(p.device)
-        drag = torch.mean(pressure_drag + viscous)
+        # Local tangent/outward-normal from the ordered, closed surface
+        # contour (surface_pts traces the body boundary, e.g. as produced
+        # by naca_parametric: upper surface LE->TE then lower surface
+        # TE->LE, i.e. clockwise) via a periodic central difference.
+        tangent = s_pts.roll(-1, dims=0) - s_pts.roll(1, dims=0)
+        tangent = tangent / tangent.norm(dim=-1, keepdim=True).clamp(min=1e-12)
+        normal = torch.stack([-tangent[..., 1], tangent[..., 0]], dim=-1)
+
+        drag_dir = self._drag_dir.to(p.device)
+
+        # Pressure traction on the body is -p * n (pressure pushes inward);
+        # its contribution to drag is its component along the drag direction.
+        pressure_drag = -p * (normal @ drag_dir)
+
+        # Viscous (skin-friction) drag: wall shear stress
+        # tau_w = nu * d(u_tangential)/dn. Under no-slip, velocity itself
+        # vanishes at the wall, so it is the normal derivative -- not the
+        # raw velocity magnitude -- that carries the skin-friction signal.
+        u_tangential = (vel * tangent).sum(-1)
+        grad_ut = torch.autograd.grad(
+            u_tangential.sum(), s_pts, retain_graph=True,
+            create_graph=True, allow_unused=True,
+        )[0]
+        if grad_ut is None:
+            tau_w = torch.zeros_like(u_tangential)
+        else:
+            tau_w = self.nu * (grad_ut * normal).sum(-1)
+        viscous_drag = tau_w * (tangent @ drag_dir)
+
+        drag = torch.mean(pressure_drag + viscous_drag)
         return drag
-
-

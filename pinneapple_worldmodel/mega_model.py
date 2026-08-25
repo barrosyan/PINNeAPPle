@@ -6,7 +6,8 @@ world-model pipeline to serve as a *general-purpose physics AI*.
 Design principles
 -----------------
 1. **Universal operator** — the backbone is a deep Fourier Neural Operator
-   (FNO) with cross-attention so it handles 1D, 2D, and 3D grids.
+   (FNO) with FiLM-style context conditioning so it handles 1D and 2D grids
+   (3D grids are not yet supported).
 2. **Physics context encoding** — a transformer encoder consumes a free-form
    physics descriptor (scenario name, PDE kind, domain bounds, Reynolds number,
    …) and produces a context vector that steers the operator.
@@ -370,6 +371,12 @@ class PhysicsFoundationModel(nn.Module):
         self.n_fields = n_fields
         self.grid_shape = grid_shape
         self.spatial_dim = len(grid_shape)
+        if self.spatial_dim not in (1, 2):
+            raise ValueError(
+                f"PhysicsFoundationModel supports 1D and 2D grids only "
+                f"(got grid_shape={grid_shape!r} → spatial_dim={self.spatial_dim}); "
+                f"3D grids are not yet implemented."
+            )
 
         w = config.width
         ctx = config.context_dim

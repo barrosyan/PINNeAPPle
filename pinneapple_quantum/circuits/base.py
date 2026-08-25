@@ -54,7 +54,7 @@ class QuantumCircuitConfig:
         elif self.ansatz == "strongly_entangling":
             return self.depth * self.n_qubits * 3  # Rot(3 params) per qubit per layer
         elif self.ansatz == "efficient_su2":
-            return self.depth * self.n_qubits * 2 + (self.depth - 1) * self.n_qubits
+            return self.depth * self.n_qubits * 2  # Ry + Rz per qubit per layer; CZ entanglers are unparametrized
         return self.depth * self.n_qubits * 2
 
 
@@ -88,13 +88,15 @@ def build_pennylane_circuit(config: QuantumCircuitConfig, backend):
                                    wires=range(n), normalize=False)
 
         elif config.encoding == "iqp":
-            for i in range(min(n, x.shape[-1])):
+            m = min(n, x.shape[-1])
+            for i in range(m):
                 qml.Hadamard(wires=i)
                 qml.RZ(x[..., i], wires=i)
-            for i in range(min(n - 1, x.shape[-1] - 1)):
-                qml.CNOT(wires=[i, i + 1])
-                qml.RZ(x[..., i] * x[..., i + 1], wires=i + 1)
-                qml.CNOT(wires=[i, i + 1])
+            for i in range(m):
+                for j in range(i + 1, m):
+                    qml.CNOT(wires=[i, j])
+                    qml.RZ(x[..., i] * x[..., j], wires=j)
+                    qml.CNOT(wires=[i, j])
 
         # ── Ansatz ────────────────────────────────────────────────────
         idx = 0
@@ -127,10 +129,92 @@ def build_pennylane_circuit(config: QuantumCircuitConfig, backend):
                 if layer < config.depth - 1:
                     for q in range(n):
                         qml.CZ(wires=[q, (q + 1) % n])
-                        idx += 1
 
         # ── Measurement ───────────────────────────────────────────────
         return [qml.expval(qml.PauliZ(i)) for i in range(config.n_observables)]
+
+    return backend.build_qnode(_circuit, n)
+
+
+# ── Classical state-vector circuit builder (no PennyLane/Qiskit) ─────────────
+
+def build_classical_circuit(config: QuantumCircuitConfig, backend):
+    """
+    Construct the same circuit as :func:`build_pennylane_circuit`, but recorded
+    against a gate-recorder protocol (``recorder.rx/ry/rz/cnot/hadamard/cz/
+    measure_z``) that :class:`~pinneapple_quantum.backends.backend.ClassicalQNode`
+    replays on an exact state-vector engine — used when no quantum package is
+    installed. Mirrors the ansatz/encoding structure exactly so results are
+    faithful to the requested ``config``, not a generic surrogate.
+
+    Returns a callable ``circuit(x, weights) → torch.Tensor[n_observables]``.
+    """
+    n = config.n_qubits
+
+    def _circuit(x, weights, recorder):
+        # ── Encoding ──────────────────────────────────────────────────
+        if config.encoding == "angle":
+            for i in range(min(n, x.shape[-1])):
+                recorder.rx(x[..., i], wires=i)
+
+        elif config.encoding == "amplitude":
+            dim = 2 ** n
+            if x.shape[-1] < dim:
+                pad = torch.zeros(dim - x.shape[-1], dtype=x.dtype, device=x.device)
+                xe = torch.cat([x, pad], dim=-1)
+            else:
+                xe = x[..., :dim]
+            xe = xe / (xe.norm() + 1e-8)
+            recorder.set_amplitudes(xe.to(torch.complex64))
+
+        elif config.encoding == "iqp":
+            m = min(n, x.shape[-1])
+            for i in range(m):
+                recorder.hadamard(wires=i)
+                recorder.rz(x[..., i], wires=i)
+            for i in range(m):
+                for j in range(i + 1, m):
+                    recorder.cnot(wires=[i, j])
+                    recorder.rz(x[..., i] * x[..., j], wires=j)
+                    recorder.cnot(wires=[i, j])
+
+        # ── Ansatz ────────────────────────────────────────────────────
+        idx = 0
+        if config.ansatz == "hardware_efficient":
+            for _ in range(config.depth):
+                for q in range(n):
+                    recorder.ry(weights[idx],     wires=q)
+                    recorder.rz(weights[idx + 1], wires=q)
+                    idx += 2
+                for q in range(n - 1):
+                    recorder.cnot(wires=[q, q + 1])
+                if n > 1:
+                    recorder.cnot(wires=[n - 1, 0])
+
+        elif config.ansatz == "strongly_entangling":
+            for layer in range(config.depth):
+                for q in range(n):
+                    # qml.Rot(phi, theta, omega) == Rz(omega) · Ry(theta) · Rz(phi)
+                    recorder.rz(weights[idx],     wires=q)
+                    recorder.ry(weights[idx + 1], wires=q)
+                    recorder.rz(weights[idx + 2], wires=q)
+                    idx += 3
+                for q in range(n):
+                    recorder.cnot(wires=[q, (q + layer + 1) % n])
+
+        elif config.ansatz == "efficient_su2":
+            for layer in range(config.depth):
+                for q in range(n):
+                    recorder.ry(weights[idx], wires=q)
+                    recorder.rz(weights[idx + 1], wires=q)
+                    idx += 2
+                if layer < config.depth - 1:
+                    for q in range(n):
+                        recorder.cz(wires=[q, (q + 1) % n])
+
+        # ── Measurement ───────────────────────────────────────────────
+        for i in range(config.n_observables):
+            recorder.measure_z(i)
 
     return backend.build_qnode(_circuit, n)
 

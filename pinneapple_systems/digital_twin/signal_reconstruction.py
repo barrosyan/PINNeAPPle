@@ -199,7 +199,15 @@ def reconstruct_ssa(
         v_out = v_recon_uniform
         ts_out = t_uniform + timestamps[0]
 
-    explained = float(np.sum(sv ** 2) / (np.sum(sv ** 2) + 1e-12))
+    # ssa_decompose only returns the top `r` singular values, so the total
+    # energy of the trajectory matrix has to be recomputed here (it equals
+    # the full singular spectrum's sum of squares, i.e. the trajectory
+    # matrix's squared Frobenius norm) to get a meaningful ratio.
+    L_eff = int(min(max(2, L), len(v_uniform) - 1))
+    K_eff = len(v_uniform) - L_eff + 1
+    X_traj = np.column_stack([v_uniform[i: i + L_eff] for i in range(K_eff)])
+    total_energy = float(np.sum(X_traj.astype(np.float64) ** 2))
+    explained = float(np.sum(sv.astype(np.float64) ** 2) / (total_energy + 1e-12))
     meta = {"window": L, "n_components": n_components, "explained_variance": explained}
     return ts_out, v_out, meta
 

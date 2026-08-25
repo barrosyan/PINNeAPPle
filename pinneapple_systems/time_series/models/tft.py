@@ -89,7 +89,7 @@ class _TemporalSelfAttention(nn.Module):
         self.W_q = nn.Linear(d, d)
         self.W_k = nn.Linear(d, d)
         self.W_v = nn.Linear(d, self.d_head)   # shared V
-        self.W_o = nn.Linear(d, d)
+        self.W_o = nn.Linear(self.d_head, d)
         self.drop = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
@@ -103,7 +103,11 @@ class _TemporalSelfAttention(nn.Module):
         if mask is not None:
             scores = scores.masked_fill(mask == 0, -1e9)
         attn   = self.drop(torch.softmax(scores, dim=-1))
-        out    = (attn @ V).transpose(1, 2).contiguous().view(B, T, D)
+        # Interpretable multi-head attention (Lim et al. 2021): average the
+        # per-head outputs (which share one V projection) rather than
+        # concatenating them, so a single comparable attention-weight map
+        # can be extracted across heads.
+        out    = (attn @ V).mean(dim=1)                      # (B,T,Dh)
         return self.W_o(out)
 
 

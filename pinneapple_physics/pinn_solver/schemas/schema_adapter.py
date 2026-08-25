@@ -127,6 +127,7 @@ class SchemaAdapter:
             dependent_vars=self.mapping.dependent_vars(),
             inverse_params=inverse_params,
             loss_weights=loss_weights,
+            coord_scales=self.mapping.derivative_scales(),
             verbose=verbose,
         )
 

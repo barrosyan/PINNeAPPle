@@ -169,15 +169,19 @@ class RandomForestForecaster(ForecastModel):
         return self._model.predict(X)
 
     def predict_with_uncertainty(self, X: np.ndarray, n_samples: int = 100):
+        from sklearn.multioutput import MultiOutputRegressor
         mu = self.predict(X)
-        # RF uncertainty: std across individual tree predictions
-        if hasattr(self._model, "estimators_"):
-            tree_preds = np.stack([t.predict(X) for t in self._model.estimators_], axis=0)
-        else:  # MultiOutputRegressor
+        # RF uncertainty: std across individual tree predictions.
+        # Note: MultiOutputRegressor also exposes `estimators_` (its list of
+        # per-target base estimators), so isinstance -- not hasattr -- is
+        # required to tell it apart from a plain RandomForestRegressor.
+        if isinstance(self._model, MultiOutputRegressor):
             tree_preds = np.stack(
-                [np.stack([t.predict(X[:, 0:1]) for t in e.estimators_], 0).mean(0)
+                [np.stack([t.predict(X) for t in e.estimators_], axis=0)
                  for e in self._model.estimators_], axis=-1
             )
+        else:
+            tree_preds = np.stack([t.predict(X) for t in self._model.estimators_], axis=0)
         std = tree_preds.std(axis=0)
         return mu, std
 

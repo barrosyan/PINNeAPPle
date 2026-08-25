@@ -273,12 +273,20 @@ class PhysicsSimulator:
         alpha = params.get("alpha", 0.01)
         dev = self.device
         u = _make_ic(sc, seed).to(dev)  # (C, *grid)
-        dt = sc.dt
-        states = [u.cpu()]
+        dt_out = sc.dt
+        dx = tuple((hi - lo) / n for (lo, hi), n in zip(sc.domain_bounds, sc.grid_shape))
 
+        # Explicit FTCS stability: dt <= 1 / (2*alpha*sum(1/dx_i^2))
+        inv_dx2_sum = sum(1.0 / d ** 2 for d in dx)
+        dt_stable = 0.4 / max(alpha * inv_dx2_sum, 1e-12)
+        n_sub = max(1, math.ceil(dt_out / dt_stable))
+        dt_sub = dt_out / n_sub
+
+        states = [u.cpu()]
         for _ in range(sc.n_steps):
-            lap = _laplacian(u, sc.bc_type)
-            u = u + dt * alpha * lap
+            for _ in range(n_sub):
+                lap = _laplacian(u, sc.bc_type, dx)
+                u = u + dt_sub * alpha * lap
             states.append(u.cpu())
 
         return torch.stack(states, dim=0)  # (T+1, C, *grid)
@@ -330,7 +338,8 @@ class PhysicsSimulator:
         u = _make_ic(sc, seed).to(dev)
         u_prev = u.clone()
         dt_out = sc.dt
-        dx = (sc.domain_bounds[0][1] - sc.domain_bounds[0][0]) / sc.grid_shape[0]
+        dx_all = tuple((hi - lo) / n for (lo, hi), n in zip(sc.domain_bounds, sc.grid_shape))
+        dx = min(dx_all)
 
         # Leapfrog stability: c*dt/dx <= 1/sqrt(spatial_dim)
         dt_stable = 0.5 * dx / max(c, 1e-6)
@@ -340,7 +349,7 @@ class PhysicsSimulator:
         states = [u.cpu()]
         for _ in range(sc.n_steps):
             for _ in range(n_sub):
-                lap = _laplacian(u, sc.bc_type)
+                lap = _laplacian(u, sc.bc_type, dx_all)
                 u_next = 2 * u - u_prev + (c * dt_sub) ** 2 * lap
                 u_prev, u = u, u_next
                 if sc.bc_type == "dirichlet_zero":
@@ -406,6 +415,9 @@ class PhysicsSimulator:
         nu = 1.0 / max(Re, 1.0)
         dev = self.device
         Nx, Ny = sc.grid_shape
+        Lx = sc.domain_bounds[0][1] - sc.domain_bounds[0][0]
+        Ly = sc.domain_bounds[1][1] - sc.domain_bounds[1][0]
+        dx, dy = Lx / Nx, Ly / Ny
 
         # Random smooth initial vorticity
         if seed is not None:
@@ -416,16 +428,23 @@ class PhysicsSimulator:
 
         for _ in range(sc.n_steps + 1):
             # Compute velocity from vorticity via stream function (simplified)
-            psi = _solve_poisson_fft(omega[0])    # stream function
-            u =  _deriv_y(psi).unsqueeze(0)        # u =  ∂ψ/∂y
-            v = -_deriv_x(psi).unsqueeze(0)        # v = -∂ψ/∂x
+            psi = _solve_poisson_fft(omega[0], Lx, Ly)     # stream function
+            u =  _deriv_y(psi, dy).unsqueeze(0)             # u =  ∂ψ/∂y
+            v = -_deriv_x(psi, dx).unsqueeze(0)             # v = -∂ψ/∂x
 
             states.append(torch.stack([u[0], v[0], omega[0]], dim=0).cpu())
 
-            # Advect vorticity + diffusion
-            adv = u * _deriv_x(omega[0]).unsqueeze(0) + v * _deriv_y(omega[0]).unsqueeze(0)
-            lap = _laplacian(omega, "periodic")
-            omega = omega + dt * (-adv + nu * lap)
+            # Advect vorticity + diffusion (explicit-scheme stability sub-steps)
+            v_max = max(float(u.abs().max()), float(v.abs().max()), 1e-6)
+            dt_adv = 0.4 * min(dx, dy) / v_max
+            dt_diff = 0.4 / max(nu * (1.0 / dx ** 2 + 1.0 / dy ** 2), 1e-12)
+            n_sub = max(1, math.ceil(dt / min(dt_adv, dt_diff, dt)))
+            dt_sub = dt / n_sub
+
+            for _ in range(n_sub):
+                adv = u * _deriv_x(omega[0], dx).unsqueeze(0) + v * _deriv_y(omega[0], dy).unsqueeze(0)
+                lap = _laplacian(omega, "periodic", (dx, dy))
+                omega = omega + dt_sub * (-adv + nu * lap)
 
         return torch.stack(states, dim=0)  # (T+1, 3, Nx, Ny)
 
@@ -535,13 +554,20 @@ def _step_ic(shape: Tuple) -> torch.Tensor:
 # Differential operators (periodic / Dirichlet)
 # ---------------------------------------------------------------------------
 
-def _laplacian(u: torch.Tensor, bc: str) -> torch.Tensor:
-    """2nd-order Laplacian of u (any spatial dim > 0, after channel dim)."""
+def _laplacian(u: torch.Tensor, bc: str, dx) -> torch.Tensor:
+    """2nd-order Laplacian of u (any spatial dim > 0, after channel dim).
+
+    ``dx`` is either a single grid spacing (applied to every spatial dim)
+    or a sequence of per-dim spacings matching ``u.ndim - 1``.
+    """
+    if isinstance(dx, (int, float)):
+        dx = [float(dx)] * (u.ndim - 1)
     lap = torch.zeros_like(u)
     for dim in range(1, u.ndim):
         N = u.shape[dim]
+        d2 = dx[dim - 1] ** 2
         if bc == "periodic":
-            lap += torch.roll(u, 1, dim) + torch.roll(u, -1, dim) - 2 * u
+            lap += (torch.roll(u, 1, dim) + torch.roll(u, -1, dim) - 2 * u) / d2
         else:
             # Interior only; boundaries remain 0
             sl_fwd = [slice(None)] * u.ndim
@@ -550,7 +576,7 @@ def _laplacian(u: torch.Tensor, bc: str) -> torch.Tensor:
             sl_fwd[dim] = slice(2, N)
             sl_bwd[dim] = slice(0, N - 2)
             sl_mid[dim] = slice(1, N - 1)
-            lap[sl_mid] += (u[sl_fwd] + u[sl_bwd] - 2 * u[sl_mid])
+            lap[sl_mid] += (u[sl_fwd] + u[sl_bwd] - 2 * u[sl_mid]) / d2
     return lap
 
 
@@ -563,22 +589,23 @@ def _apply_dirichlet_zero(u: torch.Tensor) -> torch.Tensor:
     return u
 
 
-def _deriv_x(f: torch.Tensor) -> torch.Tensor:
+def _deriv_x(f: torch.Tensor, dx: float = 1.0) -> torch.Tensor:
     """Central difference ∂f/∂x along last axis (periodic)."""
-    return (torch.roll(f, -1, -1) - torch.roll(f, 1, -1)) * 0.5
+    return (torch.roll(f, -1, -1) - torch.roll(f, 1, -1)) * (0.5 / dx)
 
 
-def _deriv_y(f: torch.Tensor) -> torch.Tensor:
+def _deriv_y(f: torch.Tensor, dy: float = 1.0) -> torch.Tensor:
     """Central difference ∂f/∂y along second-to-last axis (periodic)."""
-    return (torch.roll(f, -1, -2) - torch.roll(f, 1, -2)) * 0.5
+    return (torch.roll(f, -1, -2) - torch.roll(f, 1, -2)) * (0.5 / dy)
 
 
-def _solve_poisson_fft(rhs: torch.Tensor) -> torch.Tensor:
-    """Solve ∇²ψ = rhs periodically via spectral method."""
+def _solve_poisson_fft(rhs: torch.Tensor, Lx: float = 1.0, Ly: float = 1.0) -> torch.Tensor:
+    """Solve ∇²ψ = rhs periodically via spectral method on a domain of
+    physical size ``Lx × Ly``."""
     Nx, Ny = rhs.shape[-2], rhs.shape[-1]
     rhs_hat = torch.fft.rfft2(rhs)
-    kx = torch.fft.fftfreq(Nx, device=rhs.device).unsqueeze(1) * Nx
-    ky = torch.fft.rfftfreq(Ny, device=rhs.device).unsqueeze(0) * Ny
+    kx = torch.fft.fftfreq(Nx, device=rhs.device).unsqueeze(1) * Nx * (2 * math.pi / Lx)
+    ky = torch.fft.rfftfreq(Ny, device=rhs.device).unsqueeze(0) * Ny * (2 * math.pi / Ly)
     k2 = kx ** 2 + ky ** 2
     k2[0, 0] = 1.0  # avoid div-by-zero; DC mode = 0
     psi_hat = rhs_hat / (-k2.to(rhs_hat.dtype))

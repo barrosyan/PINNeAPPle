@@ -36,12 +36,30 @@ def jacobian(Y: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
     return torch.cat(outs, dim=1)
 
 
-def divergence(V: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
-    assert V.shape[1] == x.shape[1]
+def divergence(
+    V: torch.Tensor,
+    x: torch.Tensor,
+    coord_indices: list[int] | None = None,
+) -> torch.Tensor:
+    """Divergence sum_i dV_i/dx_{idx_i} of a vector field V.
+
+    Parameters
+    ----------
+    V : (N, K) tensor – vector field components.
+    x : (N, D) tensor – input coordinates (must have grad enabled).
+    coord_indices : optional list of K column indices into `x`, one per
+        component of V, to differentiate against. When *None* (default)
+        V and x must have the same number of columns and each component
+        is paired with the coordinate of the same index. Pass the
+        spatial column indices (excluding time) to obtain the spatial
+        divergence of a time-dependent vector field.
+    """
+    indices = coord_indices if coord_indices is not None else list(range(x.shape[1]))
+    assert V.shape[1] == len(indices)
     J = jacobian(V, x)
     div = torch.zeros((x.shape[0], 1), device=x.device, dtype=x.dtype)
-    for i in range(x.shape[1]):
-        div = div + J[:, i:i + 1, i:i + 1].reshape(-1, 1)
+    for i, idx in enumerate(indices):
+        div = div + J[:, i:i + 1, idx:idx + 1].reshape(-1, 1)
     return div
 
 

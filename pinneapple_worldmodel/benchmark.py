@@ -391,8 +391,10 @@ class PhysicsBenchmark:
             state = states[0].unsqueeze(0).to(device)
 
             energies_pred, energies_ref = [], []
+            pred_states = [states[0].to(device)]
             for t in range(1, min(T + 1, 5)):
                 state = model(state, ctx)
+                pred_states.append(state.squeeze(0))
                 e_pred = torch.mean(state ** 2).item()
                 e_ref = torch.mean(states[t].to(device) ** 2).item()
                 energies_pred.append(e_pred)
@@ -410,8 +412,31 @@ class PhysicsBenchmark:
                     scores.append(1.0)
 
             elif check == "energy_conservation":
-                # Score: relative std of energy over trajectory
-                if energies_pred:
+                # Score: relative std of the wave equation's mechanical energy
+                # E = 1/2 * mean(u_t^2 + c^2 * u_x^2). ``mean(u^2)`` alone is
+                # not conserved (it is not even conserved for the exact
+                # reference solution), so u_t and u_x are estimated from
+                # consecutive predicted snapshots via central differences.
+                sc = BUILTIN_SCENARIOS.get(scenario_name)
+                if sc is not None and len(pred_states) > 2:
+                    c = traj.params.get("c", 1.0)
+                    dx = (sc.domain_bounds[0][1] - sc.domain_bounds[0][0]) / sc.grid_shape[0]
+                    dt = sc.dt
+                    wave_energies = []
+                    for i in range(1, len(pred_states) - 1):
+                        u_t = (pred_states[i + 1] - pred_states[i - 1]) / (2 * dt)
+                        u_x = (
+                            torch.roll(pred_states[i], -1, -1)
+                            - torch.roll(pred_states[i], 1, -1)
+                        ) / (2 * dx)
+                        wave_energies.append(
+                            0.5 * torch.mean(u_t ** 2 + c ** 2 * u_x ** 2).item()
+                        )
+                    if wave_energies:
+                        e = torch.tensor(wave_energies)
+                        rel_std = (e.std() / (e.mean().abs() + 1e-8)).item()
+                        scores.append(max(0.0, 1.0 - rel_std))
+                elif energies_pred:
                     e = torch.tensor(energies_pred)
                     rel_std = (e.std() / (e.mean().abs() + 1e-8)).item()
                     scores.append(max(0.0, 1.0 - rel_std))

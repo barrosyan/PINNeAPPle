@@ -1,8 +1,9 @@
 """Validation and standardization for physical datasets (UPD)."""
 
 from __future__ import annotations
+import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import xarray as xr
@@ -18,10 +19,36 @@ class ValidationSpec:
         "Q": (0.0, 0.1),        # kg/kg (tune per product)
         "U": (-200.0, 200.0),   # m/s
         "V": (-200.0, 200.0),   # m/s
-        "PS": (1e3, 2e6),       # Pa (very permissive)
+        "PS": (5e4, 1.1e5),     # Pa (sea-level/high-altitude surface pressure)
     })
     enforce_lev_monotonic: bool = True
     enforce_time_monotonic: bool = True
+
+
+# Explicit variable -> physical-quantity mapping for range checks. Only variables
+# actually representing temperature/humidity/wind belong here; names that merely
+# start with the same letter (TQV, TQL, TROPPB, TO3, ...) must NOT be swept in.
+_QUANTITY_BY_NAME: Dict[str, str] = {
+    "TS": "T", "T2M": "T", "T2MDEW": "T", "T2MWET": "T",
+    "TROPT": "T", "TROPPT": "T",
+    "QV2M": "Q", "QV10M": "Q", "TROPQ": "Q",
+    "U2M": "U", "U10M": "U", "U50M": "U",
+    "V2M": "V", "V10M": "V", "V50M": "V",
+    "PS": "PS",
+}
+# Pressure-level fields like T850/Q500/U250/V850 follow a <LETTER><level> pattern.
+_PLEV_RE = re.compile(r"^([TQUV])\d+$")
+
+
+def _quantity_for(name: str) -> Optional[str]:
+    """Map a variable name to a physical quantity tag ("T"/"Q"/"U"/"V"/"PS"), or None."""
+    q = _QUANTITY_BY_NAME.get(name)
+    if q is not None:
+        return q
+    m = _PLEV_RE.match(name)
+    if m:
+        return m.group(1)
+    return None
 
 
 def standardize_dims(ds: xr.Dataset) -> xr.Dataset:
@@ -102,10 +129,11 @@ def validate_dataset(ds: xr.Dataset, spec: ValidationSpec) -> List[str]:
             )
 
     for name, da in ds.data_vars.items():
-        if name.startswith("T"):
-            lo, hi = spec.ranges.get("T", (-np.inf, np.inf))
-            check_range(name, da, lo, hi, "T")
-        if name.startswith("Q"):
+        quantity = _quantity_for(name)
+        if quantity in ("T", "U", "V"):
+            lo, hi = spec.ranges.get(quantity, (-np.inf, np.inf))
+            check_range(name, da, lo, hi, quantity)
+        elif quantity == "Q":
             lo, hi = spec.ranges.get("Q", (-np.inf, np.inf))
             check_range(name, da, lo, hi, "Q")
             try:
@@ -113,13 +141,7 @@ def validate_dataset(ds: xr.Dataset, spec: ValidationSpec) -> List[str]:
                     issues.append(f"[nonneg] '{name}' tem valores negativos")
             except Exception:
                 pass
-        if name.startswith("U"):
-            lo, hi = spec.ranges.get("U", (-np.inf, np.inf))
-            check_range(name, da, lo, hi, "U")
-        if name.startswith("V"):
-            lo, hi = spec.ranges.get("V", (-np.inf, np.inf))
-            check_range(name, da, lo, hi, "V")
-        if name == "PS":
+        elif quantity == "PS":
             lo, hi = spec.ranges.get("PS", (-np.inf, np.inf))
             check_range(name, da, lo, hi, "PS")
             try:

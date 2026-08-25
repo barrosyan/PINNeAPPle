@@ -109,7 +109,7 @@ def _assemble_poisson(
     k2: float,
     source: float,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    """Assemble K (N,N) and f (N,) for (coeff*Δ + k²)u = source."""
+    """Assemble K (N,N) and f (N,) for -(coeff*Δ + k²)u = source."""
     N = nodes.shape[0]
     K = torch.zeros(N, N, device=nodes.device)
     f = torch.zeros(N, device=nodes.device)
@@ -243,7 +243,7 @@ class FEMSolver(SolverBase):
 
     Supported PDE kinds (spec.pde.kind):
       poisson / laplace            — -coeff·Δu = source  (coeff default 1)
-      helmholtz                    — -Δu + k²u = source  (k from params.k)
+      helmholtz                    — -Δu - k²u = source  (k from params.k)
       axisymmetric_linear_elasticity — r-weighted weak form (E, nu from params)
 
     Params consumed from PDETermSpec.params:

@@ -30,7 +30,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
 
-from .node import CoSimNode, PINNNode, TorchNode
+from .node import CoSimNode, PINNNode, TorchNode, split_output_ports
 
 
 # ---------------------------------------------------------------------------
@@ -195,11 +195,7 @@ class PINNeProblemNode(CoSimNode):
         raw = self.model(x)
         # Handle PINNOutput, ModelOutput, or plain tensor
         pred = raw.y if hasattr(raw, "y") else raw
-        n = len(self.field_ports)
-        if n == 1:
-            return {self.field_ports[0]: pred}
-        chunks = torch.chunk(pred, n, dim=-1)
-        return {p: c for p, c in zip(self.field_ports, chunks)}
+        return split_output_ports(pred, self.field_ports)
 
     def physics_loss(self) -> Optional[torch.Tensor]:
         if self._last_inputs is None:
@@ -287,11 +283,7 @@ class PINNeAPPleModelNode(TorchNode):
             x = torch.cat([inputs[p] for p in self.input_ports if p in inputs], dim=-1)
             raw = self.model(x)
         pred = raw.y if hasattr(raw, "y") else raw
-        n = len(self.output_ports)
-        if n == 1:
-            return {self.output_ports[0]: pred}
-        chunks = torch.chunk(pred, n, dim=-1)
-        return {p: c for p, c in zip(self.output_ports, chunks)}
+        return split_output_ports(pred, self.output_ports)
 
 
 # ---------------------------------------------------------------------------
@@ -358,11 +350,7 @@ class SymbolicPDENode(CoSimNode):
             self._residual_fn = self._symbolic_pde.to_residual_fn(self.model)
         pred = self.model(x)
         pred = pred.y if hasattr(pred, "y") else pred
-        n = len(self.field_ports)
-        if n == 1:
-            return {self.field_ports[0]: pred}
-        chunks = torch.chunk(pred, n, dim=-1)
-        return {p: c for p, c in zip(self.field_ports, chunks)}
+        return split_output_ports(pred, self.field_ports)
 
     def physics_loss(self) -> Optional[torch.Tensor]:
         if self._last_x is None or self._residual_fn is None:

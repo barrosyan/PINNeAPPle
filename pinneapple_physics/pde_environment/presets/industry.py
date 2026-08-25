@@ -21,7 +21,7 @@ def steady_heat_conduction_3d_default() -> ProblemSpec:
     )
 
     bc_boundary = DirichletBC(
-        name_or_values="T_boundary",
+        name="T_boundary",
         fields=("T",),
         selector_type="tag",
         selector={"tag": "boundary"},
@@ -31,7 +31,7 @@ def steady_heat_conduction_3d_default() -> ProblemSpec:
 
     # Example heater on inlet plane (hot patch). User can override by changing preset or ctx.
     bc_inlet_hot = DirichletBC(
-        name_or_values="T_inlet_hot",
+        name="T_inlet_hot",
         fields=("T",),
         selector_type="tag",
         selector={"tag": "inlet"},
@@ -67,7 +67,7 @@ def transient_heat_3d_default() -> ProblemSpec:
     )
 
     ic = InitialCondition(
-        name_or_values="T_init",
+        name="T_init",
         fields=("T",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 3], 0.0),
@@ -76,7 +76,7 @@ def transient_heat_3d_default() -> ProblemSpec:
     )
 
     bc = DirichletBC(
-        name_or_values="T_boundary",
+        name="T_boundary",
         fields=("T",),
         selector_type="tag",
         selector={"tag": "boundary"},
@@ -113,7 +113,7 @@ def linear_elasticity_3d_default() -> ProblemSpec:
     )
 
     fixed = DirichletBC(
-        name_or_values="fixed_support",
+        name="fixed_support",
         fields=("ux", "uy", "uz"),
         selector_type="tag",
         selector={"tag": "fixed"},
@@ -149,7 +149,7 @@ def darcy_pressure_only_3d_default() -> ProblemSpec:
     )
 
     bc_in = DirichletBC(
-        name_or_values="p_inlet",
+        name="p_inlet",
         fields=("p",),
         selector_type="tag",
         selector={"tag": "inlet"},
@@ -158,7 +158,7 @@ def darcy_pressure_only_3d_default() -> ProblemSpec:
     )
 
     bc_out = DirichletBC(
-        name_or_values="p_outlet",
+        name="p_outlet",
         fields=("p",),
         selector_type="tag",
         selector={"tag": "outlet"},
@@ -194,7 +194,7 @@ def helmholtz_acoustics_3d_default() -> ProblemSpec:
     )
 
     bc = DirichletBC(
-        name_or_values="u_boundary",
+        name="u_boundary",
         fields=("u",),
         selector_type="tag",
         selector={"tag": "boundary"},
@@ -230,7 +230,7 @@ def wave_ultrasound_3d_default() -> ProblemSpec:
     )
 
     ic_u = InitialCondition(
-        name_or_values="u_init",
+        name="u_init",
         fields=("u",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 3], 0.0),
@@ -239,7 +239,7 @@ def wave_ultrasound_3d_default() -> ProblemSpec:
     )
 
     bc = DirichletBC(
-        name_or_values="u_boundary",
+        name="u_boundary",
         fields=("u",),
         selector_type="tag",
         selector={"tag": "boundary"},
@@ -275,7 +275,7 @@ def reaction_diffusion_2d_default() -> ProblemSpec:
     )
 
     ic = InitialCondition(
-        name_or_values="c_init",
+        name="c_init",
         fields=("c",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 2], 0.0),
@@ -284,7 +284,7 @@ def reaction_diffusion_2d_default() -> ProblemSpec:
     )
 
     bc = DirichletBC(
-        name_or_values="c_boundary",
+        name="c_boundary",
         fields=("c",),
         selector_type="tag",
         selector={"tag": "boundary"},

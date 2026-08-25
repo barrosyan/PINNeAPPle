@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Callable
 import math
+import warnings
 import torch
 
 from .base import SynthConfig, SynthOutput
@@ -136,6 +137,31 @@ class PDESynthGenerator:
         if kind in ("heat1d", "advection1d"):
             x = torch.linspace(x_min, x_max, int(nx), device=device, dtype=dtype)
             dx = (x_max - x_min) / max(nx - 1, 1)
+
+            # Enforce explicit-Euler stability (CFL) bounds so the requested
+            # dt/dx/alpha (or c) combination cannot silently diverge.
+            dt_eff = float(dt)
+            if kind == "heat1d" and alpha != 0:
+                dt_max = 0.5 * dx * dx / abs(float(alpha))
+                if dt_eff > dt_max:
+                    warnings.warn(
+                        f"pde.py heat1d: requested dt={dt_eff:g} exceeds the explicit-Euler "
+                        f"stability bound dt<=0.5*dx^2/alpha={dt_max:g} for dx={dx:g}, "
+                        f"alpha={alpha:g}; clipping dt to {dt_max:g}.",
+                        RuntimeWarning,
+                    )
+                    dt_eff = dt_max
+            elif kind == "advection1d" and c != 0:
+                dt_max = dx / abs(float(c))
+                if dt_eff > dt_max:
+                    warnings.warn(
+                        f"pde.py advection1d: requested dt={dt_eff:g} exceeds the CFL "
+                        f"stability bound dt<=dx/|c|={dt_max:g} for dx={dx:g}, c={c:g}; "
+                        f"clipping dt to {dt_max:g}.",
+                        RuntimeWarning,
+                    )
+                    dt_eff = dt_max
+            dt = dt_eff
 
             def default_ic(x: torch.Tensor, g: torch.Generator):
                 """Default PDE initial condition: random low-frequency Fourier series.

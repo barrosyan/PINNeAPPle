@@ -201,7 +201,7 @@ class UNONdGrid(nn.Module):
 
         ups = []
         for _ in range(levels):
-            ups.append(UpBlockND(dim, ch, ch // 2, ch // 2, modes=modes, depth=depth_per_level))
+            ups.append(UpBlockND(dim, ch, ch, ch // 2, modes=modes, depth=depth_per_level))
             ch //= 2
         self.ups = nn.ModuleList(ups)
 

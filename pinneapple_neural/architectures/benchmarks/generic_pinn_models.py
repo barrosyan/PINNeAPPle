@@ -81,7 +81,11 @@ class GenericSIREN(BaseModel):
         d = in_dim
         for i in range(depth):
             lin = nn.Linear(d, width)
-            nn.init.uniform_(lin.weight, -1.0 / d, 1.0 / d)
+            if i == 0:
+                nn.init.uniform_(lin.weight, -1.0 / d, 1.0 / d)
+            else:
+                bound = (6.0 / d) ** 0.5 / w0
+                nn.init.uniform_(lin.weight, -bound, bound)
             layers += [lin, Sine(w0)]
             d = width
         layers += [nn.Linear(d, out_dim)]

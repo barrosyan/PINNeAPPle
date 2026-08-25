@@ -171,22 +171,33 @@ class SINDyIdentifier:
         if term_names is None:
             term_names = [f"term_{i}" for i in range(L)]
 
+        # Candidate columns (different polynomial degrees, trig terms, ...)
+        # have wildly different natural magnitudes, so a single scalar
+        # threshold on raw coefficients is not comparable across terms.
+        # Regress on unit-norm columns and rescale coefficients back so the
+        # threshold is applied in a scale-invariant way.
+        col_norms = np.linalg.norm(Theta, axis=0)
+        col_norms[col_norms == 0] = 1.0
+        Theta_n = Theta / col_norms
+
         if self.method == "stridge":
-            xi = self._stridge(Theta, b)
+            xi_n = self._stridge(Theta_n, b)
         elif self.method == "lasso":
             try:
                 from sklearn.linear_model import Lasso
             except ImportError:
                 raise ImportError("scikit-learn is required for LASSO: pip install scikit-learn")
             model = Lasso(alpha=self.alpha, fit_intercept=False, max_iter=10_000)
-            model.fit(Theta, b)
-            xi = model.coef_
+            model.fit(Theta_n, b)
+            xi_n = model.coef_
         else:
             # ridge via normal equations
-            A = Theta.T @ Theta + self.alpha * np.eye(L)
-            xi = np.linalg.solve(A, Theta.T @ b)
+            A = Theta_n.T @ Theta_n + self.alpha * np.eye(L)
+            xi_n = np.linalg.solve(A, Theta_n.T @ b)
 
-        active = np.abs(xi) > self.threshold
+        active = np.abs(xi_n) > self.threshold
+        xi_n = np.where(active, xi_n, 0.0)
+        xi = xi_n / col_norms
         return SINDyResult(
             coefficients=xi,
             active_terms=[term_names[i] for i in np.where(active)[0]],
@@ -195,9 +206,14 @@ class SINDyIdentifier:
             n_terms_selected=int(active.sum()),
         )
 
+    def _ridge_solve(self, A: np.ndarray, b: np.ndarray) -> np.ndarray:
+        """Solve the Tikhonov-regularised normal equations for A xi ~= b."""
+        ATA = A.T @ A + self.alpha * np.eye(A.shape[1])
+        return np.linalg.solve(ATA, A.T @ b)
+
     def _stridge(self, Theta: np.ndarray, b: np.ndarray) -> np.ndarray:
-        """Sequential Threshold Ridge Regression (STRidge)."""
-        xi = np.linalg.lstsq(Theta, b, rcond=None)[0]
+        """Sequential Threshold Ridge Regression (STRidge, Rudy et al. 2017)."""
+        xi = self._ridge_solve(Theta, b)
         for _ in range(self.max_iter):
             small = np.abs(xi) < self.threshold
             if small.all():
@@ -206,7 +222,7 @@ class SINDyIdentifier:
             active = ~small
             if not active.any():
                 break
-            xi[active] = np.linalg.lstsq(Theta[:, active], b, rcond=None)[0]
+            xi[active] = self._ridge_solve(Theta[:, active], b)
         return xi
 
 

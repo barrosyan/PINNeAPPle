@@ -52,6 +52,11 @@ class UPDDataset:
         # standard assumption: coords exist
         self._time0 = self.mapping.infer_time0(self.ds)
 
+        # Populate the mapping's per-coord derivative-scale cache from the
+        # actual data range now, so mapping.derivative_scales() is correct
+        # for anyone (e.g. SchemaAdapter) that reads it before sampling.
+        self.mapping.coord.make_coord_arrays(self.ds, time0=self._time0)
+
     # -----------------------
     # Public API
     # -----------------------

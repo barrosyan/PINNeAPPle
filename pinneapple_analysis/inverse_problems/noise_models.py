@@ -101,11 +101,12 @@ class GaussianMisfit(DataMisfitBase):
         r = predicted - observed
         cov_inv = self._get_cov_inv(r.device)
         if cov_inv is not None:
-            # Mahalanobis: r^T Γ⁻¹ r, averaged over batch
+            # Mahalanobis: r^T Γ⁻¹ r, reduced over batch per `self.reduction`
             if r.ndim == 1:
                 misfit = r @ cov_inv @ r
             else:
-                misfit = torch.sum((r @ cov_inv) * r, dim=-1).mean()
+                per_sample = torch.sum((r @ cov_inv) * r, dim=-1)
+                misfit = per_sample.mean() if self.reduction == "mean" else per_sample.sum()
         else:
             misfit = torch.sum(r ** 2) / self.noise_var
             if self.reduction == "mean":

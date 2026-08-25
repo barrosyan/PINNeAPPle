@@ -1,6 +1,6 @@
 """Allen-Cahn 1D benchmark task.
 
-PDE  : u_t = eps^2 * u_xx + u - u^3,  x in [-1,1], t in [0,1]
+PDE  : u_t = eps^2 * u_xx + 5u - 5u^3,  x in [-1,1], t in [0,1]
 IC   : u(x,0) = x^2 * cos(pi*x)
 BC   : u(-1,t) = u(1,t) = -1
 eps  : 0.01 (standard benchmark, thin interface)
@@ -52,7 +52,7 @@ class AllenCahn1DTask(BenchmarkTaskBase):
             u_xx = np.zeros_like(u_)
             u_xx[1:-1] = (u_[2:] - 2.0 * u_[1:-1] + u_[:-2]) / dx ** 2
             # Dirichlet BCs: u[0]=u[-1]=-1, so u_xx at boundaries is 0 (no flux update needed)
-            du[1:-1] = self.eps ** 2 * u_xx[1:-1] + u_[1:-1] - u_[1:-1] ** 3
+            du[1:-1] = self.eps ** 2 * u_xx[1:-1] + 5.0 * u_[1:-1] - 5.0 * u_[1:-1] ** 3
             return du
 
         t_current = 0.0
@@ -117,7 +117,7 @@ class AllenCahn1DTask(BenchmarkTaskBase):
         u_xx = torch.autograd.grad(u_x.sum(), X, create_graph=True)[0][:, 0:1]
 
         eps2 = torch.tensor(self.eps ** 2, device=X.device)
-        res = u_t - eps2 * u_xx - u + u ** 3
+        res = u_t - eps2 * u_xx - 5.0 * u + 5.0 * u ** 3
         return (res ** 2).mean()
 
     # ── Evaluation ────────────────────────────────────────────────────────────

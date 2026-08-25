@@ -87,13 +87,10 @@ def _output_to_upd(solver_output: Any, config: FEniCSConfig):
                 coords[name] = xy[:, i]
 
     return PhysicalSample(
-        fields=fields,
-        coords=coords,
-        meta={
-            "upd": {"version": "0.1", "source": "fenics"},
-            "provenance": {"pde": config.pde},
-            "units": {},
-        },
+        state=fields,
+        domain={"type": "grid", "coords": coords},
+        provenance={"version": "0.1", "source": "fenics", "pde": config.pde},
+        schema={"units": {}},
     )
 
 
@@ -124,13 +121,10 @@ def dof_to_upd(
     }
 
     return PhysicalSample(
-        fields={field_name: torch.as_tensor(np.asarray(dof_vector), dtype=torch.float32)},
-        coords=coords,
-        meta={
-            "upd": {"version": "0.1", "source": "fenics"},
-            "provenance": {},
-            "units": {},
-        },
+        state={field_name: torch.as_tensor(np.asarray(dof_vector), dtype=torch.float32)},
+        domain={"type": "grid", "coords": coords},
+        provenance={"version": "0.1", "source": "fenics"},
+        schema={"units": {}},
     )
 
 

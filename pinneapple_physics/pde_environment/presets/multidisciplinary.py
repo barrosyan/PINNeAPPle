@@ -60,7 +60,8 @@ def climate_atmosphere_2d(
 ) -> ProblemSpec:
     """2D shallow water equations for atmospheric dynamics.
 
-    PDE (non-rotating form with Coriolis source term):
+    PDE (nonlinear, rotating form on an f-plane — f is a constant
+    mid-latitude Coriolis parameter, not a function of latitude):
         ∂h/∂t + ∂(hu)/∂x + ∂(hv)/∂y = 0
         ∂u/∂t + u ∂u/∂x + v ∂u/∂y - f v + g ∂h/∂x = 0
         ∂v/∂t + u ∂v/∂x + v ∂v/∂y + f u + g ∂h/∂y = 0
@@ -86,7 +87,8 @@ def climate_atmosphere_2d(
         params={"g": g, "f": f, "H0": H0},
         meta={
             "note": (
-                "Linearised rotating shallow-water equations on a beta-plane. "
+                "Nonlinear rotating shallow-water equations on an f-plane "
+                "(constant Coriolis parameter f; not a beta-plane). "
                 "x = longitude (deg), y = latitude (deg), t = time (s)."
             ),
             "coriolis_term": "f*v, -f*u",
@@ -95,7 +97,7 @@ def climate_atmosphere_2d(
     )
 
     ic_h = InitialCondition(
-        name_or_values="ic_h",
+        name="ic_h",
         fields=("h",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 2], 0.0),
@@ -104,7 +106,7 @@ def climate_atmosphere_2d(
     )
 
     ic_uv = InitialCondition(
-        name_or_values="ic_uv",
+        name="ic_uv",
         fields=("u", "v"),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 2], 0.0),
@@ -114,7 +116,7 @@ def climate_atmosphere_2d(
 
     # Periodic boundary in longitude; solid-wall Neumann at poles
     bc_pole_south = NeumannBC(
-        name_or_values="bc_pole_south",
+        name="bc_pole_south",
         fields=("u", "v"),
         selector_type="tag",
         selector={"tag": "pole_south"},
@@ -123,7 +125,7 @@ def climate_atmosphere_2d(
     )
 
     bc_pole_north = NeumannBC(
-        name_or_values="bc_pole_north",
+        name="bc_pole_north",
         fields=("u", "v"),
         selector_type="tag",
         selector={"tag": "pole_north"},
@@ -209,7 +211,7 @@ def climate_ocean_gyre(
 
     # No-slip streamfunction on all basin walls (psi = 0 on boundary)
     bc_walls = DirichletBC(
-        name_or_values="bc_walls",
+        name="bc_walls",
         fields=("psi",),
         selector_type="tag",
         selector={"tag": "boundary"},
@@ -295,7 +297,7 @@ def crystal_phonon(
     )
 
     ic_T = InitialCondition(
-        name_or_values="ic_T",
+        name="ic_T",
         fields=("T",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 1], 0.0),
@@ -304,7 +306,7 @@ def crystal_phonon(
     )
 
     bc_hot = DirichletBC(
-        name_or_values="bc_hot",
+        name="bc_hot",
         fields=("T",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
@@ -313,7 +315,7 @@ def crystal_phonon(
     )
 
     bc_cold = DirichletBC(
-        name_or_values="bc_cold",
+        name="bc_cold",
         fields=("T",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], L_domain),
@@ -400,7 +402,7 @@ def material_fracture_2d(
 
     # Fixed bottom, prescribed top displacement, free sides
     bc_bottom = DirichletBC(
-        name_or_values="bc_bottom_fixed",
+        name="bc_bottom_fixed",
         fields=("ux", "uy"),
         selector_type="tag",
         selector={"tag": "bottom"},
@@ -409,7 +411,7 @@ def material_fracture_2d(
     )
 
     bc_top = DirichletBC(
-        name_or_values="bc_top_displacement",
+        name="bc_top_displacement",
         fields=("uy",),
         selector_type="tag",
         selector={"tag": "top"},
@@ -422,7 +424,7 @@ def material_fracture_2d(
     )
 
     bc_sides = NeumannBC(
-        name_or_values="bc_sides_free",
+        name="bc_sides_free",
         fields=("ux", "uy"),
         selector_type="tag",
         selector={"tag": "sides"},
@@ -432,7 +434,7 @@ def material_fracture_2d(
 
     # Neumann (zero flux) for phase-field on all boundaries
     bc_phi = NeumannBC(
-        name_or_values="bc_phi_zero_flux",
+        name="bc_phi_zero_flux",
         fields=("phi",),
         selector_type="tag",
         selector={"tag": "boundary"},
@@ -518,7 +520,7 @@ def black_scholes_1d(
 
     # Initial condition (terminal payoff at tau=0)
     ic_payoff = InitialCondition(
-        name_or_values="ic_terminal_payoff",
+        name="ic_terminal_payoff",
         fields=("V",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 1], 0.0),
@@ -528,7 +530,7 @@ def black_scholes_1d(
 
     # V = 0 at S = 0
     bc_S0 = DirichletBC(
-        name_or_values="bc_S_zero",
+        name="bc_S_zero",
         fields=("V",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
@@ -538,7 +540,7 @@ def black_scholes_1d(
 
     # ∂V/∂S = 1 at S = S_max (delta -> 1 for deep in-the-money)
     bc_Smax = NeumannBC(
-        name_or_values="bc_S_max",
+        name="bc_S_max",
         fields=("V",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], S_max),
@@ -629,7 +631,7 @@ def heston_pde_2d(
 
     # Terminal payoff (European call)
     ic_payoff = InitialCondition(
-        name_or_values="ic_terminal_payoff",
+        name="ic_terminal_payoff",
         fields=("V",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 2], 0.0),
@@ -639,7 +641,7 @@ def heston_pde_2d(
 
     # V = 0 at S = 0
     bc_S0 = DirichletBC(
-        name_or_values="bc_S_zero",
+        name="bc_S_zero",
         fields=("V",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
@@ -649,7 +651,7 @@ def heston_pde_2d(
 
     # ∂V/∂S = 1 at S = S_max
     bc_Smax = NeumannBC(
-        name_or_values="bc_S_max",
+        name="bc_S_max",
         fields=("V",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], S_max),
@@ -659,7 +661,7 @@ def heston_pde_2d(
 
     # ∂V/∂v = 0 at v = v_max (far-field in variance)
     bc_vmax = NeumannBC(
-        name_or_values="bc_v_max",
+        name="bc_v_max",
         fields=("V",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 1], v_max),
@@ -748,7 +750,7 @@ def pk_two_compartment(
     )
 
     ic_C1 = InitialCondition(
-        name_or_values="ic_C1",
+        name="ic_C1",
         fields=("C1",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
@@ -757,7 +759,7 @@ def pk_two_compartment(
     )
 
     ic_C2 = InitialCondition(
-        name_or_values="ic_C2",
+        name="ic_C2",
         fields=("C2",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
@@ -839,7 +841,7 @@ def drug_diffusion_tissue(
     )
 
     ic_C = InitialCondition(
-        name_or_values="ic_C",
+        name="ic_C",
         fields=("C",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 2], 0.0),
@@ -849,7 +851,7 @@ def drug_diffusion_tissue(
 
     # Drug source at x=0 (capillary wall or application site)
     bc_source = DirichletBC(
-        name_or_values="bc_source",
+        name="bc_source",
         fields=("C",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
@@ -859,7 +861,7 @@ def drug_diffusion_tissue(
 
     # Zero-flux on remaining boundaries (insulated tissue)
     bc_no_flux = NeumannBC(
-        name_or_values="bc_no_flux",
+        name="bc_no_flux",
         fields=("C",),
         selector_type="tag",
         selector={"tag": "no_flux"},
@@ -945,7 +947,7 @@ def sir_epidemic(
     )
 
     ic_S = InitialCondition(
-        name_or_values="ic_S",
+        name="ic_S",
         fields=("S",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
@@ -954,7 +956,7 @@ def sir_epidemic(
     )
 
     ic_I = InitialCondition(
-        name_or_values="ic_I",
+        name="ic_I",
         fields=("I",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
@@ -963,7 +965,7 @@ def sir_epidemic(
     )
 
     ic_R = InitialCondition(
-        name_or_values="ic_R",
+        name="ic_R",
         fields=("R",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
@@ -1047,7 +1049,7 @@ def opinion_dynamics_2d(
 
     # Random-ish initial condition centred near zero (via callable)
     ic_u = InitialCondition(
-        name_or_values="ic_u_random",
+        name="ic_u_random",
         fields=("u",),
         selector_type="callable",
         selector=lambda X, ctx: np.isclose(X[:, 2], 0.0),
@@ -1058,7 +1060,7 @@ def opinion_dynamics_2d(
 
     # Zero-flux (Neumann) on all boundaries — closed society
     bc_no_flux = NeumannBC(
-        name_or_values="bc_no_flux",
+        name="bc_no_flux",
         fields=("u",),
         selector_type="tag",
         selector={"tag": "boundary"},

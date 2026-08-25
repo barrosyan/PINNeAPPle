@@ -51,15 +51,18 @@ def trajectory_to_upd(
 
     coords = {"time": traj["time"].astype(np.float32)}
 
-    meta = {
-        "upd": {"version": "0.1", "source": "mujoco"},
-        "provenance": {"solver": "mujoco.mj_step"},
-        "units": {},
-    }
+    provenance = {"version": "0.1", "source": "mujoco", "solver": "mujoco.mj_step"}
+    units: Dict[str, str] = {}
     if meta_extra:
-        meta.update(meta_extra)
+        provenance.update(meta_extra.get("provenance", meta_extra))
+        units.update(meta_extra.get("units", {}))
 
-    return PhysicalSample(fields=fields, coords=coords, meta=meta)
+    return PhysicalSample(
+        state=fields,
+        domain={"type": "grid", "coords": coords},
+        provenance=provenance,
+        schema={"units": units},
+    )
 
 
 def trajectories_to_upd(

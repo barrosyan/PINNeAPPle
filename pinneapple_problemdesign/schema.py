@@ -20,6 +20,13 @@ TaskType = Literal[
 RiskLevel = Literal["low", "medium", "high"]
 GapSeverity = Literal["blocker", "important", "nice_to_have"]
 
+# Task types that are always solved via a PDE-residual PINN pipeline.
+_PINN_ONLY_TASK_TYPES = frozenset({"pde_solution", "inverse_problem"})
+# Task types that use a PINN pipeline only when governing equations were
+# actually elicited (otherwise a PDE-residual loss would have no physics
+# to enforce, so they fall back to a supervised/neural-operator approach).
+_PINN_IF_PHYSICS_TASK_TYPES = frozenset({"control", "optimization"})
+
 
 @dataclass
 class Assumption:
@@ -119,6 +126,20 @@ class ProblemSpec:
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+
+def uses_pinn_approach(spec: "ProblemSpec") -> bool:
+    """Whether ``spec`` should be solved with a PDE-residual PINN pipeline.
+
+    Single source of truth shared by the plan-text builder
+    (``knowledge.mapping``) and the code generator (``codegen``) so the
+    recommended approach and the generated code never disagree.
+    """
+    if spec.task_type in _PINN_ONLY_TASK_TYPES:
+        return True
+    if spec.task_type in _PINN_IF_PHYSICS_TASK_TYPES:
+        return bool(spec.physics.governing_equations)
+    return False
 
 
 @dataclass

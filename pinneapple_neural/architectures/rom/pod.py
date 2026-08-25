@@ -63,6 +63,7 @@ class POD(ROMBase):
         self.register_buffer("mean_",  torch.empty(0))
         self.register_buffer("basis_", torch.empty(0))
         self.register_buffer("sv_",    torch.empty(0))
+        self.register_buffer("total_energy_", torch.tensor(0.0))
         self._fitted = False
         self._r_eff: int = 0
 
@@ -130,6 +131,7 @@ class POD(ROMBase):
         Vr = Vh[:r_eff].t().contiguous()
         self.basis_ = Vr
         self.sv_    = S[:r_eff].clone()
+        self.total_energy_ = (S ** 2).sum()
         self._r_eff = r_eff
         self._fitted = True
         return self
@@ -171,6 +173,7 @@ class POD(ROMBase):
 
         self.basis_ = Vh_m[:r_eff].t().contiguous()
         self.sv_    = S_m[:r_eff].clone()
+        self.total_energy_ = (S_m ** 2).sum()
         self._r_eff = r_eff
         return self
 
@@ -196,11 +199,11 @@ class POD(ROMBase):
 
     @property
     def explained_variance_ratio_(self) -> Optional[torch.Tensor]:
-        """Energy fraction for each mode: sv_i^2 / sum(sv^2)."""
+        """Energy fraction of the ORIGINAL (untruncated) spectrum captured by each retained mode."""
         if not self._fitted or self.sv_.numel() == 0:
             return None
         s2 = self.sv_ ** 2
-        return s2 / s2.sum().clamp_min(1e-12)
+        return s2 / self.total_energy_.clamp_min(1e-12)
 
     def reconstruction_error(self, X: torch.Tensor) -> Dict[str, float]:
         """

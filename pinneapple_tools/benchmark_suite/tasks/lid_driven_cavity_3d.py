@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Dict, Optional
 
 import numpy as np
@@ -23,11 +24,24 @@ _GHIA_U_RE100 = np.array([
     -0.20581, -0.13641,  0.00332,  0.23151,  0.68717,  0.73722,  0.78871,  1.0,
 ])
 
+# Re=400 centerline u — Ghia et al. (1982) Table 1
+_GHIA_U_RE400 = np.array([
+    0.0,     -0.08186, -0.09266, -0.10338, -0.14612, -0.24299, -0.32726, -0.17119,
+    -0.11477,  0.02135,  0.16256,  0.29093,  0.55892,  0.61756,  0.68439,  1.0,
+])
+
 # Re=1000 centerline u — Ghia et al. (1982) Table 1
 _GHIA_U_RE1000 = np.array([
     0.0,     -0.18109, -0.20196, -0.22220, -0.29730, -0.38289, -0.27805, -0.10648,
     -0.06080,  0.05702,  0.18719,  0.33304,  0.46604,  0.51117,  0.57492,  1.0,
 ])
+
+# Available reference Reynolds numbers, keyed to their centerline profile.
+_GHIA_TABLES = {
+    100.0: _GHIA_U_RE100,
+    400.0: _GHIA_U_RE400,
+    1000.0: _GHIA_U_RE1000,
+}
 
 
 class LidDrivenCavity3DTask(ArenaTask):
@@ -152,20 +166,19 @@ class LidDrivenCavity3DTask(ArenaTask):
     def get_reference_centerline(self) -> Dict[str, np.ndarray]:
         """Return reference data from Ghia et al. (1982).
 
-        Selects the closest available Reynolds number (100 or 1000).
-        Data is normalized: y in [0,1], u in [-U_lid, +U_lid] with U_lid=1.
+        Selects the closest available Reynolds number (100, 400, or 1000),
+        comparing in log-space since flow regime similarity scales with Re
+        ratio rather than absolute difference. Data is normalized: y in
+        [0,1], u in [-U_lid, +U_lid] with U_lid=1.
 
         Returns
         -------
         dict
             ``{"y": y_pts, "u": u_ref}`` normalized to [0,1].
         """
-        if self.Re <= 550.0:
-            # Closer to Re=100
-            return {"y": _GHIA_Y.copy(), "u": _GHIA_U_RE100.copy()}
-        else:
-            # Use Re=1000 reference
-            return {"y": _GHIA_Y.copy(), "u": _GHIA_U_RE1000.copy()}
+        re = max(self.Re, 1e-9)
+        closest_re = min(_GHIA_TABLES, key=lambda r: abs(math.log(r) - math.log(re)))
+        return {"y": _GHIA_Y.copy(), "u": _GHIA_TABLES[closest_re].copy()}
 
     def validate_against_literature(
         self,
@@ -268,11 +281,17 @@ def _divergence_residual(
     y: Optional[np.ndarray],
     z: Optional[np.ndarray],
 ) -> float:
-    """Estimate mean |div(u)| via finite differences on the flat point cloud.
+    """Estimate mean |div(u)| on a (generally scattered/unstructured) point
+    cloud via a local least-squares gradient fit.
 
-    When the velocity arrays are already flat (unstructured), we use a simple
-    nearest-neighbour finite difference approximation.  This is an approximation
-    only; for structured grids the caller should pass reshaped arrays.
+    For each point, the k nearest neighbours in full coordinate space are
+    used to fit a local linear model f(x,y,z) ~ f(x0,y0,z0) + grad(f)."dX,
+    and the diagonal term of interest (du/dx, dv/dy, dw/dz) is read off the
+    fitted gradient. This holds the *other* coordinates approximately fixed
+    in the least-squares sense; a naive per-axis sort-and-diff instead
+    conflates variation along the sort axis with whatever the other,
+    unsorted coordinates happen to be doing at each point, which is not a
+    valid partial derivative on randomly-sampled collocation clouds.
     """
     if u is None or v is None or x is None or y is None:
         return float("nan")
@@ -281,29 +300,42 @@ def _divergence_residual(
     if n < 4:
         return float("nan")
 
-    # Central finite difference along x: du/dx ~ (u[i+1]-u[i-1])/(x[i+1]-x[i-1])
-    # Sort by x to approximate partial derivatives
-    def _partial(f: np.ndarray, coord: np.ndarray) -> np.ndarray:
-        order = np.argsort(coord)
-        f_s = f[order]
-        c_s = coord[order]
-        dc = np.diff(c_s)
-        # Guard against zero spacing
-        dc = np.where(np.abs(dc) < 1e-15, 1e-15, dc)
-        df = np.diff(f_s) / dc
-        # pad to original length
-        df_full = np.empty(n)
-        df_full[order[:-1]] = df
-        df_full[order[-1]] = df[-1]
-        return df_full
+    has_z = w is not None and z is not None
+    coords = np.column_stack([x, y, z]) if has_z else np.column_stack([x, y])
+    fields = [u, v, w] if has_z else [u, v]
+    d = coords.shape[1]
 
-    du_dx = _partial(u, x)
-    dv_dy = _partial(v, y)
+    # A diagnostic mean over the cloud, not a per-point quantity -- subsample
+    # to bound the neighbour search cost for large point clouds.
+    max_pts = 2000
+    if n > max_pts:
+        sel = np.random.default_rng(0).choice(n, max_pts, replace=False)
+        coords = coords[sel]
+        fields = [f[sel] for f in fields]
+        n = max_pts
 
-    div = du_dx + dv_dy
-    if w is not None and z is not None:
-        dw_dz = _partial(w, z)
-        div = div + dw_dz
+    k = min(max(4 * d, 8), n - 1)
+
+    try:
+        from scipy.spatial import cKDTree
+        nn_idx = cKDTree(coords).query(coords, k=k + 1)[1]
+    except Exception:
+        sq = (coords ** 2).sum(axis=1)
+        d2 = sq[:, None] + sq[None, :] - 2.0 * coords @ coords.T
+        np.maximum(d2, 0.0, out=d2)
+        nn_idx = np.argsort(d2, axis=1)[:, : k + 1]
+
+    div = np.zeros(n)
+    for i in range(n):
+        neigh = nn_idx[i]
+        neigh = neigh[neigh != i][:k]
+        if len(neigh) < d:
+            continue
+        dX = coords[neigh] - coords[i]
+        for comp, f in enumerate(fields):
+            df = f[neigh] - f[i]
+            grad, *_ = np.linalg.lstsq(dX, df, rcond=None)
+            div[i] += grad[comp]
 
     return float(np.mean(np.abs(div)))
 

@@ -1001,22 +1001,29 @@ class PINNArenaBenchmark:
                     )
             return "\n".join(lines)
 
-        # Global ranking
+        # Global ranking — averages PER-PROBLEM RANK, not the raw metric.
+        # rel_l2 (and similar) scale wildly across heterogeneous PDEs (e.g.
+        # Poisson vs. Kovasznay NS), so a plain mean lets one divergent run
+        # on a single problem swamp an otherwise-good model; average rank
+        # (already computed per-problem by _assign_ranks) is scale-free.
         all_models = {r.model_id for r in self.results}
-        avg_by_model: Dict[str, float] = {}
+        avg_rank_by_model: Dict[str, float] = {}
+        avg_metric_by_model: Dict[str, float] = {}
         for mid in all_models:
+            ranks = [r.rank for r in self.results if r.model_id == mid]
+            avg_rank_by_model[mid] = float(np.mean(ranks)) if ranks else float("nan")
             vals = [r.metrics.get(metric, float("nan")) for r in self.results if r.model_id == mid]
             vals = [v for v in vals if not math.isnan(v)]
-            avg_by_model[mid] = float(np.mean(vals)) if vals else float("nan")
+            avg_metric_by_model[mid] = float(np.mean(vals)) if vals else float("nan")
 
-        ranked = sorted(avg_by_model.items(), key=lambda x: x[1])
+        ranked = sorted(avg_rank_by_model.items(), key=lambda x: x[1])
         lines = [
-            "\n  Global Leaderboard (avg across all problems)",
-            f"  {'Rank':<5} {'Model':<22} {'avg ' + metric:>12}",
-            "  " + "-" * 42,
+            "\n  Global Leaderboard (avg rank across all problems)",
+            f"  {'Rank':<5} {'Model':<22} {'avg rank':>10}  {'avg ' + metric:>12}",
+            "  " + "-" * 56,
         ]
-        for i, (mid, val) in enumerate(ranked, start=1):
-            lines.append(f"  #{i:<4} {mid:<22} {val:>12.4e}")
+        for i, (mid, rk) in enumerate(ranked, start=1):
+            lines.append(f"  #{i:<4} {mid:<22} {rk:>10.2f}  {avg_metric_by_model[mid]:>12.4e}")
         return "\n".join(lines)
 
     def best_per_problem(self, metric: str = "rel_l2") -> Dict[str, str]:
@@ -1059,7 +1066,12 @@ class PINNArenaBenchmark:
         return "\n".join(lines)
 
     def plot_leaderboard(self, save_path: Optional[str] = None) -> None:
-        """Bar chart of average rel_l2 per model across all problems."""
+        """Bar chart of average per-problem rank per model.
+
+        Uses average rank rather than average rel_l2: rel_l2 scales wildly
+        across heterogeneous PDEs, so a plain mean would let one divergent
+        run on a single problem dominate the comparison.
+        """
         try:
             import matplotlib.pyplot as plt
         except ImportError:
@@ -1069,12 +1081,8 @@ class PINNArenaBenchmark:
         models = list(dict.fromkeys(r.model_id for r in self.results))
         avgs = []
         for mid in models:
-            vals = [
-                r.metrics.get("rel_l2", float("nan"))
-                for r in self.results
-                if r.model_id == mid and not math.isnan(r.metrics.get("rel_l2", float("nan")))
-            ]
-            avgs.append(float(np.mean(vals)) if vals else float("nan"))
+            ranks = [r.rank for r in self.results if r.model_id == mid]
+            avgs.append(float(np.mean(ranks)) if ranks else float("nan"))
 
         order = sorted(range(len(models)), key=lambda i: avgs[i] if not math.isnan(avgs[i]) else 1e9)
         models_s = [models[i] for i in order]
@@ -1082,10 +1090,9 @@ class PINNArenaBenchmark:
 
         fig, ax = plt.subplots(figsize=(10, 5))
         bars = ax.bar(models_s, avgs_s, color="steelblue", edgecolor="white")
-        ax.bar_label(bars, fmt="%.2e", fontsize=9, padding=3)
-        ax.set_ylabel("Average Relative L2 Error")
+        ax.bar_label(bars, fmt="%.2f", fontsize=9, padding=3)
+        ax.set_ylabel("Average Rank (across problems)")
         ax.set_title("PINN Arena — Model Leaderboard (lower is better)")
-        ax.set_yscale("log")
         plt.xticks(rotation=20, ha="right")
         plt.tight_layout()
 

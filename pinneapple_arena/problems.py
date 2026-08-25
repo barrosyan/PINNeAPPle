@@ -665,24 +665,25 @@ class KleinGordon1D(ArenaProblem):
 
 class NLS1D(ArenaProblem):
     """1D NLS bright soliton: |ψ(x,t)| = A*sech(A*(x-vt)).
-    We solve for (u, v) = (Re ψ, Im ψ) using the real/imaginary split."""
+    We solve for (u, v) = (Re ψ, Im ψ) using the real/imaginary split.
+    Solves i*psi_t + psi_xx + 2*|psi|^2*psi = 0 (nonlinearity coefficient 2)."""
     name = "nls_1d"
-    description = "1D Nonlinear Schrodinger soliton: i*psi_t + psi_xx + |psi|^2*psi = 0"
+    description = "1D Nonlinear Schrodinger soliton: i*psi_t + psi_xx + 2*|psi|^2*psi = 0"
     domain = "Waves"
     input_dim = 2
     output_dim = 2  # (Re ψ, Im ψ)
 
     def analytical(self, x, t, A=1.0, v=0.0, **kw):
-        # Bright soliton: ψ = A*sech(A*(x-vt))*exp(i*(v/2*x - (v²/4 - A²/2)*t))
+        # Bright soliton: ψ = A*sech(A*(x-vt))*exp(i*(v/2*x - (v²/4 - A²)*t))
         phase_x = v/2 * x
-        phase_t = -(v**2/4 - A**2/2) * t
+        phase_t = -(v**2/4 - A**2) * t
         amp = A / np.cosh(A*(x - v*t))
         u = amp * np.cos(phase_x + phase_t)
         w = amp * np.sin(phase_x + phase_t)
         return {"u": u, "v": w}
 
     def pinn_residuals(self, net, xy_int, xy_bc, uv_bc, A=1.0, v=0.0, **kw):
-        # NLS split: u_t = -v_xx - (u²+v²)*v,  v_t = u_xx + (u²+v²)*u
+        # NLS split (gamma=2): u_t = -v_xx - 2*(u²+v²)*v,  v_t = u_xx + 2*(u²+v²)*u
         xt = xy_int.clone().requires_grad_(True)
         out = _unwrap(net(xt))
         u, wi = out[:, 0:1], out[:, 1:2]
@@ -690,8 +691,8 @@ class NLS1D(ArenaProblem):
         u_x = _grad(u, xt)[:, 0:1]; wi_x = _grad(wi, xt)[:, 0:1]
         u_xx = _grad(u_x, xt)[:, 0:1]; wi_xx = _grad(wi_x, xt)[:, 0:1]
         rho2 = u**2 + wi**2
-        r1 = u_t + wi_xx + rho2*wi
-        r2 = wi_t - u_xx - rho2*u
+        r1 = u_t + wi_xx + 2*rho2*wi
+        r2 = wi_t - u_xx - 2*rho2*u
         res = (r1**2 + r2**2).mean()
         bc = ((_unwrap(net(xy_bc)) - uv_bc)**2).mean()
         return res, bc
@@ -721,7 +722,13 @@ class NLS1D(ArenaProblem):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class Burgers1D(ArenaProblem):
-    """1D Burgers: u_t + u*u_x = nu*u_xx."""
+    """1D Burgers: u_t + u*u_x = nu*u_xx, u(x,0) = -sin(pi*x), u(-1,t)=u(1,t)=0.
+
+    Exact solution via the Cole-Hopf transform u = -2*nu*phi_x/phi, where
+    phi solves the heat equation with phi(x,0) = exp(-integral(u0)/(2*nu)).
+    The convolution integral against the heat kernel is evaluated with
+    Gauss-Hermite quadrature (this closed form has no elementary expression
+    for a sinusoidal initial condition, unlike the previous placeholder)."""
     name = "burgers_1d"
     description = "1D viscous Burgers equation u_t + u*u_x = nu*u_xx"
     domain = "Nonlinear / Solitons"
@@ -730,8 +737,19 @@ class Burgers1D(ArenaProblem):
     physics_preset = "burgers_1d_default"
 
     def analytical(self, x, t, nu=0.01, **kw):
-        u = -np.sin(math.pi*x) / (1 + t*math.pi*np.cos(math.pi*x) + 1e-8)
-        return {"u": u}
+        x = np.asarray(x, dtype=np.float64)
+        t = np.asarray(t, dtype=np.float64)
+        x, t = np.broadcast_arrays(x, t)
+        shape = x.shape
+        xf = x.ravel(); tf = t.ravel()
+        z, w = np.polynomial.hermite.hermgauss(64)  # nodes/weights for ∫e^{-z^2}f(z)dz
+        sqrt4nt = np.sqrt(np.maximum(4*nu*tf, 0.0))
+        y = xf[:, None] - z[None, :] * sqrt4nt[:, None]
+        phi0 = np.exp((1 - np.cos(math.pi*y)) / (2*math.pi*nu))
+        num = np.sum(w[None, :] * phi0 * np.sin(math.pi*y), axis=1)
+        den = np.sum(w[None, :] * phi0, axis=1)
+        u = -num / (den + 1e-300)
+        return {"u": u.reshape(shape)}
 
     def pinn_residuals(self, net, xy_int, xy_bc, uv_bc, nu=0.01, **kw):
         xt = xy_int.clone().requires_grad_(True)
@@ -844,7 +862,8 @@ class AllenCahn(AreraProblem := ArenaProblem):
 
 class FisherKPP1D(ArenaProblem):
     """1D Fisher-KPP: u_t = D*u_xx + r*u*(1-u).
-    Traveling wave: u ≈ 1/(1+exp(x - v*t)) with v = 5/sqrt(6)."""
+    Exact Ablowitz-Zeidler traveling wave: u = [1/(1+exp(w*(x-v*t)))]^2
+    with v = 5*sqrt(D*r/6) and w = sqrt(r/(6D))."""
     name = "fisher_kpp_1d"
     description = "1D Fisher-KPP traveling wave: u_t = D*u_xx + r*u*(1-u)"
     domain = "Reaction-Diffusion"
@@ -856,7 +875,7 @@ class FisherKPP1D(ArenaProblem):
     def analytical(self, x, t, D=1.0, r=1.0, **kw):
         v = self._speed(D, r)
         w = 1/math.sqrt(6*D/r)   # sharpness parameter
-        u = 1.0 / (1.0 + np.exp(w*(x - v*t)))
+        u = (1.0 / (1.0 + np.exp(w*(x - v*t))))**2
         return {"u": u}
 
     def pinn_residuals(self, net, xy_int, xy_bc, uv_bc, D=1.0, r=1.0, **kw):
@@ -943,11 +962,11 @@ class FitzHughNagumo1D(ArenaProblem):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class LinearElasticity2D(ArenaProblem):
-    """2D plane-stress linear elasticity (manufactured solution).
+    """2D plane-strain linear elasticity (manufactured solution).
     Displacement: u = sin(πx)sin(πy), v = 0.
     Body force computed from Lamé equations."""
     name = "linear_elasticity_2d"
-    description = "2D plane-stress linear elasticity with manufactured displacement"
+    description = "2D plane-strain linear elasticity with manufactured displacement"
     domain = "Structural"
     input_dim = 2
     output_dim = 2  # (u_x, u_y) displacements
@@ -967,12 +986,10 @@ class LinearElasticity2D(ArenaProblem):
     def _body_force(self, x, y, E=1.0, nu_p=0.3):
         lam, mu = self._lame(E, nu_p)
         p = math.pi
-        # For u_x = sin(πx)sin(πy), u_y = cos(πx)cos(πy)/π:
-        # div(eps) computed symbolically → body force
-        fx = (lam+2*mu)*p**2*np.sin(p*x)*np.sin(p*y) + mu*p**2*np.sin(p*x)*np.sin(p*y) \
-             - lam*p**2*np.sin(p*x)*np.sin(p*y)
-        fy = (lam+2*mu)*p*np.cos(p*x)*np.cos(p*y) + mu*p*np.cos(p*x)*np.cos(p*y) \
-             + lam*p*np.cos(p*x)*np.cos(p*y)
+        # For u_x = sin(πx)sin(πy), u_y = cos(πx)cos(πy)/π, f = -[(λ+μ)∇(∇·u) + μ∇²u]
+        # (verified symbolically: sigma = lam*div(u)*I + 2*mu*eps, f = -div(sigma))
+        fx = ((lam+3*mu)*p**2 - (lam+mu)*p) * np.sin(p*x)*np.sin(p*y)
+        fy = (-(lam+mu)*p**2 + (lam+3*mu)*p) * np.cos(p*x)*np.cos(p*y)
         return fx, fy
 
     def pinn_residuals(self, net, xy_int, xy_bc, uv_bc, E=1.0, nu_p=0.3, **kw):

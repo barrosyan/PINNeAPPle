@@ -82,7 +82,7 @@ def compute_q_criterion_2d(
     """
     Q-criterion for 2-D incompressible flow.
 
-    Q = −(∂u/∂x)(∂v/∂y) − (∂v/∂x)(∂u/∂y)
+    Q = (∂u/∂x)(∂v/∂y) − (∂u/∂y)(∂v/∂x)
 
     Q > 0 → rotation dominates strain → vortex core.
     u, v : 2-D arrays (nx, ny).  Returns Q (nx, ny).
@@ -92,7 +92,7 @@ def compute_q_criterion_2d(
     dudy = np.gradient(u_, dy, axis=1)
     dvdx = np.gradient(v_, dx, axis=0)
     dvdy = np.gradient(v_, dy, axis=1)
-    return -(dudx * dvdy) - (dvdx * dudy)
+    return (dudx * dvdy) - (dudy * dvdx)
 
 
 # ---------------------------------------------------------------------------
@@ -173,8 +173,8 @@ def compute_lambda2_3d(
         [0.5*(g["dwdx"]-g["dudz"]),  0.5*(g["dwdy"]-g["dvdz"]),  np.zeros_like(u_)],
     ])
 
-    # A = S²+Ω²: sum over middle index
-    A = np.einsum("iknyz,jknyz->ijnyz", S, S) + np.einsum("iknyz,jknyz->ijnyz", W, W)
+    # A = S²+Ω²: matrix product (sum over shared middle index), not S·Sᵀ / W·Wᵀ
+    A = np.einsum("iknyz,kjnyz->ijnyz", S, S) + np.einsum("iknyz,kjnyz->ijnyz", W, W)
 
     # λ₂ is the middle eigenvalue of A(3×3) at each point — sort eigenvalues
     lambda2 = np.empty((nx, ny, nz))

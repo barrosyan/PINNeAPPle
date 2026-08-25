@@ -346,7 +346,7 @@ class BayesianPINN(PINNBase):
 
         return {
             "total":   total,
-            "elbo":    -(nll_pde + nll_obs) + cfg.kl_weight * kl,
+            "elbo":    -(nll_pde + nll_obs) - cfg.kl_weight * kl,
             "kl":       kl,
             "nll_pde":  nll_pde,
             "nll_obs":  nll_obs,

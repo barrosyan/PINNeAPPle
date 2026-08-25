@@ -43,9 +43,27 @@ def _load_burgers_1d(Nx: int = 128, Nt: int = 101,
         t_out = sol.t
         u_out = sol.y.T          # (Nt_actual, Nx)
     except ImportError:
+        # No scipy: explicit-Euler FD fallback that actually solves the
+        # (nonlinear) viscous Burgers equation, reusing the same upwind
+        # advection + central-diff diffusion RHS used in the scipy path.
+        # Substepped to an explicit-Euler stability bound so it stays stable:
+        #   diffusion CFL: dt <= 0.5*dx^2/nu
+        #   advection CFL: dt <= dx/|u|_max
         t_out = np.linspace(0.0, 1.0, Nt)
-        X, T = np.meshgrid(x, t_out)
-        u_out = -np.sin(np.pi * X) * np.exp(-nu * np.pi**2 * T)
+        u = -np.sin(np.pi * x)
+        u[0] = u[-1] = 0.0
+        u_out = np.zeros((Nt, Nx))
+        u_out[0] = u
+        u_bound = max(float(np.max(np.abs(u))), 1e-8)
+        dt_stable = 0.8 * min(0.5 * dx**2 / nu, dx / u_bound)
+        for i in range(1, Nt):
+            t_cur, t_target = t_out[i - 1], t_out[i]
+            n_sub = max(1, int(math.ceil((t_target - t_cur) / dt_stable)))
+            dt_sub = (t_target - t_cur) / n_sub
+            for _ in range(n_sub):
+                u = u + dt_sub * _rhs(0.0, u)
+                u[0] = u[-1] = 0.0
+            u_out[i] = u
 
     return {
         "x": x, "t": t_out, "u": u_out,
@@ -199,9 +217,28 @@ def _load_allen_cahn_1d(Nx: int = 128, Nt: int = 101,
         t_out = sol.t
         u_out = sol.y.T
     except ImportError:
+        # No scipy: explicit-Euler FD fallback that actually solves the
+        # (nonlinear) Allen-Cahn equation, reusing the same periodic-BC
+        # diffusion + cubic-reaction RHS used in the scipy path. Substepped
+        # to an explicit-Euler stability bound combining the diffusion CFL
+        # (dt <= 0.5*dx^2/eps^2) with a reaction-stiffness bound derived from
+        # d/du[-5*(u^3-u)] = -15*u^2+5, using |u|<=u_bound (u=+-1 are stable
+        # equilibria bounding the trajectory given |u0|<=1).
         t_out = np.linspace(0.0, 1.0, Nt)
-        X, T = np.meshgrid(x, t_out)
-        u_out = X**2 * np.cos(np.pi * X) * np.exp(-eps**2 * np.pi**2 * T)
+        u = u0.copy()
+        u_out = np.zeros((Nt, Nx))
+        u_out[0] = u
+        u_bound = max(float(np.max(np.abs(u))), 1.0)
+        dt_diffusion = 0.5 * dx**2 / eps**2
+        dt_reaction = 2.0 / (15.0 * u_bound**2 + 5.0)
+        dt_stable = 0.8 * min(dt_diffusion, dt_reaction)
+        for i in range(1, Nt):
+            t_cur, t_target = t_out[i - 1], t_out[i]
+            n_sub = max(1, int(math.ceil((t_target - t_cur) / dt_stable)))
+            dt_sub = (t_target - t_cur) / n_sub
+            for _ in range(n_sub):
+                u = u + dt_sub * _rhs(0.0, u)
+            u_out[i] = u
 
     return {
         "x": x, "t": t_out, "u": u_out,

@@ -46,8 +46,17 @@ class FFTForecaster:
 
         # Select top-K by amplitude (skip DC)
         idx = np.argsort(amps[1:])[::-1][: self.n_harmonics] + 1
+
+        # Two-sided amplitude: bins strictly between DC and Nyquist represent
+        # a conjugate pair and get doubled. The Nyquist bin itself (index
+        # n//2, only present when n is even) is real-valued and unpaired, so
+        # it must NOT be doubled or its reconstructed amplitude is 2x too big.
+        scale = np.full(idx.shape, 2.0 / self._n)
+        if self._n % 2 == 0:
+            scale[idx == self._n // 2] = 1.0 / self._n
+
         self._freqs  = freqs[idx]
-        self._amps   = amps[idx] * 2.0 / self._n   # two-sided amplitude
+        self._amps   = amps[idx] * scale
         self._phases = np.angle(fft_vals[idx])
         return self
 

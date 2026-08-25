@@ -207,13 +207,22 @@ class MAMLTrainer:
     ) -> Tuple[nn.Module, torch.Tensor]:
         """Inner loop via deep-copy + SGD (no ``torch.func``).
 
-        This path is used on PyTorch < 2.0.  It cannot propagate second-order
-        gradients through the inner update, so it always behaves as FOMAML.
+        This path is used on PyTorch < 2.0.  ``adapted`` is a deep copy of
+        ``self.model``, so it has no autograd lineage back to the
+        meta-parameters and ``query_loss.backward()`` alone cannot update
+        them.  Instead we apply the FOMAML approximation explicitly: treat
+        d(adapted_param)/d(meta_param) as the identity (i.e. ignore the
+        inner-loop update's own gradient) and copy
+        d(query_loss)/d(adapted_param) directly onto ``self.model``'s
+        matching parameter's ``.grad``, accumulating across tasks in the
+        batch. :meth:`meta_update` then only has to average and step the
+        optimizer.
 
         Returns
         -------
         adapted_model : nn.Module   (deep copy with adapted weights)
-        query_loss : Tensor         (detached from meta-graph — FOMAML only)
+        query_loss : Tensor         (detached — gradients are applied here,
+                                      not via a later ``.backward()`` call)
         """
         cfg = self.config
         adapted = copy.deepcopy(self.model)
@@ -226,10 +235,23 @@ class MAMLTrainer:
             loss.backward()
             inner_opt.step()
 
-        adapted.eval()
         x_query = task["query"]["x_col"].to(self.device)
         query_loss = task["physics_fn"](adapted, x_query)
-        return adapted, query_loss
+
+        adapted_names, adapted_params = zip(*adapted.named_parameters())
+        grads = torch.autograd.grad(query_loss, list(adapted_params), allow_unused=True)
+        grad_by_name = dict(zip(adapted_names, grads))
+        for name, meta_p in self.model.named_parameters():
+            g = grad_by_name.get(name)
+            if g is None:
+                continue
+            if meta_p.grad is None:
+                meta_p.grad = g.detach().clone()
+            else:
+                meta_p.grad = meta_p.grad + g.detach()
+
+        adapted.eval()
+        return adapted, query_loss.detach()
 
     def _inner_loop(
         self, task: dict
@@ -263,11 +285,24 @@ class MAMLTrainer:
 
         for task in tasks:
             _, query_loss = self._inner_loop(task)
-            meta_loss = meta_loss + query_loss
+            if _TORCH_FUNC_AVAILABLE:
+                meta_loss = meta_loss + query_loss
+            else:
+                meta_loss = meta_loss + query_loss.detach()
             task_losses.append(float(query_loss.detach()))
 
         meta_loss = meta_loss / len(tasks)
-        meta_loss.backward()
+
+        if _TORCH_FUNC_AVAILABLE:
+            meta_loss.backward()
+        else:
+            # _inner_loop_fallback already accumulated the (unaveraged)
+            # FOMAML gradient contribution from each task directly onto
+            # self.model.parameters()[i].grad — average it here.
+            for p in self.model.parameters():
+                if p.grad is not None:
+                    p.grad = p.grad / len(tasks)
+
         self.meta_optimizer.step()
 
         return {

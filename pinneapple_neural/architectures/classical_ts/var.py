@@ -152,7 +152,7 @@ class VAR(ClassicalTSBase):
         X = self._make_design(x)  # (B*(T-p), F)
         Yhat = X @ self.W         # (B*(T-p), D)
 
-        y_hat = Yhat.reshape(T - self.p, B, D).permute(1, 0, 2)  # (B, T-p, D)
+        y_hat = Yhat.reshape(B, T - self.p, D)  # (B, T-p, D); rows are batch-major, matching _make_design
 
         losses: Dict[str, torch.Tensor] = {"total": torch.tensor(0.0, device=x.device)}
         if return_loss and y_true is not None:

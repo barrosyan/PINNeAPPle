@@ -283,21 +283,32 @@ def time_dependent_loss(
     return (res_R.pow(2) + res_I.pow(2)).mean()
 
 
-def normalization_loss(model: nn.Module, x: torch.Tensor) -> torch.Tensor:
+def normalization_loss(
+    model: nn.Module, x: torch.Tensor, domain_volume: float = 1.0
+) -> torch.Tensor:
     """
     Soft constraint enforcing wavefunction normalization: ∫|ψ|² dx ≈ 1.
 
     Approximated via Monte Carlo: E[|ψ(x)|²] ≈ 1 / |Ω| where |Ω| is the
-    domain measure. For a unit domain this reduces to mean(ψ²) ≈ 1.
+    domain measure, i.e. ``domain_volume`` — the (hyper-)volume of the
+    collocation domain the ``x`` samples were drawn from. For a unit domain
+    this reduces to mean(ψ²) ≈ 1, which is the default when
+    ``domain_volume`` is left unspecified.
+
+    Parameters
+    ----------
+    domain_volume : float
+        Measure |Ω| of the sampling domain (e.g. ``(x_max - x_min)`` in 1D,
+        ``(x_max - x_min) * (y_max - y_min)`` in 2D). Defaults to ``1.0``.
 
     Returns
     -------
-    scalar Tensor — (mean(ψ²) − 1)²
+    scalar Tensor — (mean(ψ²) − 1/|Ω|)²
     """
     psi = model(x)
     if psi.ndim > 1:
         psi = psi.squeeze(-1)
-    return (psi.pow(2).mean() - 1.0).pow(2)
+    return (psi.pow(2).mean() - 1.0 / domain_volume).pow(2)
 
 
 def hamiltonian_expectation(

@@ -79,7 +79,8 @@ class EKIConfig:
     prior_mean : np.ndarray, optional
         Prior mean θ₀ for regularisation.  Defaults to ``theta_init``.
     prior_cov : np.ndarray, optional
-        Prior covariance C₀ for regularisation.  If None uses λ·I.
+        Prior covariance C₀ for regularisation.  If None uses the identity I
+        (so the regularisation term reduces to λ ‖θ − θ₀‖²).
     tol_collapse : float
         Stop early when ensemble spread < tol_collapse (collapsed ensemble).
     seed : int, optional
@@ -110,7 +111,8 @@ class EKIHistory:
     data_misfit : list[float]
         ‖G(θ̄) − y‖²_{Γ⁻¹} at each iteration (ensemble mean).
     ensemble_spread : list[float]
-        Mean pairwise Euclidean distance in θ-space (collapse diagnostic).
+        Mean per-dimension standard deviation of the ensemble in θ-space
+        (collapse diagnostic; shrinks to zero as the ensemble collapses).
     theta_mean_history : list[np.ndarray]
         Ensemble mean at each stored iteration.
     """
@@ -161,7 +163,7 @@ def _data_misfit(g_mean: np.ndarray, y: np.ndarray, Gamma_inv: np.ndarray) -> fl
 
 
 def _ensemble_spread(theta: np.ndarray) -> float:
-    """Mean pairwise distance (approximated via std across ensemble)."""
+    """Mean per-dimension standard deviation across the ensemble."""
     return float(np.mean(np.std(theta, axis=0)))
 
 
@@ -344,7 +346,7 @@ class IteratedEKI(EnsembleKalmanInversion):
 
         G̃(θ) = [G(θ);  √λ (θ − θ₀)]   ∈ R^{k+p}
         ỹ    = [y;     0_p]
-        Γ̃    = diag(Γ, I)
+        Γ̃    = diag(Γ, C₀)                     (C₀ = prior_cov, default I)
 
     Running standard EKI on the augmented system minimises:
 
@@ -380,11 +382,20 @@ class IteratedEKI(EnsembleKalmanInversion):
             else theta_init.copy()
         )
 
+        if cfg.prior_cov is not None:
+            C0 = np.asarray(cfg.prior_cov, dtype=np.float64)
+            if C0.shape != (p, p):
+                raise ValueError(f"prior_cov shape {C0.shape} does not match parameter dim {p}")
+        else:
+            C0 = np.eye(p)
+
         if lam > 0.0:
-            # Augmented noise covariance Γ̃ = diag(Γ, I/λ) ∈ R^{(k+p)×(k+p)}
+            # Augmented noise covariance Γ̃ = diag(Γ, C₀) ∈ R^{(k+p)×(k+p)}.
+            # reg_term already carries the √λ factor, so λ enters the
+            # Mahalanobis term exactly once: (√λ Δθ)ᵀ C0⁻¹ (√λ Δθ) = λ ‖Δθ‖²_{C0⁻¹}.
             Gamma_aug = np.block([
                 [Gamma,                np.zeros((k, p))],
-                [np.zeros((p, k)),     np.eye(p) / lam ],
+                [np.zeros((p, k)),     C0              ],
             ])
             y_aug = np.concatenate([y, np.zeros(p)])
         else:

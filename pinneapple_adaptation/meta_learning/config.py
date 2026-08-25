@@ -77,12 +77,18 @@ class ReptileConfig:
     inner_lr:
         Learning rate for the inner-loop SGD optimizer.
     outer_lr:
-        Reptile outer learning rate (step size).  Typically larger than
-        MAML's outer LR because the update is a simple weighted average
-        rather than a true gradient step.
+        Reptile outer step size.  The outer update is
+        ``θ ← θ + (outer_lr * schedule) * epsilon * (θ_task − θ)``, where
+        ``schedule`` linearly anneals from ``1`` down to ``0`` over
+        ``n_meta_epochs`` (as in Nichol et al.'s experiments), so the
+        actual per-epoch step shrinks from ``outer_lr`` toward ``0`` by
+        the end of training.
     n_tasks_per_batch:
-        Number of tasks to process per meta-update.  Reptile typically
-        uses 1 task at a time; values > 1 average multiple task updates.
+        Number of tasks to process per meta-update.  Averaging the
+        task-adapted parameters over several tasks before interpolating
+        is what makes the Reptile update approximate the MAML gradient
+        (Nichol et al. 2018); a single task per batch degenerates to
+        sequential single-task fine-tuning.
     n_meta_epochs:
         Total number of meta-update iterations.
     device:
@@ -91,10 +97,10 @@ class ReptileConfig:
         Random seed for reproducibility.
     epsilon:
         Interpolation factor in the Reptile weight update
-        (``θ ← θ + epsilon * (θ_task − θ)``).  A value of ``1.0``
-        fully replaces the meta-parameters with the task parameters.
-        Usually kept at ``1.0`` with the outer_lr acting as effective
-        step size, or set to a value in ``(0, 1)`` for softer updates.
+        (``θ ← θ + epsilon * (θ_task − θ)``), applied on top of the
+        annealed ``outer_lr`` schedule described above.  Kept at ``1.0``
+        by default so ``outer_lr`` alone controls the effective step
+        size; set to a value in ``(0, 1)`` for additional damping.
     checkpoint_every:
         Persist a checkpoint to disk every this many meta-epochs.  Set to
         ``0`` to disable.
@@ -103,7 +109,7 @@ class ReptileConfig:
     n_inner_steps: int = 10
     inner_lr: float = 0.01
     outer_lr: float = 0.1
-    n_tasks_per_batch: int = 1
+    n_tasks_per_batch: int = 4
     n_meta_epochs: int = 1000
     device: str = "cpu"
     seed: int = 0

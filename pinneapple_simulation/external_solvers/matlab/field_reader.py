@@ -49,11 +49,12 @@ def mat_to_upd(
             fields[k] = torch.as_tensor(arr, dtype=torch.float32)
 
     return PhysicalSample(
-        fields=fields,
-        coords=coords,
-        meta={
-            "upd": {"version": "0.1", "source": "matlab"},
-            "provenance": {"mat_path": str(Path(mat_path).resolve())},
-            "units": units or {},
+        state=fields,
+        domain={"type": "grid", "coords": coords},
+        provenance={
+            "version": "0.1",
+            "source": "matlab",
+            "mat_path": str(Path(mat_path).resolve()),
         },
+        schema={"units": units or {}},
     )
