@@ -23,6 +23,14 @@ component_modeling
     MPC, SWAG/ensemble/MC-Dropout uncertainty, generic PDE residuals, and
     ONNX edge-deployment packaging.
 
+process_components
+    Physical unit-operation models for process/plant digital twins: real-gas
+    thermodynamic properties (GERG-2008 via CoolProp), turbomachinery
+    (real-gas polytropic compression/expansion + nondimensional similarity
+    maps), control valves (IEC 60534-2-1), heat exchangers
+    (effectiveness-NTU), and 1D pipe networks (quasi-steady momentum +
+    transient continuity).
+
 Integration helpers
 -------------------
 ``forecast(data, horizon, ...)``
@@ -46,6 +54,7 @@ from . import time_series
 from . import cosimulation
 from . import digital_twin
 from . import component_modeling
+from . import process_components
 
 # backward-compat aliases
 timeseries = time_series
@@ -112,6 +121,42 @@ from .component_modeling import (
     export_edge_package, EdgeRuntime,
 )
 
+# ── process_components re-exports ─────────────────────────────────────────────
+from .process_components import (
+    BeamResult, solve_beam, rectangular_section_properties, von_mises_stress_rectangular_section,
+    StaticNonlinearBeamResult, solve_nonlinear_beam_static,
+    ExplicitEquationError, Definition, AnalysisResult, ParameterSpec, CalibrationResult,
+    safe_eval, build_definitions, evaluation_order, evaluate, analyze, calibrate,
+    GasComposition, GasState, OutOfEnvelopeError, StandardConditions, ValidityEnvelope,
+    state_from_PT, state_from_Ph, state_from_Ps, central_difference,
+    standard_volumetric_flow_to_mass_flow, mass_flow_to_standard_volumetric_flow,
+    PolytropicPathResult, solve_path_from_pressure_ratio, solve_path_from_work,
+    MapCoefficients, MapEvaluation, make_map, evaluate_map,
+    flow_coefficient, tip_speed_m_s, tip_mach_number,
+    polytropic_head_from_psi, required_speed_for_head,
+    ValveSpec, ValveFlowResult, installed_cv, effective_cv,
+    compressible_mass_flow, incompressible_mass_flow, actuator_response_rhs,
+    HeatExchangerSpec, HeatExchangerResult, heat_exchanger_steady_state, heat_exchanger_transient_rhs,
+    PipeSpec, PipeState, SteadyProfilePoint, TransientPipe,
+    colebrook_white_f, rapid_steady_state_profile,
+    Reaction, ReactionNetwork, IntegrationResult, AdvectionDispersionReactionSolver,
+    mass_action_rate, arrhenius_rate_constant, quadratic_in_T,
+    linear_combination_rate_constant, acid_fraction, base_fraction,
+    diprotic_fractions, integrate_network,
+    PressureProfile, herschel_bulkley_stress, non_newtonian_effective_viscosity,
+    generalized_reynolds_number, metzner_reed_friction_factor,
+    non_newtonian_pressure_gradient, integrate_pressure_profile,
+    CurvedPathProfile, inclination_at_depth, build_and_hold_profile, circular_arc_tvd_hd,
+    ConstrainedRodBucklingResult, RotatingBendingCycleResult,
+    lame_hoop_stress_outer, lame_hoop_stress_inner,
+    torsional_shear_stress, bending_stress_from_curvature, von_mises_triaxial,
+    euler_critical_buckling_load, constrained_rod_buckling_load, classify_buckling_mode,
+    beam_column_moment_amplification_factor, rotating_bending_stress_cycle,
+    StickSlipResult, stribeck_friction_torque, simulate_torsional_stickslip,
+    MinerDamageResult, sn_curve_cycles_to_failure, goodman_equivalent_amplitude,
+    goodman_safety_ratio, miners_rule_damage,
+)
+
 
 # ── Integration helpers ────────────────────────────────────────────────────────
 
@@ -150,7 +195,7 @@ def forecast(data, horizon: int, *, model: str = "auto", **kwargs):
 
 __all__ = [
     # Sub-modules (new names)
-    "time_series", "cosimulation", "digital_twin", "component_modeling",
+    "time_series", "cosimulation", "digital_twin", "component_modeling", "process_components",
     # Sub-modules (old aliases — backward compat)
     "timeseries", "cosim",
     # Integration
@@ -198,4 +243,37 @@ __all__ = [
     "incompressible_continuity_residual", "heat_conduction_residual",
     "linear_elasticity_residual", "species_diffusion_residual",
     "export_edge_package", "EdgeRuntime",
+    # process_components
+    "BeamResult", "solve_beam", "rectangular_section_properties", "von_mises_stress_rectangular_section",
+    "StaticNonlinearBeamResult", "solve_nonlinear_beam_static",
+    "ExplicitEquationError", "Definition", "AnalysisResult", "ParameterSpec", "CalibrationResult",
+    "safe_eval", "build_definitions", "evaluation_order", "evaluate", "analyze", "calibrate",
+    "GasComposition", "GasState", "OutOfEnvelopeError", "StandardConditions", "ValidityEnvelope",
+    "state_from_PT", "state_from_Ph", "state_from_Ps", "central_difference",
+    "standard_volumetric_flow_to_mass_flow", "mass_flow_to_standard_volumetric_flow",
+    "PolytropicPathResult", "solve_path_from_pressure_ratio", "solve_path_from_work",
+    "MapCoefficients", "MapEvaluation", "make_map", "evaluate_map",
+    "flow_coefficient", "tip_speed_m_s", "tip_mach_number",
+    "polytropic_head_from_psi", "required_speed_for_head",
+    "ValveSpec", "ValveFlowResult", "installed_cv", "effective_cv",
+    "compressible_mass_flow", "incompressible_mass_flow", "actuator_response_rhs",
+    "HeatExchangerSpec", "HeatExchangerResult", "heat_exchanger_steady_state", "heat_exchanger_transient_rhs",
+    "PipeSpec", "PipeState", "SteadyProfilePoint", "TransientPipe",
+    "colebrook_white_f", "rapid_steady_state_profile",
+    "Reaction", "ReactionNetwork", "IntegrationResult", "AdvectionDispersionReactionSolver",
+    "mass_action_rate", "arrhenius_rate_constant", "quadratic_in_T",
+    "linear_combination_rate_constant", "acid_fraction", "base_fraction",
+    "diprotic_fractions", "integrate_network",
+    "PressureProfile", "herschel_bulkley_stress", "non_newtonian_effective_viscosity",
+    "generalized_reynolds_number", "metzner_reed_friction_factor",
+    "non_newtonian_pressure_gradient", "integrate_pressure_profile",
+    "CurvedPathProfile", "inclination_at_depth", "build_and_hold_profile", "circular_arc_tvd_hd",
+    "ConstrainedRodBucklingResult", "RotatingBendingCycleResult",
+    "lame_hoop_stress_outer", "lame_hoop_stress_inner",
+    "torsional_shear_stress", "bending_stress_from_curvature", "von_mises_triaxial",
+    "euler_critical_buckling_load", "constrained_rod_buckling_load", "classify_buckling_mode",
+    "beam_column_moment_amplification_factor", "rotating_bending_stress_cycle",
+    "StickSlipResult", "stribeck_friction_torque", "simulate_torsional_stickslip",
+    "MinerDamageResult", "sn_curve_cycles_to_failure", "goodman_equivalent_amplitude",
+    "goodman_safety_ratio", "miners_rule_damage",
 ]

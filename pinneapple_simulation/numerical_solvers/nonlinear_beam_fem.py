@@ -623,7 +623,15 @@ class NonlinearBeamNewmarkFEM:
                 for newton_iter in range(self.iterations):
                     self._solve_global(newton_iter, ratio, t)
                     self._spatial_update()
-                    check = np.sqrt(np.sum(self.deltaSoln ** 2) / np.sum(self.newIterSoln ** 2))
+                    # Relative update norm, with an absolute fallback when
+                    # the solution itself is (numerically) exactly zero --
+                    # e.g. an all-Dirichlet-satisfied, zero-load state --
+                    # since dividing by a zero solution norm there is a 0/0
+                    # that always compares False, spuriously reporting
+                    # non-convergence for a trivially-correct answer.
+                    soln_norm_sq = np.sum(self.newIterSoln ** 2)
+                    update_norm = np.sqrt(np.sum(self.deltaSoln ** 2))
+                    check = update_norm if soln_norm_sq < 1e-300 else update_norm / np.sqrt(soln_norm_sq)
                     if check < self.convergence:
                         self.countIter[loadstep, time] = newton_iter + 1
                         self.endTransDefl[loadstep, time] = self.newIterSoln[-2]

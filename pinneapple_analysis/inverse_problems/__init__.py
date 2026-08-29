@@ -123,6 +123,15 @@ from .solver import (
     InverseProblemSolver,
 )
 
+# Counterfactual (Shapley-value) attribution
+from .counterfactual_attribution import (
+    CandidateCause,
+    ExactShapleyAttributor,
+    ShapleyAttributionResult,
+    AmbiguityResult,
+    classify_ambiguity,
+)
+
 # Missing term identification
 from .missing_term import (
     CandidateLibrary,
@@ -174,6 +183,12 @@ __all__ = [
     "InverseSolverConfig",
     "InverseSolverResult",
     "InverseProblemSolver",
+    # Counterfactual (Shapley-value) attribution
+    "CandidateCause",
+    "ExactShapleyAttributor",
+    "ShapleyAttributionResult",
+    "AmbiguityResult",
+    "classify_ambiguity",
     # Missing term identification
     "CandidateLibrary",
     "SINDyResult",
