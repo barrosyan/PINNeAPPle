@@ -1,6 +1,10 @@
 import torch
 
-from pinneapple_pinn.factory.pinn_factory import PINNFactory, PINNProblemSpec
+# `pinneapple_pinn` doesn't exist as a package anywhere in the repo --
+# PINNFactory/PINNProblemSpec's real home is pinneapple_physics.pinn_solver
+# .factory.pinn_factory (found via this test failing to even collect;
+# see AUDIT_REPORT.md).
+from pinneapple_physics.pinn_solver.factory.pinn_factory import PINNFactory, PINNProblemSpec
 
 
 def test_sympy_backend_basic_residual():

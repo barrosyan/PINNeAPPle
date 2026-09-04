@@ -214,6 +214,14 @@ class Trainer:
 
         best_val = float("inf")
         best_path: Optional[str] = None
+        # Per-epoch history: previously not returned at all (only the
+        # final best_val/best_path), even though RunLogger already
+        # persists this same data to disk per epoch -- found via
+        # tests/pinneapple_train/test_trainer_minimal.py expecting a
+        # "history" key that never existed. Kept lightweight (train/val
+        # totals only, not the full metrics dict) to avoid duplicating
+        # RunLogger's own more detailed on-disk log.
+        history: List[Dict[str, float]] = []
 
         for epoch in range(cfg.epochs):
             t_epoch = time.time()
@@ -351,6 +359,7 @@ class Trainer:
                 )
 
             logs = {"val_total": float(val_total), "train_total": float(train_total), **metrics_dict}
+            history.append({"epoch": epoch, **logs})
 
             if is_rank0 and self.checkpoint is not None:
                 self.checkpoint.maybe_save(self.model, extra={"epoch": epoch, "cfg": asdict(cfg)}, logs=logs)
@@ -385,4 +394,4 @@ class Trainer:
         if cfg.ddp and dist is not None and dist.is_initialized():
             dist.barrier()
 
-        return {"best_val": best_val, "best_path": best_path, "ddp": cfg.ddp, "rank0": is_rank0}
+        return {"best_val": best_val, "best_path": best_path, "ddp": cfg.ddp, "rank0": is_rank0, "history": history}

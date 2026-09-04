@@ -70,6 +70,12 @@ solvers = [
   "numba>=0.59",
 ]
 
+# Real equation-of-state backend for pinneapple_systems.process_components
+# (pipe networks, compressors, valves, ... -- anything using real_gas_eos.py)
+process = [
+  "CoolProp>=6.6",
+]
+
 # FEniCS / DOLFINx (axisymmetric FEM, rotary couplings, etc.)
 fenics = [
   "fenics-dolfinx>=0.7.0",

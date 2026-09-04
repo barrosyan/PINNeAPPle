@@ -1,4 +1,11 @@
-import trimesh
+import pytest
+
+# A bare `import trimesh` here previously made the WHOLE test suite fail
+# to collect (pytest aborts collection entirely on any module-level
+# ImportError) for anyone without the optional `geom` extra installed --
+# found via `pytest tests/` erroring out before running a single test.
+# `importorskip` degrades this one file to a skip instead.
+trimesh = pytest.importorskip("trimesh")
 from pinneapple_geom.io.trimesh_bridge import TrimeshBridge
 from pinneapple_geom.ops.repair import repair_mesh
 from pinneapple_geom.ops.simplify import simplify_mesh

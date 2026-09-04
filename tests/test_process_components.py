@@ -7,6 +7,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+# This whole module needs a real equation-of-state backend; without it
+# every test here failed with a confusing NameError (see real_gas_eos.py's
+# new _require_coolprop() guard) instead of skipping cleanly.
+pytest.importorskip("CoolProp")
+
 from pinneapple_systems.process_components import (
     GasComposition,
     HeatExchangerSpec,

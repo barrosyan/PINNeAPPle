@@ -36,9 +36,17 @@ except Exception:
     SPHSolver = None  # type: ignore
 
 try:
-    from pinneapple_simulation.numerical_solvers.fft import FFTProcessor
+    # Was `import FFTProcessor` -- no such name exists anywhere in
+    # pinneapple_simulation.numerical_solvers.fft (only `FFTSolver` does),
+    # so this always raised and was silently swallowed by the `except`,
+    # leaving `FFTProcessor` permanently `None` with no error ever
+    # surfaced. Found via tests/pinneapple_solvers/test_fft.py failing to
+    # collect (`from pinneapple_solvers.fft import FFTSolver`, a second,
+    # independent gap: `pinneapple_solvers.fft` wasn't a real importable
+    # submodule either -- see fft.py alongside this file).
+    from pinneapple_simulation.numerical_solvers.fft import FFTSolver
 except Exception:
-    FFTProcessor = None  # type: ignore
+    FFTSolver = None  # type: ignore
 
 # Convenience: solver registry instance
 registry = SolverRegistry
@@ -47,6 +55,6 @@ __all__ = [
     "SolverBase", "SolverOutput", "SolverRegistry",
     "FDMSolver", "FEMSolver", "FVMSolver",
     "LBMSolver", "SpectralSolver", "SPHSolver",
-    "FFTProcessor",
+    "FFTSolver",
     "registry",
 ]
