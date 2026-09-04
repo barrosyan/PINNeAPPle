@@ -251,9 +251,21 @@ def load_hdf5(path: str) -> List[PhysicalSample]:
 def save_zarr(samples, root: str, *, compressor: str = "default") -> None:
     """
     Save PhysicalSamples to a Zarr directory store using UPDZarrStore.
+
+    Was previously broken: it imported and constructed a ``ZarrWriteSpec``
+    that is not defined anywhere in ``zarr_store.py`` (``UPDZarrStore
+    .write`` never had a ``spec`` parameter at all -- see its actual
+    signature below), so any call raised an ``ImportError`` before even
+    reaching the missing-``zarr``-package error a user without the
+    ``zarr`` extra installed would otherwise see first.
+
+    ``compressor`` is accepted for interface symmetry with other
+    ``save_*`` functions in this module but not yet wired through to
+    ``UPDZarrStore.write`` (which has no compressor option of its own);
+    passing a non-default value currently has no effect.
     """
-    from .zarr_store import UPDZarrStore, ZarrWriteSpec
-    UPDZarrStore.write(root, samples, manifest=None, spec=ZarrWriteSpec(chunk_by_sample=True))
+    from .zarr_store import UPDZarrStore
+    UPDZarrStore.write(root, samples, manifest=None, overwrite=True)
 
 
 def load_zarr(root: str):

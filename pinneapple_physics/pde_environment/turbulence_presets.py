@@ -1,7 +1,9 @@
-"""RANS turbulence closure presets for PINN training.
+"""RANS/LES turbulence closure presets for PINN training.
 
-Implements k-omega SST (Menter 1994) and Spalart-Allmaras (SA, 1992) models
-as PDE residual functions compatible with PINNeAPPle's PINNFactory.
+Implements k-omega SST (Menter 1994) and Spalart-Allmaras (SA, 1992) RANS
+models (2D, steady), and WALE (Nicoud & Ducros, 1999) as an algebraic,
+genuinely 3D, transient LES closure, as PDE residual functions compatible
+with PINNeAPPle's PINNFactory.
 
 Each residual class is callable:
     residuals = KOmegaSSTResiduals(nu=1e-5, rho=1.0)
@@ -169,6 +171,60 @@ class KOmegaSSTResiduals:
             min=1e-10,
         )
         return self.rho * a1 * k / denom
+
+    def channel_residuals(
+        self,
+        y: torch.Tensor,
+        U: torch.Tensor,
+        k: torch.Tensor,
+        omega: torch.Tensor,
+        u_tau: float = 1.0,
+        delta: float = 1.0,
+        F2: float = 1.0,
+    ) -> "tuple[torch.Tensor, torch.Tensor, torch.Tensor]":
+        """1D (wall-normal-only) k-omega SST reduction for fully-developed
+        plane channel flow -- every streamwise derivative is zero by the
+        fully-developed assumption, and the mean-momentum equation reduces
+        to a total-shear-stress balance driven by the constant wall-unit
+        pressure gradient ``-u_tau**2/delta`` (see e.g. Pope, *Turbulent
+        Flows*, Ch. 7, for the derivation). This is the convenience form a
+        1D channel-flow PINN wants; :meth:`__call__` is the general 2D
+        form.
+
+        Parameters
+        ----------
+        y, U, k, omega : (N, 1) tensors; ``y`` must have
+            ``requires_grad=True``.
+        u_tau, delta : friction velocity and half-channel height (both 1
+            in the usual wall-unit nondimensionalisation, u_tau = 1 by
+            construction).
+        F2 : SST blending function for the eddy-viscosity limiter (see
+            :meth:`eddy_viscosity`); 1.0 (inner/wall-region limiter) is the
+            right default for a wall-bounded channel.
+
+        Returns
+        -------
+        ``(res_momentum, res_k, res_omega)``, each (N, 1).
+        """
+        c = self.c
+        U_y = _grad1(U, y)
+        S_mag = U_y.abs()
+        nu_t = self.eddy_viscosity(k, omega, S_mag, F2=F2)
+        mu_eff = self.nu + nu_t
+
+        res_momentum = _grad1(mu_eff * U_y, y) + (u_tau ** 2) / delta
+
+        k_y = _grad1(k, y)
+        omega_y = _grad1(omega, y)
+        Pk = nu_t * U_y ** 2
+        diff_k = _grad1((self.nu + c["sigma_k1"] * nu_t) * k_y, y)
+        res_k = diff_k + Pk - c["beta_star"] * k * omega
+
+        diff_w = _grad1((self.nu + c["sigma_w1"] * nu_t) * omega_y, y)
+        gamma = self._blend_const("gamma1", "gamma2", F1=1.0)
+        res_omega = diff_w + (gamma / nu_t.clamp_min(1e-8)) * Pk - c["beta1"] * omega ** 2
+
+        return res_momentum, res_k, res_omega
 
     def __call__(
         self,
@@ -475,35 +531,181 @@ class SpalartAllmarasResiduals:
         }
 
 
+def _laplacian_indices(f: torch.Tensor, x: torch.Tensor, indices) -> torch.Tensor:
+    """Like ``_laplacian``, but summed only over the given column indices
+    of ``x`` -- needed once ``x`` carries a non-spatial column (time) that
+    must NOT be included in a *spatial* Laplacian. ``_laplacian`` itself is
+    left untouched (it sums every column of ``x``, which is correct for
+    the RANS closures above -- their ``x`` is purely spatial, no time
+    column -- so changing its default would be a silent behaviour change
+    for existing callers).
+    """
+    gf = _grad1(f, x)
+    lap = torch.zeros(f.shape[0], 1, device=x.device, dtype=x.dtype)
+    for i in indices:
+        lap = lap + _grad1(gf[:, i : i + 1], x)[:, i : i + 1]
+    return lap
+
+
+# ---------------------------------------------------------------------------
+# Feature 10c: WALE (Wall-Adapting Local Eddy-viscosity) LES closure, 3D
+# ---------------------------------------------------------------------------
+
+class WALEResiduals:
+    """WALE (Wall-Adapting Local Eddy-viscosity) subgrid closure for
+    filtered incompressible Navier-Stokes -- Nicoud & Ducros (1999) -- as
+    an algebraic (no transport equation) 3D LES residual.
+
+    Unlike the RANS closures above, WALE needs no extra transported
+    unknowns: the eddy viscosity is a pointwise algebraic function of the
+    resolved velocity-gradient tensor, so the model only maps
+    ``(x, y, z, t) -> (u, v, w, p)`` -- and, unlike the 2D-only RANS
+    closures in this module, the residual itself is a genuine 3D one (the
+    only LES/3D-turbulence closure in this module as of this addition;
+    everything else here is 2D steady RANS).
+
+    ::
+
+        nu_sgs = (Cw*Delta)^2 * (Sd:Sd)^{3/2} / ((S:S)^{5/2} + (Sd:Sd)^{5/4})
+
+    where ``S`` is the resolved strain-rate tensor and ``Sd`` is the
+    traceless symmetric part of the squared velocity-gradient tensor.
+    ``Delta`` is the LES filter width; pass either a constant (uniform
+    mesh) or a callable ``delta_fn(x) -> (N, 1)`` (e.g. a mesh-derived
+    ``cubeRootVol`` lookup -- see ``pinneapple_simulation.external_solvers
+    .openfoam.mesh_reader`` for the per-cell sizes such a lookup would be
+    built from).
+
+    Usage::
+
+        residuals = WALEResiduals(nu=1e-5, cw=0.325, delta=0.01)
+        r = residuals(model_uvwp, x_col)   # x_col: (N, 4) = (x, y, z, t)
+        loss = sum(v.pow(2).mean() for k, v in r.items() if k != "nu_sgs")
+
+    A spatially-uniform, time-independent driving source (matching
+    OpenFOAM's ``meanVelocityForce`` fvOption for a periodic channel/duct
+    held to a target bulk velocity) can be folded in via the optional
+    ``forcing`` argument to ``__call__`` -- e.g. a
+    ``torch.nn.Parameter(torch.zeros(3))`` learned jointly with the
+    network and pinned down by an auxiliary bulk-velocity penalty in the
+    training loop (that penalty is problem data, not part of this
+    closure, so it is not computed here).
+    """
+
+    def __init__(
+        self,
+        nu: float = 1e-5,
+        cw: float = 0.325,
+        delta=1.0,
+        spatial_indices=(0, 1, 2),
+        t_index: int = 3,
+    ) -> None:
+        self.nu = nu
+        self.cw = cw
+        self.delta = delta
+        self.spatial_indices = list(spatial_indices)
+        self.t_index = t_index
+
+    def _delta_at(self, x: torch.Tensor) -> torch.Tensor:
+        if callable(self.delta):
+            return self.delta(x)
+        return torch.full((x.shape[0], 1), float(self.delta), device=x.device, dtype=x.dtype)
+
+    def __call__(self, model, x: torch.Tensor, forcing: torch.Tensor = None) -> Dict[str, torch.Tensor]:
+        sp = self.spatial_indices
+        y = model(x)
+        u, v, w, p = y[:, 0:1], y[:, 1:2], y[:, 2:3], y[:, 3:4]
+        U = torch.cat([u, v, w], dim=1)
+
+        ut = _grad1(u, x)[:, self.t_index : self.t_index + 1]
+        vt = _grad1(v, x)[:, self.t_index : self.t_index + 1]
+        wt = _grad1(w, x)[:, self.t_index : self.t_index + 1]
+
+        g = torch.stack([_grad1(U[:, i : i + 1], x)[:, sp] for i in range(3)], dim=1)  # (N,3,3): g[:,i,j]=dU_i/dx_j
+
+        conv = torch.zeros_like(U)
+        for i in range(3):
+            for j in range(3):
+                conv[:, i] = conv[:, i] + U[:, j] * g[:, i, j]
+
+        gp = _grad1(p, x)
+        px, py, pz = gp[:, sp[0] : sp[0] + 1], gp[:, sp[1] : sp[1] + 1], gp[:, sp[2] : sp[2] + 1]
+
+        delta = self._delta_at(x)
+        gt = g.transpose(1, 2)
+        S = 0.5 * (g + gt)
+        g2 = torch.einsum("nij,njk->nik", g, g)
+        trace_g2 = (g2[:, 0, 0] + g2[:, 1, 1] + g2[:, 2, 2]) / 3.0
+        eye = torch.eye(3, device=g.device, dtype=g.dtype).unsqueeze(0)
+        Sd = 0.5 * (g2 + g2.transpose(1, 2)) - trace_g2.view(-1, 1, 1) * eye
+        SS = (S * S).sum(dim=(1, 2))
+        SdSd = (Sd * Sd).sum(dim=(1, 2))
+        num = (self.cw * delta.reshape(-1)) ** 2 * SdSd.clamp_min(0.0).pow(1.5)
+        den = SS.clamp_min(0.0).pow(2.5) + SdSd.clamp_min(0.0).pow(1.25) + 1e-12
+        nu_sgs = (num / den).reshape(-1, 1)
+        nu_eff = self.nu + nu_sgs
+
+        gnu = _grad1(nu_eff, x)
+        nu_x, nu_y, nu_z = gnu[:, sp[0] : sp[0] + 1], gnu[:, sp[1] : sp[1] + 1], gnu[:, sp[2] : sp[2] + 1]
+        gdotS_x = nu_x * S[:, 0, 0:1] + nu_y * S[:, 0, 1:2] + nu_z * S[:, 0, 2:3]
+        gdotS_y = nu_x * S[:, 1, 0:1] + nu_y * S[:, 1, 1:2] + nu_z * S[:, 1, 2:3]
+        gdotS_z = nu_x * S[:, 2, 0:1] + nu_y * S[:, 2, 1:2] + nu_z * S[:, 2, 2:3]
+
+        lap_u = _laplacian_indices(u, x, sp)
+        lap_v = _laplacian_indices(v, x, sp)
+        lap_w = _laplacian_indices(w, x, sp)
+
+        diff_u = nu_eff * lap_u + 2.0 * gdotS_x
+        diff_v = nu_eff * lap_v + 2.0 * gdotS_y
+        diff_w = nu_eff * lap_w + 2.0 * gdotS_z
+
+        f = forcing if forcing is not None else torch.zeros(3, device=x.device, dtype=x.dtype)
+        r_mom_u = ut + conv[:, 0:1] + px - diff_u - f[0]
+        r_mom_v = vt + conv[:, 1:2] + py - diff_v - f[1]
+        r_mom_w = wt + conv[:, 2:3] + pz - diff_w - f[2]
+        r_cont = g[:, 0, 0:1] + g[:, 1, 1:2] + g[:, 2, 2:3]
+
+        return {
+            "momentum_x": r_mom_u,
+            "momentum_y": r_mom_v,
+            "momentum_z": r_mom_w,
+            "continuity": r_cont,
+            "nu_sgs": nu_sgs.detach(),
+        }
+
+
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
 
 def get_rans_preset(model_name: str = "k-omega-sst", **kwargs):
-    """Get a RANS turbulence closure residual object by name.
+    """Get a RANS/LES turbulence closure residual object by name.
 
     Parameters
     ----------
-    model_name : one of 'k-omega-sst', 'spalart-allmaras', 'sa'
+    model_name : one of 'k-omega-sst', 'spalart-allmaras', 'sa', 'wale'
     **kwargs   : forwarded to the residual class constructor
 
     Returns
     -------
-    Callable residual object (KOmegaSSTResiduals or SpalartAllmarasResiduals)
+    Callable residual object (KOmegaSSTResiduals, SpalartAllmarasResiduals
+    or WALEResiduals)
 
     Examples
     --------
     >>> res = get_rans_preset("k-omega-sst", nu=1e-5, rho=1.0)
     >>> res = get_rans_preset("spalart-allmaras", nu=1.5e-5)
+    >>> res = get_rans_preset("wale", nu=1e-5, cw=0.325, delta=0.01)
     """
     _models = {
         "k-omega-sst":       KOmegaSSTResiduals,
         "spalart-allmaras":  SpalartAllmarasResiduals,
         "sa":                SpalartAllmarasResiduals,
+        "wale":              WALEResiduals,
     }
     if model_name not in _models:
         raise ValueError(
-            f"Unknown RANS model: '{model_name}'. "
+            f"Unknown RANS/LES model: '{model_name}'. "
             f"Available: {sorted(_models.keys())}"
         )
     return _models[model_name](**kwargs)
@@ -513,5 +715,6 @@ __all__ = [
     "SST_CONSTS",
     "KOmegaSSTResiduals",
     "SpalartAllmarasResiduals",
+    "WALEResiduals",
     "get_rans_preset",
 ]

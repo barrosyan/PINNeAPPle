@@ -254,10 +254,35 @@ def compile_problem(
             if spatial_dim == 3:
                 lap_w = laplacian(wv, xcol, spatial_indices)
 
-            res_list.append(ut + conv_u + px - inv_Re * lap_u)
-            res_list.append(vt + conv_v + py - inv_Re * lap_v)
+            # Optional momentum source, e.g. a periodic channel/duct's
+            # OpenFOAM-style meanVelocityForce fvOption (a spatially-uniform
+            # streamwise force holding the bulk velocity at a target) --
+            # mirrors the body_force_fn hook linear_elasticity/darcy already
+            # have; navier_stokes_incompressible previously had no such hook
+            # at all, so a momentum-source-driven flow (any periodic channel,
+            # pipe, or duct case) could not be expressed through this
+            # compiler.
+            b_fn = ctx.get("body_force_fn")
+            f = torch.zeros((xcol.shape[0], spatial_dim), device=device, dtype=xcol.dtype)
+            if b_fn is not None:
+                f_np = b_fn(xcol.detach().cpu().numpy(), ctx)
+                f = torch.as_tensor(f_np, device=device, dtype=xcol.dtype)
+                if f.ndim == 1 or (f.ndim == 2 and f.shape[1] == 1):
+                    raise ValueError(
+                        "navier_stokes_incompressible body_force_fn returned a "
+                        f"scalar-valued ({tuple(f.shape)}) source. A scalar cannot "
+                        "be broadcast isotropically across all momentum components "
+                        "-- most momentum sources (e.g. a streamwise "
+                        "meanVelocityForce) act along a single direction, and "
+                        "silently applying the scalar to every component would "
+                        f"produce a physically incorrect forcing. Return a full "
+                        f"(N, {spatial_dim}) vector source instead."
+                    )
+
+            res_list.append(ut + conv_u + px - inv_Re * lap_u - f[:, 0:1])
+            res_list.append(vt + conv_v + py - inv_Re * lap_v - f[:, 1:2])
             if spatial_dim == 3:
-                res_list.append(wt + conv_w + pz - inv_Re * lap_w)
+                res_list.append(wt + conv_w + pz - inv_Re * lap_w - f[:, 2:3])
 
             res_list.append(divergence(U, xcol, spatial_indices))
 

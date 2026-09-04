@@ -15,7 +15,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneapple_physics.pde_environment import KOmegaSSTResiduals, KOmegaSSTConfig
+from pinneapple_physics.pde_environment import KOmegaSSTResiduals
 
 try:
     from pinneapple_physics.pde_environment import SpalartAllmarasResiduals
@@ -70,17 +70,25 @@ def main():
     print(f"Re_τ = {RE_TAU},  ν = {NU:.5f}")
 
     # --- k-ω SST residuals module -------------------------------------------
-    kwsst_config = KOmegaSSTConfig(
+    # KOmegaSSTResiduals has no KOmegaSSTConfig (no such class exists in
+    # pinneapple_physics.pde_environment -- this import used to raise
+    # ImportError before the surrounding constants were fixed here too);
+    # its actual constructor takes nu/rho directly plus an optional
+    # `consts` dict overriding any of SST_CONSTS's own keys (sigma_k1,
+    # sigma_k2, sigma_w1, sigma_w2, beta1, beta2, beta_star, kappa, a1,
+    # gamma1, gamma2 -- see turbulence_presets.py's SST_CONSTS default).
+    kwsst = KOmegaSSTResiduals(
         nu=NU,
-        sigma_k1=0.85, sigma_k2=1.0,
-        sigma_omega1=0.5, sigma_omega2=0.856,
-        beta1=0.075, beta2=0.0828,
-        beta_star=0.09,
-        alpha1=5.0 / 9.0, alpha2=0.44,
-        a1=0.31,
-        kappa=KAPPA,
+        consts={
+            "sigma_k1": 0.85, "sigma_k2": 1.0,
+            "sigma_w1": 0.5, "sigma_w2": 0.856,
+            "beta1": 0.075, "beta2": 0.0828,
+            "beta_star": 0.09,
+            "gamma1": 5.0 / 9.0, "gamma2": 0.44,
+            "a1": 0.31,
+            "kappa": KAPPA,
+        },
     )
-    kwsst = KOmegaSSTResiduals(config=kwsst_config)
 
     # --- Model ---------------------------------------------------------------
     model = ChannelNet(hidden=64, layers=6).to(device)

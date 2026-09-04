@@ -36,6 +36,22 @@ except Exception:
     Checkpoint = None           # type: ignore
     save_checkpoint = None      # type: ignore
 
+# QUICKSTART.md's own "Hyperparameter search" example
+# (`from pinneapple_train import run_parallel_sweep, SweepConfig`) was
+# broken before this fix -- this shim never re-exported either name, so
+# that exact copy-pasted example raised ImportError.
+try:
+    from pinneapple_neural.trainer.parallel import SweepConfig, run_parallel_sweep
+except Exception:
+    SweepConfig = None           # type: ignore
+    run_parallel_sweep = None    # type: ignore
+
+try:
+    from pinneapple_neural.trainer.adaptive_sweep import AdaptiveSweepConfig, run_adaptive_sweep
+except Exception:
+    AdaptiveSweepConfig = None   # type: ignore
+    run_adaptive_sweep = None    # type: ignore
+
 __all__ = [
     "Trainer", "TrainConfig",
     "EarlyStopping", "ModelCheckpoint",
@@ -43,4 +59,6 @@ __all__ = [
     "TimeMarchingTrainer",
     "RunLogger",
     "Checkpoint", "save_checkpoint",
+    "SweepConfig", "run_parallel_sweep",
+    "AdaptiveSweepConfig", "run_adaptive_sweep",
 ]
