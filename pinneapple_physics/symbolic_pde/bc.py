@@ -156,6 +156,20 @@ class PeriodicBC:
     >>> pbc = PeriodicBC(period=1.0, dim=0)
     >>> wrapped = pbc.wrap_model(model)
     >>> u = wrapped(coords)   # coords[:,0] is the periodic coordinate
+
+    Warning
+    -------
+    Chaining two ``PeriodicBC``\\ s to make more than one axis periodic --
+    e.g. ``PeriodicBC(Lx, dim=0).wrap_model(PeriodicBC(Lz, dim=2).wrap_model(model))``
+    for a channel-flow-style ``(x, y, z, t)`` input periodic in both ``x``
+    and ``z`` -- is unsound: each ``wrap_model`` inserts one extra column,
+    so the *second* wrap's ``dim`` index is computed against a channel
+    ordering the *first* wrap has already shifted (after wrapping ``dim=0``,
+    column 2 of the 5-column intermediate tensor is ``y``, not ``z``, so
+    ``dim=2`` on the outer wrap silently embeds the wrong axis). Use
+    :class:`MultiPeriodicBC` for more than one periodic axis -- it applies
+    every axis's transform in a single pass against the original,
+    unshifted coordinate ordering.
     """
 
     def __init__(self, period: float, dim: int = 0) -> None:
@@ -197,6 +211,67 @@ class PeriodicBC:
         PeriodicBCModel wrapping *model*.
         """
         return _PeriodicBCModel(model, self)
+
+
+class MultiPeriodicBC:
+    """Exact periodic-BC embedding for two or more coordinate axes at once.
+
+    Same ``(cos(2*pi*x_i/L_i), sin(2*pi*x_i/L_i))`` construction as
+    :class:`PeriodicBC`, but computed for every periodic axis in a single
+    pass against the *original* column ordering, so it is correct for
+    however many axes are periodic (unlike chaining several
+    ``PeriodicBC.wrap_model`` calls -- see the warning on ``PeriodicBC``).
+
+    Parameters
+    ----------
+    periods : dict[int, float]
+        Maps a 0-based input-column index to its period. Every other
+        column passes through unchanged, in its original position.
+
+    Examples
+    --------
+    >>> # (x, y, z, t) input, periodic in x (period Lx) and z (period Lz):
+    >>> pbc = MultiPeriodicBC(periods={0: Lx, 2: Lz})
+    >>> wrapped = pbc.wrap_model(model)  # model must accept (N, D + len(periods))
+    >>> u = wrapped(coords)  # -> (cos x, sin x, y, cos z, sin z, t)
+    """
+
+    def __init__(self, periods: dict) -> None:
+        self.periods = {int(k): float(v) for k, v in periods.items()}
+
+    @property
+    def extra_dims(self) -> int:
+        return len(self.periods)
+
+    def transform(self, x: torch.Tensor) -> torch.Tensor:
+        parts = []
+        for i in range(x.shape[1]):
+            col = x[:, i : i + 1]
+            if i in self.periods:
+                theta = 2.0 * math.pi * col / self.periods[i]
+                parts.append(torch.cos(theta))
+                parts.append(torch.sin(theta))
+            else:
+                parts.append(col)
+        return torch.cat(parts, dim=1)
+
+    def wrap_model(self, model: nn.Module) -> nn.Module:
+        """Return a new Module that applies every axis's periodic
+        transform before calling *model*. *model* must accept
+        ``(N, D + len(periods))`` input."""
+        return _MultiPeriodicBCModel(model, self)
+
+
+class _MultiPeriodicBCModel(nn.Module):
+    """Internal wrapper that applies the multi-axis periodic transform."""
+
+    def __init__(self, base: nn.Module, pbc: "MultiPeriodicBC") -> None:
+        super().__init__()
+        self.base = base
+        self.pbc = pbc
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.base(self.pbc.transform(x))
 
 
 class _PeriodicBCModel(nn.Module):

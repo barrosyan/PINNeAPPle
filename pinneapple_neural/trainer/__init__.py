@@ -77,6 +77,7 @@ from .parallel import (
     enable_gradient_checkpointing,
     ThroughputMonitor,
 )
+from .adaptive_sweep import AdaptiveSweepConfig, run_adaptive_sweep
 
 __all__ = [
     # Training advisor
@@ -169,6 +170,8 @@ __all__ = [
     "GradAccumTrainer",
     "SweepConfig",
     "run_parallel_sweep",
+    "AdaptiveSweepConfig",
+    "run_adaptive_sweep",
     "batched_inference",
     "enable_gradient_checkpointing",
     "ThroughputMonitor",

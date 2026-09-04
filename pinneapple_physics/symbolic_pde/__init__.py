@@ -30,7 +30,7 @@ Quick start::
 """
 
 from .compiler import SymbolicPDE, auto_residual, pde_from_sympy
-from .bc import DirichletBC, HardBC, NeumannBC, PeriodicBC
+from .bc import DirichletBC, HardBC, MultiPeriodicBC, NeumannBC, PeriodicBC
 
 __all__ = [
     # Compiler
@@ -40,6 +40,7 @@ __all__ = [
     # Boundary conditions
     "HardBC",
     "PeriodicBC",
+    "MultiPeriodicBC",
     "DirichletBC",
     "NeumannBC",
 ]
