@@ -72,37 +72,39 @@ class SolverRegistry:
 # --------- register built-ins
 # Keep imports at bottom to avoid import cycles.
 
-def register_all() -> None:
-    """Import solver modules so their @register decorators execute."""
+_ALL_SOLVER_MODULES = [
+    "fft", "hilbert_huang", "eemd", "ceemdan", "vmd", "wavelet", "sst",
+    "ssa", "stl",
+    "fdm", "fem", "fvm", "lbm", "spectral",
+    "sph", "isph", "dfsph",
+    "meshfree",
+    "xtfc_ivp", "eddy_current_fdm", "immersed_boundary_fdm", "beam_bvp_fdm",
+    "elasticity3d_fdm", "nonlinear_beam_fem",
+]
 
-    from . import fft as _fft  # noqa: F401
-    from . import hilbert_huang as _hht  # noqa: F401
-    from . import eemd as _eemd  # noqa: F401
-    from . import ceemdan as _ceemdan  # noqa: F401
-    from . import vmd as _vmd  # noqa: F401
-    from . import wavelet as _wav  # noqa: F401
-    from . import sst as _sst  # noqa: F401
-    from . import ssa as _ssa  # noqa: F401
-    from . import stl as _stl  # noqa: F401
 
-    from . import fdm as _fdm  # noqa: F401
-    from . import fem as _fem  # noqa: F401
-    from . import fvm as _fvm  # noqa: F401
-    from . import lbm as _lbm  # noqa: F401
-    from . import spectral as _spectral  # noqa: F401
+def register_all() -> Dict[str, str]:
+    """Import solver modules so their @register decorators execute.
 
-    from . import sph as _sph  # noqa: F401
-    from . import isph as _isph  # noqa: F401
-    from . import dfsph as _dfsph  # noqa: F401
+    Each module is imported independently: one solver needing an
+    uninstalled optional dependency (e.g. `wavelet` needs `pywt`) used to
+    raise straight out of this function and silently skip registering
+    every solver listed *after* it too (a plain top-to-bottom list of
+    `from . import x` statements aborts on the first failure) -- found via
+    `SolverRegistry.list()` returning only 8 of the ~26 solvers that
+    exist in this package. Returns a dict of {module_name: error_message}
+    for any that failed to import, so callers can inspect what's missing
+    instead of that failure being invisible.
+    """
+    import importlib
 
-    from . import meshfree as _meshfree  # noqa: F401
-
-    from . import xtfc_ivp as _xtfc_ivp  # noqa: F401
-    from . import eddy_current_fdm as _eddy_current_fdm  # noqa: F401
-    from . import immersed_boundary_fdm as _immersed_boundary_fdm  # noqa: F401
-    from . import beam_bvp_fdm as _beam_bvp_fdm  # noqa: F401
-    from . import elasticity3d_fdm as _elasticity3d_fdm  # noqa: F401
-    from . import nonlinear_beam_fem as _nonlinear_beam_fem  # noqa: F401
+    failures: Dict[str, str] = {}
+    for mod_name in _ALL_SOLVER_MODULES:
+        try:
+            importlib.import_module(f".{mod_name}", __package__)
+        except Exception as e:
+            failures[mod_name] = str(e)
+    return failures
 
 
 @dataclass
