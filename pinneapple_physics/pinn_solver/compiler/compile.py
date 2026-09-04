@@ -129,6 +129,53 @@ def compile_problem(
             Tt = time_derivative(T, xcol, t_index)  # type: ignore[arg-type]
             res_list.append(Tt - alpha * laplacian(T, xcol, spatial_indices) - q)
 
+        elif pde_kind in ("heat_equation_steady", "heat_equation_steady_multilayer"):
+            # Steady (time-independent) Fourier conduction: k*laplacian(T)
+            # = -q (isotropic). "_multilayer" presets (e.g.
+            # refractory_lining) already fold a multi-layer stack into one
+            # effective conductivity via a series-resistance formula
+            # before reaching here (params["k_eff"]), so both kinds share
+            # this branch -- the multilayer physics is in how k_eff was
+            # computed, not in the residual itself.
+            if len(field_names) != 1:
+                raise ValueError(f"{pde_kind} expects a scalar field (T).")
+            T = fields[field_names[0]]
+            k = float(p.get("k_eff", p.get("k", 1.0)))
+            q_fn = ctx.get("source_fn") or ctx.get("q_fn")
+            q = torch.zeros_like(T)
+            if q_fn is not None:
+                q_np = q_fn(xcol.detach().cpu().numpy(), ctx)
+                q = torch.as_tensor(q_np, device=device, dtype=T.dtype)
+                if q.ndim == 1:
+                    q = q[:, None]
+            res_list.append(k * laplacian(T, xcol, spatial_indices) + q)
+
+        elif pde_kind == "heat_equation_steady_anisotropic":
+            # Steady conduction with a direction-dependent conductivity
+            # (e.g. pcb_thermal's in-plane vs. through-plane FR4
+            # conductivity): sum_i k_i * d^2T/dx_i^2 = -q, one k_<coord>
+            # parameter per spatial coordinate actually present in this
+            # spec (a preset may define k_z even when 'z' isn't one of
+            # its coords, e.g. a 2D board -- unused params are simply
+            # ignored, not an error).
+            if len(field_names) != 1:
+                raise ValueError("heat_equation_steady_anisotropic expects a scalar field (T).")
+            T = fields[field_names[0]]
+            gT = grad(T, xcol)
+            lap_aniso = torch.zeros_like(T)
+            for coord_name, idx in zip(spatial_coord_names, spatial_indices):
+                k_i = float(p.get(f"k_{coord_name}", p.get("k", 1.0)))
+                d2T_i = grad(gT[:, idx:idx + 1], xcol)[:, idx:idx + 1]
+                lap_aniso = lap_aniso + k_i * d2T_i
+            q_fn = ctx.get("source_fn") or ctx.get("q_fn")
+            q = torch.zeros_like(T)
+            if q_fn is not None:
+                q_np = q_fn(xcol.detach().cpu().numpy(), ctx)
+                q = torch.as_tensor(q_np, device=device, dtype=T.dtype)
+                if q.ndim == 1:
+                    q = q[:, None]
+            res_list.append(lap_aniso + q)
+
         elif pde_kind == "wave_equation":
             if not has_t:
                 raise ValueError("Wave equation expects time coord 't'.")
@@ -202,8 +249,13 @@ def compile_problem(
                 raise ValueError(f"Unsupported Burgers configuration: spatial_dim={spatial_dim}, fields={field_names}")
 
         elif pde_kind == "navier_stokes_incompressible":
-            if not has_t:
-                raise ValueError("Navier–Stokes expects time coord 't'.")
+            # Steady-state presets (no 't' coord by design, e.g.
+            # channel_flow_3d/lid_driven_cavity_3d/pipe_flow_3d) used to
+            # hit this branch's unconditional "expects time coord 't'"
+            # check and fail outright -- there is nothing physically
+            # wrong with a steady NS residual (drop du/dt, keep
+            # convection+pressure+viscous+continuity), so it is supported
+            # here instead of rejected.
             Re = float(p.get("Re", 100.0))
             inv_Re = float(p.get("inv_Re", 1.0 / Re))
 
@@ -224,10 +276,16 @@ def compile_problem(
                 u, v, wv, p_ = fields["u"], fields["v"], fields["w"], fields["p"]
                 U = torch.cat([u, v, wv], dim=1)
 
-            ut = time_derivative(u, xcol, t_index)  # type: ignore[arg-type]
-            vt = time_derivative(v, xcol, t_index)  # type: ignore[arg-type]
-            if spatial_dim == 3:
-                wt = time_derivative(wv, xcol, t_index)  # type: ignore[arg-type]
+            if has_t:
+                ut = time_derivative(u, xcol, t_index)  # type: ignore[arg-type]
+                vt = time_derivative(v, xcol, t_index)  # type: ignore[arg-type]
+                if spatial_dim == 3:
+                    wt = time_derivative(wv, xcol, t_index)  # type: ignore[arg-type]
+            else:
+                ut = torch.zeros_like(u)
+                vt = torch.zeros_like(v)
+                if spatial_dim == 3:
+                    wt = torch.zeros_like(wv)
 
             JU = jacobian(U, xcol)
             sp_idx = [coords.index(n) for n in spatial_coord_names]
@@ -286,7 +344,18 @@ def compile_problem(
 
             res_list.append(divergence(U, xcol, spatial_indices))
 
-        elif pde_kind == "linear_elasticity":
+        elif pde_kind in ("linear_elasticity", "linear_elasticity_plane_strain", "linear_elasticity_plane_stress"):
+            # "linear_elasticity" at spatial_dim=2 and
+            # "linear_elasticity_plane_strain" are mathematically
+            # identical: plane strain IS "assume zero out-of-plane
+            # strain, use the full 3D constitutive relation restricted
+            # to 2D" -- exactly what the generic branch below already
+            # does for spatial_dim=2, no special-casing needed.
+            # "linear_elasticity_plane_stress" needs one change: the
+            # standard reduced Lame parameter lambda* = 2*lambda*mu /
+            # (lambda + 2*mu) (Timoshenko & Goodier, Theory of
+            # Elasticity) in place of the raw 3D lambda, so that
+            # sigma_zz comes out to 0 as plane stress requires.
             if spatial_dim not in (2, 3):
                 raise ValueError("Elasticity expects 2D or 3D spatial dims.")
             needed = ["ux", "uy"] + (["uz"] if spatial_dim == 3 else [])
@@ -296,6 +365,8 @@ def compile_problem(
 
             lam = float(p.get("lambda", 1.0))
             mu = float(p.get("mu", 1.0))
+            if pde_kind == "linear_elasticity_plane_stress":
+                lam = 2.0 * lam * mu / (lam + 2.0 * mu)
 
             U = torch.cat([fields["ux"], fields["uy"]] + ([fields["uz"]] if spatial_dim == 3 else []), dim=1)
             JU = jacobian(U, xcol)
@@ -337,6 +408,51 @@ def compile_problem(
                     g = grad(sij, xcol)
                     div_si = div_si + g[:, sp_idx[j]:sp_idx[j] + 1]
                 res_list.append(div_si + b[:, i:i + 1])
+
+        elif pde_kind == "thermoelasticity_2d":
+            # Coupled 2D thermoelasticity (Boley & Weiner, Theory of
+            # Thermal Stresses): steady heat conduction (shape-only, so
+            # conductivity k cancels out of a Dirichlet-driven Laplace
+            # problem and isn't needed as a parameter) plus plane-stress
+            # linear elasticity with an added isotropic thermal strain
+            # eps_th = alpha_T * T * I (T taken relative to the preset's
+            # zero-strain reference, matching its own boundary conditions
+            # T_cold=0/T_hot=dT):
+            #   div(grad(T)) = 0
+            #   sigma = C_planestress : (eps - alpha_T*T*I),  div(sigma) = 0
+            for n in ("ux", "uy", "T"):
+                if n not in fields:
+                    raise ValueError(f"thermoelasticity_2d expects field '{n}'.")
+            if spatial_dim != 2:
+                raise ValueError("thermoelasticity_2d expects 2 spatial dims.")
+            T = fields["T"]
+            alpha_T = float(p.get("alpha_T", 0.0))
+            lam = float(p.get("lambda", 1.0))
+            mu = float(p.get("mu", 1.0))
+            lam = 2.0 * lam * mu / (lam + 2.0 * mu)  # plane-stress reduction, per this preset's own meta
+
+            res_list.append(laplacian(T, xcol, spatial_indices))
+
+            U = torch.cat([fields["ux"], fields["uy"]], dim=1)
+            sp_idx = [coords.index(n) for n in spatial_coord_names]
+            JU = jacobian(U, xcol)
+            Gu = JU[:, :, sp_idx]
+            eps = 0.5 * (Gu + torch.transpose(Gu, 1, 2))
+
+            tr = eps[:, 0:1, 0:1].reshape(-1, 1) + eps[:, 1:2, 1:2].reshape(-1, 1)
+            tr_th = 2.0 * alpha_T * T  # trace of the 2D isotropic thermal-strain tensor
+
+            sigma = 2.0 * mu * eps
+            sigma[:, 0, 0] = sigma[:, 0, 0] + lam * (tr[:, 0] - tr_th[:, 0]) - 2.0 * mu * alpha_T * T[:, 0]
+            sigma[:, 1, 1] = sigma[:, 1, 1] + lam * (tr[:, 0] - tr_th[:, 0]) - 2.0 * mu * alpha_T * T[:, 0]
+
+            for i in range(2):
+                div_si = torch.zeros((xcol.shape[0], 1), device=device, dtype=xcol.dtype)
+                for j in range(2):
+                    sij = sigma[:, i:i + 1, j:j + 1].reshape(-1, 1)
+                    g = grad(sij, xcol)
+                    div_si = div_si + g[:, sp_idx[j]:sp_idx[j] + 1]
+                res_list.append(div_si)
 
         elif pde_kind == "darcy":
             mode = spec.pde.meta.get("mode", "pressure_only")
