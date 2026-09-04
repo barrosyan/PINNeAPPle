@@ -97,6 +97,7 @@ from .trainer import (
     AMPContext, wrap_data_parallel, unwrap_model,
     CUDAPrefetcher, GradAccumConfig, GradAccumTrainer,
     SweepConfig, run_parallel_sweep,
+    AdaptiveSweepConfig, run_adaptive_sweep,
     batched_inference as train_batched_inference,
     enable_gradient_checkpointing, ThroughputMonitor,
 )
@@ -202,6 +203,7 @@ __all__ = [
     "AMPContext", "wrap_data_parallel", "unwrap_model",
     "CUDAPrefetcher", "GradAccumConfig", "GradAccumTrainer",
     "SweepConfig", "run_parallel_sweep",
+    "AdaptiveSweepConfig", "run_adaptive_sweep",
     "train_batched_inference", "enable_gradient_checkpointing", "ThroughputMonitor",
     # predictor
     "infer", "infer_on_grid_1d", "infer_on_grid_2d",

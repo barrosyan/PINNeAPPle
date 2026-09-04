@@ -55,6 +55,19 @@ class TrainConfig:
     ddp_backend: str = "nccl"  # "nccl" (GPU) or "gloo" (CPU)
     ddp_find_unused_parameters: bool = False
 
+    # Physics-aware validation: run the validation pass with autograd
+    # enabled instead of inside torch.no_grad(). A loss_fn that computes a
+    # PDE residual via torch.autograd.grad(..., create_graph=True) (e.g.
+    # anything from pinneapple_physics.pinn_solver.compiler.compile
+    # .compile_problem, or a hand-rolled physics residual) raises inside a
+    # no_grad block even when its input tensor has requires_grad=True --
+    # the outer no-grad context blocks new graph construction regardless.
+    # Default True since it is strictly more capable (a validation loss_fn
+    # that needs no gradient at all still works fine under enable_grad());
+    # set False only to reclaim the extra graph-construction memory when
+    # you know your loss_fn never needs a validation-time gradient.
+    physics_aware_validation: bool = True
+
 
 class Trainer:
     """Trainer for PINNs and general supervised models."""
@@ -268,23 +281,28 @@ class Trainer:
             va_parts: Dict[str, float] = {}
             yhat_acc, y_acc = [], []
 
-            with torch.no_grad():
-                for raw in val_loader:
-                    batch = self._xy_batch(raw)
-                    if self.preprocess is not None:
-                        batch = self.preprocess.apply(batch)
-                    batch = self._move_batch(batch, device)
+            for raw in val_loader:
+                batch = self._xy_batch(raw)
+                if self.preprocess is not None:
+                    batch = self.preprocess.apply(batch)
+                batch = self._move_batch(batch, device)
 
-                    x = batch.get("x", None)
-                    if x is None:
-                        x = batch.get("x_col", None)
-                    if x is None:
-                        raise ValueError("Batch must include 'x' or 'x_col'.")
-                    if x is None:
-                        raise ValueError("Batch must include 'x' or 'x_col'.")
+                x = batch.get("x", None)
+                if x is None:
+                    x = batch.get("x_col", None)
+                if x is None:
+                    raise ValueError("Batch must include 'x' or 'x_col'.")
 
-                    y = batch.get("y")
+                y = batch.get("y")
 
+                # See TrainConfig.physics_aware_validation's docstring: a
+                # physics-residual loss_fn needs create_graph=True autograd
+                # even at validation time, which torch.no_grad() forbids
+                # outright regardless of the input tensor's requires_grad.
+                grad_ctx = torch.enable_grad() if cfg.physics_aware_validation else torch.no_grad()
+                with grad_ctx:
+                    if cfg.physics_aware_validation and isinstance(x, torch.Tensor) and not x.requires_grad:
+                        x = x.clone().requires_grad_(True)
                     y_hat_raw = self.model(x)
                     y_hat = self._unwrap_pred(y_hat_raw, batch=batch)
 
@@ -292,18 +310,18 @@ class Trainer:
                     losses = self._parse_loss(loss_out)
                     loss = losses["total"]
 
-                    bs = int(x.shape[0]) if isinstance(x, torch.Tensor) and x.ndim > 0 else 1
-                    va_total += float(loss.item()) * bs
-                    n_va += bs
+                bs = int(x.shape[0]) if isinstance(x, torch.Tensor) and x.ndim > 0 else 1
+                va_total += float(loss.detach().item()) * bs
+                n_va += bs
 
-                    for k, v in losses.items():
-                        if not isinstance(v, torch.Tensor):
-                            continue
-                        va_parts[k] = va_parts.get(k, 0.0) + float(v.detach().item()) * bs
+                for k, v in losses.items():
+                    if not isinstance(v, torch.Tensor):
+                        continue
+                    va_parts[k] = va_parts.get(k, 0.0) + float(v.detach().item()) * bs
 
-                    if y is not None and isinstance(y_hat, torch.Tensor) and isinstance(y, torch.Tensor):
-                        yhat_acc.append(y_hat.detach().cpu())
-                        y_acc.append(y.detach().cpu())
+                if y is not None and isinstance(y_hat, torch.Tensor) and isinstance(y, torch.Tensor):
+                    yhat_acc.append(y_hat.detach().cpu())
+                    y_acc.append(y.detach().cpu())
 
             val_total = va_total / max(1, n_va)
             val_parts = {k: v / max(1, n_va) for k, v in va_parts.items()}

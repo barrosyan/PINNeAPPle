@@ -26,6 +26,30 @@ from .openfoam import (
     openfoam_case_to_upd,
 )
 
+# CFD/FEM open-format readers beyond OpenFOAM (CGNS, Exodus, Fluent mesh,
+# Abaqus .inp/.odb bridge). See cfd_formats/__init__.py for per-format
+# validation status -- these were not all checked against a real file from
+# a real writer, unlike the OpenFOAM readers above.
+try:
+    from .cfd_formats import (
+        read_cgns_mesh_and_fields, cgns_to_upd,
+        read_exodus, exodus_to_upd,
+        read_fluent_mesh_nodes, fluent_mesh_to_upd,
+        read_abaqus_inp_mesh, abaqus_inp_to_upd,
+        export_odb_fields, load_exported_odb_npz,
+    )
+except Exception:
+    read_cgns_mesh_and_fields = None    # type: ignore
+    cgns_to_upd = None                  # type: ignore
+    read_exodus = None                  # type: ignore
+    exodus_to_upd = None                # type: ignore
+    read_fluent_mesh_nodes = None       # type: ignore
+    fluent_mesh_to_upd = None           # type: ignore
+    read_abaqus_inp_mesh = None         # type: ignore
+    abaqus_inp_to_upd = None            # type: ignore
+    export_odb_fields = None            # type: ignore
+    load_exported_odb_npz = None        # type: ignore
+
 # MATLAB (optional: matlab.engine or scipy)
 try:
     from .matlab import (
@@ -141,6 +165,12 @@ __all__ = [
     "read_sampled_scalar_field",
     "export_bundle",
     "openfoam_case_to_upd",
+    # CFD/FEM open-format readers
+    "read_cgns_mesh_and_fields", "cgns_to_upd",
+    "read_exodus", "exodus_to_upd",
+    "read_fluent_mesh_nodes", "fluent_mesh_to_upd",
+    "read_abaqus_inp_mesh", "abaqus_inp_to_upd",
+    "export_odb_fields", "load_exported_odb_npz",
     # MATLAB
     "MATLABEngine",
     "run_matlab_script",

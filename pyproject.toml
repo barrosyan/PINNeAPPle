@@ -120,6 +120,32 @@ export = [
   "onnxruntime>=1.18",
 ]
 
+# Model hub (push_to_hub/from_pretrained on the Hugging Face Hub)
+hub = [
+  "huggingface_hub>=0.24",
+]
+
+# LLM-assisted pipeline drafting (pinneapple_llm) -- bring your own API key
+llm = [
+  "anthropic>=0.34",
+  "openai>=1.40",
+]
+
+# Adaptive (Bayesian/TPE) hyperparameter search -- see
+# pinneapple_neural.trainer.adaptive_sweep. A dependency-free random-search
+# fallback is used automatically if this extra is not installed.
+tuning = [
+  "optuna>=3.6",
+]
+
+# Local fine-tuning of a local (Ollama-served) model on data logged via
+# pinneapple_llm.conversation_store
+finetune = [
+  "peft>=0.12",
+  "datasets>=2.20",
+  "transformers>=4.44",
+]
+
 # Digital twin (MQTT / Kafka streams)
 digital_twin = [
   "paho-mqtt>=2.0",
@@ -169,6 +195,9 @@ all = [
   "mujoco>=3.0",
   "genesis-world>=0.2.0",
   "emmiai-noether>=2026.4.0",
+  "huggingface_hub>=0.24",
+  "anthropic>=0.34",
+  "openai>=1.40",
 ]
 
 # Visualisation (CFD-style plots, animations)
