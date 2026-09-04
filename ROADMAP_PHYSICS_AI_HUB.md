@@ -109,22 +109,61 @@ presets also fixed 2 pre-existing, unrelated Category-1 "Unsupported PDE
 kind" gaps from the Tier A audit above: `sir_ode` and
 `pk_two_compartment_ode` now compile and run (Tier A failures: 62→60/137).
 
-**Not done this session** (tracked here so it isn't lost):
-- No presets were actually *trained* end-to-end and compared to their
-  reference solution after training — Tier B here only proves the
-  residual/physics implementation is correct, the same scope as the
-  existing Laplace Tier B test. Training a real network on
-  `kepler_two_body_orbit` (the fastest-converging candidate) and plotting
-  predicted vs. exact orbit would be the natural next demonstration.
-- `satellite_j2_perturbation`'s cited secular drift-rate formulas (nodal
-  regression, apsidal precession) were not checked against a long,
-  many-orbit integrated/trained trajectory — only the instantaneous
-  residual and the J2→two-body reduction were verified.
-- `lane_emden_polytrope` has no closed-form validation for the
-  astrophysically standard n=1.5 (white dwarf) / n=3 (Eddington standard
-  model) — only n∈{0,1,5} have exact solutions; those would need a
-  numerical reference (e.g. via `pinneapple_simulation`'s IVP solvers)
-  instead.
+**Done in a follow-up pass**: `examples/pde_environment/05_kepler_orbit_validation.py`
+trains a real network on `kepler_two_body_orbit` end-to-end and plots
+predicted vs. exact orbit. First attempt (physics residual + initial
+condition only) is a documented real finding, not just a footnote:
+PDE+IC loss converged to ~0.001 (looking "done") while position RMSE was
+~104% of the semi-major axis -- a textbook PINN pure-IVP failure mode
+(the IC only pins the solution at one point, so a small residual+IC loss
+does not imply the globally correct trajectory was found). Fixed by
+adding 15 sparse "tracking data" points from the exact solution as a
+`DataConstraint` -- which doubles as an honest reframing of the
+preset's real industrial use case (orbit determination *is* fitting
+dynamics to sparse radar/optical tracking data). Final result, Adam +
+cosine LR decay + gradient clipping, 3000 epochs (~45s on CPU): **1.85%
+position RMSE, 2.65% velocity RMSE** over a full orbital period; specific
+orbital energy and angular momentum (conserved quantities, not directly
+supervised) match the exact values to ~1.9% and ~0.7% respectively.
+
+**Also done in that follow-up pass**: `examples/pde_environment/06_space_debris_cw_validation.py`
+trains `space_debris_cw_relative_motion` end-to-end. This confirmed the
+pure-IVP failure mode above is NOT specific to Kepler's nonlinearity --
+physics+IC alone converged loss to ~1e-12 while position RMSE was still
+~360% of the trajectory's own scale, for a perfectly LINEAR ODE system.
+A second, CW-specific pitfall was found and fixed while chasing this
+down: Hill's along-track coordinate y(t) has a genuine secular
+(linearly-growing) term and reaches ~-12 km over one period while x/z
+stay within +/-1.5 km, so the single shared position-scale that worked
+fine for Kepler's more uniformly-bounded x/y badly under-scales y here
+and stalls convergence around 17% RMSE -- per-axis scaling matched to
+each coordinate's actual range fixed it. Final result (same recipe as
+Kepler, 15 sparse anchors including analytic velocities, 3000 epochs,
+~64s): **3.00% position RMSE**.
+
+**Follow-up pass also closed both `satellite_j2_perturbation` and
+`lane_emden_polytrope`'s previously-flagged gaps**, both via independent
+numerical validation (new test files, not just claims):
+- `tests/test_j2_secular_validation.py`: integrates the SAME J2
+  acceleration formula (reimplemented independently with
+  `scipy.integrate.solve_ivp`, not imported from compile.py) over
+  800/400 orbits, fits the osculating RAAN/argument-of-perigee secular
+  trend, and compares to the literature formulas. **Nodal regression:
+  0.45% agreement. Apsidal precession: 0.53% agreement** (at an
+  inclination away from the ~63.435° critical inclination, where the
+  literature formula's own zero-crossing makes relative-error comparison
+  meaningless -- confirmed while building this test: naively testing at
+  63.4° gives a spurious "45% error" purely from that near-zero
+  denominator, not a real discrepancy; documented as a caveat in the test
+  file so it isn't mistaken for a bug later).
+- `tests/test_lane_emden_numerical_validation.py`: independently
+  integrates the Lane-Emden equation (again via `solve_ivp`, not
+  compile.py) for n=1.5 (white dwarf) and n=3 (Eddington standard model)
+  and compares the first zero crossing xi_1 against published textbook
+  tables (Chandrasekhar 1939; Hansen, Kawaler & Trimble). **n=1.5: match
+  to 0.0001%. n=3: match to 0.00002%.** The integrator itself is first
+  sanity-checked against the n=0/n=1 closed forms (match to <1e-6) before
+  being trusted for the no-closed-form cases.
 - No N-body (3+ body) gravitational dynamics, no general-relativistic
   content (light bending, gravitational-wave inspiral/post-Newtonian
   orbits), no radiative-transfer/stellar-atmosphere preset, no

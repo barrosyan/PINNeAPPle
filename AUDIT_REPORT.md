@@ -62,16 +62,74 @@ compiler-branch pattern built for the new astrophysics ODE kinds (both
 now compile and run; Tier A failure count went from 62/137 to 60/137 as a
 direct result, confirmed by re-running the full suite).
 
-**Known gaps, stated honestly**: the CGNS/Exodus/Fluent/Abaqus-style
-caveat applies here too — `satellite_j2_perturbation`'s cited secular
-drift-rate formulas (nodal regression, apsidal precession) were NOT
-checked against a many-orbit trained/integrated trajectory this session
-(only the instantaneous residual and the J2-to-two-body reduction were
-verified); `lane_emden_polytrope` has no closed-form check for the
-astrophysically standard n=1.5/n=3 (only n=0/1/5 do); the CGNS/Exodus/
+**Known gaps from the first pass, closed in a follow-up pass** (below):
+`satellite_j2_perturbation`'s secular drift-rate formulas and
+`lane_emden_polytrope`'s astrophysically-standard n=1.5/n=3 both lacked
+any check beyond the instantaneous-residual level. Both are now
+independently validated (see "Follow-up pass" below). The CGNS/Exodus/
 Fluent/Abaqus readers' "not validated against a real writer's file"
-caveat is unrelated but similarly honest-by-omission. Tracked in
-`ROADMAP_PHYSICS_AI_HUB.md`.
+caveat remains open and unrelated to this specialization.
+
+### Follow-up pass: end-to-end training + independent numerical validation
+
+Two things the first pass explicitly flagged as missing, both addressed:
+
+**1. Actually training networks end-to-end** (the first pass only proved
+the residual/physics implementation is correct, never trained a network
+and checked its own output against the truth):
+
+- `examples/pde_environment/05_kepler_orbit_validation.py`: first attempt
+  (physics residual + IC only) converged PDE+IC loss to ~0.001 — looking
+  done — while position RMSE was **~104% of the semi-major axis**
+  (completely wrong trajectory shape). This is a real, reproduced PINN
+  pure-IVP failure mode, not a footnote: an IC pins the solution at one
+  point only, so small residual+IC loss does not imply the network found
+  the correct global trajectory among the many that locally satisfy it.
+  Fixed by adding 15 sparse "tracking-data" points from the exact
+  solution as a `DataConstraint` (which is also an honest reframing of
+  the preset's real industrial use case: orbit determination genuinely
+  is fitting dynamics to sparse tracking observations). Final result
+  (Adam + cosine LR decay + grad clipping, 3000 epochs, ~45s CPU):
+  **1.85% position RMSE, 2.65% velocity RMSE**; conserved quantities not
+  directly supervised (specific energy, angular momentum) matched exact
+  values to ~1.9%/~0.7%.
+- `examples/pde_environment/06_space_debris_cw_validation.py`: repeated
+  the same experiment for `space_debris_cw_relative_motion` (a *linear*
+  ODE, unlike Kepler's nonlinear one) — the same pure-IVP collapse
+  reproduced again (loss ~1e-12, RMSE ~360%), confirming the failure mode
+  is about IVP structure, not nonlinearity. A second, independent
+  pitfall was found while fixing it: Hill's along-track coordinate y(t)
+  has a genuine secular (linearly-growing) term reaching ~-12 km over one
+  period while x/z stay within ±1.5 km — the single shared
+  position-scale that worked for Kepler badly under-scales y here and
+  stalls convergence at ~17% RMSE; per-axis scaling matched to each
+  coordinate's actual range fixed it. Final result: **3.00% position
+  RMSE**.
+
+**2. Independent numerical validation of the two previously-open gaps**
+(both via `scipy.integrate.solve_ivp`, reimplemented independently of
+`compile.py` — checking the physics, not the compiler code against
+itself):
+
+- `tests/test_j2_secular_validation.py`: integrates the J2-perturbed
+  equations of motion over 800/400 orbits, fits the osculating
+  RAAN/argument-of-perigee secular trend, compares to Vallado's
+  literature formulas. **Nodal regression: 0.45% agreement. Apsidal
+  precession: 0.53% agreement.** (Caveat documented in the test itself:
+  naively checking apsidal precession near the ~63.435° critical
+  inclination gives a spurious "45% error" from the literature formula's
+  own near-zero denominator there, not a real discrepancy — the test
+  deliberately uses 30° instead.)
+- `tests/test_lane_emden_numerical_validation.py`: integrates the
+  Lane-Emden equation for n=1.5 (white dwarf) and n=3 (Eddington standard
+  model), finds the first zero crossing ξ₁, compares to published
+  textbook tables (Chandrasekhar 1939). **n=1.5: 0.0001% agreement. n=3:
+  0.00002% agreement.** (The integrator is first sanity-checked against
+  the n=0/n=1 closed forms, matching to <1e-6, before being trusted for
+  the no-closed-form cases.)
+
+Both test files pass (2/2 and 4/4 respectively), run in a few seconds
+each, and are part of the regular suite going forward.
 
 ---
 
