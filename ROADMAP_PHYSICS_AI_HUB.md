@@ -50,7 +50,93 @@ what can actually be shipped and checked, not to what sounds complete.
 | Adaptive (Bayesian/TPE via Optuna, random-search fallback) hyperparameter search — the existing `run_parallel_sweep`/`SweepConfig` turned out to already exist and work, but is grid-only, not adaptive; also fixed that shim's own re-export gap (`pinneapple_train` never actually exported `SweepConfig`/`run_parallel_sweep` despite `QUICKSTART.md`'s own example importing them from there) | ✅ done and tested, both the Optuna path and the dependency-free fallback (found and fixed a real bug in the process: `suggest_float`'s `log` parameter is keyword-only, an early version passed it positionally and crashed every trial) | `pinneapple_neural/trainer/adaptive_sweep.py`, `pinneapple_train/__init__.py` |
 | **Second audit pass: the pre-existing `tests/` suite** (never run successfully before this session — 4 `ModuleNotFoundError`s aborted collection of the *entire* tree before a single test could run) — fixed all 4 collection-blockers (`pinneapple_pinn` bad import, `pinneapple_train.trainer/.losses/.metrics` submodules missing, `pinneapple_solvers.fft` missing + a silent `FFTProcessor`→`None` swallow bug in the same file, `pinneapple_models.registry` missing), then found and fixed 4 more real bugs the now-runnable suite surfaced: `real_gas_eos.py`'s `NameError` (should be a clean `ImportError` when CoolProp isn't installed), `Trainer.fit()` never returning `"history"`, and — highest severity — `pinneapple_app`'s experiment `progress_cb` doing `ev["epoch"]` unconditionally when the auto-fix advisor loop sends event shapes without that key, **crashing any experiment that used the advisor/retrain feature** (confirmed pre-existing via `git stash`, not introduced this session) | ✅ done — suite went from 0 tests able to run to **0 failures** across the whole thing (`pytest tests/ --ignore=tests/test_full_library_matrix.py --ignore=tests/test_manufactured_solutions.py`); `tests/test_app_backend.py` alone went from 6 failures to 34/34 passing | see `AUDIT_REPORT.md`'s "Zero" section for the full per-bug breakdown; files touched: `pinneapple_train/{trainer,losses,metrics}.py` (new), `pinneapple_solvers/{__init__,fft}.py`, `pinneapple_models/registry.py` (new), `pinneapple_systems/process_components/real_gas_eos.py`, `pinneapple_neural/trainer/trainer.py`, `pinneapple_app/backend/routers/experiments.py`, `pyproject.toml` (`process` extra), 3 test files (`test_sympy_backend.py`, `test_mesh_ops.py`, `test_process_components.py`) |
 
-**Still open after both audit passes** (not yet started this session, requested explicitly and tracked here so it isn't lost): extending this same evidenced-audit method to the modules neither pass touched — `pinneapple_design`, `pinneapple_systems` beyond `process_components`, `pinneapple_analysis`, `pinneapple_adaptation`, `pinneapple_tools`, and the non-PINN solvers under `pinneapple_simulation` (FEM/FDM/SPH/LBM) — and upgrading Tier A from architecture-alone/preset-alone (always paired with `modified_mlp`, 3 epochs, a tiny batch) to a genuine architecture×preset cartesian product at a more realistic epoch/batch size.
+**Third audit pass** (done): import-smoke-tested all 295 modules across the
+previously-untouched `pinneapple_design`, `pinneapple_systems`,
+`pinneapple_analysis`, `pinneapple_adaptation`, `pinneapple_tools`, and
+`pinneapple_simulation` packages. Found and fixed 2 real bugs: a broken
+import in `pinneapple_tools/benchmark_suite/runner/run_models_from_cfg.py`
+(referenced a nonexistent `compiler.collate` module; `dict_collate`
+actually lives in `compiler.dataset`), and `numerical_solvers/registry.py`'s
+`register_all()` being a flat list of imports where one missing optional
+dependency (`pywt`, for the wavelet solver) silently aborted registration
+of every solver listed after it — `SolverRegistry.list()` returned only 8
+of ~26 real solvers as a result; rewritten to import each module
+independently (26/26 now register, with only the 2 genuinely-missing-
+optional-dep ones reported back instead of eating everything after them).
+
+**Still open**: this pass only checked "does it import," not "does it run
+correctly" — upgrading Tier A from architecture-alone/preset-alone
+(always paired with `modified_mlp`, 3 epochs, a tiny batch) to a genuine
+architecture×preset cartesian product at a more realistic epoch/batch
+size, and extending Tier-A-style "build one instance, run one
+forward/backward pass" breadth testing to these 6 packages' actual
+classes (not just their imports), are both still not done.
+
+---
+
+## Domain specialization: astrophysics/space (chosen initial vertical)
+
+**Decision**: rather than staying a flat catalog of ~50 unrelated
+presets, PINNeAPPle's first release picks ONE domain to go deep on and
+demonstrably get right end-to-end, before expanding to others. This
+session's choice, made explicitly by the user: **astrophysics and space
+systems**, covering both research astrophysics and industrial/applied
+space engineering (the user specifically asked for both, and separately
+asked for space-debris and "similar space areas" to be included).
+
+**Shipped this session**: 7 new, real benchmark presets in
+`pinneapple_physics/pde_environment/presets/astrophysics.py`, each with a
+literature reference, a real/representative default parameter set (not
+placeholder numbers), and — critically — an independently-verified
+reference/analytic solution used to prove the compiled residual actually
+reproduces the correct physics (see `AUDIT_REPORT.md`'s astrophysics
+section for the full per-preset verification table: 16/16 Tier-B checks
+pass, and the process caught one real bug — a sign/parity error in the
+Lane-Emden n=0 case — before it shipped).
+
+| Preset | Applicability | New compiler kind? |
+|---|---|---|
+| `kepler_two_body_orbit` | research + industrial (every mission design tool) | yes: `kepler_two_body_orbit` |
+| `space_debris_cw_relative_motion` | industrial (conjunction assessment, proximity ops) | yes: `space_debris_cw_relative_motion` |
+| `satellite_j2_perturbation` | industrial (LEO/SSO satellite station-keeping) | yes: `satellite_j2_perturbation` |
+| `spacecraft_attitude_euler_rotation` | industrial (ADCS design/verification) | yes: `spacecraft_attitude_euler_rotation` |
+| `lane_emden_polytrope` | research (stellar structure) | yes: `lane_emden_polytrope` |
+| `nfw_dark_matter_potential` | research (galactic dynamics/cosmology) | no — reused existing `poisson` kind |
+| `sod_shock_tube_astro` | research (astrophysical hydro-code validation) | yes: `euler_compressible_1d` |
+
+**Byproduct fix**: building the generic ODE-residual pattern for these
+presets also fixed 2 pre-existing, unrelated Category-1 "Unsupported PDE
+kind" gaps from the Tier A audit above: `sir_ode` and
+`pk_two_compartment_ode` now compile and run (Tier A failures: 62→60/137).
+
+**Not done this session** (tracked here so it isn't lost):
+- No presets were actually *trained* end-to-end and compared to their
+  reference solution after training — Tier B here only proves the
+  residual/physics implementation is correct, the same scope as the
+  existing Laplace Tier B test. Training a real network on
+  `kepler_two_body_orbit` (the fastest-converging candidate) and plotting
+  predicted vs. exact orbit would be the natural next demonstration.
+- `satellite_j2_perturbation`'s cited secular drift-rate formulas (nodal
+  regression, apsidal precession) were not checked against a long,
+  many-orbit integrated/trained trajectory — only the instantaneous
+  residual and the J2→two-body reduction were verified.
+- `lane_emden_polytrope` has no closed-form validation for the
+  astrophysically standard n=1.5 (white dwarf) / n=3 (Eddington standard
+  model) — only n∈{0,1,5} have exact solutions; those would need a
+  numerical reference (e.g. via `pinneapple_simulation`'s IVP solvers)
+  instead.
+- No N-body (3+ body) gravitational dynamics, no general-relativistic
+  content (light bending, gravitational-wave inspiral/post-Newtonian
+  orbits), no radiative-transfer/stellar-atmosphere preset, no
+  accretion-disk (Shakura-Sunyaev) preset, no cosmological
+  perturbation-growth preset — all considered, all deferred to keep this
+  session's set small enough to verify properly rather than large and
+  unverified. A second batch covering these would be the natural way to
+  deepen this specialization before considering it "demonstrably done."
+- No UI/documentation/tutorial notebook showcasing this vertical to a
+  user browsing presets — the presets exist and are correct, but nothing
+  yet highlights "PINNeAPPle is good at astrophysics/space" to someone
+  exploring the library for the first time.
 
 ---
 

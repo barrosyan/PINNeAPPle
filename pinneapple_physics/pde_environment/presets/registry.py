@@ -85,3 +85,7 @@ def _auto_register() -> None:
         from . import turbomachinery as _turbo  # noqa: F401
     except Exception:
         pass
+    try:
+        from . import astrophysics as _astro  # noqa: F401
+    except Exception:
+        pass

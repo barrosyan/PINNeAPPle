@@ -6,6 +6,75 @@ estimated or guessed — every number here is a real test result). See
 implements (Tier A = breadth/"does it run", Tier B =
 `tests/test_manufactured_solutions.py`, physics correctness).
 
+## Astrophysics/space specialization: 7 new PDE/ODE kinds, all verified
+
+PINNeAPPle's chosen initial domain specialization (see
+`ROADMAP_PHYSICS_AI_HUB.md` section "Domain specialization"): 7 new,
+literature-grounded benchmark presets in
+`pinneapple_physics/pde_environment/presets/astrophysics.py`, spanning
+industrial space engineering (satellite orbit propagation, space-debris
+conjunction assessment, spacecraft attitude control) and research
+astrophysics (stellar structure, dark-matter halo potentials, compressible
+hydrodynamics). Each needed a new PDE/ODE residual kind in the compiler
+(`pinneapple_physics/pinn_solver/compiler/compile.py`), except
+`nfw_dark_matter_potential`, which reuses the existing "poisson" kind.
+
+**Every closed-form solution used for validation was derived or verified
+with `sympy` this session before being written into code** (substituted
+into its governing ODE/PDE, confirmed exact zero residual) — not
+recalled from memory and trusted. This caught one real error: the first
+version of the J2 perturbation acceleration (from memory) had the wrong
+overall sign; the version actually shipped was derived as -grad(V) of the
+cited geopotential and is correct by construction.
+
+`tests/test_astrophysics_validation.py` (Tier B, same method as
+`test_manufactured_solutions.py`): plug the exact solution into the
+compiled residual with no training, assert ~0; plug a deliberately wrong
+solution in, assert clearly nonzero. **16/16 pass** (8 presets/kinds x
+exact+wrong, except `satellite_j2_perturbation`, which has no closed-form
+trajectory — see below):
+
+| Preset | Kind | Exact solution used | Result |
+|---|---|---|---|
+| `kepler_two_body_orbit` | `kepler_two_body_orbit` | Kepler's equation (Newton-Raphson, differentiable) | ✅ residual ~1e-19 |
+| `space_debris_cw_relative_motion` | `space_debris_cw_relative_motion` | Clohessy-Wiltshire closed form | ✅ residual ~0 |
+| `satellite_j2_perturbation` | `satellite_j2_perturbation` | no closed form; checked instead: J2=0 reduces exactly to two-body (res ~1e-19), J2=Earth's value measurably perturbs it (res ~3e-11) | ✅ both directions confirmed |
+| `spacecraft_attitude_euler_rotation` | `spacecraft_attitude_euler_rotation` | axisymmetric torque-free precession | ✅ residual ~0 (<1e-8) |
+| `lane_emden_polytrope` | `lane_emden_polytrope` | n=0 and n=1 closed forms | ✅ both ~0 (n=0 caught a real bug, see below) |
+| `nfw_dark_matter_potential` | `poisson` (existing kind) | NFW closed-form potential | ✅ residual ~0 |
+| `sod_shock_tube_astro` | `euler_compressible_1d` | smooth advected-pulse MMS (the real Sod solution is discontinuous, not usable for pointwise autograd MMS) | ✅ residual ~0 (<1e-8) |
+
+**Real bug caught by this process**: the Lane-Emden branch's
+`theta_pow_n = sign(theta) * abs(theta)**n` "safe negative-base power"
+trick is mathematically wrong for even integer n (it returns -1 instead
+of the correct +1 for `theta**0` when theta<0) — the n=0 exact-solution
+test failed with residual 0.234 instead of ~0 before the fix. Corrected
+to use `theta ** int(n)` directly whenever n is an integer (0, 1, 5 all
+are), falling back to the sign-preserving regularization only for
+genuinely non-integer n. This is exactly the kind of defect Tier B is
+for: the code ran without error before the fix (Tier A would have missed
+it entirely) but computed the wrong physics.
+
+**Also fixed as a byproduct**: two pre-existing Category-1 "Unsupported
+PDE kind" gaps from the Tier A audit below, `sir_ode` and
+`pk_two_compartment_ode`, were fixed using the same
+compiler-branch pattern built for the new astrophysics ODE kinds (both
+now compile and run; Tier A failure count went from 62/137 to 60/137 as a
+direct result, confirmed by re-running the full suite).
+
+**Known gaps, stated honestly**: the CGNS/Exodus/Fluent/Abaqus-style
+caveat applies here too — `satellite_j2_perturbation`'s cited secular
+drift-rate formulas (nodal regression, apsidal precession) were NOT
+checked against a many-orbit trained/integrated trajectory this session
+(only the instantaneous residual and the J2-to-two-body reduction were
+verified); `lane_emden_polytrope` has no closed-form check for the
+astrophysically standard n=1.5/n=3 (only n=0/1/5 do); the CGNS/Exodus/
+Fluent/Abaqus readers' "not validated against a real writer's file"
+caveat is unrelated but similarly honest-by-omission. Tracked in
+`ROADMAP_PHYSICS_AI_HUB.md`.
+
+---
+
 ## Zero — the pre-existing test suite (`tests/`, excluding the two new
 Tier A/B files below): 4 collection-blocking bugs found and fixed, then
 **0 failures across the entire suite**
@@ -76,6 +145,20 @@ further real, independent bugs (all fixed, not just documented):
 errors, 0 tests run* to **0 failures**, running the entire pre-existing
 suite (all of it that doesn't need an unavailable optional dependency,
 which now skip cleanly instead of erroring).
+
+**Later re-run note**: in a later re-run this session (while validating
+the astrophysics additions above), `tests/test_app_backend.py`'s 34
+tests could not be re-verified in this particular environment because
+`httpx` (required by `starlette.testclient.TestClient`) was not
+installed and this session's sandbox blocked a global `pip install`.
+This is an environment gap, not a code regression -- `httpx` was missing
+from `pyproject.toml`'s `dev` extra entirely (now added) despite being a
+hard requirement for this test file, so `pip install -e .[dev]` would
+not have caught it either. The rest of the suite (everything except this
+one file) was re-run in full and showed zero regressions from this
+session's compile.py changes (60/137 Tier-A failures, down from 62, the
+2-failure improvement being the `sir_ode`/`pk_two_compartment_ode` fixes
+documented in the astrophysics section above -- not a new problem).
 
 ---
 
