@@ -890,6 +890,217 @@ def compile_problem(
                     raise ValueError(f"rate_fn did not return a target rate for field '{fname}'")
                 res_list.append(dCi_dt - rhs[fname])
 
+        elif pde_kind == "sir_ode":
+            # Kermack & McKendrick (1927) SIR compartmental model.
+            if not has_t:
+                raise ValueError("sir_ode expects a time coord 't'.")
+            for n in ("S", "I", "R"):
+                if n not in fields:
+                    raise ValueError(f"sir_ode expects field '{n}'.")
+            beta = float(p.get("beta", 0.3))
+            gamma = float(p.get("gamma", 0.1))
+            N = float(p.get("N", 1e6))
+            S, I, R = fields["S"], fields["I"], fields["R"]
+            S_t = time_derivative(S, xcol, t_index)  # type: ignore[arg-type]
+            I_t = time_derivative(I, xcol, t_index)  # type: ignore[arg-type]
+            R_t = time_derivative(R, xcol, t_index)  # type: ignore[arg-type]
+            infection = beta * S * I / N
+            res_list.append(S_t + infection)
+            res_list.append(I_t - infection + gamma * I)
+            res_list.append(R_t - gamma * I)
+
+        elif pde_kind == "pk_two_compartment_ode":
+            # Two-compartment pharmacokinetic model, IV bolus (see
+            # Rowland & Tozer, "Clinical Pharmacokinetics and
+            # Pharmacodynamics"): dC1/dt = -(k12+kel)C1 + k21 C2,
+            # dC2/dt = k12 C1 - k21 C2.
+            if not has_t:
+                raise ValueError("pk_two_compartment_ode expects a time coord 't'.")
+            for n in ("C1", "C2"):
+                if n not in fields:
+                    raise ValueError(f"pk_two_compartment_ode expects field '{n}'.")
+            k12 = float(p.get("k12", 0.5))
+            k21 = float(p.get("k21", 0.3))
+            kel = float(p.get("kel", 0.2))
+            C1, C2 = fields["C1"], fields["C2"]
+            C1_t = time_derivative(C1, xcol, t_index)  # type: ignore[arg-type]
+            C2_t = time_derivative(C2, xcol, t_index)  # type: ignore[arg-type]
+            res_list.append(C1_t + (k12 + kel) * C1 - k21 * C2)
+            res_list.append(C2_t - k12 * C1 + k21 * C2)
+
+        elif pde_kind == "kepler_two_body_orbit":
+            # Restricted two-body problem, planar Cartesian formulation
+            # (Vallado, "Fundamentals of Astrodynamics and Applications").
+            # State: position (x, y), velocity (vx, vy). mu = G*(M1+M2) is
+            # the gravitational parameter.
+            if not has_t:
+                raise ValueError("kepler_two_body_orbit expects a time coord 't'.")
+            for n in ("x", "y", "vx", "vy"):
+                if n not in fields:
+                    raise ValueError(f"kepler_two_body_orbit expects field '{n}'.")
+            mu = float(p.get("mu", 398600.4418))
+            x_f, y_f, vx_f, vy_f = fields["x"], fields["y"], fields["vx"], fields["vy"]
+            r = torch.sqrt(x_f * x_f + y_f * y_f + 1e-12)
+            r3 = r ** 3
+            x_t = time_derivative(x_f, xcol, t_index)  # type: ignore[arg-type]
+            y_t = time_derivative(y_f, xcol, t_index)  # type: ignore[arg-type]
+            vx_t = time_derivative(vx_f, xcol, t_index)  # type: ignore[arg-type]
+            vy_t = time_derivative(vy_f, xcol, t_index)  # type: ignore[arg-type]
+            res_list.append(x_t - vx_f)
+            res_list.append(y_t - vy_f)
+            res_list.append(vx_t + mu * x_f / r3)
+            res_list.append(vy_t + mu * y_f / r3)
+
+        elif pde_kind == "space_debris_cw_relative_motion":
+            # Clohessy-Wiltshire / Hill's equations for relative motion
+            # near a circular reference orbit (Clohessy & Wiltshire, 1960)
+            # -- the standard tool for space-debris conjunction assessment
+            # and proximity operations. x = radial, y = along-track,
+            # z = cross-track; n = mean motion of the reference orbit.
+            if not has_t:
+                raise ValueError("space_debris_cw_relative_motion expects a time coord 't'.")
+            for nm in ("x", "y", "z", "vx", "vy", "vz"):
+                if nm not in fields:
+                    raise ValueError(f"space_debris_cw_relative_motion expects field '{nm}'.")
+            n_mm = float(p.get("n", 0.0011))  # mean motion, rad/s (~LEO)
+            x_f, y_f, z_f = fields["x"], fields["y"], fields["z"]
+            vx_f, vy_f, vz_f = fields["vx"], fields["vy"], fields["vz"]
+            x_t = time_derivative(x_f, xcol, t_index)  # type: ignore[arg-type]
+            y_t = time_derivative(y_f, xcol, t_index)  # type: ignore[arg-type]
+            z_t = time_derivative(z_f, xcol, t_index)  # type: ignore[arg-type]
+            vx_t = time_derivative(vx_f, xcol, t_index)  # type: ignore[arg-type]
+            vy_t = time_derivative(vy_f, xcol, t_index)  # type: ignore[arg-type]
+            vz_t = time_derivative(vz_f, xcol, t_index)  # type: ignore[arg-type]
+            res_list.append(x_t - vx_f)
+            res_list.append(y_t - vy_f)
+            res_list.append(z_t - vz_f)
+            res_list.append(vx_t - 2.0 * n_mm * vy_f - 3.0 * n_mm * n_mm * x_f)
+            res_list.append(vy_t + 2.0 * n_mm * vx_f)
+            res_list.append(vz_t + n_mm * n_mm * z_f)
+
+        elif pde_kind == "satellite_j2_perturbation":
+            # Two-body motion plus the J2 (Earth oblateness) perturbing
+            # acceleration, derived here as -grad(V) of the standard J2
+            # geopotential V = -(mu/r)[1 - J2 (Re/r)^2 (3(z/r)^2-1)/2]
+            # (Vallado, "Fundamentals of Astrodynamics and Applications";
+            # this is the same potential whose orbit-averaged secular
+            # nodal/apsidal drift rates are used as this preset's
+            # independent literature cross-check -- see
+            # presets/astrophysics.py). State: (x, y, z, vx, vy, vz) in an
+            # Earth-centered inertial frame.
+            if not has_t:
+                raise ValueError("satellite_j2_perturbation expects a time coord 't'.")
+            for nm in ("x", "y", "z", "vx", "vy", "vz"):
+                if nm not in fields:
+                    raise ValueError(f"satellite_j2_perturbation expects field '{nm}'.")
+            mu = float(p.get("mu", 398600.4418))
+            J2 = float(p.get("J2", 1.08262668e-3))
+            Re = float(p.get("Re", 6378.137))
+            x_f, y_f, z_f = fields["x"], fields["y"], fields["z"]
+            vx_f, vy_f, vz_f = fields["vx"], fields["vy"], fields["vz"]
+            r2 = x_f * x_f + y_f * y_f + z_f * z_f + 1e-9
+            r = torch.sqrt(r2)
+            r5 = r2 * r2 * r
+            j2_common = 1.5 * J2 * mu * (Re * Re) / r5
+            z2_over_r2 = z_f * z_f / r2
+            ax_j2 = j2_common * x_f * (5.0 * z2_over_r2 - 1.0)
+            ay_j2 = j2_common * y_f * (5.0 * z2_over_r2 - 1.0)
+            az_j2 = j2_common * z_f * (5.0 * z2_over_r2 - 3.0)
+            r3 = r2 * r
+            ax = -mu * x_f / r3 + ax_j2
+            ay = -mu * y_f / r3 + ay_j2
+            az = -mu * z_f / r3 + az_j2
+            x_t = time_derivative(x_f, xcol, t_index)  # type: ignore[arg-type]
+            y_t = time_derivative(y_f, xcol, t_index)  # type: ignore[arg-type]
+            z_t = time_derivative(z_f, xcol, t_index)  # type: ignore[arg-type]
+            vx_t = time_derivative(vx_f, xcol, t_index)  # type: ignore[arg-type]
+            vy_t = time_derivative(vy_f, xcol, t_index)  # type: ignore[arg-type]
+            vz_t = time_derivative(vz_f, xcol, t_index)  # type: ignore[arg-type]
+            res_list.append(x_t - vx_f)
+            res_list.append(y_t - vy_f)
+            res_list.append(z_t - vz_f)
+            res_list.append(vx_t - ax)
+            res_list.append(vy_t - ay)
+            res_list.append(vz_t - az)
+
+        elif pde_kind == "spacecraft_attitude_euler_rotation":
+            # Torque-free rigid-body attitude dynamics, body-frame Euler
+            # equations (Hughes, "Spacecraft Attitude Dynamics";
+            # Wertz, "Spacecraft Attitude Determination and Control").
+            # State: angular velocity components (w1, w2, w3) about the
+            # principal axes; params I1, I2, I3 = principal moments of
+            # inertia.
+            if not has_t:
+                raise ValueError("spacecraft_attitude_euler_rotation expects a time coord 't'.")
+            for nm in ("w1", "w2", "w3"):
+                if nm not in fields:
+                    raise ValueError(f"spacecraft_attitude_euler_rotation expects field '{nm}'.")
+            I1 = float(p.get("I1", 100.0))
+            I2 = float(p.get("I2", 100.0))
+            I3 = float(p.get("I3", 150.0))
+            w1, w2, w3 = fields["w1"], fields["w2"], fields["w3"]
+            w1_t = time_derivative(w1, xcol, t_index)  # type: ignore[arg-type]
+            w2_t = time_derivative(w2, xcol, t_index)  # type: ignore[arg-type]
+            w3_t = time_derivative(w3, xcol, t_index)  # type: ignore[arg-type]
+            res_list.append(I1 * w1_t - (I2 - I3) * w2 * w3)
+            res_list.append(I2 * w2_t - (I3 - I1) * w3 * w1)
+            res_list.append(I3 * w3_t - (I1 - I2) * w1 * w2)
+
+        elif pde_kind == "lane_emden_polytrope":
+            # Lane-Emden equation for a self-gravitating polytropic star
+            # (Chandrasekhar, "An Introduction to the Study of Stellar
+            # Structure", 1939):
+            #   theta''(xi) + (2/xi) theta'(xi) + theta(xi)^n = 0
+            # written as a first-order system with phi := theta'(xi):
+            #   theta'(xi) = phi ;  phi'(xi) = -theta^n - (2/xi) phi
+            # Single independent coordinate xi (dimensionless radius);
+            # this branch does not require a 't' coord -- xcol is simply
+            # the (N,1) collocation column for xi.
+            for nm in ("theta", "phi"):
+                if nm not in fields:
+                    raise ValueError(f"lane_emden_polytrope expects field '{nm}'.")
+            n_poly = float(p.get("n", 1.0))
+            theta, phi_f = fields["theta"], fields["phi"]
+            xi = xcol[:, 0:1]
+            theta_xi = grad(theta, xcol)[:, 0:1]
+            phi_xi = grad(phi_f, xcol)[:, 0:1]
+            if n_poly.is_integer():
+                # Real integer powers of a negative base are well-defined
+                # (and, critically, theta**0 == 1 regardless of theta's
+                # sign) -- use them directly. Only fall back to the
+                # sign-preserving |theta|^n regularization below for
+                # non-integer n, where torch's ** on a negative base
+                # would otherwise produce NaN.
+                theta_pow_n = theta ** int(n_poly)
+            else:
+                theta_pow_n = torch.sign(theta) * torch.abs(theta) ** n_poly
+            res_list.append(theta_xi - phi_f)
+            res_list.append(phi_xi + theta_pow_n + (2.0 / xi) * phi_f)
+
+        elif pde_kind == "euler_compressible_1d":
+            # Inviscid compressible flow, conservative form, ideal gas
+            # (gamma-law), 1D -- e.g. the Sod shock tube (Sod, 1978) and
+            # other 1D astrophysical hydrodynamics validation cases.
+            if not has_t:
+                raise ValueError("euler_compressible_1d expects time coord 't'.")
+            for n in ("rho", "rho_u", "E"):
+                if n not in fields:
+                    raise ValueError(f"euler_compressible_1d expects field '{n}'.")
+            gamma = float(p.get("gamma", 1.4))
+            x_idx = _coord_index(coords, "x")
+            rho, rho_u, E_f = fields["rho"], fields["rho_u"], fields["E"]
+            u_vel = rho_u / rho
+            p_pres = (gamma - 1.0) * (E_f - 0.5 * rho * u_vel * u_vel)
+
+            F1x, F2x, F3x = rho_u, rho_u * u_vel + p_pres, (E_f + p_pres) * u_vel
+
+            rho_t = time_derivative(rho, xcol, t_index)  # type: ignore[arg-type]
+            rhou_t = time_derivative(rho_u, xcol, t_index)  # type: ignore[arg-type]
+            E_t = time_derivative(E_f, xcol, t_index)  # type: ignore[arg-type]
+
+            res_list.append(rho_t + grad(F1x, xcol)[:, x_idx:x_idx + 1])
+            res_list.append(rhou_t + grad(F2x, xcol)[:, x_idx:x_idx + 1])
+            res_list.append(E_t + grad(F3x, xcol)[:, x_idx:x_idx + 1])
 
         else:
             raise ValueError(f"Unsupported PDE kind: {pde_kind}")

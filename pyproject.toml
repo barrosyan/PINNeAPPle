@@ -229,6 +229,7 @@ dev = [
   "build>=1.2",
   "twine>=5.0",
   "ipykernel>=6.0",
+  "httpx>=0.27",  # required by starlette.testclient.TestClient, used by tests/test_app_backend.py
   "jupyter>=1.0",
 ]
 
