@@ -179,6 +179,81 @@ numerical validation (new test files, not just claims):
 
 ---
 
+## Category-1 "Unsupported PDE kind" batch fix (a second follow-up pass)
+
+Acted on this section's own P1.1 recommendation ("thermal
+`heat_equation_steady` covers several presets in one fix, structural
+`linear_elasticity_plane_stress`/`plane_strain` covers several, then the
+rest") — see `AUDIT_REPORT.md`'s Category 1 section for the full table of
+which new/fixed `pde_kind` closed which presets, each with `sympy`- or
+manufactured-solution-verified physics before being written into
+`compile.py`, not just "no longer raises." **Tier A failures: 60/137 →
+45/137** (15 closed: steady Navier-Stokes for 3 presets, 3 new steady-heat
+kinds for 5 presets, plane-stress/plane-strain elasticity for 7 presets
+including 3 found as a bonus while re-verifying). `thermoelasticity_2d`'s
+coupled thermal-strain term is the one new kind without its own MMS test
+(a `laplacian()`-helper autograd-graph-connectivity limitation with
+spatially-constant fields, not a defect — documented, not hidden).
+
+**Still open**: the remaining ~30 Category 1 gaps (aerospace: aircraft
+wing aero, axial compressor family, rocket nozzle CFD; automotive: car
+external aero, car brake thermal; datacenter: airflow/CFD-3D; climate:
+atmosphere-2D, ocean gyre; finance: Black-Scholes, Heston; materials:
+crystal phonon transport, phase-field fracture; a few others) each need
+their own physics-derivation pass, same rigor as this one, not a
+mechanical fix — genuinely the largest remaining body of work this
+roadmap tracks.
+
+---
+
+## `splash-pinneapple` pipeline migration (downstream consumer, separate repo)
+
+The original ask that started this whole audit/porting effort — updating
+`/Users/yanbarros/Documents/GitHub/splash-pinneapple/pipeline` (the
+turbulent-channel-flow LES surrogate project this work was upstreamed
+from) to consume the now-real upstream PINNeAPPle instead of its own
+locally duplicated implementations — was completed in a follow-up pass
+(delegated to a background agent, verified before being reported here).
+
+**Migrated to upstream imports**: the OpenFOAM binary/mesh readers
+(`openfoam_binary.py`/`splash_mesh.py`, byte-identical logic, upstream
+adds one safety `.copy()`), the periodic-BC embedding (`model.py`'s
+`PeriodicEmbedding` now composes upstream `MultiPeriodicBC`, numerically
+verified **bit-identical**, gradients included, to the old hand-rolled
+version), and the adaptive loss-weighting scheme (`loss_balance.py` now
+a thin re-export of upstream `AdaptiveWeights`, confirmed to carry the
+same "relative-to-hardest-term" fix as the local version, not the naive
+scheme that caused this project's own v3 collapse to `U≡0`).
+
+**Intentionally left local** (with reasoning, not silently skipped):
+the WALE closure (`physics_les.py` — math confirmed identical to
+upstream `WALEResiduals`, but upstream's API doesn't have hooks for the
+per-y-only delta lookup or the stochastic latent variable this project's
+`train_stochastic.py` genuinely needs); `splash_dataset.py` (upstream's
+`field_reader` solves a different problem — one OpenFOAM case directory,
+not several time steps concatenated from a zipped `.splash` archive with
+mesh caching and `UMean`/`pMean` substitution); `train.py`'s training
+loop (upstream `solve_pde()` has no L-BFGS/resume/mesh-sampling support
+this project relies on).
+
+**Verified, not just claimed**: both a deterministic smoke run
+(`configs/channel_wale_retau180_smoke.json`, full path through the
+migrated mesh reader → `MultiPeriodicBC` model → `AdaptiveWeights`
+training → L-BFGS fine-tune → checkpoint/export) and a stochastic smoke
+run (`train_stochastic.py`, exercising the latent-conditioned ensemble
+path) completed with finite, sane losses and no errors. No v1-v6
+configs or their validated run outputs were touched.
+
+**Not verified**: the smoke tests prove the refactored path is wired
+correctly, not that the previously-achieved v4 12.7% RMSE result still
+holds numerically after the swap — a full or mid-length re-run of that
+config is the belt-and-suspenders check still open before quoting that
+number against the migrated code (though nothing in the swapped pieces
+should change gradients, given the bit-identical/logic-identical
+verification above).
+
+---
+
 ## P1 — near-term (days, one engineer, no new infrastructure)
 
 ### 1.1 Full-library evidenced audit (the honest version of "audit everything")

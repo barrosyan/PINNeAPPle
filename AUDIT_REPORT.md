@@ -271,12 +271,39 @@ raises `ValueError: Navier–Stokes expects time coord 't'.` for any spec
 without one. These three are registered, physically sensible, steady
 Navier-Stokes presets that `solve_pde` cannot run at all.
 
-**Recommendation**: this is the top-priority follow-up work, larger than
-what this session had budget for (~20+ distinct `pde_kind` residual
-implementations, each its own physics-derivation task, not a mechanical
-fix). Tackle in the order real users would hit them: thermal
-(`heat_equation_steady` covers 4 presets in one fix), structural
-(`linear_elasticity_plane_stress`/`plane_strain` covers 3), then the rest.
+**Recommendation** (as originally written): tackle in the order real
+users would hit them: thermal (`heat_equation_steady` covers several
+presets in one fix), structural
+(`linear_elasticity_plane_stress`/`plane_strain` covers several), then
+the rest.
+
+**Follow-up pass acted on that recommendation.** Added real residual
+implementations (`pinneapple_physics/pinn_solver/compiler/compile.py`),
+each derived and independently sanity-checked before being written
+(details and the exact `sympy`/manufactured-solution verification are in
+`tests/test_manufactured_solutions.py`, extended this pass):
+
+| New/fixed `pde_kind` | Presets closed |
+|---|---|
+| `navier_stokes_incompressible` (removed the unconditional "must have coord 't'" check — steady presets simply drop the du/dt term) | `channel_flow_3d`, `lid_driven_cavity_3d`, `pipe_flow_3d` |
+| `heat_equation_steady` (new) — `k*laplacian(T) = -q`, isotropic | `cpu_heatsink_thermal`, `industrial_furnace_thermal`, `datacenter_server_thermal` |
+| `heat_equation_steady_anisotropic` (new) — `sum_i k_i*d^2T/dx_i^2 = -q` | `pcb_thermal` |
+| `heat_equation_steady_multilayer` (new) — same as `heat_equation_steady`, reading the preset's own precomputed `k_eff` | `refractory_lining` |
+| `linear_elasticity_plane_strain` (new alias — mathematically identical to the existing `linear_elasticity` branch at 2 spatial dims: plane strain literally IS "zero out-of-plane strain, full 3D constitutive relation restricted to 2D") | `plane_strain_2d` |
+| `linear_elasticity_plane_stress` (new) — same branch, with the standard reduced Lamé parameter `lambda* = 2*lambda*mu/(lambda+2*mu)` (Timoshenko & Goodier) in place of the raw 3D lambda, derived and `sympy`-verified this session by eliminating `eps_zz` from the full 3D relation under the `sigma_zz=0` plane-stress constraint | `plane_stress_2d`, `von_mises_2d`, and — found as a bonus while re-running Tier A, not originally on this list — `aircraft_wing_structural`, `car_suspension_fatigue`, `rocket_structural` (all three reuse the same kind) |
+| `thermoelasticity_2d` (new) — steady heat (`laplacian(T)=0`) coupled to plane-stress elasticity with an isotropic thermal strain `eps_th = alpha_T*T*I` subtracted from the constitutive relation | `thermoelasticity_2d` |
+
+**Net result**: Tier A failures went from 60/137 (after the earlier
+`sir_ode`/`pk_two_compartment_ode` fix) to **45/137** — 15 more closed in
+this pass (12 targeted + 3 bonus), confirmed by re-running the full Tier
+A matrix. All new kinds have `test_manufactured_solutions.py` MMS
+coverage (exact-solution-gives-~0 / wrong-solution-gives-nonzero, same
+method as the original Laplace test) except `thermoelasticity_2d`'s
+coupled term specifically, which this codebase's `laplacian()` helper
+can't cleanly MMS-test with a spatially-constant temperature field (a
+second-derivative-of-a-constant autograd-graph-connectivity limitation,
+not a defect in the new code) — tracked as a known gap, not silently
+skipped.
 
 ## Category 2 — not a defect: generic smoke test doesn't fit the architecture's real input shape
 

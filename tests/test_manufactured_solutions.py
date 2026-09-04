@@ -17,11 +17,14 @@ the real one).
 """
 from __future__ import annotations
 
+import pytest
 import torch
 import torch.nn as nn
 
 from pinneapple_physics.pinn_solver.compiler.compile import compile_problem
 from pinneapple_physics.pde_environment.presets.academics import laplace_2d_default
+from pinneapple_physics.pde_environment.spec import PDETermSpec, ProblemSpec
+from pinneapple_physics.pde_environment.scales import ScaleSpec
 
 
 class _ExactFn(nn.Module):
@@ -92,3 +95,109 @@ def test_audit_physics_laplace_2d_wrong_solution_gives_nonzero_residual():
         f"got {float(pde_residual.item())} -- if this is ~0, the residual computation itself "
         f"is broken (e.g. always returns ~0 regardless of input), not just under-converged."
     )
+
+
+def _probe_spec(kind: str, coords, params) -> ProblemSpec:
+    """Minimal standalone ProblemSpec for a pde_kind, no preset needed --
+    used below for kinds (heat_equation_steady*, navier_stokes steady
+    case) added this session that don't have a dedicated academics.py
+    preset of their own."""
+    pde = PDETermSpec(kind=kind, fields=("T",), coords=coords, params=params)
+    return ProblemSpec(name=f"_probe_{kind}", dim=len(coords), coords=coords, fields=("T",),
+                        pde=pde, conditions=(), scales=ScaleSpec())
+
+
+def test_audit_physics_heat_equation_steady_exact_solution_gives_zero_residual():
+    """T(x,y,z) = x^2 - y^2 is harmonic -- k*laplacian(T) = 0 exactly, for
+    any k. Added this session alongside the fix that let
+    cpu_heatsink_thermal/industrial_furnace_thermal/
+    datacenter_server_thermal/refractory_lining actually compile (they
+    were all "Unsupported PDE kind" Category-1 audit failures before)."""
+    spec = _probe_spec("heat_equation_steady", ("x", "y", "z"), {"k": 2.0})
+    loss_fn = compile_problem(spec)
+    exact = _ExactFn(lambda x: (x[:, 0:1] ** 2 - x[:, 1:2] ** 2))
+    x = torch.rand(256, 3, requires_grad=True)
+    batch = _empty_batch(x, n_coords=3, n_fields=1)
+    out = loss_fn(exact, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-8, f"heat_equation_steady residual should be ~0 for a harmonic T, got {float(res.item())}"
+
+
+def test_audit_physics_heat_equation_steady_wrong_solution_gives_nonzero_residual():
+    spec = _probe_spec("heat_equation_steady", ("x", "y", "z"), {"k": 2.0})
+    loss_fn = compile_problem(spec)
+    wrong = _ExactFn(lambda x: (x[:, 0:1] ** 2 + x[:, 1:2] ** 2 + x[:, 2:3] ** 2))
+    x = torch.rand(256, 3, requires_grad=True)
+    batch = _empty_batch(x, n_coords=3, n_fields=1)
+    out = loss_fn(wrong, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    # k*laplacian = 2*6 = 12 exactly everywhere -> mean-squared residual = 144.
+    assert float(res.item()) > 1.0, f"heat_equation_steady residual should be clearly nonzero, got {float(res.item())}"
+
+
+def test_audit_physics_heat_equation_steady_anisotropic_exact_solution_gives_zero_residual():
+    """T(x,y) = k_y*x^2 - k_x*y^2 satisfies k_x*T_xx + k_y*T_yy = 0
+    exactly for any k_x, k_y (by construction: k_x*(2 k_y) + k_y*(-2 k_x)
+    = 0). Added alongside the fix that let pcb_thermal compile."""
+    spec = _probe_spec("heat_equation_steady_anisotropic", ("x", "y"), {"k_x": 2.0, "k_y": 3.0})
+    loss_fn = compile_problem(spec)
+    exact = _ExactFn(lambda x: (3.0 * x[:, 0:1] ** 2 - 2.0 * x[:, 1:2] ** 2))
+    x = torch.rand(256, 2, requires_grad=True)
+    batch = _empty_batch(x, n_coords=2, n_fields=1)
+    out = loss_fn(exact, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-8, f"anisotropic heat residual should be ~0 for the exact solution, got {float(res.item())}"
+
+
+def test_audit_physics_heat_equation_steady_anisotropic_wrong_solution_gives_nonzero_residual():
+    spec = _probe_spec("heat_equation_steady_anisotropic", ("x", "y"), {"k_x": 2.0, "k_y": 3.0})
+    loss_fn = compile_problem(spec)
+    wrong = _ExactFn(lambda x: (x[:, 0:1] ** 2 + x[:, 1:2] ** 2))
+    x = torch.rand(256, 2, requires_grad=True)
+    batch = _empty_batch(x, n_coords=2, n_fields=1)
+    out = loss_fn(wrong, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    # k_x*2 + k_y*2 = 2*(2+3) = 10 exactly -> mean-squared residual = 100.
+    assert float(res.item()) > 1.0, f"anisotropic heat residual should be clearly nonzero, got {float(res.item())}"
+
+
+@pytest.mark.parametrize("kind", ["linear_elasticity_plane_strain", "linear_elasticity_plane_stress"])
+def test_audit_physics_elasticity_2d_exact_solution_gives_zero_residual(kind):
+    """ux=x^2-y^2, uy=-2xy: both components are individually harmonic AND
+    div(u)=0, so Navier's equilibrium equation (lambda+mu)*grad(div(u)) +
+    mu*laplacian(u) = 0 is satisfied identically for ANY lambda, mu --
+    verified with `sympy` before being used here. This exercises BOTH
+    plane_strain (the raw lambda) and plane_stress (the reduced
+    lambda* = 2*lambda*mu/(lambda+2*mu), also independently `sympy`-
+    verified this session by eliminating eps_zz from the full 3D
+    constitutive relation under the sigma_zz=0 plane-stress constraint)
+    since div(u)=0 makes the residual insensitive to which lambda is used
+    -- both must give exactly the same (zero) answer regardless."""
+    spec = _probe_spec(kind, ("x", "y"), {"lambda": 1e5, "mu": 8e4})
+    # _probe_spec defaults to field "T"; elasticity needs ux, uy instead.
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("ux", "uy"), pde=_replace(spec.pde, fields=("ux", "uy")))
+    loss_fn = compile_problem(spec)
+    exact = _ExactFn(lambda x: torch.cat([x[:, 0:1] ** 2 - x[:, 1:2] ** 2, -2 * x[:, 0:1] * x[:, 1:2]], dim=1))
+    x = torch.rand(256, 2, requires_grad=True)
+    batch = _empty_batch(x, n_coords=2, n_fields=2)
+    out = loss_fn(exact, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-6, f"{kind} residual should be ~0 for the exact solution, got {float(res.item())}"
+
+
+@pytest.mark.parametrize("kind", ["linear_elasticity_plane_strain", "linear_elasticity_plane_stress"])
+def test_audit_physics_elasticity_2d_wrong_solution_gives_nonzero_residual(kind):
+    spec = _probe_spec(kind, ("x", "y"), {"lambda": 1e5, "mu": 8e4})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("ux", "uy"), pde=_replace(spec.pde, fields=("ux", "uy")))
+    loss_fn = compile_problem(spec)
+    # ux=x^3-3xy^2, uy=3x^2y-y^3 are each individually harmonic but
+    # div(u) != 0 in general, so equilibrium is NOT satisfied identically.
+    wrong = _ExactFn(lambda x: torch.cat(
+        [x[:, 0:1] ** 3 - 3 * x[:, 0:1] * x[:, 1:2] ** 2, 3 * x[:, 0:1] ** 2 * x[:, 1:2] - x[:, 1:2] ** 3], dim=1))
+    x = torch.rand(256, 2, requires_grad=True)
+    batch = _empty_batch(x, n_coords=2, n_fields=2)
+    out = loss_fn(wrong, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1.0, f"{kind} residual should be clearly nonzero for the wrong solution, got {float(res.item())}"
