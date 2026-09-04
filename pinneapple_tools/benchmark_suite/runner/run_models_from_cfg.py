@@ -28,8 +28,7 @@ from pinneapple_neural.architectures.register_all import register_all
 from pinneapple_neural.trainer.trainer import Trainer
 from pinneapple_neural.trainer.losses import build_loss
 from pinneapple_physics.pinn_solver.compiler import compile_problem
-from pinneapple_physics.pinn_solver.compiler.dataset import SingleBatchDataset
-from pinneapple_physics.pinn_solver.compiler.collate import dict_collate
+from pinneapple_physics.pinn_solver.compiler.dataset import SingleBatchDataset, dict_collate
 
 
 from pinneapple_physics.pde_environment.spec import ProblemSpec, PDETermSpec

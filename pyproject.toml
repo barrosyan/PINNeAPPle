@@ -161,6 +161,8 @@ digital_twin = [
 timeseries = [
   "statsmodels>=0.14",
   "pmdarima>=2.0",
+  "scikit-learn>=1.4",
+  "PyWavelets>=1.6",
 ]
 
 # Synthetic data and symbolics
