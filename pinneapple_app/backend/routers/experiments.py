@@ -215,6 +215,19 @@ async def _run_experiment_bg(exp_id, problem, col_cfg, data_cfg, exp_cfg):
         epoch_unit = 80.0 / max(n_models, 1)
 
         def progress_cb(ev):
+            # ExperimentRunner sends three distinct event shapes through
+            # this one callback: plain per-epoch training events (no
+            # "type" key, carry "epoch"/"total_epochs"), and the
+            # auto-fix advisor loop's "advisor"/"retrain" events (no
+            # "epoch"/"total_epochs" at all -- see
+            # core/experiment.py's three progress_cb(...) call sites).
+            # Unconditionally indexing ev["epoch"] here raised a bare
+            # KeyError('epoch') and silently failed the WHOLE experiment
+            # the instant an advisor/retrain event fired -- found via
+            # tests/test_app_backend.py's TestExperiments failing.
+            if ev.get("type") in ("advisor", "retrain"):
+                _push(exp_id, {**ev, "overall_progress": _EXPERIMENTS[exp_id]["progress"]})
+                return
             frac = ev["epoch"] / max(ev["total_epochs"], 1)
             model_idx = [m.name for m in exp_cfg.models].index(ev["model"])
             prog = 10 + model_idx * epoch_unit + frac * epoch_unit

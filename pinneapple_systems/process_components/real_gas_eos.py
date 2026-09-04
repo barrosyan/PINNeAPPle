@@ -171,11 +171,25 @@ def _resolve(
     )
 
 
+def _require_coolprop() -> None:
+    """``CP.<X>_INPUTS`` is evaluated as a plain function argument at each
+    ``state_from_*`` call site below, i.e. *before* ``_resolve``/
+    ``_get_abstract_state`` ever runs -- so without this guard, a missing
+    CoolProp install raised a bare ``NameError: name 'CP' is not defined``
+    at the call site instead of the clear, actionable ``ImportError``
+    ``_get_abstract_state`` already raises internally (found via the
+    pre-existing test suite: every real-gas test failed with exactly that
+    confusing NameError instead of a "pip install CoolProp" message)."""
+    if not _COOLPROP_AVAILABLE:
+        raise ImportError("CoolProp is required for pinneapple_systems.process_components.real_gas_eos (pip install CoolProp)")
+
+
 def state_from_PT(
     gas: GasComposition, P_Pa: float, T_K: float, *,
     backend: str = "HEOS", specify_phase: Literal["gas", "liquid", "supercritical"] | None = "gas",
     envelope: ValidityEnvelope | None = None,
 ) -> GasState:
+    _require_coolprop()
     return _resolve(gas, backend, specify_phase, CP.PT_INPUTS, P_Pa, T_K, envelope)
 
 
@@ -186,6 +200,7 @@ def state_from_Ph(
 ) -> GasState:
     """Pressure + specific enthalpy -> full state (temperature recovered
     by EOS flash). Used wherever an energy balance produces h directly."""
+    _require_coolprop()
     return _resolve(gas, backend, specify_phase, CP.HmassP_INPUTS, h_J_kg, P_Pa, envelope)
 
 
@@ -195,6 +210,7 @@ def state_from_Ps(
     envelope: ValidityEnvelope | None = None,
 ) -> GasState:
     """Pressure + specific entropy -> full state (an isentropic endpoint)."""
+    _require_coolprop()
     return _resolve(gas, backend, specify_phase, CP.PSmass_INPUTS, P_Pa, s_J_kgK, envelope)
 
 
