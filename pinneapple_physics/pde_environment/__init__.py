@@ -43,6 +43,7 @@ except ImportError:
 from .turbulence_presets import (
     KOmegaSSTResiduals,
     SpalartAllmarasResiduals,
+    WALEResiduals,
     get_rans_preset,
     SST_CONSTS,
 )
@@ -89,10 +90,11 @@ __all__ = [
     "linear_elasticity_3d",
     "drill_pipe_torsion_default",
     "thermoelasticity_2d_default",
-    # RANS turbulence presets (Feature 10)
+    # RANS/LES turbulence presets (Feature 10)
     "SST_CONSTS",
     "KOmegaSSTResiduals",
     "SpalartAllmarasResiduals",
+    "WALEResiduals",
     "get_rans_preset",
     # PDE family knowledge base
     "PDEFamily",
