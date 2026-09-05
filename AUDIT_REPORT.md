@@ -765,6 +765,60 @@ depth. Extending Tier B coverage to more `pde_kind`s (Poisson with a
 manufactured source term, Burgers via Cole-Hopf, ...) is listed in
 `ROADMAP_PHYSICS_AI_HUB.md` section 1.1 as follow-up work.
 
+## Follow-up pass: 3D `KOmegaSSTResiduals` turbulence closure (P2.4)
+
+`turbulence_presets.py`'s `KOmegaSSTResiduals.__call__` was 2D-only
+(`(x,y)->(u,v,p,k,omega)`); `ROADMAP_PHYSICS_AI_HUB.md` section 2.4
+called for a genuine 3D generalization, the same shape of upgrade
+`WALEResiduals` in the same file already got (2D-helper-style ->
+real 3D closure). Done as a dispatch on `x_col.shape[1]`: 2 columns
+routes to `_call_2d` (the original code, refactored but numerically
+untouched — confirmed by diff: only docstring lines changed inside
+it), 3 columns routes to a new `_call_3d` mapping
+`(x,y,z)->(u,v,w,p,k,omega)`. The new 3D viscous-stress divergence
+(`_viscous_stress_divergence_3d`) is built from full Hessians of
+u/v/w via a new `_hessian_components_3d` helper — the same
+no-incompressibility-shortcut construction `_viscous_stress_
+divergence_2d` already uses, extended with the z-direction cross
+terms, since mu_eff varies spatially in both cases. The k-/omega-
+equations reuse the existing `_laplacian` unchanged (it already sums
+over every column of `x`, so a 3-column `x` "just works") and gain the
+3D cross-diffusion `k_x w_x + k_y w_y + k_z w_z`.
+
+**Verification**: the full nonlinear coupled k-omega SST system has no
+simple closed-form exact solution, so — same fallback used above for
+`compressible_euler_rotating_3d` — this is a cross-implementation
+check, not an exact-solution MMS check. A concrete trial field
+(trigonometric/polynomial in x, y, z, chosen so every term being
+checked is genuinely non-zero, including the cross-diffusion dot
+product) was differentiated two independent ways: by `sympy`, working
+directly from the equations restated for 3D, and by running the real
+`_call_3d` torch/autograd code on an `nn.Module` evaluating the
+identical formulas. `F2=0` keeps the eddy-viscosity Bradshaw limiter
+on its smooth branch (`nu_t` reduces exactly to `k/omega`, avoiding a
+`max()` kink autograd and `sympy` could disagree across); the
+realizability and cross-diffusion clips were confirmed numerically
+inactive at every sample point before being treated as absent in the
+closed form (not assumed). All six residuals (momentum_x/y/z,
+continuity, k_eq, omega_eq) agreed to **machine precision in float64**
+— max abs diff 4.6e-13 (omega_eq), 3.1e-13 (k_eq), <7e-16 for the
+other four — against residual magnitudes of order 1-40. Also checked
+in float32 during development: ~8e-6 max abs diff, ordinary float32
+roundoff rather than a genuine precision problem (unlike this
+session's `phonon_bte_1d_gray` finding, nothing here spans more than
+~2 orders of magnitude). A second test supplies a field satisfying
+none of the six equations and confirms a clearly nonzero aggregate
+residual, matching this file's exact/wrong pair convention.
+
+New tests: `test_audit_physics_k_omega_sst_3d_matches_independent_
+closed_form`, `test_audit_physics_k_omega_sst_3d_wrong_solution_gives_
+nonzero_residual` in `tests/test_manufactured_solutions.py`
+(36/36 passing). `tests/test_full_library_matrix.py` re-run
+unaffected: 71 passed, 75 skipped, 0 failed — identical to the count
+recorded elsewhere in this report, confirming no regression (this
+module isn't part of the `compile_problem`/`pde_kind` registry that
+suite audits, so no change there was expected either way).
+
 ## What this session fixed vs. what it found but did not fix
 
 Fixed this session (see `ROADMAP_PHYSICS_AI_HUB.md`'s P0 table for the

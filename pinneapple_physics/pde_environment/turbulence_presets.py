@@ -100,6 +100,70 @@ def _viscous_stress_divergence_2d(
     return visc_x, visc_y
 
 
+def _hessian_components_3d(f: torch.Tensor, x: torch.Tensor, grad_f: torch.Tensor):
+    """Given grad_f = _grad1(f, x) for 3D x, return the 6 independent
+    second partials (f_xx, f_yy, f_zz, f_xy, f_xz, f_yz)."""
+    gx = _grad1(grad_f[:, 0:1], x)
+    gy = _grad1(grad_f[:, 1:2], x)
+    gz = _grad1(grad_f[:, 2:3], x)
+    f_xx = gx[:, 0:1]
+    f_yy = gy[:, 1:2]
+    f_zz = gz[:, 2:3]
+    f_xy = gx[:, 1:2]
+    f_xz = gx[:, 2:3]
+    f_yz = gy[:, 2:3]
+    return f_xx, f_yy, f_zz, f_xy, f_xz, f_yz
+
+
+def _viscous_stress_divergence_3d(
+    mu_eff: torch.Tensor,
+    mu_eff_grad: torch.Tensor,
+    x: torch.Tensor,
+    u_grad: torch.Tensor,
+    v_grad: torch.Tensor,
+    w_grad: torch.Tensor,
+    u: torch.Tensor,
+    v: torch.Tensor,
+    w: torch.Tensor,
+):
+    """div[mu_eff (grad u_i + grad u^T e_i)] for 3D velocity (u, v, w).
+
+    Same construction as :func:`_viscous_stress_divergence_2d` (full
+    Hessians of u, v, w -- no incompressibility assumption), extended
+    with the third spatial direction: e.g. for the x-momentum component,
+    ``sum_j d/dx_j[mu_eff*(du/dx_j + du_j/dx)]`` over j in {x, y, z}
+    expands to the ``visc_x`` expression below (and cyclically for
+    ``visc_y``, ``visc_z``); required whenever mu_eff varies spatially,
+    exactly as in the 2D case.
+    """
+    u_x = u_grad[:, 0:1]; u_y = u_grad[:, 1:2]; u_z = u_grad[:, 2:3]
+    v_x = v_grad[:, 0:1]; v_y = v_grad[:, 1:2]; v_z = v_grad[:, 2:3]
+    w_x = w_grad[:, 0:1]; w_y = w_grad[:, 1:2]; w_z = w_grad[:, 2:3]
+
+    u_xx, u_yy, u_zz, u_xy, u_xz, u_yz = _hessian_components_3d(u, x, u_grad)
+    v_xx, v_yy, v_zz, v_xy, v_xz, v_yz = _hessian_components_3d(v, x, v_grad)
+    w_xx, w_yy, w_zz, w_xy, w_xz, w_yz = _hessian_components_3d(w, x, w_grad)
+
+    mu_x = mu_eff_grad[:, 0:1]; mu_y = mu_eff_grad[:, 1:2]; mu_z = mu_eff_grad[:, 2:3]
+
+    visc_x = (
+        2.0 * (mu_x * u_x + mu_eff * u_xx)
+        + (mu_y * (u_y + v_x) + mu_eff * (u_yy + v_xy))
+        + (mu_z * (u_z + w_x) + mu_eff * (u_zz + w_xz))
+    )
+    visc_y = (
+        (mu_x * (v_x + u_y) + mu_eff * (v_xx + u_xy))
+        + 2.0 * (mu_y * v_y + mu_eff * v_yy)
+        + (mu_z * (v_z + w_y) + mu_eff * (v_zz + w_yz))
+    )
+    visc_z = (
+        (mu_x * (w_x + u_z) + mu_eff * (w_xx + u_xz))
+        + (mu_y * (w_y + v_z) + mu_eff * (w_yy + v_yz))
+        + 2.0 * (mu_z * w_z + mu_eff * w_zz)
+    )
+    return visc_x, visc_y, visc_z
+
+
 # ---------------------------------------------------------------------------
 # Feature 10a: k-omega SST
 # ---------------------------------------------------------------------------
@@ -107,7 +171,9 @@ def _viscous_stress_divergence_2d(
 class KOmegaSSTResiduals:
     """k-omega SST two-equation turbulence model residuals for PINN.
 
-    Equations solved (2D, incompressible, steady RANS):
+    Equations solved (steady RANS, incompressible mean flow):
+
+    2D form -- ``model: (N,2) -> (N,5)``, ``(x,y) -> (u,v,p,k,omega)``::
 
         Momentum-x:  rho*(u u_x + v u_y) + p_x - d/dx[(mu+mu_t) 2 u_x]
                      - d/dy[(mu+mu_t)(u_y + v_x)] = 0
@@ -120,11 +186,43 @@ class KOmegaSSTResiduals:
                      - d/dy[(nu+sigma_w nu_t) w_y]
                      - gamma P_k/nu_t + beta omega^2 - CD_kw = 0
 
+    3D form -- ``model: (N,3) -> (N,6)``, ``(x,y,z) -> (u,v,w,p,k,omega)``,
+    the genuine 3D generalization of the above (mirroring how
+    ``WALEResiduals`` below went from a 2D-style helper to a real 3D LES
+    closure): every equation gains the third velocity component and its
+    z-derivatives, and the viscous/diffusion terms gain the full set of
+    z-direction cross terms (no incompressibility-based term-dropping --
+    mu_eff/nu_eff still vary spatially, exactly as in the 2D case)::
+
+        Momentum-i (i=x,y,z):  rho*(u.grad)u_i + p_i
+                     - div[(mu+mu_t)*(grad u_i + grad u^T e_i)] = 0
+        Continuity:  u_x + v_y + w_z = 0
+        k-equation:  u k_x + v k_y + w k_z - div[(nu+sigma_k nu_t) grad k]
+                     - P_k + beta_star*k*omega = 0
+        omega-eq:    u w_x + v w_y + w w_z - div[(nu+sigma_w nu_t) grad omega]
+                     - gamma*S_mag^2 + beta*omega^2 - CD_kw = 0
+
+    where ``S_mag = sqrt(2 S_ij S_ij)`` now uses the full 3D symmetric
+    strain-rate tensor (6 independent components: S_11=u_x, S_22=v_y,
+    S_33=w_z, S_12=0.5(u_y+v_x), S_13=0.5(u_z+w_x), S_23=0.5(v_z+w_y))
+    and ``CD_kw`` uses the 3D cross-diffusion ``k_x w_x + k_y w_y + k_z w_z``.
+
+    ``__call__`` dispatches on ``x_col.shape[1]`` (2 -> :meth:`_call_2d`,
+    the original, numerically-unchanged 2D path; 3 -> :meth:`_call_3d`,
+    the new 3D path below) so existing 2D callers keep their exact
+    residual values. ``self.eddy_viscosity``, ``self._blend_const`` and
+    ``SST_CONSTS`` are reused unchanged by both paths -- the constants and
+    blending-function machinery are dimension-independent. The unrelated
+    1D :meth:`channel_residuals` reduction (used by
+    ``templates/33_rans_turbulence.py``) is untouched by any of this.
+
     Usage::
 
         residuals = KOmegaSSTResiduals(nu=1e-5, rho=1.0)
-        r = residuals(model_uvpkw, x_col)
-        # r is a dict with keys: momentum_x, momentum_y, continuity, k_eq, omega_eq
+        r = residuals(model_uvpkw, x_col)      # x_col: (N,2) -> 2D path
+        r3 = residuals(model_uvwpkw, x_col3d)  # x_col3d: (N,3) -> 3D path
+        # r is a dict with keys: momentum_x, momentum_y, [momentum_z,]
+        #                        continuity, k_eq, omega_eq
         loss = sum(v.pow(2).mean() for v in r.values())
     """
 
@@ -235,18 +333,46 @@ class KOmegaSSTResiduals:
     ) -> Dict[str, torch.Tensor]:
         """Compute all RANS + k-omega SST residuals via autograd.
 
+        Dispatches on ``x_col.shape[1]``: 2 -> the original 2D closure
+        (:meth:`_call_2d`, ``model: (N,2)->(N,5)``, unchanged from before
+        this 3D generalization); 3 -> the new 3D closure (:meth:`_call_3d`,
+        ``model: (N,3)->(N,6)``). See the class docstring for both
+        equation sets.
+
         Parameters
         ----------
-        model  : callable (N,2) -> (N,5): outputs (u, v, p, k, omega)
-        x_col  : (N,2) collocation points, will get requires_grad=True
+        model  : callable (N,2) -> (N,5) [2D: (u,v,p,k,omega)] or
+                 (N,3) -> (N,6) [3D: (u,v,w,p,k,omega)]
+        x_col  : (N,2) or (N,3) collocation points, will get
+                 requires_grad=True
         F1, F2 : SST blending functions (scalars; provide per-point tensors
                  if desired by monkey-patching or subclassing)
 
         Returns
         -------
-        dict with keys: 'momentum_x', 'momentum_y', 'continuity',
-                        'k_eq', 'omega_eq'
+        dict with keys: 'momentum_x', 'momentum_y', ['momentum_z',]
+                        'continuity', 'k_eq', 'omega_eq'
         """
+        n_coords = x_col.shape[1]
+        if n_coords == 2:
+            return self._call_2d(model, x_col, F1=F1, F2=F2)
+        elif n_coords == 3:
+            return self._call_3d(model, x_col, F1=F1, F2=F2)
+        raise ValueError(
+            "KOmegaSSTResiduals expects x_col with 2 columns (x,y, 2D) or "
+            f"3 columns (x,y,z, 3D); got shape {tuple(x_col.shape)}"
+        )
+
+    def _call_2d(
+        self,
+        model: Callable[[torch.Tensor], torch.Tensor],
+        x_col: torch.Tensor,
+        F1: float = 0.0,
+        F2: float = 1.0,
+    ) -> Dict[str, torch.Tensor]:
+        """Original 2D steady RANS + k-omega SST closure. See
+        :meth:`__call__`/the class docstring for the equations;
+        numerically unchanged by the 3D generalization."""
         x = x_col.clone().requires_grad_(True)
         out = model(x)                          # (N, 5)
         u     = out[:, 0:1]
@@ -346,6 +472,151 @@ class KOmegaSSTResiduals:
         return {
             "momentum_x": mom_x,
             "momentum_y": mom_y,
+            "continuity":  cont,
+            "k_eq":        k_eq,
+            "omega_eq":    omega_eq,
+        }
+
+    def _call_3d(
+        self,
+        model: Callable[[torch.Tensor], torch.Tensor],
+        x_col: torch.Tensor,
+        F1: float = 0.0,
+        F2: float = 1.0,
+    ) -> Dict[str, torch.Tensor]:
+        """3D steady RANS + k-omega SST closure. See the class docstring
+        for the equations; a genuine 3D generalization of :meth:`_call_2d`
+        (third velocity component, z-derivatives, full 3D strain-rate
+        tensor, 3D cross-diffusion) -- not a 2D-plus-padding shortcut.
+
+        Parameters
+        ----------
+        model  : callable (N,3) -> (N,6): outputs (u, v, w, p, k, omega)
+        x_col  : (N,3) collocation points, will get requires_grad=True
+        F1, F2 : SST blending functions (scalars)
+
+        Returns
+        -------
+        dict with keys: 'momentum_x', 'momentum_y', 'momentum_z',
+                        'continuity', 'k_eq', 'omega_eq'
+        """
+        x = x_col.clone().requires_grad_(True)
+        out = model(x)                          # (N, 6)
+        u     = out[:, 0:1]
+        v     = out[:, 1:2]
+        w     = out[:, 2:3]
+        p     = out[:, 3:4]
+        k     = torch.clamp(out[:, 4:5], min=0.0)    # k >= 0
+        omega = torch.clamp(out[:, 5:6], min=1e-6)   # omega > 0
+
+        # ---- first derivatives ----
+        u_grad  = _grad1(u, x)              # (N, 3)
+        v_grad  = _grad1(v, x)
+        w_grad  = _grad1(w, x)
+        p_grad  = _grad1(p, x)
+        k_grad  = _grad1(k, x)
+        om_grad = _grad1(omega, x)
+
+        u_x = u_grad[:, 0:1];  u_y = u_grad[:, 1:2];  u_z = u_grad[:, 2:3]
+        v_x = v_grad[:, 0:1];  v_y = v_grad[:, 1:2];  v_z = v_grad[:, 2:3]
+        w_x = w_grad[:, 0:1];  w_y = w_grad[:, 1:2];  w_z = w_grad[:, 2:3]
+        p_x = p_grad[:, 0:1];  p_y = p_grad[:, 1:2];  p_z = p_grad[:, 2:3]
+        k_x = k_grad[:, 0:1];  k_y = k_grad[:, 1:2];  k_z = k_grad[:, 2:3]
+        om_x = om_grad[:, 0:1]; om_y = om_grad[:, 1:2]; om_z = om_grad[:, 2:3]
+
+        # ---- blended constants ----
+        sigma_k = self._blend_const("sigma_k1", "sigma_k2", F1)
+        sigma_w = self._blend_const("sigma_w1", "sigma_w2", F1)
+        beta    = self._blend_const("beta1",    "beta2",    F1)
+        gamma   = self._blend_const("gamma1",   "gamma2",   F1)
+        beta_s  = self.c["beta_star"]
+
+        # ---- strain-rate magnitude |S| = sqrt(2 S_ij S_ij), full 3D ----
+        # S_11=u_x, S_22=v_y, S_33=w_z,
+        # S_12=S_21=0.5(u_y+v_x), S_13=S_31=0.5(u_z+w_x), S_23=S_32=0.5(v_z+w_y)
+        S_mag = torch.sqrt(
+            2.0 * (u_x**2 + v_y**2 + w_z**2)
+            + (u_y + v_x)**2 + (u_z + w_x)**2 + (v_z + w_y)**2
+            + 1e-12
+        )
+
+        # ---- eddy viscosity ----
+        nu_t = self.eddy_viscosity(k, omega, S_mag, F2) / self.rho  # kinematic
+        mu_t = nu_t * self.rho                                        # dynamic
+        mu_eff = self.mu + mu_t
+
+        # ---- production of k: P_k = mu_t * S^2 (with realizability clip) ----
+        P_k = torch.clamp(mu_t * S_mag**2, max=10.0 * beta_s * self.rho * k * omega + 1e-12)
+
+        # ---- continuity ----
+        cont = u_x + v_y + w_z
+
+        # ---- momentum-x/y/z: rho(u.grad u) + grad p - div[mu_eff(grad u + grad u^T)] = 0 ----
+        mu_eff_grad = _grad1(mu_eff, x)         # (N, 3)
+        visc_x, visc_y, visc_z = _viscous_stress_divergence_3d(
+            mu_eff, mu_eff_grad, x, u_grad, v_grad, w_grad, u, v, w
+        )
+
+        mom_x = (
+            self.rho * (u * u_x + v * u_y + w * u_z)
+            + p_x
+            - visc_x
+        )
+
+        mom_y = (
+            self.rho * (u * v_x + v * v_y + w * v_z)
+            + p_y
+            - visc_y
+        )
+
+        mom_z = (
+            self.rho * (u * w_x + v * w_y + w * w_z)
+            + p_z
+            - visc_z
+        )
+
+        # ---- k-equation ----
+        lap_k = _laplacian(k, x)
+        nu_k_grad = _grad1(
+            (self.nu + sigma_k * nu_t) * torch.ones_like(k), x
+        )
+        diff_k = (
+            (self.nu + sigma_k * nu_t) * lap_k
+            + nu_k_grad[:, 0:1] * k_x + nu_k_grad[:, 1:2] * k_y + nu_k_grad[:, 2:3] * k_z
+        )
+        k_eq = (
+            u * k_x + v * k_y + w * k_z
+            - diff_k
+            - P_k / self.rho
+            + beta_s * k * omega
+        )
+
+        # ---- omega-equation ----
+        # cross-diffusion term CD_kw = 2 sigma_w2 / omega * (k_x w_x + k_y w_y + k_z w_z)
+        CD_kw = torch.clamp(
+            2.0 * self.c["sigma_w2"] / omega * (k_x * om_x + k_y * om_y + k_z * om_z),
+            min=0.0,
+        )
+        lap_w = _laplacian(omega, x)
+        nu_w_grad = _grad1(
+            (self.nu + sigma_w * nu_t) * torch.ones_like(omega), x
+        )
+        diff_w = (
+            (self.nu + sigma_w * nu_t) * lap_w
+            + nu_w_grad[:, 0:1] * om_x + nu_w_grad[:, 1:2] * om_y + nu_w_grad[:, 2:3] * om_z
+        )
+        omega_eq = (
+            u * om_x + v * om_y + w * om_z
+            - diff_w
+            - gamma * self.rho * S_mag**2
+            + beta * omega**2
+            - (1.0 - F1) * CD_kw
+        )
+
+        return {
+            "momentum_x": mom_x,
+            "momentum_y": mom_y,
+            "momentum_z": mom_z,
             "continuity":  cont,
             "k_eq":        k_eq,
             "omega_eq":    omega_eq,

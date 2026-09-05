@@ -28,6 +28,7 @@ from pinneapple_physics.pinn_solver.compiler.compile import compile_problem
 from pinneapple_physics.pde_environment.presets.academics import laplace_2d_default
 from pinneapple_physics.pde_environment.spec import PDETermSpec, ProblemSpec
 from pinneapple_physics.pde_environment.scales import ScaleSpec
+from pinneapple_physics.pde_environment.turbulence_presets import KOmegaSSTResiduals
 
 
 class _ExactFn(nn.Module):
@@ -797,6 +798,194 @@ def test_audit_physics_compressible_euler_rotating_3d_matches_independent_closed
         assert rmom_diff < 1e-9, f"r-momentum substitution vs. closed form should match to machine precision, diff={rmom_diff}"
     finally:
         torch.set_default_dtype(torch.float32)
+
+
+def test_audit_physics_k_omega_sst_3d_matches_independent_closed_form():
+    """KOmegaSSTResiduals._call_3d (the P2.4 3D generalization of the
+    original 2D-only k-omega SST closure in `turbulence_presets.py`) has
+    no simple closed-form EXACT solution to check against -- it's a fully
+    coupled, nonlinear two-equation RANS model, same difficulty class as
+    `compressible_euler_rotating_3d` above. So, same fallback: pick a
+    concrete, non-trivial trial field (genuinely non-zero derivatives in
+    every term, including the cross-diffusion dot product k_x*w_x +
+    k_y*w_y + k_z*w_z, which a lazier choice could leave identically
+    zero) and cross-check the actual torch/autograd residual against an
+    INDEPENDENTLY hand-derived `sympy` closed form for all six residuals
+    (momentum_x/y/z, continuity, k_eq, omega_eq) -- not a solution check,
+    a derivative-implementation check: does autograd through the new 3D
+    code compute the same thing as differentiating the same formulas by
+    hand in a completely separate tool.
+
+    Two non-smooth spots in the real closure are deliberately steered
+    around so the comparison is against a smooth, unambiguous closed
+    form (both confirmed numerically inactive at every sample point
+    below, not just assumed):
+
+    - `eddy_viscosity`'s Bradshaw limiter is `rho*a1*k /
+      max(a1*omega, S_mag*F2)`. Calling with `F2=0.0` collapses the
+      `max` to its first branch unconditionally (`a1*omega > 0` always,
+      since omega is clamped `>= 1e-6`), so `nu_t` reduces exactly to
+      the smooth closed form `k/omega` -- no kink for autograd/sympy to
+      disagree across.
+    - `P_k`'s realizability clip and `CD_kw`'s `min=0` clip: confirmed
+      numerically inactive at every sample point (`P_k` stays under
+      ~1% of its cap; `CD_kw`'s pre-clip value stays positive, comfortably
+      away from 0) by direct evaluation before this test was written, so
+      the closed form below (unclipped `P_k`, unclipped `CD_kw`) is exact
+      at these specific points -- this is a property of the chosen trial
+      field + sample points, not a general claim about the clips.
+
+    Result (see assertions below): agreement to machine precision in
+    float64 -- max abs diff 3.1e-13 (k_eq), 4.6e-13 (omega_eq), <7e-16
+    for momentum_x/y/z and continuity, against residual magnitudes of
+    order 1-40. (Also checked in float32 during development, out of
+    caution after this session's `phonon_bte_1d_gray` float32 finding:
+    max abs diff there was ~8e-6 against the same order-1-40 magnitudes,
+    i.e. plain float32 roundoff, not a precision *problem* worth flagging
+    -- unlike `phonon_bte_1d_gray`'s ~20-order-of-magnitude scale spread,
+    nothing here is more than ~2 orders of magnitude from 1, so float32
+    was never actually a concern; float64 is used below anyway for the
+    tightest possible tolerance.)
+    """
+    import sympy as sp
+
+    # ---- sympy: independent closed-form derivation ----
+    x, y, z = sp.symbols("x y z", real=True)
+    rho_s, nu_s = sp.symbols("rho nu", positive=True)
+    # F1=0 blend -> pure "2" constants (matches self._blend_const(..., F1=0.0))
+    sigma_k = 1.0        # SST_CONSTS["sigma_k2"]
+    sigma_w = 0.856       # SST_CONSTS["sigma_w2"]
+    beta = 0.0828         # SST_CONSTS["beta2"]
+    gamma = 0.44          # SST_CONSTS["gamma2"]
+    beta_star = 0.09      # SST_CONSTS["beta_star"]
+
+    a1c, a2c = 0.7, 0.4
+    b1c, b2c = 0.5, 0.6
+    c1c, c2c = 0.3, 0.5
+    d1c, d2c = 0.2, 0.15
+    e0c, e1c, e2c = 5.0, 0.6, 0.5
+    g0c, g1c, g2c = 20.0, 0.8, 0.7
+
+    u = a1c * sp.sin(x) * sp.cos(y) + a2c * z ** 2
+    v = b1c * x * z + b2c * sp.sin(y)
+    w = c1c * y ** 2 + c2c * sp.cos(x) * z
+    p = d1c * (x + y + z) + d2c * x * y * z
+    k = e0c + e1c * x ** 2 + e2c * y * z
+    omega = g0c + g1c * z + g2c * x * y
+
+    u_x, u_y, u_z = sp.diff(u, x), sp.diff(u, y), sp.diff(u, z)
+    v_x, v_y, v_z = sp.diff(v, x), sp.diff(v, y), sp.diff(v, z)
+    w_x, w_y, w_z = sp.diff(w, x), sp.diff(w, y), sp.diff(w, z)
+    p_x, p_y, p_z = sp.diff(p, x), sp.diff(p, y), sp.diff(p, z)
+    k_x, k_y, k_z = sp.diff(k, x), sp.diff(k, y), sp.diff(k, z)
+    om_x, om_y, om_z = sp.diff(omega, x), sp.diff(omega, y), sp.diff(omega, z)
+
+    S12 = sp.Rational(1, 2) * (u_y + v_x)
+    S13 = sp.Rational(1, 2) * (u_z + w_x)
+    S23 = sp.Rational(1, 2) * (v_z + w_y)
+    S_mag2 = 2 * (u_x ** 2 + v_y ** 2 + w_z ** 2) + 4 * (S12 ** 2 + S13 ** 2 + S23 ** 2)
+
+    nu_t = k / omega                      # eddy_viscosity(F2=0) closed form
+    mu_t = rho_s * nu_t
+    mu_eff = rho_s * nu_s + mu_t
+    P_k = mu_t * S_mag2                   # realizability clip confirmed inactive
+    cont_closed = u_x + v_y + w_z
+
+    def _div_stress(i):
+        """sum_j d/dx_j[mu_eff*(d u_i/dx_j + d u_j/dx_i)]."""
+        vars_ = [x, y, z]
+        comps = [u, v, w]
+        total = 0
+        for j, vj in enumerate(vars_):
+            term = mu_eff * (sp.diff(comps[i], vj) + sp.diff(comps[j], vars_[i]))
+            total += sp.diff(term, vj)
+        return total
+
+    visc_x, visc_y, visc_z = _div_stress(0), _div_stress(1), _div_stress(2)
+    momx_closed = rho_s * (u * u_x + v * u_y + w * u_z) + p_x - visc_x
+    momy_closed = rho_s * (u * v_x + v * v_y + w * v_z) + p_y - visc_y
+    momz_closed = rho_s * (u * w_x + v * w_y + w * w_z) + p_z - visc_z
+
+    nu_k = nu_s + sigma_k * nu_t
+    diff_k = sp.diff(nu_k * k_x, x) + sp.diff(nu_k * k_y, y) + sp.diff(nu_k * k_z, z)
+    keq_closed = u * k_x + v * k_y + w * k_z - diff_k - P_k / rho_s + beta_star * k * omega
+
+    CD_kw = 2 * sigma_w / omega * (k_x * om_x + k_y * om_y + k_z * om_z)  # min=0 clip confirmed inactive
+    nu_w = nu_s + sigma_w * nu_t
+    diff_w = sp.diff(nu_w * om_x, x) + sp.diff(nu_w * om_y, y) + sp.diff(nu_w * om_z, z)
+    omeq_closed = (
+        u * om_x + v * om_y + w * om_z - diff_w - gamma * rho_s * S_mag2 + beta * omega ** 2 - CD_kw
+    )
+
+    subs_const = {rho_s: 1.0, nu_s: 1e-5}
+    closed = {
+        "momentum_x": momx_closed, "momentum_y": momy_closed, "momentum_z": momz_closed,
+        "continuity": cont_closed, "k_eq": keq_closed, "omega_eq": omeq_closed,
+    }
+    lambdified = {name: sp.lambdify((x, y, z), expr.subs(subs_const), "numpy") for name, expr in closed.items()}
+
+    # ---- torch: the real KOmegaSSTResiduals._call_3d path, via autograd ----
+    def field_fn(xt):
+        xx, yy, zz = xt[:, 0:1], xt[:, 1:2], xt[:, 2:3]
+        u_ = a1c * torch.sin(xx) * torch.cos(yy) + a2c * zz ** 2
+        v_ = b1c * xx * zz + b2c * torch.sin(yy)
+        w_ = c1c * yy ** 2 + c2c * torch.cos(xx) * zz
+        p_ = d1c * (xx + yy + zz) + d2c * xx * yy * zz
+        k_ = e0c + e1c * xx ** 2 + e2c * yy * zz
+        om_ = g0c + g1c * zz + g2c * xx * yy
+        return torch.cat([u_, v_, w_, p_, k_, om_], dim=1)
+
+    torch.set_default_dtype(torch.float64)
+    try:
+        # deterministic 3x3x3 grid, x/y/z in [0.5, 1.3] -- away from x=y=z=0
+        # (where several of the trial terms would trivially vanish) and
+        # comfortably inside the region where both clips above are inactive.
+        coords = [0.5, 0.9, 1.3]
+        pts = [(xv, yv, zv) for xv in coords for yv in coords for zv in coords]
+        x3 = torch.tensor(pts, dtype=torch.float64, requires_grad=True)
+
+        residuals = KOmegaSSTResiduals(nu=1e-5, rho=1.0)
+        out = residuals(_ExactFn(field_fn), x3, F1=0.0, F2=0.0)
+
+        for name in closed:
+            torch_vals = out[name].detach().numpy().reshape(-1)
+            sympy_vals = np.array([lambdified[name](xv, yv, zv) for xv, yv, zv in pts])
+            diff = np.abs(torch_vals - sympy_vals)
+            assert diff.max() < 1e-9, (
+                f"{name}: torch autograd residual vs. independent sympy closed form should "
+                f"match to machine precision, max abs diff={diff.max():.3e}"
+            )
+    finally:
+        torch.set_default_dtype(torch.float32)
+
+
+def test_audit_physics_k_omega_sst_3d_wrong_solution_gives_nonzero_residual():
+    """Companion to the cross-implementation check above, matching this
+    file's exact/wrong pair convention: a field satisfying none of the
+    six 3D k-omega SST equations (non-solenoidal quadratic velocity,
+    zero pressure, constant k/omega) must give a clearly nonzero
+    aggregate residual -- catching the failure mode a residual that's
+    identically zero regardless of input would represent (e.g. an
+    accidental early return or a term silently multiplied by zero)."""
+    def wrong_fn(xt):
+        xx, yy, zz = xt[:, 0:1], xt[:, 1:2], xt[:, 2:3]
+        u_ = xx ** 2
+        v_ = yy ** 2
+        w_ = zz ** 2
+        p_ = torch.zeros_like(xx)
+        k_ = torch.ones_like(xx)
+        om_ = 5.0 * torch.ones_like(xx)
+        return torch.cat([u_, v_, w_, p_, k_, om_], dim=1)
+
+    pts = [(0.6, 0.9, 1.2), (0.7, 1.1, 0.55), (1.25, 0.8, 1.0), (0.65, 1.05, 0.75)]
+    x3 = torch.tensor(pts, requires_grad=True)
+    residuals = KOmegaSSTResiduals(nu=1e-5, rho=1.0)
+    out = residuals(_ExactFn(wrong_fn), x3, F1=0.0, F2=0.0)
+    total = sum(v.pow(2).mean() for v in out.values())
+    assert float(total.item()) > 1e-2, (
+        f"k-omega SST 3D residual should be clearly nonzero for a field satisfying none of the "
+        f"six equations, got aggregate {float(total.item())}"
+    )
 
 
 def test_audit_physics_bekker_wong_terramechanics_satisfying_solution_gives_zero_residual():

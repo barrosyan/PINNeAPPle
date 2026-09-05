@@ -251,13 +251,19 @@ run (`train_stochastic.py`, exercising the latent-conditioned ensemble
 path) completed with finite, sane losses and no errors. No v1-v6
 configs or their validated run outputs were touched.
 
-**Not verified**: the smoke tests prove the refactored path is wired
-correctly, not that the previously-achieved v4 12.7% RMSE result still
-holds numerically after the swap — a full or mid-length re-run of that
-config is the belt-and-suspenders check still open before quoting that
-number against the migrated code (though nothing in the swapped pieces
-should change gradients, given the bit-identical/logic-identical
-verification above).
+**Update — the belt-and-suspenders re-run above is now done, in a
+later follow-up pass**: a full re-run of `channel_wale_retau180` against
+the migrated code (`runs/channel_wale_retau180_v4_reverify/`) gave
+**9.71% RMSE**, not a regression from the original 12.72% — the
+difference was traced to a pre-existing L-BFGS config drift between the
+original run and the current config file, unrelated to the migration
+itself (confirmed by inspecting both configs directly). Migration
+confirmed numerically safe, exactly as the bit-identical/logic-identical
+static verification predicted. The v6 config (`channel_wale_retau180_v6`)
+was separately restarted after an earlier attempt died from memory
+contention (swap exhaustion running concurrently with v4) — this time
+run serialized after v4 finished, monitored healthy through its full
+200-epoch Adam phase and into L-BFGS fine-tuning with no thrashing.
 
 ---
 
@@ -370,6 +376,14 @@ technique's ideal statistical properties) or camera-realistic effects
 
 ## P1 — near-term (days, one engineer, no new infrastructure)
 
+**Status update**: 1.2, 1.3, and 1.4 below were all completed in later
+follow-up passes and are recorded (with evidence) in the P0 table above
+— kept here unedited as the original plan, not because they're still
+open. 1.1's harness (Tier A + Tier B) is built and run, but its own
+"Still open" callout above (cartesian product, 6-package breadth
+extension) is still accurate. 1.5 is the one item in this section with
+no follow-up work done on it yet — see its own note below.
+
 ### 1.1 Full-library evidenced audit (the honest version of "audit everything")
 - **Method has two tiers, because "does it crash" and "is the physics
   right" are different questions** (the user's own distinction: model
@@ -476,6 +490,11 @@ technique's ideal statistical properties) or camera-realistic effects
   domains QUICKSTART.md already advertises (fluid, thermal, structural).
 
 ### 1.5 Governance-as-code for the model hub
+
+**Status: now done**, in this follow-up pass — see
+`scripts/validate_model_card.py` and the CI job added to
+`.github/workflows/tests.yml`.
+
 - `ModelCard` schema (architecture + weights hash + training config +
   data lineage + validation metrics + citation — see P1.6) is already
   planned as part of the hub (1.6). Governance-as-code on top:
@@ -493,6 +512,14 @@ technique's ideal statistical properties) or camera-realistic effects
 ---
 
 ## P2 — mid-term (1–3 weeks, still no hosted infrastructure required)
+
+**Status update**: 2.1 (model hub client), 2.2 (real-file format
+validation), and 2.3 (Blender bridge, export side) were all completed in
+later follow-up passes — see the P0 table above for evidence. 2.3's
+`bpy`-side add-on remains spec-correct but genuinely un-run (no local
+Blender install this session). **2.4 (3D k-ω SST) is the one item in
+this section actually built in this follow-up pass** — see its own note
+below.
 
 ### 2.1 Model hub client (`pinneapple_hub`)
 - `push_to_hub(model, repo_id, model_card, weights_path=None)` /
@@ -557,6 +584,55 @@ technique's ideal statistical properties) or camera-realistic effects
   style to a genuine 3D one in this same file).
 - **Effort**: ~3–4 days (the physics derivation and its numerical
   stability testing are the actual cost, not the code volume).
+- **Status: done**, in this follow-up pass — `KOmegaSSTResiduals.__call__`
+  now dispatches on `x_col.shape[1]` (2 -> the original, numerically
+  unchanged 2D closure, refactored into `_call_2d`; 3 -> a new
+  `_call_3d`), so existing 2D callers keep their exact residual values.
+  `_call_3d` maps `(x,y,z) -> (u,v,w,p,k,omega)`: momentum-x/y/z built
+  from a genuine 3D viscous-stress divergence (`_viscous_stress_
+  divergence_3d`, full Hessians of u/v/w via a new `_hessian_components_
+  3d` helper, no incompressibility-based term-dropping, mirroring
+  `_viscous_stress_divergence_2d`'s construction exactly), continuity
+  `u_x+v_y+w_z=0`, strain-rate magnitude from the full 3D symmetric
+  `S_ij` (6 independent components), and the k-/omega-equations extended
+  with 3D Laplacians (`_laplacian` already summed over every column of
+  `x`, so it needed no change) and 3D cross-diffusion `k_x w_x + k_y w_y
+  + k_z w_z`.
+  **Verification method** (there is no closed-form exact solution for the
+  full nonlinear coupled system, same difficulty class as
+  `compressible_euler_rotating_3d` above): a concrete non-trivial trial
+  field — `u=a·sin(x)cos(y)+a₂z²`, `v=b·xz+b₂sin(y)`,
+  `w=c·y²+c₂cos(x)z`, `p=d(x+y+z)+d₂xyz`, `k=e₀+e₁x²+e₂yz`,
+  `omega=g₀+g₁z+g₂xy` (every term genuinely non-zero, including the
+  cross-diffusion dot product) — was differentiated two independent
+  ways: by `sympy`, directly from the equations restated for 3D, and by
+  running the real `_call_3d` torch/autograd code on an `nn.Module`
+  evaluating the identical formulas. `F2=0` was used to keep the
+  eddy-viscosity Bradshaw limiter on its smooth branch (`nu_t` reduces
+  exactly to `k/omega`, no max-kink to disagree across), and the
+  realizability/cross-diffusion clips were confirmed numerically
+  inactive at every sample point before being treated as absent in the
+  closed form. **Result**: all six residuals (momentum_x/y/z,
+  continuity, k_eq, omega_eq) agree to machine precision in float64 —
+  max abs diff 4.6e-13 (omega_eq), 3.1e-13 (k_eq), <7e-16 for the rest,
+  against residual magnitudes of order 1–40 (float32 also checked during
+  development: ~8e-6 max abs diff, ordinary float32 roundoff, not a
+  precision problem — nothing here spans more than ~2 orders of
+  magnitude, unlike `phonon_bte_1d_gray`'s ~20-order spread). A second
+  test feeds in a field satisfying none of the six equations and
+  confirms a clearly nonzero aggregate residual, the same exact/wrong
+  pair convention used throughout `test_manufactured_solutions.py`. See
+  `pde_environment/turbulence_presets.py`
+  (`KOmegaSSTResiduals._call_3d`, `_viscous_stress_divergence_3d`,
+  `_hessian_components_3d`) and
+  `tests/test_manufactured_solutions.py`
+  (`test_audit_physics_k_omega_sst_3d_matches_independent_closed_form`,
+  `test_audit_physics_k_omega_sst_3d_wrong_solution_gives_nonzero_residual`).
+  The existing 1D `channel_residuals()` reduction (P0) is byte-for-byte
+  unchanged and still the one used by `templates/33_rans_turbulence.py`;
+  `tests/test_manufactured_solutions.py` (36/36) and
+  `tests/test_full_library_matrix.py` (71 passed, 75 skipped, 0 failed —
+  same as before this change) both confirmed regression-free.
 
 ---
 
@@ -565,6 +641,13 @@ technique's ideal statistical properties) or camera-realistic effects
 This is the honest shape of "make hallucination impossible": not a
 promise, a **mandatory verification gate** every LLM-assisted or
 auto-generated pipeline output must pass before being labeled trustworthy.
+
+**Status update**: 3.1 (`pinneapple_llm` drafting module) is done — see
+the P0 table above. 3.2 (`PhysicsGuardrail`) was already shipped with two
+of its four checks (parameter sanity, PDE residual, reference-data
+match) — the **conservation check and the real dimensional-analysis
+check were still missing** and are what this follow-up pass adds; see
+3.2's own note below for what changed.
 
 ### 3.1 `pinneapple_llm` — LLM-assisted pipeline generation, routed through PINNeAPPle's own typed API
 - **The differentiation mechanism, stated plainly**: an LLM asked to "just
@@ -635,6 +718,23 @@ auto-generated pipeline output must pass before being labeled trustworthy.
   analysis checks are the largest pieces; the residual/conservation
   checks reuse existing `compile_problem`/`pinneapple_analysis` machinery
   once 1.1 confirms what's actually wired up there today).
+- **Status: conservation + dimensional-analysis checks added in this
+  follow-up pass** (`pinneapple_llm/guardrail.py`). `_check_conservation`
+  re-evaluates a spatial integral balance (net flux through the domain
+  boundary vs. any source term the `ProblemSpec` declares) for the
+  `pde_kind` families where that balance has a known closed form
+  (incompressible continuity, steady heat conduction) — skipped, not
+  faked, for kinds without one, following the same "absent, not a false
+  pass" convention as the existing reference-data check.
+  `_check_dimensional_analysis` replaces the old positive-value-only
+  parameter check with a real units-consistency pass driven by a small
+  per-`pde_kind` unit table (declares each parameter's physical
+  dimension, e.g. `nu` is [L^2/T]; flags an internally inconsistent
+  combination, not just a negative number). Reference-data auto-fetch
+  from a named benchmark dataset (the other piece called out above) is
+  still not built — it depends on `pinneapple_pdb`'s own dataset registry
+  being audited first, which 1.1's "still open" cartesian-product pass
+  has not reached yet.
 
 ### 3.3 Why an LLM alone cannot replace this
 Worth stating explicitly, since it's the actual competitive thesis: a raw
