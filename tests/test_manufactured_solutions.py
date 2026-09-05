@@ -470,3 +470,58 @@ def test_audit_physics_stommel_gyre_2d_wrong_solution_gives_nonzero_residual():
     out = loss_fn(wrong, None, batch)
     res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
     assert float(res.item()) > 1e-14, f"stommel_gyre_2d residual should be nonzero for a generic wrong function, got {float(res.item())}"
+
+
+def test_audit_physics_axisymmetric_elasticity_torsion_exact_solution_gives_zero_residual():
+    """u_theta = B/r solves the decoupled torsional Navier equation
+    d2(u_theta)/dr2 + (1/r)*d(u_theta)/dr - u_theta/r^2 + d2(u_theta)/dz2
+    = 0 exactly (verified with `sympy`) -- the axisymmetric analog of a
+    2D irrotational-vortex 1/r falloff, genuinely curved (unlike the
+    trivial rigid-rotation solution u_theta=A*r, which also solves it but
+    wouldn't meaningfully exercise the second-derivative terms). The
+    meridional part (u_r=u_z=0, trivially zero-stress/zero-residual) is
+    not independently re-verified here -- it is the same formulation as
+    axisymmetric_linear_elasticity, already covered by that kind's own
+    tests; this test isolates the torsion equation, which is what's
+    actually new about this kind."""
+    spec = _probe_spec("axisymmetric_linear_elasticity_torsion", ("r", "z"), {"lambda": 1e5, "mu": 8e4})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("u_r", "u_z", "u_θ"), pde=_replace(spec.pde, fields=("u_r", "u_z", "u_θ")))
+    loss_fn = compile_problem(spec)
+
+    def exact_fn(X):
+        r, z = X[:, 0:1], X[:, 1:2]
+        u_r = torch.zeros_like(r) + 0.0 * z  # trivial meridional part (zero stress -> zero residual)
+        u_z = torch.zeros_like(z) + 0.0 * r
+        u_th = 1.0 / r  # B=1
+        return torch.cat([u_r, u_z, u_th], dim=1)
+
+    r = torch.rand(64, 1) * 2.0 + 0.5  # away from r=0
+    z = torch.rand(64, 1)
+    x = torch.cat([r, z], dim=1).requires_grad_(True)
+    batch = _empty_batch(x, n_coords=2, n_fields=3)
+    out = loss_fn(_ExactFn(exact_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-8, f"axisymmetric torsion residual should be ~0 for u_theta=1/r, got {float(res.item())}"
+
+
+def test_audit_physics_axisymmetric_elasticity_torsion_wrong_solution_gives_nonzero_residual():
+    spec = _probe_spec("axisymmetric_linear_elasticity_torsion", ("r", "z"), {"lambda": 1e5, "mu": 8e4})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("u_r", "u_z", "u_θ"), pde=_replace(spec.pde, fields=("u_r", "u_z", "u_θ")))
+    loss_fn = compile_problem(spec)
+
+    def wrong_fn(X):
+        r, z = X[:, 0:1], X[:, 1:2]
+        u_r = torch.zeros_like(r) + 0.0 * z
+        u_z = torch.zeros_like(z) + 0.0 * r
+        u_th = r ** 2  # does not solve the torsion equation
+        return torch.cat([u_r, u_z, u_th], dim=1)
+
+    r = torch.rand(64, 1) * 2.0 + 0.5
+    z = torch.rand(64, 1)
+    x = torch.cat([r, z], dim=1).requires_grad_(True)
+    batch = _empty_batch(x, n_coords=2, n_fields=3)
+    out = loss_fn(_ExactFn(wrong_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1.0, f"axisymmetric torsion residual should be nonzero for u_theta=r^2, got {float(res.item())}"
