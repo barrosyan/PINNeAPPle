@@ -64,13 +64,24 @@ def meta_train(model, sampler, *, algorithm: str = "reptile", **cfg_kwargs):
     -------
     Trained trainer object with .adapt() method.
     """
+    # Both trainers require an explicit .train() call to actually run the
+    # meta-training loop -- this function previously constructed the
+    # trainer and returned it immediately without training, silently
+    # contradicting its own docstring above ("Returns: Trained trainer
+    # object"). .adapt() on an untrained trainer "worked" (no exception)
+    # but adapted from the model's random initialization instead of a
+    # real meta-learned one -- a use-after-"training" bug easy to miss
+    # since nothing ever raised.
     if algorithm == "maml":
         cfg = MAMLConfig(**cfg_kwargs)
-        return MAMLTrainer(model, cfg, sampler)
-    cfg = ReptileConfig(**cfg_kwargs)
-    if ReptileTrainer is None:
-        raise ImportError("ReptileTrainer not available — check pinneapple_meta.reptile")
-    return ReptileTrainer(model, cfg, sampler)
+        trainer = MAMLTrainer(model, cfg, sampler)
+    else:
+        cfg = ReptileConfig(**cfg_kwargs)
+        if ReptileTrainer is None:
+            raise ImportError("ReptileTrainer not available — check pinneapple_meta.reptile")
+        trainer = ReptileTrainer(model, cfg, sampler)
+    trainer.train()
+    return trainer
 
 
 def meta_adapt(meta_trainer, task: dict, n_steps: int = 10):

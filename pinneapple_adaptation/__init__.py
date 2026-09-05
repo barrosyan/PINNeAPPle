@@ -70,6 +70,9 @@ def fine_tune(source_model, target_physics_fn, target_data=None, *,
     """Fine-tune a pre-trained PINN on a new physics problem."""
     cfg = TransferConfig(strategy=strategy, epochs=epochs, finetune_lr=lr, **cfg_kwargs)
     trainer = TransferTrainer(source_model=source_model, config=cfg)
+    trainer.prepare()  # TransferTrainer.finetune() requires this first -- this
+    # convenience wrapper previously skipped it, so every call raised
+    # "Call TransferTrainer.prepare() before finetune()." unconditionally.
     return trainer.finetune(target_physics_fn, target_data=target_data)
 
 
