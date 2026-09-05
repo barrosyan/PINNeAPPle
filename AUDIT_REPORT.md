@@ -578,29 +578,71 @@ mistaken for one later.
 **Net result of this ninth batch**: Tier A failures **29/137 → 28/137**.
 `test_manufactured_solutions.py`: 30/30 passing.
 
-**Remaining Category 1 gaps** (4 presets): `axial_compressor_stage_3d`,
-`bekker_wong_surrogate_2d`, `material_fracture_2d`, `rocket_nozzle_cfd`.
-Explicitly not attempted this session, with reasons:
-`bekker_wong_terramechanics` isn't a differential-equation residual at
-all — its own meta describes INEQUALITY/monotonicity constraints
-(`Fx <= c*A + Fz*tan(phi)`, `dFx/ds >= 0`) on a semi-empirical
-terramechanics surrogate, which would need a genuinely new
-penalty-based residual paradigm (not another equality-residual
-`pde_kind`) to implement properly, plus the real Bekker pressure-sinkage
-and Janosi-Hanamoto shear-stress formulas integrated over a contact
-patch. `axial_compressor_stage_3d` and `rocket_nozzle_cfd` both need
-compressible Euler in CYLINDRICAL coordinates (the latter axisymmetric,
-the former additionally in a ROTATING frame) — metric terms for the
-cylindrical divergence, on top of Coriolis/centrifugal terms for the
-compressor stage, on top of the compressible energy equation, all at
-once — a meaningfully higher error-risk combination than the 2D
-Cartesian cascade case already done, not attempted without more
-dedicated derivation time. `material_fracture_2d` (phase-field/
-Cahn-Hilliard coupled to elasticity, with a crack-driving-force history
-variable that doesn't fit this compiler's stateless-residual design
-without a documented simplifying assumption) is a genuine, nontrivial
-physics-derivation task in a specialized domain — flagged honestly as
-open rather than rushed.
+**Tenth batch**: the two remaining gaps that fit this compiler's
+stateless-equality-residual design (`bekker_wong_terramechanics`
+genuinely doesn't, see below).
+
+- `phase_field_fracture_2d` (`material_fracture_2d`) — the ORIGINAL
+  Bourdin, Francfort & Marigo (2000) AT-2 phase-field fracture model
+  (exactly what this preset's own meta cites — NOT the later Miehe 2010
+  tension/compression spectral split, which postdates that citation):
+  degraded elasticity `div[(1-phi)^2 * C:eps(u)] = 0` coupled to a
+  phase-field equation driven by the (undegraded) elastic strain-energy
+  density. One deliberate, documented simplification versus a full
+  quasi-static solver: the crack-driving-force `H` is the
+  **instantaneous** strain energy, not history-max(energy) over the
+  loading path — this compiler's residual is a stateless function of
+  current field values with nothing to track a running maximum against
+  across training/load steps. Exact for monotonic loading (this
+  preset's own boundary conditions describe exactly that: fixed bottom,
+  prescribed top displacement, no unloading), documented in the code so
+  it isn't mistaken for an oversight. No independent nonlinear MMS this
+  session (constructing one requires solving a fully-coupled nonlinear
+  system for a matching displacement+damage field pair, more derivation
+  time than available) — Tier A confirmed, moderate confidence,
+  consistent with `compressible_euler_2d`'s treatment above.
+- `compressible_euler_axisymmetric` (`rocket_nozzle_cfd`) — steady
+  axisymmetric (no swirl) compressible Euler, cylindrical `(r,z)`.
+  Derived directly this session (not recalled) from the general 3D
+  cylindrical Euler equations with `v_theta=0`: continuity and energy
+  use the plain axisymmetric divergence `(1/r)*d(r*F_r)/dr + d(F_z)/dz`,
+  but the r-momentum component needs an extra `-p/r` correction term —
+  verified algebraically: writing its r-flux as `r*(rho*v^2+p)` and
+  dividing by `r` (matching the scalar pattern) adds a spurious extra
+  `p/r`, since `(1/r)*d(r*p)/dr = dp/dr + p/r`, not just `dp/dr`;
+  subtracting `p/r` back off recovers the correct non-conservative
+  cylindrical momentum equation exactly. Passes a real (if weak) sanity
+  check: uniform axial flow (`v=0`, `rho,u,p,T` all constant) gives
+  exactly zero residual, as it must. No independent nonlinear MMS this
+  session (same difficulty as the 2D cascade case) — Tier A confirmed,
+  moderate confidence.
+
+**Net result of this tenth batch**: Tier A failures **28/137 → 26/137**.
+
+**Session total for this line of work: Tier A failures 62/137 → 26/137
+(36 closed)**, spanning ten batches, every fix backed by either a
+`sympy`-verified closed-form solution (the large majority) or an
+honestly-flagged lower-confidence Tier-A-only treatment where a genuine
+nonlinear exact solution wasn't achievable in the time available (both
+`compressible_euler_2d` variants, explicitly marked as such rather than
+overclaiming).
+
+**Remaining Category 1 gaps** (3 presets): `axial_compressor_stage_3d`,
+`bekker_wong_surrogate_2d`. `bekker_wong_terramechanics` isn't a
+differential-equation residual at all — its own meta describes
+INEQUALITY/monotonicity constraints (`Fx <= c*A + Fz*tan(phi)`,
+`dFx/ds >= 0`) on a semi-empirical terramechanics surrogate, which would
+need a genuinely new penalty-based residual paradigm (not another
+equality-residual `pde_kind`) to implement properly, plus the real
+Bekker pressure-sinkage and Janosi-Hanamoto shear-stress formulas
+integrated over a contact patch — a structurally different kind of work
+from every other fix in this report, not attempted. `axial_compressor_stage_3d`
+combines everything `compressible_euler_axisymmetric` above required
+(cylindrical metric terms) WITH the Coriolis/centrifugal terms from
+`incompressible_navier_stokes_rotating_frame` earlier AND the
+compressible energy equation, all at once — the highest-risk remaining
+combination, not attempted without more dedicated derivation time than
+this session's per-item budget affords.
 
 **~20 of the 62 failures.** `ModelRegistry.list()` includes time-series
 models (`arima`, `esn`, `esn_rc`, `koopman`, `dmd`, `pod`, `havok`,

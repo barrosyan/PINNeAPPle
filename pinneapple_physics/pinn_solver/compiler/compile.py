@@ -1562,6 +1562,115 @@ def compile_problem(
             Txx = laplacian(T_f, xcol, spatial_indices)
             res_list.append(Tt + vg * Tx + (T_f - T_eq) / tau_relax - alpha_th * Txx)
 
+        elif pde_kind == "phase_field_fracture_2d":
+            # AT-2 phase-field fracture (material_fracture_2d), the
+            # ORIGINAL Bourdin, Francfort & Marigo (2000) formulation
+            # this preset's own meta cites -- NOT the later Miehe (2010)
+            # tension/compression spectral split, which that citation
+            # predates. Degradation is applied to the full (unsplit)
+            # stress and strain energy, exactly as in the cited paper:
+            #   Elasticity:  div[(1-phi)^2 * C:eps(u)] = 0
+            #   Phase-field: Gc/l0*phi - Gc*l0*laplacian(phi) = 2*(1-phi)*H
+            # H (crack driving force) is the material's elastic strain
+            # energy density psi(eps) -- the one deliberate simplification
+            # versus a full quasi-static fracture solver: H is used here
+            # as the INSTANTANEOUS psi(eps), not history-max(psi) over the
+            # loading path (this compiler's residual is a stateless
+            # function of the current field values with no persistent
+            # memory across training steps/load steps to track a running
+            # maximum against). This is exact for monotonically increasing
+            # loading (the standard tension-test setup this preset's own
+            # boundary conditions describe) and only matters for problems
+            # with unloading/cyclic loading, which this preset doesn't set
+            # up.
+            if len(field_names) != 3 or "phi" not in fields or "ux" not in fields or "uy" not in fields:
+                raise ValueError("phase_field_fracture_2d expects fields 'ux', 'uy', 'phi'.")
+            if spatial_dim != 2:
+                raise ValueError("phase_field_fracture_2d expects 2 spatial dims.")
+            lam = float(p.get("lambda", 1.0))
+            mu = float(p.get("mu", 1.0))
+            Gc = float(p.get("Gc", 1.0))
+            l0 = float(p.get("l0", 1.0))
+
+            ux, uy, phi = fields["ux"], fields["uy"], fields["phi"]
+            sp_idx = [coords.index(n) for n in spatial_coord_names]
+            x_idx, y_idx = sp_idx[0], sp_idx[1]
+
+            grad_ux = grad(ux, xcol)
+            grad_uy = grad(uy, xcol)
+            eps_xx = grad_ux[:, x_idx:x_idx + 1]
+            eps_yy = grad_uy[:, y_idx:y_idx + 1]
+            eps_xy = 0.5 * (grad_ux[:, y_idx:y_idx + 1] + grad_uy[:, x_idx:x_idx + 1])
+            tr_eps = eps_xx + eps_yy
+
+            degrade = (1.0 - phi) ** 2
+            sigma_xx = degrade * (lam * tr_eps + 2.0 * mu * eps_xx)
+            sigma_yy = degrade * (lam * tr_eps + 2.0 * mu * eps_yy)
+            sigma_xy = degrade * (2.0 * mu * eps_xy)
+
+            grad_sxx = grad(sigma_xx, xcol)
+            grad_sxy = grad(sigma_xy, xcol)
+            grad_syy = grad(sigma_yy, xcol)
+            res_list.append(grad_sxx[:, x_idx:x_idx + 1] + grad_sxy[:, y_idx:y_idx + 1])
+            res_list.append(grad_sxy[:, x_idx:x_idx + 1] + grad_syy[:, y_idx:y_idx + 1])
+
+            H_drive = 0.5 * lam * tr_eps * tr_eps + mu * (eps_xx * eps_xx + eps_yy * eps_yy + 2.0 * eps_xy * eps_xy)
+            lap_phi = laplacian(phi, xcol, spatial_indices)
+            res_list.append((Gc / l0) * phi - Gc * l0 * lap_phi - 2.0 * (1.0 - phi) * H_drive)
+
+        elif pde_kind == "compressible_euler_axisymmetric":
+            # Steady 2D axisymmetric (no swirl) compressible Euler,
+            # cylindrical (r, z) -- rocket_nozzle_cfd. Fields per the
+            # preset's own docstring: rho, u (axial/z-velocity),
+            # v (radial/r-velocity), p, T.
+            #
+            # Derived directly from the general 3D cylindrical Euler
+            # equations with v_theta=0 and d/d(theta)=0 (this session,
+            # not recalled): the axisymmetric divergence of a flux F is
+            # (1/r)*d(r*F_r)/dr + d(F_z)/dz for a SCALAR conserved
+            # quantity (continuity, energy), but the r-MOMENTUM component
+            # needs an extra "-p/r" correction -- writing its r-flux as
+            # r*(rho*v^2+p) and dividing by r (matching the scalar
+            # pattern) actually adds a spurious extra p/r term, since
+            # (1/r)*d(r*p)/dr = dp/dr + p/r, not just dp/dr; the
+            # standard conservative form's plain dp/dr is recovered by
+            # subtracting that p/r back off (verified: (1/r)*d(r*(rho*v^2+p))/dr
+            # - p/r = (1/r)*d(r*rho*v^2)/dr + dp/dr, matching the
+            # non-conservative cylindrical momentum equation exactly).
+            # No swirl means no centrifugal rho*v_theta^2/r term (the
+            # analog of what appears in axisymmetric elasticity's hoop
+            # stress term or the rotating-frame NS centrifugal term
+            # elsewhere in this compiler).
+            if "r" not in coords or "z" not in coords:
+                raise ValueError("compressible_euler_axisymmetric expects coords ('r','z').")
+            for n in ("rho", "u", "v", "p", "T"):
+                if n not in fields:
+                    raise ValueError(f"compressible_euler_axisymmetric expects field '{n}'.")
+            gamma = float(p.get("gamma", 1.4))
+            R_gas = float(p.get("R_gas", 287.0))
+            cv = R_gas / (gamma - 1.0)
+            r_idx = _coord_index(coords, "r")
+            z_idx = _coord_index(coords, "z")
+            r_col = xcol[:, r_idx:r_idx + 1]
+
+            rho, u_ax, v_rad, p_pres, T_temp = fields["rho"], fields["u"], fields["v"], fields["p"], fields["T"]
+            rho_u = rho * u_ax   # axial (z) momentum density
+            rho_v = rho * v_rad  # radial (r) momentum density
+            E_f = rho * (cv * T_temp + 0.5 * (u_ax * u_ax + v_rad * v_rad))
+
+            def _axisym_div(Fr, Fz):
+                """(1/r) d(r*Fr)/dr + d(Fz)/dz, the axisymmetric
+                divergence for a scalar conserved quantity (no swirl)."""
+                dFr_dr = grad(r_col * Fr, xcol)[:, r_idx:r_idx + 1] / r_col
+                dFz_dz = grad(Fz, xcol)[:, z_idx:z_idx + 1]
+                return dFr_dr + dFz_dz
+
+            res_list.append(_axisym_div(rho_v, rho_u))  # continuity
+            res_list.append(_axisym_div(rho_v * v_rad + p_pres, rho_v * u_ax) - p_pres / r_col)  # r-momentum
+            res_list.append(_axisym_div(rho_v * u_ax, rho_u * u_ax + p_pres))  # z-momentum
+            res_list.append(_axisym_div(v_rad * (E_f + p_pres), u_ax * (E_f + p_pres)))  # energy
+            res_list.append(p_pres - rho * R_gas * T_temp)  # ideal-gas state
+
         elif pde_kind == "kepler_two_body_orbit":
             # Restricted two-body problem, planar Cartesian formulation
             # (Vallado, "Fundamentals of Astrodynamics and Applications").
