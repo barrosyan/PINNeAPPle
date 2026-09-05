@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -45,6 +46,10 @@ from pinneapple_physics.pde_environment.presets.astrophysics import (
     nfw_dark_matter_potential,
     nfw_potential_exact,
     nfw_source_fn,
+    cr3bp_planar_synodic,
+    cr3bp_omega_gradient,
+    schwarzschild_light_bending_weak_field,
+    schwarzschild_light_bending_u_exact,
 )
 
 
@@ -506,3 +511,166 @@ def test_euler_compressible_1d_wrong_solution_gives_nonzero_residual():
     out = loss_fn(_ExactFn(wrong), None, batch)
     res = float(_pde_residual(out).item())
     assert res > 1e-4, f"1D Euler residual should be nonzero for an inconsistent rho/momentum pair, got {res}"
+
+
+# ===========================================================================
+# CR3BP: planar circular restricted three-body problem (Lagrange points)
+# ===========================================================================
+
+def test_cr3bp_l4_equilibrium_exact_gives_near_zero_residual():
+    """L4 (x=1/2-mu, y=sqrt(3)/2) is an EXACT equilibrium of the CR3BP for
+    ANY mass ratio mu -- verified this session with `sympy` (dOmega/dx and
+    dOmega/dy both reduce to exactly 0 there, since r1=r2=1 by
+    construction of the equilateral triangle). A stationary test particle
+    sitting exactly at L4 (x,y constant, vx=vy=0) must therefore give an
+    exactly-zero compiled residual."""
+    mu = 0.012150585609624
+    spec = cr3bp_planar_synodic(mu=mu)
+    loss_fn = compile_problem(spec)
+
+    xL4, yL4 = 0.5 - mu, math.sqrt(3.0) / 2.0
+
+    def exact(tcol):
+        t = tcol[:, 0:1]
+        x = xL4 + 0.0 * t
+        y = yL4 + 0.0 * t
+        vx = torch.zeros_like(t)
+        vy = torch.zeros_like(t)
+        return torch.cat([x, y, vx, vy], dim=1)
+
+    t = (torch.rand(64, 1) * 10.0).requires_grad_(True)
+    batch = _empty_batch(t, n_coords=1, n_fields=4)
+    out = loss_fn(_ExactFn(exact), None, batch)
+    res = float(_pde_residual(out).item())
+    assert res < 1e-10, f"CR3BP residual should be ~0 at the exact L4 equilibrium, got {res}"
+
+
+def test_cr3bp_l1_l2_l3_equilibria_exact_gives_near_zero_residual():
+    """The collinear points L1/L2/L3 have no closed form, but ARE exact
+    equilibria of the same compiled residual once solved for numerically
+    (Newton-Raphson, `cr3bp_collinear_lagrange_point` -- an independent,
+    pure-numpy implementation from `compile.py`'s torch residual). This
+    checks the compiled residual agrees with that independent root-find,
+    not just that L4/L5's closed form happens to work."""
+    mu = 0.012150585609624
+    spec = cr3bp_planar_synodic(mu=mu)
+    loss_fn = compile_problem(spec)
+    lpoints = spec.pde.meta["lagrange_points"]
+
+    for name in ("L1", "L2", "L3"):
+        xL, yL = lpoints[name]
+
+        def exact(tcol, xL=xL, yL=yL):
+            t = tcol[:, 0:1]
+            x = xL + 0.0 * t
+            y = yL + 0.0 * t
+            vx = torch.zeros_like(t)
+            vy = torch.zeros_like(t)
+            return torch.cat([x, y, vx, vy], dim=1)
+
+        t = (torch.rand(64, 1) * 10.0).requires_grad_(True)
+        batch = _empty_batch(t, n_coords=1, n_fields=4)
+        out = loss_fn(_ExactFn(exact), None, batch)
+        res = float(_pde_residual(out).item())
+        assert res < 1e-8, f"CR3BP residual should be ~0 at the numerically-solved {name} equilibrium, got {res}"
+
+
+def test_cr3bp_non_equilibrium_point_gives_nonzero_residual():
+    """A generic fixed point that is NOT one of the 5 Lagrange points must
+    give a measurably nonzero residual -- otherwise the compiled dOmega/dx,
+    dOmega/dy terms could be silently dead code that always returns 0."""
+    mu = 0.012150585609624
+    spec = cr3bp_planar_synodic(mu=mu)
+    loss_fn = compile_problem(spec)
+
+    x_arb, y_arb = 0.6, 0.5  # not near any of the 5 Lagrange points
+    dOx, dOy = cr3bp_omega_gradient(np.array([x_arb]), np.array([y_arb]), mu)
+    assert abs(float(dOx[0])) > 1e-3 or abs(float(dOy[0])) > 1e-3, "test point should not accidentally be near-equilibrium"
+
+    def wrong(tcol):
+        t = tcol[:, 0:1]
+        x = x_arb + 0.0 * t
+        y = y_arb + 0.0 * t
+        vx = torch.zeros_like(t)
+        vy = torch.zeros_like(t)
+        return torch.cat([x, y, vx, vy], dim=1)
+
+    t = (torch.rand(64, 1) * 10.0).requires_grad_(True)
+    batch = _empty_batch(t, n_coords=1, n_fields=4)
+    out = loss_fn(_ExactFn(wrong), None, batch)
+    res = float(_pde_residual(out).item())
+    assert res > 1e-3, f"CR3BP residual should be clearly nonzero for a non-Lagrange-point, got {res}"
+
+
+# ===========================================================================
+# Schwarzschild weak-field light bending (null-geodesic equation)
+# ===========================================================================
+
+def test_schwarzschild_light_bending_perturbative_solution_near_zero_residual():
+    """The first-order weak-field perturbative solution
+    u(phi) = cos(phi)/b + (m/b^2)*(1+sin(phi)^2) solves the exact ODE
+    d^2u/dphi^2 + u = 3*m*u^2 up to (and including) O(m) -- verified this
+    session with `sympy`: the residual's series expansion in m has
+    EXACTLY zero coefficients at m^0 and m^1, leaving a pure O(m^2)
+    leftover (coefficient 6*(cos(phi)^2-2)*cos(phi)/b^3). Uses toy
+    parameters m=0.01, b=1.0 (NOT the preset's real Sun-grazing SI-unit
+    defaults, which give u~1e-9 and would lose essentially all precision
+    to float32 rounding on a signal that's already this tiny -- the same
+    documented reasoning as `phonon_bte_1d_gray`'s MMS test elsewhere in
+    this file) so the leftover O(m^2) residual (~1.6e-7, empirically) sits
+    comfortably above the float32 noise floor while still being
+    unambiguously small relative to a solution missing the GR term
+    entirely (~1.9e-4, see the companion wrong-solution test below)."""
+    m_val, b_val = 0.01, 1.0
+    spec = schwarzschild_light_bending_weak_field(GM=m_val, c=1.0, b=b_val)
+    loss_fn = compile_problem(spec)
+
+    def exact(tcol):
+        phi = tcol[:, 0:1]
+        u = torch.cos(phi) / b_val + (m_val / b_val ** 2) * (1 + torch.sin(phi) ** 2)
+        up = -torch.sin(phi) / b_val + (m_val / b_val ** 2) * (2 * torch.sin(phi) * torch.cos(phi))
+        return torch.cat([u, up], dim=1)
+
+    phi = (torch.rand(256, 1) * 3.0 - 1.5).requires_grad_(True)
+    batch = _empty_batch(phi, n_coords=1, n_fields=2)
+    out = loss_fn(_ExactFn(exact), None, batch)
+    res = float(_pde_residual(out).item())
+    assert res < 1e-5, (
+        f"Schwarzschild light-bending residual should be ~0 (up to the documented O(m^2) "
+        f"perturbative truncation) for the first-order exact solution, got {res}"
+    )
+
+
+def test_schwarzschild_light_bending_flat_space_solution_gives_nonzero_residual():
+    """The pure straight-line (flat-space, m=0) trajectory u=cos(phi)/b,
+    up=-sin(phi)/b -- i.e. completely omitting the GR correction term --
+    must give a residual that is CLEARLY larger than the true perturbative
+    solution's O(m^2) leftover above (empirically ~1.9e-4 vs ~1.6e-7,
+    three orders of magnitude), proving the 3*m*u^2 term is actually wired
+    into the compiled residual rather than dead code."""
+    m_val, b_val = 0.01, 1.0
+    spec = schwarzschild_light_bending_weak_field(GM=m_val, c=1.0, b=b_val)
+    loss_fn = compile_problem(spec)
+
+    def wrong(tcol):
+        phi = tcol[:, 0:1]
+        u = torch.cos(phi) / b_val
+        up = -torch.sin(phi) / b_val
+        return torch.cat([u, up], dim=1)
+
+    phi = (torch.rand(256, 1) * 3.0 - 1.5).requires_grad_(True)
+    batch = _empty_batch(phi, n_coords=1, n_fields=2)
+    out = loss_fn(_ExactFn(wrong), None, batch)
+    res = float(_pde_residual(out).item())
+    assert res > 1e-5, f"Flat-space (m=0) trajectory should give a clearly larger residual than the GR solution, got {res}"
+
+
+def test_schwarzschild_deflection_angle_matches_famous_eddington_value():
+    """Sanity/cross-check of the preset's own headline number: at the
+    default Sun-grazing impact parameter, delta_phi = 4GM/(c^2 b) should
+    equal the famous ~1.75 arcsec value from Einstein's 1916 prediction
+    and the Dyson-Eddington-Davidson 1919 eclipse observation."""
+    spec = schwarzschild_light_bending_weak_field()
+    deflection_arcsec = spec.pde.meta["deflection_angle_weak_field_arcsec"]
+    print(f"Weak-field deflection angle: {deflection_arcsec:.4f} arcsec (Eddington 1919: ~1.75 arcsec)")
+    assert 1.7 < deflection_arcsec < 1.8, f"Deflection angle should be ~1.75 arcsec, got {deflection_arcsec}"
