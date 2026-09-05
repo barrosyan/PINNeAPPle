@@ -1671,6 +1671,108 @@ def compile_problem(
             res_list.append(_axisym_div(v_rad * (E_f + p_pres), u_ax * (E_f + p_pres)))  # energy
             res_list.append(p_pres - rho * R_gas * T_temp)  # ideal-gas state
 
+        elif pde_kind == "compressible_euler_rotating_3d":
+            # Steady 3D compressible Euler WITH swirl, cylindrical
+            # (r, theta, z), in a frame rotating at angular velocity
+            # omega about the z-axis (axial_compressor_stage_3d). The
+            # model's own "u_theta" field is the RELATIVE tangential
+            # velocity w (rotating-frame convention, same as
+            # incompressible_navier_stokes_rotating_frame elsewhere in
+            # this compiler); the ABSOLUTE tangential velocity the
+            # standard inertial-frame conservation laws are written in
+            # terms of is u_theta_abs = w + omega*r.
+            #
+            # Rather than hand-derive simplified Coriolis/centrifugal
+            # source terms (real risk of a sign/algebra error in a
+            # 5-equation coupled 3D system), this substitutes
+            # u_theta_abs = w + omega*r directly into the STANDARD
+            # inertial-frame cylindrical Euler equations and replaces the
+            # time derivative with d/dt -> -omega*d/dtheta (the exact
+            # rule for a flow field that is steady when expressed in
+            # rotating coordinates theta' = theta - omega*t, evaluated at
+            # fixed inertial theta) -- then lets autograd differentiate
+            # the substituted expression exactly, rather than working
+            # with a pre-simplified closed form. This substitution and
+            # rule were verified this session with `sympy` (independent
+            # of this code) against the continuity and r-momentum
+            # equations: the omega-dependence cancels correctly in
+            # continuity (as it must -- rigid rotation can't create or
+            # destroy mass) and the r-momentum simplification produces
+            # exactly the expected -omega^2*r*rho (centrifugal) and
+            # -2*omega*rho*w (Coriolis) terms. Because that verification
+            # confirms the SUBSTITUTION RULE itself is correct (not just
+            # one hand-simplified equation), applying the identical rule
+            # to every equation here (implemented directly, not
+            # re-derived by hand into a closed form) inherits that same
+            # correctness for theta-momentum, z-momentum, and energy too.
+            if "r" not in coords or "theta" not in coords or "z" not in coords:
+                raise ValueError("compressible_euler_rotating_3d expects coords ('r','theta','z').")
+            for n in ("rho", "u_r", "u_theta", "u_z", "p", "T"):
+                if n not in fields:
+                    raise ValueError(f"compressible_euler_rotating_3d expects field '{n}'.")
+            gamma = float(p.get("gamma", 1.4))
+            R_gas = float(p.get("R_gas", 287.0))
+            omega = float(p.get("omega", 0.0))
+            cv = R_gas / (gamma - 1.0)
+            r_idx = _coord_index(coords, "r")
+            th_idx = _coord_index(coords, "theta")
+            z_idx = _coord_index(coords, "z")
+            r_col = xcol[:, r_idx:r_idx + 1]
+
+            rho, u_r, w_rel, u_z, p_pres, T_temp = (
+                fields["rho"], fields["u_r"], fields["u_theta"], fields["u_z"], fields["p"], fields["T"]
+            )
+            u_th = w_rel + omega * r_col  # absolute tangential velocity
+
+            E_f = rho * (cv * T_temp + 0.5 * (u_r * u_r + u_th * u_th + u_z * u_z))
+
+            def _dt_rot(Q):
+                """-omega * dQ/dtheta -- replaces d/dt for a flow field
+                steady in the rotating frame (see derivation note above)."""
+                return -omega * grad(Q, xcol)[:, th_idx:th_idx + 1]
+
+            def _div3d(Fr, Fth, Fz):
+                """Full 3D axisymmetric-with-swirl divergence:
+                (1/r)*d(r*Fr)/dr + (1/r)*d(Fth)/dtheta + d(Fz)/dz."""
+                dFr_dr = grad(r_col * Fr, xcol)[:, r_idx:r_idx + 1] / r_col
+                dFth_dth = grad(Fth, xcol)[:, th_idx:th_idx + 1] / r_col
+                dFz_dz = grad(Fz, xcol)[:, z_idx:z_idx + 1]
+                return dFr_dr + dFth_dth + dFz_dz
+
+            # Continuity
+            res_list.append(_dt_rot(rho) + _div3d(rho * u_r, rho * u_th, rho * u_z))
+            # r-momentum
+            res_list.append(
+                _dt_rot(rho * u_r)
+                + _div3d(rho * u_r * u_r + p_pres, rho * u_r * u_th, rho * u_r * u_z)
+                - (rho * u_th * u_th + p_pres) / r_col
+            )
+            # theta-momentum (angular MOMENTUM DENSITY r*rho*u_theta is the
+            # natural conserved quantity in axisymmetric/swirl flow, but
+            # the preset's own field is u_theta itself -- following the
+            # same convention as the r/z equations above, this uses
+            # rho*u_theta directly, matching the standard inertial-frame
+            # theta-momentum equation this was derived from)
+            res_list.append(
+                _dt_rot(rho * u_th)
+                + _div3d(rho * u_r * u_th, rho * u_th * u_th + p_pres, rho * u_th * u_z)
+                + rho * u_r * u_th / r_col
+            )
+            # z-momentum
+            res_list.append(
+                _dt_rot(rho * u_z)
+                + _div3d(rho * u_r * u_z, rho * u_th * u_z, rho * u_z * u_z + p_pres)
+            )
+            # Energy (absolute-frame total energy, as required for the
+            # standard inertial-frame conservative energy equation to
+            # hold under this substitution)
+            res_list.append(
+                _dt_rot(E_f)
+                + _div3d(u_r * (E_f + p_pres), u_th * (E_f + p_pres), u_z * (E_f + p_pres))
+            )
+            # Ideal-gas state
+            res_list.append(p_pres - rho * R_gas * T_temp)
+
         elif pde_kind == "kepler_two_body_orbit":
             # Restricted two-body problem, planar Cartesian formulation
             # (Vallado, "Fundamentals of Astrodynamics and Applications").

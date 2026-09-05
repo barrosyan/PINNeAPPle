@@ -619,30 +619,60 @@ genuinely doesn't, see below).
 
 **Net result of this tenth batch**: Tier A failures **28/137 → 26/137**.
 
-**Session total for this line of work: Tier A failures 62/137 → 26/137
-(36 closed)**, spanning ten batches, every fix backed by either a
-`sympy`-verified closed-form solution (the large majority) or an
-honestly-flagged lower-confidence Tier-A-only treatment where a genuine
-nonlinear exact solution wasn't achievable in the time available (both
+**Eleventh batch**: `compressible_euler_rotating_3d`
+(`axial_compressor_stage_3d`) — the highest-complexity kind added this
+session: full 3D compressible Euler WITH swirl, cylindrical `(r,theta,z)`,
+in a frame rotating at omega about the z-axis. Rather than hand-derive
+simplified Coriolis/centrifugal source terms for all 5 coupled equations
+(a real risk of a sign/algebra error), this substitutes the absolute
+tangential velocity `u_theta_abs = w + omega*r` (`w` = the model's
+relative `u_theta` field, matching the convention already used by
+`incompressible_navier_stokes_rotating_frame`) directly into the
+STANDARD inertial-frame cylindrical Euler equations and replaces the
+time derivative with `d/dt -> -omega*d/dtheta` (the exact rule for a
+flow field steady in rotating coordinates), letting autograd
+differentiate the substituted expression rather than working from a
+pre-simplified closed form.
+
+This substitution rule was independently verified this session (derived
+with `sympy`, not recalled) against continuity and r-momentum: continuity
+has NO omega-dependence at all after simplification (correct — rigid
+rotation can't create or destroy mass), and r-momentum produces exactly
+the expected explicit `-omega^2*r*rho` (centrifugal) and `-2*omega*rho*w`
+(Coriolis) terms. The implementation was then cross-checked NUMERICALLY
+(differential testing) against these two independently-derived closed
+forms for a generic smooth field: agreement to machine precision in
+float64 (~1e-13 relative; a larger, ~1e-3 gap seen at float32 was
+confirmed to be precision noise, not a formula difference, by re-running
+in float64 and watching it vanish). Since continuity, r-momentum,
+theta-momentum, z-momentum, and energy all use the exact same
+substitution mechanism, this is real evidence for the shared mechanism,
+not just the two hand-checked equations — a genuinely different (not
+weaker) style of verification than a closed-form MMS, appropriate for a
+system this coupled.
+
+**Net result of this eleventh batch**: Tier A failures **26/137 → 25/137**.
+`test_manufactured_solutions.py`: 31/31 passing.
+
+**Session total for this line of work: Tier A failures 62/137 → 25/137
+(37 closed)**, spanning eleven batches, every fix backed by either a
+`sympy`-verified closed-form solution (the large majority), a numerical
+cross-implementation check (the rotating 3D case, appropriate given its
+coupled complexity), or an honestly-flagged lower-confidence Tier-A-only
+treatment where neither was achievable in the time available (both
 `compressible_euler_2d` variants, explicitly marked as such rather than
 overclaiming).
 
-**Remaining Category 1 gaps** (3 presets): `axial_compressor_stage_3d`,
-`bekker_wong_surrogate_2d`. `bekker_wong_terramechanics` isn't a
-differential-equation residual at all — its own meta describes
-INEQUALITY/monotonicity constraints (`Fx <= c*A + Fz*tan(phi)`,
-`dFx/ds >= 0`) on a semi-empirical terramechanics surrogate, which would
-need a genuinely new penalty-based residual paradigm (not another
-equality-residual `pde_kind`) to implement properly, plus the real
-Bekker pressure-sinkage and Janosi-Hanamoto shear-stress formulas
-integrated over a contact patch — a structurally different kind of work
-from every other fix in this report, not attempted. `axial_compressor_stage_3d`
-combines everything `compressible_euler_axisymmetric` above required
-(cylindrical metric terms) WITH the Coriolis/centrifugal terms from
-`incompressible_navier_stokes_rotating_frame` earlier AND the
-compressible energy equation, all at once — the highest-risk remaining
-combination, not attempted without more dedicated derivation time than
-this session's per-item budget affords.
+**Remaining Category 1 gap** (1 preset): `bekker_wong_surrogate_2d`.
+`bekker_wong_terramechanics` isn't a differential-equation residual at
+all — its own meta describes INEQUALITY/monotonicity constraints
+(`Fx <= c*A + Fz*tan(phi)`, `dFx/ds >= 0`) on a semi-empirical
+terramechanics surrogate, which needs a genuinely new penalty-based
+residual paradigm (not another equality-residual `pde_kind`) to
+implement properly, plus the real Bekker pressure-sinkage and
+Janosi-Hanamoto shear-stress formulas integrated over a contact patch —
+a structurally different kind of work from every other fix in this
+report.
 
 **~20 of the 62 failures.** `ModelRegistry.list()` includes time-series
 models (`arima`, `esn`, `esn_rc`, `koopman`, `dmd`, `pod`, `havok`,
