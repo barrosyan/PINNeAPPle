@@ -64,13 +64,17 @@ of ~26 real solvers as a result; rewritten to import each module
 independently (26/26 now register, with only the 2 genuinely-missing-
 optional-dep ones reported back instead of eating everything after them).
 
-**Still open**: this pass only checked "does it import," not "does it run
-correctly" — upgrading Tier A from architecture-alone/preset-alone
-(always paired with `modified_mlp`, 3 epochs, a tiny batch) to a genuine
-architecture×preset cartesian product at a more realistic epoch/batch
-size, and extending Tier-A-style "build one instance, run one
-forward/backward pass" breadth testing to these 6 packages' actual
-classes (not just their imports), are both still not done.
+**Still open** (this pass only checked "does it import," not "does it run
+correctly"), two separate items:
+- **Item A — architecture×preset cartesian product**: upgrading Tier A
+  from architecture-alone/preset-alone (always paired with
+  `modified_mlp`, 3 epochs, a tiny batch) to a genuine architecture×preset
+  cartesian product at a more realistic epoch/batch size.
+- **Item B — 6-package breadth extension**: extending Tier-A-style "build
+  one instance, run one forward/backward pass" breadth testing to these 6
+  packages' (`pinneapple_design`, `pinneapple_systems`,
+  `pinneapple_analysis`, `pinneapple_adaptation`, `pinneapple_tools`,
+  `pinneapple_simulation`) actual classes, not just their imports.
 
 ---
 
