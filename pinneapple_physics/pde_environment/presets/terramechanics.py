@@ -16,11 +16,13 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, Optional, Tuple
 
+import numpy as np
 import torch
 import torch.nn as nn
 
 from .registry import register_preset
 from ..spec import PDETermSpec, ProblemSpec
+from ..conditions import InitialCondition
 
 
 class TerramechanicsResiduals:
@@ -187,12 +189,28 @@ def bekker_wong_surrogate_2d(
             ],
         },
     )
+    # R1: Fx(slip=0) = 0 -- a genuine point/initial condition (zero slip
+    # means no relative wheel-soil sliding, hence no traction/drawbar
+    # force), not an interior-residual inequality like R2-R4 -- belongs
+    # here via the existing InitialCondition machinery, not folded into
+    # the pde_kind's own residual. Previously missing from this preset
+    # entirely despite being explicitly listed in its own meta.
+    r1_zero_fx_at_zero_slip = InitialCondition(
+        name="r1_fx_zero_at_zero_slip",
+        fields=("Fx",),
+        selector_type="callable",
+        selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
+        value_fn=lambda X, ctx: np.zeros((X.shape[0], 1), dtype=np.float32),
+        weight=20.0,
+    )
+
     return ProblemSpec(
         name="bekker_wong_surrogate_2d",
         dim=2,
         coords=("slip", "sinkage"),
         fields=("Fx", "Fz", "My"),
         pde=pde,
+        conditions=(r1_zero_fx_at_zero_slip,),
         domain_bounds={"slip": (0.0, 0.75), "sinkage": (0.002, 0.058)},
         meta={"description": "Bekker-Wong rigid-wheel terramechanics surrogate for rover simulation"},
     )
