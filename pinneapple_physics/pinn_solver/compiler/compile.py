@@ -501,6 +501,58 @@ def compile_problem(
                     div_si = div_si + g[:, sp_idx[j]:sp_idx[j] + 1]
                 res_list.append(div_si)
 
+        elif pde_kind == "incompressible_navier_stokes_rotating_frame":
+            # Steady incompressible NS in a frame rotating at angular
+            # velocity omega about the z-axis (fan_cooler_cfd), adding
+            # the standard Coriolis and centrifugal terms to the
+            # existing "navier_stokes_incompressible" residual (u, v are
+            # RELATIVE velocity in the rotating frame):
+            #   (u.grad)u + 2*Omega x u - omega^2*r + grad(p) = inv_Re*lap(u)
+            # Derived from 2*Omega x u for Omega=(0,0,omega):
+            #   2*Omega x u = (-2*omega*v, 2*omega*u)
+            # and Omega x (Omega x r) = -omega^2*r (centrifugal term
+            # -omega^2*r moved to the LHS as "+Omega x (Omega x r)"
+            # becomes "-omega^2*r" on the force side, i.e. the familiar
+            # outward centrifugal push). Verified this session with
+            # `sympy` against the textbook solid-body-rotation solution
+            # (u=v=0, p=0.5*omega^2*(x^2+y^2)) -- zero relative velocity
+            # balanced entirely by a hydrostatic-style pressure field.
+            if spatial_dim != 2:
+                raise ValueError("incompressible_navier_stokes_rotating_frame expects 2D spatial dims.")
+            for n in ("u", "v", "p"):
+                if n not in fields:
+                    raise ValueError(f"incompressible_navier_stokes_rotating_frame expects field '{n}'.")
+            Re = float(p.get("Re", 100.0))
+            inv_Re = float(p.get("inv_Re", 1.0 / Re))
+            omega = float(p.get("omega", 0.0))
+
+            u_vel, v_vel, p_ = fields["u"], fields["v"], fields["p"]
+            U = torch.cat([u_vel, v_vel], dim=1)
+            sp_idx = [coords.index(n) for n in spatial_coord_names]
+            x_val = xcol[:, sp_idx[0]:sp_idx[0] + 1]
+            y_val = xcol[:, sp_idx[1]:sp_idx[1] + 1]
+
+            JU = jacobian(U, xcol)
+            JUs = JU[:, :, sp_idx]
+            conv = torch.zeros((xcol.shape[0], 2), device=device, dtype=xcol.dtype)
+            for i in range(2):
+                for j in range(2):
+                    conv[:, i] = conv[:, i] + U[:, j] * JUs[:, i, j]
+
+            gp = grad(p_, xcol)
+            lap_u = laplacian(u_vel, xcol, spatial_indices)
+            lap_v = laplacian(v_vel, xcol, spatial_indices)
+
+            res_list.append(
+                conv[:, 0:1] - 2.0 * omega * v_vel - omega * omega * x_val
+                + gp[:, sp_idx[0]:sp_idx[0] + 1] - inv_Re * lap_u
+            )
+            res_list.append(
+                conv[:, 1:2] + 2.0 * omega * u_vel - omega * omega * y_val
+                + gp[:, sp_idx[1]:sp_idx[1] + 1] - inv_Re * lap_v
+            )
+            res_list.append(divergence(U, xcol, spatial_indices))
+
         elif pde_kind == "darcy":
             mode = spec.pde.meta.get("mode", "pressure_only")
             k = float(p.get("k", 1.0))

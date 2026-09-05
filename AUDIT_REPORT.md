@@ -489,7 +489,38 @@ but trivial rigid-rotation solution `u_θ = A*r`).
 **Net result of this sixth batch**: Tier A failures **33/137 → 32/137**.
 `test_manufactured_solutions.py`: 24/24 passing.
 
-## Category 2 — not a defect: generic smoke test doesn't fit the architecture's real input shape
+**Seventh batch**: `incompressible_navier_stokes_rotating_frame`
+(`fan_cooler_cfd`) — steady incompressible NS in a frame rotating at
+angular velocity omega about the z-axis, adding the standard Coriolis
+(`2*Omega x u`) and centrifugal (`-omega^2*r`) terms to the existing
+`navier_stokes_incompressible` momentum equation. Verified with `sympy`
+against the textbook solid-body-rotation solution: zero relative velocity
+(`u=v=0`) balanced entirely by a hydrostatic-style pressure field
+`p=0.5*omega^2*(x^2+y^2)`.
+
+**Net result of this seventh batch**: Tier A failures **32/137 → 31/137**.
+`test_manufactured_solutions.py`: 26/26 passing.
+
+**Remaining Category 1 gaps** (8 presets, ~31 counting Category 2/3
+overlaps in the raw Tier A number): `axial_compressor_cascade_2d`,
+`axial_compressor_meanline`, `axial_compressor_stage_3d`,
+`bekker_wong_surrogate_2d`, `crystal_phonon`, `material_fracture_2d`,
+`rocket_nozzle_cfd`. Explicitly not attempted this session, with
+reasons: `bekker_wong_terramechanics` isn't a differential-equation
+residual at all — its own meta describes INEQUALITY/monotonicity
+constraints (`Fx <= c*A + Fz*tan(phi)`, `dFx/ds >= 0`) on a
+semi-empirical terramechanics surrogate, which would need a genuinely
+new penalty-based residual paradigm (not another equality-residual
+`pde_kind`) to implement properly, plus the real Bekker pressure-sinkage
+and Janosi-Hanamoto shear-stress formulas integrated over a contact
+patch — a larger, riskier undertaking than this session's per-item
+budget. The remaining ones (compressor cascade/meanline/rotating stage
+aerodynamics, phonon Boltzmann transport, phase-field fracture, rocket
+nozzle axisymmetric compressible flow) are each genuine, nontrivial
+physics-derivation tasks in specialized domains where getting a subtle
+sign or term wrong is a real risk without more dedicated research time
+per item than a shared session budget affords — flagged honestly as
+open rather than rushed.
 
 **~20 of the 62 failures.** `ModelRegistry.list()` includes time-series
 models (`arima`, `esn`, `esn_rc`, `koopman`, `dmd`, `pod`, `havok`,
