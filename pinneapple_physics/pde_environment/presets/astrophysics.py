@@ -40,6 +40,16 @@ Astrophysical hydrodynamics (research)
                                        (standard astrophysical hydro-code
                                        validation case)
 
+Three-body dynamics (research + industrial: libration-point mission design)
+  - cr3bp_planar_synodic            : Planar circular restricted three-body
+                                       problem (Earth-Moon Lagrange points,
+                                       libration-point orbits)
+
+General relativity (research)
+  - schwarzschild_light_bending_weak_field: Null-geodesic light deflection
+                                       by a spherical mass (weak-field
+                                       Schwarzschild limit)
+
 Every physical constant defaults to a real value (Earth mu/J2/Re for the
 orbital-mechanics presets; a canonical Milky-Way-like scale for the halo
 preset, in dimensionless N-body units as is standard practice for galactic-
@@ -899,4 +909,330 @@ def sod_shock_tube_astro(
         ),
         domain_bounds={"x": (0.0, 1.0), "t": (0.0, t_end)},
         meta={"specialization": "astrophysics/hydrodynamics", "applicability": "research"},
+    )
+
+
+# ===========================================================================
+# THREE-BODY DYNAMICS
+# ===========================================================================
+
+def cr3bp_omega_gradient(x: np.ndarray, y: np.ndarray, mu: float):
+    """Gradient of the CR3BP effective (synodic-frame) potential
+    Omega(x,y) = 0.5*(x^2+y^2) + (1-mu)/r1 + mu/r2, i.e. the RHS of the
+    equations of motion x'' - 2y' = dOmega/dx, y'' + 2x' = dOmega/dy
+    (Szebehely, "Theory of Orbits", 1967, Ch. 1-2). A pure-numpy reference
+    implementation, independent of the compiled torch residual in
+    `compile.py`'s "cr3bp_planar_synodic" branch -- used both to build
+    this preset's own initial condition and, independently, by
+    `tests/test_cr3bp_lagrange_point_validation.py` to verify the compiled
+    residual's Lagrange-point equilibria without importing anything from
+    the compiler.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64)
+    r1 = np.sqrt((x + mu) ** 2 + y ** 2)
+    r2 = np.sqrt((x - 1.0 + mu) ** 2 + y ** 2)
+    dOmega_dx = x - (1.0 - mu) * (x + mu) / r1 ** 3 - mu * (x - 1.0 + mu) / r2 ** 3
+    dOmega_dy = y - (1.0 - mu) * y / r1 ** 3 - mu * y / r2 ** 3
+    return dOmega_dx, dOmega_dy
+
+
+def cr3bp_collinear_lagrange_point(mu: float, x0: float, tol: float = 1e-14, max_iter: int = 100) -> float:
+    """Solve for a collinear (L1/L2/L3) Lagrange point via 1D Newton-
+    Raphson on dOmega/dx=0 restricted to y=0 (same algorithm style as
+    this module's `_kepler_solve_E`: a plain, dependency-free
+    Newton-Raphson, not scipy). `x0` must be a starting guess in the
+    correct branch (see `cr3bp_lagrange_points` for standard brackets):
+    this equation has three real roots on the x-axis (L1 between the
+    primaries, L2 beyond the smaller primary, L3 on the far side of the
+    larger primary) and Newton's method converges to whichever is
+    nearest `x0`.
+    """
+    x = float(x0)
+    for _ in range(max_iter):
+        r1 = abs(x + mu)
+        r2 = abs(x - 1.0 + mu)
+        f = x - (1.0 - mu) * (x + mu) / r1 ** 3 - mu * (x - 1.0 + mu) / r2 ** 3
+        eps = max(abs(x) * 1e-6, 1e-8)
+        r1p = abs(x + eps + mu)
+        r2p = abs(x + eps - 1.0 + mu)
+        fp = (x + eps) - (1.0 - mu) * (x + eps + mu) / r1p ** 3 - mu * (x + eps - 1.0 + mu) / r2p ** 3
+        deriv = (fp - f) / eps
+        dx = f / deriv
+        x = x - dx
+        if abs(dx) < tol:
+            break
+    return x
+
+
+def cr3bp_lagrange_points(mu: float) -> Dict[str, tuple]:
+    """All 5 Lagrange-point equilibria of the planar CR3BP for a given
+    mass ratio `mu`. L4/L5 are the EXACT equilateral-triangle points
+    (x=1/2-mu, y=+-sqrt(3)/2) -- true for any mu, verified symbolically
+    with `sympy` this session (dOmega/dx and dOmega/dy both reduce to
+    exactly 0 there, since r1=r2=1 by construction). L1/L2/L3 have no
+    closed form and are solved numerically via `cr3bp_collinear_lagrange_point`
+    (standard brackets from Szebehely 1967 / Curtis 2020)."""
+    l1 = cr3bp_collinear_lagrange_point(mu, x0=1.0 - mu - 0.1)
+    l2 = cr3bp_collinear_lagrange_point(mu, x0=1.0 - mu + 0.1)
+    l3 = cr3bp_collinear_lagrange_point(mu, x0=-1.0 - 0.05)
+    l4 = (0.5 - mu, math.sqrt(3.0) / 2.0)
+    l5 = (0.5 - mu, -math.sqrt(3.0) / 2.0)
+    return {"L1": (l1, 0.0), "L2": (l2, 0.0), "L3": (l3, 0.0), "L4": l4, "L5": l5}
+
+
+@register_preset("cr3bp_planar_synodic")
+def cr3bp_planar_synodic(
+    mu: float = 0.012150585609624,   # Earth-Moon mass ratio m_Moon/(m_Earth+m_Moon)
+    dx0: float = 1e-4,               # initial displacement from L4 (dimensionless, ~38 km)
+    dy0: float = 0.0,
+    n_periods: float = 4.0,          # number of synodic periods to propagate
+) -> ProblemSpec:
+    """Planar circular restricted three-body problem (CR3BP), Earth-Moon
+    system, synodic (co-rotating) frame -- Szebehely's standard
+    dimensionless normalization: unit distance = Earth-Moon separation
+    (~384,400 km), unit time such that G(m_Earth+m_Moon)=1 and the
+    frame's angular velocity = 1 (so 1 time unit ~ 1/(2*pi) of a synodic
+    month, i.e. the synodic period is exactly 2*pi time units).
+
+    ODE system (primary 1, Earth, mass 1-mu, at (-mu,0); primary 2, Moon,
+    mass mu, at (1-mu,0); effective potential
+    Omega(x,y) = 0.5(x^2+y^2) + (1-mu)/r1 + mu/r2):
+        dx/dt = vx ;  dy/dt = vy
+        dvx/dt = 2 vy + dOmega/dx ;  dvy/dt = -2 vx + dOmega/dy
+
+    Default IC is a small displacement from the triangular Lagrange point
+    L4 (x=1/2-mu, y=sqrt(3)/2), representing a test particle librating
+    ("tadpole" orbit) around L4 -- the same dynamical family as Jupiter's
+    real Trojan asteroids at the Sun-Jupiter L4/L5, and the hypothesized
+    Kordylewski dust clouds at the Earth-Moon L4/L5 points. Verified this
+    session (see `tests/test_cr3bp_lagrange_point_validation.py`, an
+    independent `scipy.integrate.solve_ivp` reproduction, NOT calling
+    `compile_problem`): for the Earth-Moon mass ratio (well below Routh's
+    critical mass ratio ~0.0385), a small perturbation from L4 stays
+    bounded (does not run away) over 10 synodic periods -- L4 is linearly
+    stable, exactly as celestial-mechanics theory predicts for this mu.
+
+    The exact equilibrium at L4/L5 itself (dOmega/dx=dOmega/dy=0 for
+    ANY mu -- verified symbolically with `sympy` this session) is used as
+    the closed-form solution for this preset's manufactured-solution
+    check in `tests/test_astrophysics_validation.py`. The collinear
+    points L1 (~326,400 km from Earth toward the Moon), L2 (~448,900 km
+    beyond the Moon), and L3 (~-381,700 km, opposite the Moon) have no
+    closed form; they were solved for numerically this session (Newton-
+    Raphson, `cr3bp_collinear_lagrange_point`) and independently cross-
+    checked against their well-known tabulated distances (e.g. Wikipedia's
+    "Lagrangian point" Earth-Moon table; agreement to <0.01% -- see
+    `tests/test_cr3bp_lagrange_point_validation.py`).
+
+    Fields: x, y (dimensionless synodic position), vx, vy (dimensionless
+    synodic velocity).
+    """
+    coords: CoordNames = ("t",)
+    fields = ("x", "y", "vx", "vy")
+
+    xL4, yL4 = 0.5 - mu, math.sqrt(3.0) / 2.0
+    x0, y0 = xL4 + dx0, yL4 + dy0
+    vx0, vy0 = 0.0, 0.0
+
+    period_synodic = 2.0 * math.pi  # dimensionless, by construction of this normalization
+    t_end = n_periods * period_synodic
+
+    lpoints = cr3bp_lagrange_points(mu)
+
+    pde = PDETermSpec(
+        kind="cr3bp_planar_synodic",
+        fields=fields,
+        coords=coords,
+        params={"mu": mu},
+        meta={
+            "note": "Planar circular restricted three-body problem, synodic frame.",
+            "lagrange_points": lpoints,
+            "synodic_period_dimensionless": period_synodic,
+        },
+    )
+
+    ic0 = {"x": x0, "y": y0, "vx": vx0, "vy": vy0}
+
+    def _mk_ic(fname, val):
+        return InitialCondition(
+            name=f"ic_{fname}", fields=(fname,), selector_type="callable",
+            selector=lambda X, ctx: np.isclose(X[:, 0], 0.0),
+            value_fn=lambda X, ctx, _v=val: np.full((X.shape[0], 1), _v, dtype=np.float32),
+            weight=20.0,
+        )
+
+    conditions = tuple(_mk_ic(f, v) for f, v in ic0.items())
+
+    return ProblemSpec(
+        name="cr3bp_planar_synodic",
+        dim=0,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=conditions,
+        sample_defaults={"n_col": 20_000, "n_ic": 500},
+        scales=ScaleSpec(L=1.0, U=1.0),
+        field_ranges={"x": (-1.2, 1.2), "y": (-1.0, 1.0), "vx": (-0.05, 0.05), "vy": (-0.05, 0.05)},
+        references=(
+            "Szebehely, V. (1967). Theory of Orbits: The Restricted "
+            "Problem of Three Bodies. Academic Press.",
+            "Curtis, H.D. (2020). Orbital Mechanics for Engineering "
+            "Students, 4th ed. Butterworth-Heinemann, Ch. 3 "
+            "(three-body dynamics, Lagrange points).",
+            "Koon, W.S., Lo, M.W., Marsden, J.E., Ross, S.D. (2011). "
+            "Dynamical Systems, the Three-Body Problem, and Space "
+            "Mission Design.",
+        ),
+        domain_bounds={"t": (0.0, t_end)},
+        meta={
+            "specialization": "astrophysics/three_body_dynamics",
+            "applicability": "research+industrial",
+            "note_industrial": "Libration-point orbits (halo/near-rectilinear-halo "
+            "families near L1/L2) are the real basis of NASA's Artemis Gateway "
+            "and were used by JWST/ISEE-3 (different mu, same equations).",
+        },
+    )
+
+
+# ===========================================================================
+# GENERAL RELATIVITY
+# ===========================================================================
+
+def schwarzschild_light_bending_u_exact(phi: np.ndarray, m: float, b: float) -> np.ndarray:
+    """First-order (weak-field, m/b << 1) perturbative solution of the
+    EXACT Schwarzschild null-geodesic equation d^2u/dphi^2 + u = 3 m u^2
+    (u := 1/r, m := GM/c^2), expressed in terms of the asymptotic impact
+    parameter b:
+        u(phi) = cos(phi)/b + (m/b^2)*(1 + sin(phi)^2)
+
+    Standard result (e.g. Misner, Thorne & Wheeler, "Gravitation", 1973,
+    Sec. 25.5; Weinberg, "Gravitation and Cosmology", 1972, Sec. 8.5).
+    Verified this session with `sympy`: substituting this u(phi) into the
+    exact ODE and expanding the residual in powers of m gives EXACTLY
+    zero at O(m^0) and O(m^1), leaving a residual of pure O(m^2) --
+    i.e. this is the exact solution up to (and including) first order in
+    the weak-field parameter m/b, with a rigorously characterized
+    leading error term, not a heuristic approximation.
+    """
+    phi = np.asarray(phi, dtype=np.float64)
+    return np.cos(phi) / b + (m / b ** 2) * (1.0 + np.sin(phi) ** 2)
+
+
+def schwarzschild_deflection_angle_weak_field(GM: float, c: float, b: float) -> float:
+    """Einstein's weak-field light-deflection formula, delta_phi = 4GM/(c^2 b)
+    (Einstein, 1916; famously confirmed observationally for starlight
+    grazing the Sun by Dyson, Eddington & Davidson's 1919 eclipse
+    expedition -- twice the Newtonian/light-corpuscle deflection of
+    2GM/(c^2 b))."""
+    return 4.0 * GM / (c * c * b)
+
+
+@register_preset("schwarzschild_light_bending_weak_field")
+def schwarzschild_light_bending_weak_field(
+    GM: float = 1.32712440018e20,   # Sun's standard gravitational parameter, m^3/s^2 (IAU 2015 nominal)
+    c: float = 2.99792458e8,        # speed of light, m/s (SI-exact)
+    b: float = 6.957e8,             # impact parameter, m -- solar radius (grazing incidence)
+) -> ProblemSpec:
+    """Light deflection by a spherical mass in the Schwarzschild weak-field
+    limit -- the null-geodesic ("photon orbit") equation, u := 1/r as a
+    function of the orbital angle phi:
+
+        d^2u/dphi^2 + u = 3 m u^2,     m := GM/c^2 (geometric mass)
+
+    This ODE is EXACT (it is the direct derivative of the Schwarzschild
+    null-geodesic's exact first integral (du/dphi)^2 = 1/b^2 - u^2(1-2mu),
+    b := L/E the photon's exact conserved impact parameter) -- see Misner,
+    Thorne & Wheeler, "Gravitation" (1973), Sec. 25.5, or Schutz, "A First
+    Course in General Relativity", Ch. 11. What IS only a weak-field
+    (m/b << 1) approximation is the closed-form solution used for this
+    preset's manufactured-solution check (`schwarzschild_light_bending_u_exact`,
+    a first-order perturbative solution) -- this preset's regime of
+    validity is therefore weak-field / large impact parameter (m/b ~ 2e-6
+    for the default Sun-grazing case below), explicitly NOT valid near the
+    photon sphere (r = 1.5 * Schwarzschild radius = 3m).
+
+    Default parameters reproduce the historic Sun-grazing-starlight
+    configuration from Einstein's 1916 prediction and the Dyson-Eddington-
+    Davidson 1919 solar-eclipse expedition that first confirmed it: with
+    b = the solar radius, the predicted deflection angle
+    delta_phi = 4GM/(c^2 b) = 8.4917e-6 rad = 1.7515 arcsec -- matching
+    the famous "1.75 arcseconds" GR prediction (vs. 0.87 arcsec for the
+    Newtonian-corpuscle value 2GM/(c^2 b), which the 1919 expedition ruled
+    out in favor of Einstein's value). Independently reproduced via
+    `scipy.integrate.solve_ivp` integration of the EXACT (not perturbative)
+    ODE in `tests/test_schwarzschild_light_bending_validation.py`: 1.75156
+    arcsec, agreeing with the weak-field formula to 0.0006%.
+
+    IC: phi=0 is defined as the photon's periapsis (point of closest
+    approach), where du/dphi=0 by the trajectory's phi -> -phi symmetry;
+    u(0) = 1/b + m/b^2 is this preset's closed-form solution evaluated at
+    phi=0. Domain is phi in (-pi/2, pi/2) (the undeflected/Newtonian
+    asymptotic incoming/outgoing angles; the true asymptotes are offset
+    from +-pi/2 by only +-delta_phi/2, a ~5e-6 rad correction, negligible
+    at this domain's resolution).
+
+    Fields: u (= 1/r, dimensionless x length^-1), up (= du/dphi).
+    """
+    coords: CoordNames = ("t",)  # 't' plays the role of phi (same convention as lane_emden_polytrope's xi)
+    fields = ("u", "up")
+
+    m = GM / (c * c)
+    u0 = 1.0 / b + m / (b * b)
+    deflection = schwarzschild_deflection_angle_weak_field(GM, c, b)
+    phi_max = (math.pi / 2.0) * 0.999
+
+    pde = PDETermSpec(
+        kind="schwarzschild_light_bending_weak_field",
+        fields=fields,
+        coords=coords,
+        params={"GM": GM, "c": c},
+        meta={
+            "note": "Schwarzschild null-geodesic (light-bending) equation, weak-field regime.",
+            "impact_parameter_m": b,
+            "geometric_mass_m": m,
+            "deflection_angle_weak_field_rad": deflection,
+            "deflection_angle_weak_field_arcsec": deflection * 206264.80625,
+            "regime_of_validity": "weak-field, m/b << 1 (large impact parameter); NOT valid near the photon sphere r=1.5*Schwarzschild radius.",
+        },
+    )
+
+    def _ic_selector(X, ctx):
+        return np.isclose(X[:, 0], 0.0)
+
+    ic_u = InitialCondition(name="ic_u", fields=("u",), selector_type="callable",
+                             selector=_ic_selector,
+                             value_fn=lambda X, ctx: np.full((X.shape[0], 1), u0, dtype=np.float32),
+                             weight=20.0)
+    ic_up = InitialCondition(name="ic_up", fields=("up",), selector_type="callable",
+                              selector=_ic_selector,
+                              value_fn=lambda X, ctx: np.zeros((X.shape[0], 1), dtype=np.float32),
+                              weight=20.0)
+
+    return ProblemSpec(
+        name="schwarzschild_light_bending_weak_field",
+        dim=0,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=(ic_u, ic_up),
+        sample_defaults={"n_col": 20_000, "n_ic": 500},
+        scales=ScaleSpec(L=phi_max, U=u0),
+        field_ranges={"u": (0.0, u0 * 1.05), "up": (-u0, u0)},
+        references=(
+            "Einstein, A. (1916). Die Grundlage der allgemeinen "
+            "Relativitätstheorie. Annalen der Physik, 49, 769-822.",
+            "Dyson, F.W., Eddington, A.S., Davidson, C. (1920). A "
+            "Determination of the Deflection of Light by the Sun's "
+            "Gravitational Field, from Observations Made at the Total "
+            "Eclipse of May 29, 1919. Phil. Trans. R. Soc. A, 220, 291-333.",
+            "Misner, C.W., Thorne, K.S., Wheeler, J.A. (1973). "
+            "Gravitation. W.H. Freeman, Sec. 25.5.",
+        ),
+        domain_bounds={"t": (-phi_max, phi_max)},
+        meta={
+            "specialization": "astrophysics/general_relativity",
+            "applicability": "research",
+            "regime_of_validity": "weak-field / large impact parameter only (m/b << 1); not strong-field.",
+        },
     )

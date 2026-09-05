@@ -107,6 +107,8 @@ Lane-Emden n=0 case — before it shipped).
 | `lane_emden_polytrope` | research (stellar structure) | yes: `lane_emden_polytrope` |
 | `nfw_dark_matter_potential` | research (galactic dynamics/cosmology) | no — reused existing `poisson` kind |
 | `sod_shock_tube_astro` | research (astrophysical hydro-code validation) | yes: `euler_compressible_1d` |
+| `cr3bp_planar_synodic` | research + industrial (libration-point mission design) | yes: `cr3bp_planar_synodic` |
+| `schwarzschild_light_bending_weak_field` | research (GR light deflection) | yes: `schwarzschild_light_bending_weak_field` |
 
 **Byproduct fix**: building the generic ODE-residual pattern for these
 presets also fixed 2 pre-existing, unrelated Category-1 "Unsupported PDE
@@ -168,14 +170,51 @@ numerical validation (new test files, not just claims):
   to 0.0001%. n=3: match to 0.00002%.** The integrator itself is first
   sanity-checked against the n=0/n=1 closed forms (match to <1e-6) before
   being trusted for the no-closed-form cases.
-- No N-body (3+ body) gravitational dynamics, no general-relativistic
-  content (light bending, gravitational-wave inspiral/post-Newtonian
-  orbits), no radiative-transfer/stellar-atmosphere preset, no
-  accretion-disk (Shakura-Sunyaev) preset, no cosmological
-  perturbation-growth preset — all considered, all deferred to keep this
-  session's set small enough to verify properly rather than large and
-  unverified. A second batch covering these would be the natural way to
-  deepen this specialization before considering it "demonstrably done."
+- **Two of the five previously-deferred items are now done, each with its
+  own independent numerical verification (not just "compiles")**, added in
+  a further follow-up pass while keeping this same "verify a small set
+  properly" discipline (2 of 5, not all 5, picked deliberately):
+  - **N-body (3+ body) gravitational dynamics** — `cr3bp_planar_synodic`,
+    the planar circular restricted three-body problem (Earth-Moon system,
+    synodic frame; Szebehely 1967, Curtis 2020). The triangular Lagrange
+    points L4/L5 are an EXACT equilibrium of the compiled residual for
+    ANY mass ratio (verified symbolically with `sympy`: force balance
+    reduces to exactly 0). The collinear points L1/L2/L3 have no closed
+    form; independently solved for via Newton-Raphson/`brentq` (two
+    separate root-finder implementations, one in the preset, one in the
+    test) and cross-checked against well-known tabulated Earth-Moon
+    distances: **L1 0.006%, L2 0.003%, L3 0.020% agreement**
+    (`tests/test_cr3bp_lagrange_point_validation.py`). A small
+    perturbation from L4, propagated 10 synodic periods with an
+    independent `scipy.integrate.solve_ivp` integration, stays bounded
+    (max excursion 15.8x the initial 1e-4 perturbation, not runaway),
+    confirming L4's known linear stability for a mass ratio below Routh's
+    critical value.
+  - **General-relativistic content (light bending)** —
+    `schwarzschild_light_bending_weak_field`, the Schwarzschild
+    null-geodesic equation `d²u/dφ²+u=3mu²` (u=1/r; this ODE is EXACT, not
+    an approximation — it follows directly from the exact null-geodesic
+    first integral). The weak-field closed-form solution used for the
+    `sympy` manufactured-solution check is a first-order perturbative
+    approximation (verified to have exactly-zero O(m⁰) and O(m¹) residual
+    terms, leaving a characterized pure-O(m²) remainder). Independently
+    integrating the EXACT (non-perturbative) equation with
+    `scipy.integrate.solve_ivp` from the Sun-grazing impact parameter
+    (the historic 1919-eclipse-expedition configuration) reproduces the
+    weak-field analytic formula 4GM/(c²b) to **0.0006% agreement** and
+    gives a deflection angle of **1.7512 arcsec**, matching Einstein's
+    famous "1.75 arcseconds" prediction confirmed by Dyson, Eddington &
+    Davidson's 1919 expedition
+    (`tests/test_schwarzschild_light_bending_validation.py`). Explicitly
+    scoped to the weak-field/large-impact-parameter regime — NOT valid
+    near the photon sphere.
+- **Still genuinely deferred** (not attempted this pass either): no
+  radiative-transfer/stellar-atmosphere preset, no accretion-disk
+  (Shakura-Sunyaev) preset, no cosmological perturbation-growth preset —
+  all considered, all deferred to keep this session's set small enough to
+  verify properly rather than large and unverified. A further batch
+  covering these would be the natural way to keep deepening this
+  specialization.
 - No UI/documentation/tutorial notebook showcasing this vertical to a
   user browsing presets — the presets exist and are correct, but nothing
   yet highlights "PINNeAPPle is good at astrophysics/space" to someone

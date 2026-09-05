@@ -1991,6 +1991,60 @@ def compile_problem(
             res_list.append(theta_xi - phi_f)
             res_list.append(phi_xi + theta_pow_n + (2.0 / xi) * phi_f)
 
+        elif pde_kind == "cr3bp_planar_synodic":
+            # Planar circular restricted three-body problem (CR3BP),
+            # synodic (co-rotating) frame -- Szebehely, "Theory of
+            # Orbits" (1967); Curtis, "Orbital Mechanics for Engineering
+            # Students". Primary 1 (mass 1-mu) at (-mu,0), primary 2
+            # (mass mu) at (1-mu,0); effective potential
+            # Omega(x,y) = 0.5*(x^2+y^2) + (1-mu)/r1 + mu/r2:
+            #   x'' - 2y' = dOmega/dx ;  y'' + 2x' = dOmega/dy
+            # State: (x, y) synodic position, (vx, vy) synodic velocity.
+            if not has_t:
+                raise ValueError("cr3bp_planar_synodic expects a time coord 't'.")
+            for nm in ("x", "y", "vx", "vy"):
+                if nm not in fields:
+                    raise ValueError(f"cr3bp_planar_synodic expects field '{nm}'.")
+            mu_cr3bp = float(p.get("mu", 0.012150585609624))
+            x_f, y_f, vx_f, vy_f = fields["x"], fields["y"], fields["vx"], fields["vy"]
+            r1 = torch.sqrt((x_f + mu_cr3bp) ** 2 + y_f * y_f + 1e-14)
+            r2 = torch.sqrt((x_f - 1.0 + mu_cr3bp) ** 2 + y_f * y_f + 1e-14)
+            dOmega_dx = x_f - (1.0 - mu_cr3bp) * (x_f + mu_cr3bp) / r1 ** 3 - mu_cr3bp * (x_f - 1.0 + mu_cr3bp) / r2 ** 3
+            dOmega_dy = y_f - (1.0 - mu_cr3bp) * y_f / r1 ** 3 - mu_cr3bp * y_f / r2 ** 3
+            x_t = time_derivative(x_f, xcol, t_index)  # type: ignore[arg-type]
+            y_t = time_derivative(y_f, xcol, t_index)  # type: ignore[arg-type]
+            vx_t = time_derivative(vx_f, xcol, t_index)  # type: ignore[arg-type]
+            vy_t = time_derivative(vy_f, xcol, t_index)  # type: ignore[arg-type]
+            res_list.append(x_t - vx_f)
+            res_list.append(y_t - vy_f)
+            res_list.append(vx_t - 2.0 * vy_f - dOmega_dx)
+            res_list.append(vy_t + 2.0 * vx_f - dOmega_dy)
+
+        elif pde_kind == "schwarzschild_light_bending_weak_field":
+            # Null-geodesic ("photon orbit") equation in Schwarzschild
+            # spacetime, u := 1/r as a function of the orbital angle phi
+            # (Misner, Thorne & Wheeler, "Gravitation", 1973, Sec. 25.5).
+            # This ODE is EXACT (the direct derivative of the exact first
+            # integral (du/dphi)^2 = 1/b^2 - u^2*(1-2*m*u), m := GM/c^2):
+            #   d^2u/dphi^2 + u = 3 m u^2
+            # first-order system with up := du/dphi:
+            #   du/dphi = up ;  dup/dphi = -u + 3 m u^2
+            # coords[0] ('t') plays the role of phi (same convention as
+            # lane_emden_polytrope's xi). Only the CLOSED-FORM SOLUTION
+            # used for this kind's manufactured-solution check (see
+            # presets/astrophysics.py) is a weak-field (m/b << 1)
+            # perturbative approximation -- this residual itself is exact.
+            if "u" not in fields or "up" not in fields:
+                raise ValueError("schwarzschild_light_bending_weak_field expects fields 'u' and 'up'.")
+            GM = float(p.get("GM", 1.32712440018e20))
+            c_light = float(p.get("c", 2.99792458e8))
+            m_grav = GM / (c_light * c_light)
+            u_f, up_f = fields["u"], fields["up"]
+            u_phi = grad(u_f, xcol)[:, 0:1]
+            up_phi = grad(up_f, xcol)[:, 0:1]
+            res_list.append(u_phi - up_f)
+            res_list.append(up_phi + u_f - 3.0 * m_grav * u_f * u_f)
+
         elif pde_kind == "euler_compressible_1d":
             # Inviscid compressible flow, conservative form, ideal gas
             # (gamma-law), 1D -- e.g. the Sod shock tube (Sod, 1978) and
