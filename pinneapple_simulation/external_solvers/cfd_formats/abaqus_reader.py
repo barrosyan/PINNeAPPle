@@ -170,8 +170,11 @@ def abaqus_inp_to_upd(path: str):
             "version": "0.1", "physics_domain": "structural", "source": "abaqus_inp",
             "case_dir": os.path.abspath(path),
             "element_types": list(mesh["elements"].keys()),
-            "validation": "open text format, parsed directly -- geometry/connectivity only, "
-                           "no result fields (.inp has none; see export_odb_fields for .odb)",
+            "validation": "validated against a real meshio-written .inp deck (open text "
+                           "format) -- node coords + connectivity matched exactly, no bug "
+                           "found; geometry/connectivity only, no result fields (.inp has "
+                           "none; see export_odb_fields for .odb, which still needs a "
+                           "licensed Abaqus install to validate)",
         },
         schema={"units": {}},
     )

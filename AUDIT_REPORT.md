@@ -68,7 +68,72 @@ direct result, confirmed by re-running the full suite).
 any check beyond the instantaneous-residual level. Both are now
 independently validated (see "Follow-up pass" below). The CGNS/Exodus/
 Fluent/Abaqus readers' "not validated against a real writer's file"
-caveat remains open and unrelated to this specialization.
+caveat is now closed for three of the four formats (see
+"Real-writer validation of the CGNS/Exodus/Fluent/Abaqus readers" below);
+unrelated to this specialization either way.
+
+### Real-writer validation of the CGNS/Exodus/Fluent/Abaqus readers
+
+Follow-up to the caveat above: each reader was run against a file from an
+independent, real writer (a different program than the one being tested),
+not just the self-consistent synthetic files used originally. Full
+provenance for every fixture is in `tests/fixtures/cfd_formats/README.md`;
+tests are `tests/test_cfd_format_readers.py` (5/5 pass).
+
+- **CGNS: validated for real.** `h5py` was already available, but there is
+  no real CGNS-writing tool installable in this sandbox via `pip` (`pycgns`
+  needs a C build toolchain this environment doesn't have --
+  `ninja`/`hdf5`-dev via `pkg-config` weren't resolvable through pip's
+  build isolation). `brew install cgns` *did* work, though (bottled, no
+  compilation needed) -- it installs the real CGNS 4.5.2 reference
+  library/headers **and** the CGNS project's own CLI tools (`cgnscheck`,
+  `cgnslist`, ...). A small C program was written against the real CGNS
+  Mid-Level Library API (`cg_open`/`cg_zone_write`/`cg_field_write`/...) to
+  produce a file, which `cgnscheck` (the CGNS project's own reference
+  validator) confirmed was spec-valid (0 errors, only benign warnings)
+  before `cgns_reader.py` was pointed at it. **Result: read correctly on
+  the first attempt** -- coordinates and both vertex fields
+  (`Temperature`, `Pressure`) matched their known-exact values exactly. No
+  reader bug found. Note in passing: meshio's own built-in `.cgns` writer
+  was tried first and rejected as invalid evidence -- it omits the
+  CGNS-mandated `label`/`type` HDF5 attributes entirely (its own source has
+  a literal `# TODO something is missing here`), so it does not produce a
+  spec-compliant CGNS file; see the README for the full finding.
+- **Exodus II: validated for real, one real bug found and fixed.**
+  `meshio` (already a dependency elsewhere in this repo) writes genuine
+  Exodus via the real `netCDF4` package. Its default output is
+  NetCDF-4/HDF5-based; forcing `netCDF4.Dataset(..., format="NETCDF3_CLASSIC")`
+  produced the classic-NetCDF variant `exodus_reader.py` targets. **Read
+  correctly** (coordinates + both fields matched exactly) once written.
+  The real bug: pointing the reader at the *other* real, valid Exodus file
+  meshio produces (NetCDF-4/HDF5-based, no format override) raised a raw,
+  confusing `scipy` `TypeError` ("not a valid NetCDF 3 file") instead of
+  the clear, documented-as-intentional failure the module's own docstring
+  promised ("out of scope... raise on that failure rather than silently
+  returning nothing"). Fixed: `read_exodus` now detects the HDF5 magic
+  header and the classic-format-only `TypeError` and raises a
+  `NotImplementedError` naming the actual problem and the `netCDF4`/
+  `h5netcdf` fallback, instead of letting scipy's internal message leak
+  through unexplained.
+- **Fluent/Gambit mesh: validated for real.** `meshio`'s `ansys` writer
+  targets the same TGrid `.msh` format `fluent_mesh_reader.py` implements
+  (both cite the same TGrid user-guide appendix); written in ASCII mode
+  (`binary=False`) since that's the only encoding the reader supports.
+  **Read correctly**, node coordinates matched exactly. No reader bug
+  found.
+- **Abaqus: partially validated, and the `.odb` half plainly is not
+  possible here.** The `.inp` mesh-reading half
+  (`read_abaqus_inp_mesh`) was validated against a real `meshio`-written
+  `.inp` deck (`*NODE`/`*ELEMENT, TYPE=C3D4`) -- read correctly, node
+  coordinates and connectivity matched exactly, no bug found. The `.odb`
+  results bridge (`export_odb_fields`, which shells out to a real Abaqus's
+  own `abaqus python` interpreter) genuinely cannot be exercised here:
+  `which abaqus` and a filesystem search both confirm no Abaqus
+  installation exists on this machine (expensive licensed commercial FEA
+  software, as expected) -- and faking an `.odb` file by hand would defeat
+  the entire point of validating against a real writer, so no attempt was
+  made. This half of the caveat remains genuinely open and needs a machine
+  with a licensed Abaqus install to close.
 
 ### Follow-up pass: end-to-end training + independent numerical validation
 
@@ -408,6 +473,21 @@ solution simultaneously.
 `test_manufactured_solutions.py`: 22/22 passing (4 new, for
 `shallow_water_2d` and `stommel_gyre_2d`; `opinion_dynamics_2d` has no
 MMS test, per the gap noted above).
+
+**Sixth batch**: `axisymmetric_linear_elasticity_torsion`
+(`threaded_coupling_tc50_rotating`) — an axisymmetric threaded-coupling
+problem where the meridional displacements (`u_r`, `u_z`) are IDENTICAL
+physics to the existing `axisymmetric_linear_elasticity` kind, but the
+preset also needs a torsional displacement `u_θ`, which decouples from
+the meridional problem in linear elasticity (a standard result, and the
+preset's own docstring/meta already state the exact torsional Navier
+equation to use). Implemented as its own kind combining both. Verified
+with `sympy` against `u_θ = B/r` (the axisymmetric analog of a 2D
+irrotational-vortex 1/r falloff, genuinely curved unlike the also-valid
+but trivial rigid-rotation solution `u_θ = A*r`).
+
+**Net result of this sixth batch**: Tier A failures **33/137 → 32/137**.
+`test_manufactured_solutions.py`: 24/24 passing.
 
 ## Category 2 — not a defect: generic smoke test doesn't fit the architecture's real input shape
 
