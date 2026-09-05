@@ -17,6 +17,8 @@ the real one).
 """
 from __future__ import annotations
 
+import math
+
 import pytest
 import torch
 import torch.nn as nn
@@ -201,3 +203,81 @@ def test_audit_physics_elasticity_2d_wrong_solution_gives_nonzero_residual(kind)
     out = loss_fn(wrong, None, batch)
     res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
     assert float(res.item()) > 1.0, f"{kind} residual should be clearly nonzero for the wrong solution, got {float(res.item())}"
+
+
+def test_audit_physics_reaction_diffusion_2d_exact_solution_gives_zero_residual():
+    """C(x,y,t) = exp(-(2D+lambda)*t) * sin(x) * sin(y) satisfies
+    dC/dt = D*laplacian(C) - lambda*C exactly for any D, lambda --
+    verified with `sympy` before use here."""
+    spec = _probe_spec("reaction_diffusion_2d", ("x", "y", "t"), {"D": 0.5, "lambda": 0.3})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("C",), pde=_replace(spec.pde, fields=("C",)))
+    loss_fn = compile_problem(spec)
+    D, lam = 0.5, 0.3
+    alpha = -(2 * D + lam)
+    exact = _ExactFn(lambda X: torch.exp(alpha * X[:, 2:3]) * torch.sin(X[:, 0:1]) * torch.sin(X[:, 1:2]))
+    x = torch.rand(256, 3, requires_grad=True)
+    batch = _empty_batch(x, n_coords=3, n_fields=1)
+    out = loss_fn(exact, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-8, f"reaction_diffusion_2d residual should be ~0, got {float(res.item())}"
+
+
+def test_audit_physics_reaction_diffusion_2d_wrong_solution_gives_nonzero_residual():
+    spec = _probe_spec("reaction_diffusion_2d", ("x", "y", "t"), {"D": 0.5, "lambda": 0.3})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("C",), pde=_replace(spec.pde, fields=("C",)))
+    loss_fn = compile_problem(spec)
+    wrong = _ExactFn(lambda X: torch.exp(-0.1 * X[:, 2:3]) * torch.sin(X[:, 0:1]) * torch.sin(X[:, 1:2]))
+    x = torch.rand(256, 3, requires_grad=True)
+    batch = _empty_batch(x, n_coords=3, n_fields=1)
+    out = loss_fn(wrong, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1e-4, f"reaction_diffusion_2d residual should be nonzero for the wrong decay rate, got {float(res.item())}"
+
+
+def _bs_call_price(S, tau, K, r, sigma):
+    """Standard Black-Scholes European call formula, in torch, differentiable."""
+    def N(z):
+        return 0.5 * (1.0 + torch.erf(z / math.sqrt(2.0)))
+    d1 = (torch.log(S / K) + (r + 0.5 * sigma * sigma) * tau) / (sigma * torch.sqrt(tau))
+    d2 = d1 - sigma * torch.sqrt(tau)
+    return S * N(d1) - K * torch.exp(-r * tau) * N(d2)
+
+
+def test_audit_physics_black_scholes_1d_exact_solution_gives_zero_residual():
+    """The real Black-Scholes closed-form European call price -- verified
+    with `sympy` this session (substituted into the PDE, confirmed exact
+    zero residual) before being used here."""
+    K, r, sigma = 100.0, 0.05, 0.2
+    spec = _probe_spec("black_scholes_1d", ("S", "tau"), {"sigma": sigma, "r": r})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("V",), pde=_replace(spec.pde, fields=("V",)))
+    loss_fn = compile_problem(spec)
+    exact = _ExactFn(lambda X: _bs_call_price(X[:, 0:1], X[:, 1:2], K, r, sigma))
+    # S in a realistic range away from 0 (log(S) singularity) and tau > 0
+    S = torch.rand(256, 1) * 150.0 + 20.0
+    tau = torch.rand(256, 1) * 0.9 + 0.05
+    x = torch.cat([S, tau], dim=1).requires_grad_(True)
+    batch = _empty_batch(x, n_coords=2, n_fields=1)
+    out = loss_fn(exact, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-6, f"black_scholes_1d residual should be ~0 for the exact BS price, got {float(res.item())}"
+
+
+def test_audit_physics_black_scholes_1d_wrong_solution_gives_nonzero_residual():
+    K, r, sigma = 100.0, 0.05, 0.2
+    spec = _probe_spec("black_scholes_1d", ("S", "tau"), {"sigma": sigma, "r": r})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("V",), pde=_replace(spec.pde, fields=("V",)))
+    loss_fn = compile_problem(spec)
+    # Same formula but with the wrong volatility plugged in -- must NOT
+    # solve the PDE built for the true sigma.
+    exact_wrong_sigma = _ExactFn(lambda X: _bs_call_price(X[:, 0:1], X[:, 1:2], K, r, 0.5))
+    S = torch.rand(256, 1) * 150.0 + 20.0
+    tau = torch.rand(256, 1) * 0.9 + 0.05
+    x = torch.cat([S, tau], dim=1).requires_grad_(True)
+    batch = _empty_batch(x, n_coords=2, n_fields=1)
+    out = loss_fn(exact_wrong_sigma, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1e-4, f"black_scholes_1d residual should be nonzero for the wrong-sigma price, got {float(res.item())}"

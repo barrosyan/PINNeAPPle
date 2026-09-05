@@ -916,6 +916,91 @@ def compile_problem(
             res_list.append(ut - Du * lap_u + u_f * v_f * v_f - F_feed * (1.0 - u_f))
             res_list.append(vt - Dv * lap_v - u_f * v_f * v_f + (F_feed + k_kill) * v_f)
 
+        elif pde_kind == "reaction_diffusion_2d":
+            # Single-species linear reaction-diffusion (drug/tracer
+            # diffusion with first-order elimination):
+            #   dC/dt = D*laplacian(C) - lambda*C
+            # Distinct from "reaction_diffusion" above (two-species
+            # nonlinear Gray-Scott kinetics, fields u/v) -- same coord/time
+            # machinery, different, much simpler physics; the two kinds
+            # were previously confused as one gap because their names are
+            # similar, but they are genuinely different equations.
+            if not has_t:
+                raise ValueError("reaction_diffusion_2d expects a time coord 't'.")
+            if len(field_names) != 1:
+                raise ValueError("reaction_diffusion_2d expects 1 scalar field (C).")
+            C = fields[field_names[0]]
+            D_diff = float(p.get("D", 1e-10))
+            lam_decay = float(p.get("lambda", 0.0))
+            Ct = time_derivative(C, xcol, t_index)  # type: ignore[arg-type]
+            lap_C = laplacian(C, xcol, spatial_indices)
+            res_list.append(Ct - D_diff * lap_C + lam_decay * C)
+
+        elif pde_kind == "black_scholes_1d":
+            # Black-Scholes PDE for European option pricing (Black &
+            # Scholes, 1973), in the preset's own forward-time convention
+            # tau = T - t (coords are literally named 'S', 'tau', not
+            # 't', so this branch does not use has_t/t_index -- same
+            # pattern as lane_emden_polytrope's 'xi'):
+            #   dV/dtau = 0.5*sigma^2*S^2*d2V/dS2 + r*S*dV/dS - r*V
+            if "S" not in coords or "tau" not in coords:
+                raise ValueError("black_scholes_1d expects coords 'S' and 'tau'.")
+            if len(field_names) != 1:
+                raise ValueError("black_scholes_1d expects 1 scalar field (V).")
+            V = fields[field_names[0]]
+            sigma = float(p.get("sigma", 0.2))
+            r = float(p.get("r", 0.05))
+            S_idx = _coord_index(coords, "S")
+            tau_idx = _coord_index(coords, "tau")
+            S_val = xcol[:, S_idx:S_idx + 1]
+            gV = grad(V, xcol)
+            dV_dtau = gV[:, tau_idx:tau_idx + 1]
+            dV_dS = gV[:, S_idx:S_idx + 1]
+            d2V_dS2 = laplacian(V, xcol, [S_idx])
+            res_list.append(dV_dtau - 0.5 * sigma * sigma * S_val * S_val * d2V_dS2 - r * S_val * dV_dS + r * V)
+
+        elif pde_kind == "heston_pde_2d":
+            # Heston (1993) stochastic volatility option-pricing PDE, same
+            # forward-time tau=T-t convention as black_scholes_1d, plus a
+            # mixed second derivative d2V/dS/dv from the correlated
+            # Brownian motions:
+            #   dV/dtau = 0.5*S^2*v*d2V/dS2 + rho*sigma_v*S*v*d2V/dSdv
+            #           + 0.5*sigma_v^2*v*d2V/dv2 + r*S*dV/dS
+            #           + kappa*(theta-v)*dV/dv - r*V
+            if not all(c in coords for c in ("S", "v", "tau")):
+                raise ValueError("heston_pde_2d expects coords 'S', 'v', 'tau'.")
+            if len(field_names) != 1:
+                raise ValueError("heston_pde_2d expects 1 scalar field (V).")
+            V = fields[field_names[0]]
+            kappa = float(p.get("kappa", 2.0))
+            theta = float(p.get("theta", 0.04))
+            sigma_v = float(p.get("sigma_v", 0.3))
+            rho = float(p.get("rho", -0.7))
+            r = float(p.get("r", 0.05))
+            S_idx = _coord_index(coords, "S")
+            v_idx = _coord_index(coords, "v")
+            tau_idx = _coord_index(coords, "tau")
+            S_val = xcol[:, S_idx:S_idx + 1]
+            v_val = xcol[:, v_idx:v_idx + 1]
+
+            gV = grad(V, xcol)
+            dV_dtau = gV[:, tau_idx:tau_idx + 1]
+            dV_dS = gV[:, S_idx:S_idx + 1]
+            dV_dv = gV[:, v_idx:v_idx + 1]
+            d2V_dS2 = laplacian(V, xcol, [S_idx])
+            d2V_dv2 = laplacian(V, xcol, [v_idx])
+            d2V_dSdv = grad(dV_dS, xcol)[:, v_idx:v_idx + 1]
+
+            res_list.append(
+                dV_dtau
+                - 0.5 * S_val * S_val * v_val * d2V_dS2
+                - rho * sigma_v * S_val * v_val * d2V_dSdv
+                - 0.5 * sigma_v * sigma_v * v_val * d2V_dv2
+                - r * S_val * dV_dS
+                - kappa * (theta - v_val) * dV_dv
+                + r * V
+            )
+
         elif pde_kind == "euler_bernoulli_beam_von_karman":
             # Geometrically nonlinear (Von Karman) beam-column: axial and
             # transverse displacement fields coupled through the Von Karman
