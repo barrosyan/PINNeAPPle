@@ -719,35 +719,39 @@ variants) — every one of those confidence levels stated explicitly in
 this report and in the code itself, not overclaimed.
 
 No Category 1 gaps remain from the original list this audit identified.
-The broader Tier A number (24/137) still includes Category 2 (shape-
-mismatch false positives) and Category 3 (missing optional dependencies)
-entries documented earlier in this report, which were never claimed to
-be real defects.
+The broader Tier A number (24/137) still included Category 2
+(shape-mismatch and calling-convention false positives) and Category 3
+(missing optional dependencies) entries.
 
-**~20 of the 62 failures.** `ModelRegistry.list()` includes time-series
-models (`arima`, `esn`, `esn_rc`, `koopman`, `dmd`, `pod`, `havok`,
-`ode_rnn`, `neural_cde`, `hybrid_rbf`, ...) and sequence/image
-architectures (`transformer`, `afno`, `conv2d`, `conv3d`, `gno`, ...) that
-are not meant to take a flat `(N, coord_dim)` PINN collocation batch —
-they expect `(B, T, features)` sequences or `(B, C, H, W, ...)` grids.
-Feeding them this test's generic `(8, 4)` point-cloud tensor raises a
-shape error, which is the test's input assumption not fitting them, not
-evidence they are broken. The test explicitly `skip`s (not fails) on a
-shape-flavoured error to make this distinction, and it still shows a
-handful as `FAILED` rather than `SKIPPED` where the error message didn't
-match the skip heuristic's keyword list — those specific names are
-listed in the raw pytest output but were not further hand-verified this
-session; treat them as "probably Category 2, not independently confirmed"
-rather than assume they're Category 1.
+## Finalized: every remaining Tier A failure individually confirmed and closed
 
-## Category 3 — not a defect: missing optional dependency
+The earlier version of this section estimated "~20" Category 2 failures
+and left a "handful" unverified with a caveat to "treat them as probably
+Category 2, not independently confirmed." That caveat is now resolved:
+every one of the 24 remaining Tier A failures was individually run,
+its exact error message read, and its architecture's source code
+checked where the reason wasn't obvious from the error alone (`elm`
+specifically — see below). None turned out to be Category 1 (a real,
+previously-hidden defect); all 24 fall into one of four precise,
+verified reasons:
 
-The `noether_*` architecture family (`noether_abupt`,
-`noether_aero_abupt`, `noether_aero_transformer`,
-`noether_aero_transolver`, `noether_aero_upt`, `noether_transformer`,
-`noether_transolver`, `noether_upt`) requires the `emmiai-noether`
-package, not installed in this session's test environment. Genuinely not
-a defect — expected behaviour without that optional dependency.
+| Reason | Architectures | Evidence |
+|---|---|---|
+| Missing optional dependency (`emmiai-noether` not installed) | `noether_abupt`, `noether_aero_abupt`, `noether_aero_transformer`, `noether_aero_transolver`, `noether_aero_upt`, `noether_transformer`, `noether_transolver`, `noether_upt` (8) | `ModuleNotFoundError: No module named 'noether'`, raised at forward() time, not build time — the test's skip check for this only covered the build step before this fix, so these were genuinely showing as `FAILED` until now, not already-handled as the original report implied |
+| Sequence/image/minimum-length input shape, not a flat `(N,4)` point cloud | `afno`, `arima`, `conv2d`, `conv3d`, `esn`, `esn_rc`, `koopman`, `transformer`, `havok` (9) | Shape assertions (`conv2d`/`conv3d`: "Expected 4D... input of size: [8,4]"), tuple-unpacking errors from code expecting `(B,T,F) = x.shape` (`arima`/`esn`/`esn_rc`/`koopman`/`transformer`), or a minimum-sequence-length requirement exceeding the test's tiny batch (`havok`: "Need T>=delays. Got T=8, delays=50") |
+| Requires extra arguments beyond `forward(x)` (a different, legitimate calling convention, not a bug) | `gno`, `neural_cde`, `ode_rnn` (3) | `TypeError`s naming a genuinely missing argument: `GalerkinNeuralOperator.forward() missing 1 required keyword-only argument: 'coords'`; `NeuralCDE`/`ODERNN.forward() missing 1 required positional argument: 't'` — these architecture families need explicit coordinates/time points by design |
+| Closed-form/fit-based model, not gradient-trained (must call `.fit()` on real data first) | `dmd`, `pod`, `hybrid_rbf`, `elm` (4) | `dmd`/`pod`/`hybrid_rbf` raise directly ("DMD not fitted", "POD not fitted", "HybridRBFNetwork.forward() called before fit()"); `elm` is subtler — its forward pass succeeds, but reading `pinneapple_neural/architectures/reservoir_computing/elm.py` shows `self.W_out = nn.Parameter(torch.zeros(...), requires_grad=False)` with the comment `# trained by closed form` and a real `.fit()` method doing ridge regression — genuinely zero trainable parameters until `.fit()` is called, the correct textbook Extreme Learning Machine design, not a bug |
+
+**`tests/test_full_library_matrix.py` was updated to recognize all four
+reasons precisely** (previously it only recognized the "sequence/image
+shape" and "missing dependency at build time" cases) — each of the 24
+now gets a specific, honest skip message naming which of the four
+reasons applies and why, instead of either an unexplained `FAILED` or a
+generic catch-all skip. Confirmed by re-running the full Tier A suite:
+**71 passed, 75 skipped, 0 failed** out of 146 total (137 at the start
+of this session's audit — the registry has grown since, mainly the 7
+new astrophysics presets — with 62 originally-unexplained failures at
+that time).
 
 ## Tier B (physics correctness) — passed
 
