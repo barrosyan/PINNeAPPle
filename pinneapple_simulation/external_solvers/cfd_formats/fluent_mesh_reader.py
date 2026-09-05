@@ -3,8 +3,17 @@ only.
 
 Validation status
 ------------------
-**Not validated against a real Fluent .msh file** -- see the same caveat
-in ``cgns_reader.py``'s module docstring.
+**Validated against a real ASCII Fluent/TGrid ``.msh`` file.** Written by
+``meshio`` 5.3.5's ``ansys`` writer (``binary=False``) -- meshio's own
+module docstring for that writer cites the same TGrid user-guide appendix
+this reader implements section 10 (node coordinates) from. Read
+correctly: node coordinates matched their known-exact values exactly, no
+bug found. See ``tests/fixtures/cfd_formats/README.md`` and
+``tests/test_cfd_format_readers.py`` for the fixture and test. This only
+exercises section 10 -- cells/faces/zones/BCs remain unimplemented (see
+"Scope, deliberately narrow" below) and the binary encoding remains
+untested (this reader raises `NotImplementedError` on it by design, not
+tested against a real binary file).
 
 Scope, deliberately narrow
 ---------------------------
@@ -144,8 +153,9 @@ def fluent_mesh_to_upd(path: str):
         provenance={
             "version": "0.1", "physics_domain": "cfd", "source": "fluent_msh",
             "case_dir": os.path.abspath(path),
-            "validation": "unverified against a real Fluent file; geometry (nodes) only, "
-                           "no cells/faces/zones/fields -- see module docstring",
+            "validation": "validated against a real ASCII Fluent/TGrid .msh file (real "
+                           "meshio ansys writer) -- geometry (nodes) only, no cells/faces/"
+                           "zones/fields -- see module docstring",
         },
         schema={"units": {}},
     )

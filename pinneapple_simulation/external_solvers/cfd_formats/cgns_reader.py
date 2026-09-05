@@ -2,22 +2,25 @@
 
 Validation status
 ------------------
-**Not validated against a real CGNS file** -- unlike this repository's
-OpenFOAM binary reader (``openfoam/binary_reader.py``,
-``openfoam/mesh_reader.py``), which was checked byte-for-byte against a
-real 244 MB LES case (cell centers, cell counts and a y+ value all matched
-the case's own published documentation to 3+ significant figures), no CGNS
-file was available to validate this module against. It implements the
-documented CGNS/HDF5 mapping (SIDS-to-HDF5, as used by modern CGNS ≥ 3.x
-built with the HDF5 backend -- the default for essentially every CGNS
-writer in general use: CFD General Notation System committee spec,
-`https://cgns.github.io/CGNS_docs_current/hdf5/index.html`) as precisely
-as that specification allows without a reference file, but treat it as
-**unverified** until exercised against real output from a real CGNS
-writer (Pointwise, ANSYS Fluent's CGNS export, SU2, CGNS's own reference
-`cgns_utils`, ...) and adjusted for whatever real-world deviation surfaces.
-Please open an issue with a (even small/synthetic) reproducer file if this
-misparses something.
+**Validated against a real CGNS file.** A small file was written by a C
+program linked directly against the real, official CGNS Mid-Level Library
+(``libcgns`` 4.5.2, via ``brew install cgns``) calling its public API
+(``cg_open``/``cg_zone_write``/``cg_field_write``/...) -- not any code
+from this repository -- and was independently confirmed spec-valid by the
+CGNS project's own reference validator (``cgnscheck``, 0 errors) before
+this module was pointed at it. It read the file correctly on the first
+attempt: node coordinates and two vertex fields matched their known-exact
+values exactly, no bug found. See
+``tests/fixtures/cfd_formats/README.md`` and
+``tests/test_cfd_format_readers.py`` for the fixture, exact commands used
+to produce it, and the reproducible test.
+
+This covers a single unstructured zone, ``Vertex``-location
+``FlowSolution_t`` fields, and ``TETRA_4`` elements -- **not** covered:
+multi-zone bases, ``CellCenter`` solutions, structured zones, or other
+element types; treat those as still unverified against this exact reader.
+Please open an issue with a reproducer file if one of those (or anything
+else) misparses.
 
 Format background
 ------------------
@@ -173,7 +176,10 @@ def cgns_to_upd(path: str, *, fields: Optional[Sequence[str]] = None, zone_index
         provenance={
             "version": "0.1", "physics_domain": "cfd", "source": "cgns",
             "case_dir": os.path.abspath(path),
-            "validation": "unverified against a real CGNS file -- see module docstring",
+            "validation": "validated against a real CGNS file (real CGNS Mid-Level Library "
+                           "writer, cgnscheck-passed) for a single unstructured zone/Vertex "
+                           "FlowSolution_t/TETRA_4 -- see module docstring for what is and "
+                           "isn't covered",
         },
         schema={"units": {}},
     )

@@ -2,11 +2,24 @@
 
 Validation status
 ------------------
-**Not validated against a real Exodus file** -- see the same caveat in
-``cgns_reader.py``'s module docstring; treat this as implementing the
-documented Exodus II variable-naming convention as precisely as possible
-without a reference file, not as verified-correct. Please open an issue
-with a reproducer file if it misparses something.
+**Validated against a real classic-NetCDF Exodus file.** Written by
+``meshio`` 5.3.5's real Exodus writer (itself using the real ``netCDF4``
+package to do the actual encoding), forced to classic NetCDF-3 -- read
+correctly, node coordinates and two vertex fields matched their
+known-exact values exactly. See ``tests/fixtures/cfd_formats/README.md``
+and ``tests/test_cfd_format_readers.py`` for the fixture and test.
+
+This process also surfaced a real bug: pointing this reader at the
+*other* real, valid Exodus file the same writer produces by default
+(NetCDF-4/HDF5-based, no format override -- also genuine Exodus, many
+modern solvers default to it for large meshes) raised a confusing raw
+``scipy`` ``TypeError`` instead of a clear, actionable error. Fixed --
+this now raises ``NotImplementedError`` naming the actual problem (HDF5
+container, not classic NetCDF) and the ``netCDF4``/``h5netcdf`` fallback,
+still true to the "raise on that failure rather than silently returning
+nothing" contract below, just with a message that says why. Element
+connectivity is still not read (see "Variables read" below); that part
+remains unverified.
 
 Format background
 ------------------
@@ -71,7 +84,27 @@ def read_exodus(path: str, *, fields: Optional[Sequence[str]] = None, time_index
     if not os.path.exists(path):
         raise FileNotFoundError(path)
 
-    with netcdf_file(path, mmap=False) as nc:
+    with open(path, "rb") as _fh:
+        _head = _fh.read(8)
+    if _head[:8] == b"\x89HDF\r\n\x1a\n":
+        raise NotImplementedError(
+            f"{path}: this is an HDF5-based (NetCDF-4) Exodus file -- "
+            "scipy.io.netcdf_file only reads the classic NetCDF format (see this module's "
+            "docstring). Re-export from a classic-format writer, or read it with `netCDF4` "
+            "(`netCDF4.Dataset(path)`) / `h5netcdf` instead; this reader does not support that "
+            "variant yet."
+        )
+
+    try:
+        _nc_ctx = netcdf_file(path, mmap=False)
+    except TypeError as e:
+        raise NotImplementedError(
+            f"{path}: does not look like a classic-NetCDF (Exodus II) file that "
+            f"scipy.io.netcdf_file can read ({e}). If this is a 64-bit-offset or NetCDF-4 "
+            "variant, see this module's docstring for the netCDF4/h5netcdf fallback."
+        ) from e
+
+    with _nc_ctx as nc:
         variables = nc.variables
         if "coord" in variables:
             coord = np.array(variables["coord"][:])  # (num_dim, num_nodes) in Exodus's own layout
@@ -135,7 +168,9 @@ def exodus_to_upd(path: str, *, fields: Optional[Sequence[str]] = None, time_ind
         provenance={
             "version": "0.1", "physics_domain": "cfd", "source": "exodus",
             "case_dir": os.path.abspath(path),
-            "validation": "unverified against a real Exodus file -- see module docstring",
+            "validation": "validated against a real classic-NetCDF Exodus file (real meshio+"
+                           "netCDF4 writer) -- see module docstring; element connectivity "
+                           "not read, still unverified",
         },
         schema={"units": {}},
     )
