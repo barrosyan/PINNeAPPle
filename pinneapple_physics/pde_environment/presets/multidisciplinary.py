@@ -285,7 +285,11 @@ def crystal_phonon(
         kind="phonon_bte_1d_gray",
         fields=fields,
         coords=coords,
-        params={"k": k, "tau": tau, "vg": vg, "Kn": Kn},
+        # T_eq matches this preset's own initial condition (see ic_T
+        # below) -- the local-equilibrium relaxation target the gray BTE
+        # residual (compile.py) needs but this params dict previously
+        # didn't expose.
+        params={"k": k, "tau": tau, "vg": vg, "Kn": Kn, "T_eq": 0.5 * (T_hot + T_cold)},
         meta={
             "note": (
                 "Gray-medium phonon BTE (Callaway model). "

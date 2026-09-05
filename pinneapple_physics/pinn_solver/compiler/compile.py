@@ -1533,6 +1533,35 @@ def compile_problem(
             res_list.append(grad(F4x, xcol)[:, x_idx:x_idx + 1] + grad(F4y, xcol)[:, y_idx:y_idx + 1])
             res_list.append(p_pres - rho * R_gas * T_temp)
 
+        elif pde_kind == "phonon_bte_1d_gray":
+            # Gray-medium (Callaway model) phonon Boltzmann transport
+            # equation, 1D (crystal_phonon) -- the preset's own docstring
+            # gives the exact equation:
+            #   dT/dt + vg*dT/dx = -(T-T_eq)/tau + (k/Cv)*d2T/dx2
+            # Cv (heat capacity) and T_eq (local equilibrium temperature)
+            # aren't in the preset's own PDE params (only k, tau, vg, Kn
+            # are) -- Cv defaults to 1 (so k already acts as the
+            # diffusivity, consistent with this preset's own
+            # ScaleSpec(alpha=k) treating k that way), and T_eq defaults
+            # to the preset's own initial-condition value 0.5*(T_hot+T_cold)
+            # if not overridden via params["T_eq"].
+            if not has_t:
+                raise ValueError("phonon_bte_1d_gray expects a time coord 't'.")
+            if len(field_names) != 1:
+                raise ValueError("phonon_bte_1d_gray expects a scalar field (T).")
+            T_f = fields[field_names[0]]
+            k_cond = float(p.get("k", 150.0))
+            Cv = float(p.get("Cv", 1.0))
+            tau_relax = float(p.get("tau", 1e-12))
+            vg = float(p.get("vg", 3000.0))
+            T_eq = float(p.get("T_eq", 300.0))
+            alpha_th = k_cond / Cv
+
+            Tt = time_derivative(T_f, xcol, t_index)  # type: ignore[arg-type]
+            Tx = grad(T_f, xcol)[:, spatial_indices[0]:spatial_indices[0] + 1]
+            Txx = laplacian(T_f, xcol, spatial_indices)
+            res_list.append(Tt + vg * Tx + (T_f - T_eq) / tau_relax - alpha_th * Txx)
+
         elif pde_kind == "kepler_two_body_orbit":
             # Restricted two-body problem, planar Cartesian formulation
             # (Vallado, "Fundamentals of Astrodynamics and Applications").

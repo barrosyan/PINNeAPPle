@@ -543,27 +543,64 @@ turbomachinery preset's own documented equations doing most of the work:
 `compressor_meanline_1d`; `compressible_euler_2d` intentionally has none,
 per the honesty note above).
 
-**Remaining Category 1 gaps** (5 presets): `axial_compressor_stage_3d`,
-`bekker_wong_surrogate_2d`, `crystal_phonon`, `material_fracture_2d`,
-`rocket_nozzle_cfd`. Explicitly not attempted this session, with
-reasons: `bekker_wong_terramechanics` isn't a differential-equation
-residual at all — its own meta describes INEQUALITY/monotonicity
-constraints (`Fx <= c*A + Fz*tan(phi)`, `dFx/ds >= 0`) on a
-semi-empirical terramechanics surrogate, which would need a genuinely
-new penalty-based residual paradigm (not another equality-residual
+**Ninth batch**: `phonon_bte_1d_gray` (`crystal_phonon`) — the preset's
+own docstring gives the exact gray-medium (Callaway model) phonon
+Boltzmann transport equation, a genuinely tractable linear PDE
+(advection + relaxation + diffusion). Two parameters the equation needs
+(`Cv`, `T_eq`) weren't in the preset's own PDE params — `Cv` defaults to
+1 (consistent with the preset's own `ScaleSpec(alpha=k)`, which already
+treats `k` as if it were the diffusivity directly), and `T_eq` was
+**added to the preset itself** (a small, well-justified fix, not a
+compiler-side guess) to match the preset's own initial-condition value
+`0.5*(T_hot+T_cold)`, which it was already using without exposing to the
+PDE params. Verified with a genuine, nontrivial closed-form solution
+derived (not recalled) this session: a decaying traveling wave
+`T = T_eq + A*exp(-t/tau_d)*sin(k_wave*x - omega_r*t)` solves the
+equation exactly when `omega_r = k_wave*vg` (propagates at the group
+velocity) and `tau_d = tau/(1+alpha*k_wave^2*tau)` (a wavenumber-
+dependent decay time) — both relations solved for and confirmed with
+`sympy`.
+
+**Real numerical-conditioning finding surfaced while building this
+test**: at `crystal_phonon`'s own literal SI-unit default parameters
+(`vg~3000 m/s`, `tau~1e-12 s`), the wavenumber/decay-time relation spans
+10+ orders of magnitude, and the compiled residual (like any autograd
+second-derivative PDE) loses enough float32 precision purely from that
+scale disparity that a naive test at those exact defaults gave a
+misleadingly large "residual" for the EXACT solution (~7e13) that looked
+like a bug at first. Switching to float64 confirmed it wasn't: residual
+~3e-4 against terms of order ~1e16 (relatively ~1e-20, clean). This is a
+real, practical finding for anyone training this preset at its literal
+default values (expect to need nondimensionalization or float64), not a
+defect in the new code — documented in the test itself so it isn't
+mistaken for one later.
+
+**Net result of this ninth batch**: Tier A failures **29/137 → 28/137**.
+`test_manufactured_solutions.py`: 30/30 passing.
+
+**Remaining Category 1 gaps** (4 presets): `axial_compressor_stage_3d`,
+`bekker_wong_surrogate_2d`, `material_fracture_2d`, `rocket_nozzle_cfd`.
+Explicitly not attempted this session, with reasons:
+`bekker_wong_terramechanics` isn't a differential-equation residual at
+all — its own meta describes INEQUALITY/monotonicity constraints
+(`Fx <= c*A + Fz*tan(phi)`, `dFx/ds >= 0`) on a semi-empirical
+terramechanics surrogate, which would need a genuinely new
+penalty-based residual paradigm (not another equality-residual
 `pde_kind`) to implement properly, plus the real Bekker pressure-sinkage
 and Janosi-Hanamoto shear-stress formulas integrated over a contact
-patch. `axial_compressor_stage_3d` needs compressible Euler in
-CYLINDRICAL coordinates in a ROTATING frame simultaneously (metric terms
-for the cylindrical divergence PLUS Coriolis/centrifugal terms PLUS the
-compressible energy equation, at once) — a meaningfully higher error-risk
-combination than the 2D Cartesian cascade case just done, not attempted
-without more dedicated derivation time. `crystal_phonon` (phonon
-Boltzmann transport), `material_fracture_2d` (phase-field/Cahn-Hilliard
-coupled to elasticity), and `rocket_nozzle_cfd` (axisymmetric
-compressible Euler, the same cylindrical-metric risk as the compressor
-stage) are each genuine, nontrivial physics-derivation tasks in
-specialized domains — flagged honestly as open rather than rushed.
+patch. `axial_compressor_stage_3d` and `rocket_nozzle_cfd` both need
+compressible Euler in CYLINDRICAL coordinates (the latter axisymmetric,
+the former additionally in a ROTATING frame) — metric terms for the
+cylindrical divergence, on top of Coriolis/centrifugal terms for the
+compressor stage, on top of the compressible energy equation, all at
+once — a meaningfully higher error-risk combination than the 2D
+Cartesian cascade case already done, not attempted without more
+dedicated derivation time. `material_fracture_2d` (phase-field/
+Cahn-Hilliard coupled to elasticity, with a crack-driving-force history
+variable that doesn't fit this compiler's stateless-residual design
+without a documented simplifying assumption) is a genuine, nontrivial
+physics-derivation task in a specialized domain — flagged honestly as
+open rather than rushed.
 
 **~20 of the 62 failures.** `ModelRegistry.list()` includes time-series
 models (`arima`, `esn`, `esn_rc`, `koopman`, `dmd`, `pod`, `havok`,

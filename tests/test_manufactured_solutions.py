@@ -627,3 +627,61 @@ def test_audit_physics_compressor_meanline_1d_wrong_solution_gives_nonzero_resid
     out = loss_fn(_ExactFn(wrong_fn), None, batch)
     res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
     assert float(res.item()) > 1.0, f"compressor_meanline_1d residual should be nonzero for broken continuity, got {float(res.item())}"
+
+
+def test_audit_physics_phonon_bte_1d_gray_exact_solution_gives_zero_residual():
+    """T = T_eq + A*exp(-t/tau_d)*sin(k_wave*x - omega_r*t) solves
+    dT/dt + vg*dT/dx = -(T-T_eq)/tau + alpha*d2T/dx2 exactly when
+    omega_r = k_wave*vg (propagates at the group velocity) and
+    tau_d = tau/(1 + alpha*k_wave^2*tau) (a wavenumber-dependent decay
+    time) -- both derived and verified with `sympy` before use here.
+
+    Uses moderate, well-conditioned (O(1)) parameter values rather than
+    crystal_phonon's own SI-unit defaults (vg~3000 m/s, tau~1e-12 s):
+    at those physical scales the wavenumber/decay-time relation spans
+    ~10+ orders of magnitude and this residual (like any second-order PDE
+    evaluated via chained autograd) loses several digits of float32
+    precision purely from the extreme scale disparity, NOT from a
+    formula error -- confirmed separately in float64 at the real default
+    scale, residual ~3e-4 against terms of order 1e16, i.e. relatively
+    ~1e-20, clean. Anyone training this preset at its literal SI-unit
+    defaults should expect to need careful nondimensionalization or
+    float64, a real practical finding, not a code defect."""
+    spec = _probe_spec("phonon_bte_1d_gray", ("x", "t"), {"vg": 1.0, "tau": 1.0, "k": 0.1, "Cv": 1.0, "T_eq": 300.0})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("T",), pde=_replace(spec.pde, fields=("T",)))
+    loss_fn = compile_problem(spec)
+
+    vg, tau, alpha_th, T_eq = 1.0, 1.0, 0.1, 300.0
+    k_wave = 1.0
+    omega_r = k_wave * vg
+    tau_d = tau / (1 + alpha_th * k_wave ** 2 * tau)
+    A = 2.0
+
+    exact = _ExactFn(lambda X: T_eq + A * torch.exp(-X[:, 1:2] / tau_d) * torch.sin(k_wave * X[:, 0:1] - omega_r * X[:, 1:2]))
+    xt = torch.rand(64, 2, requires_grad=True)
+    batch = _empty_batch(xt, n_coords=2, n_fields=1)
+    out = loss_fn(exact, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-6, f"phonon_bte_1d_gray residual should be ~0, got {float(res.item())}"
+
+
+def test_audit_physics_phonon_bte_1d_gray_wrong_solution_gives_nonzero_residual():
+    spec = _probe_spec("phonon_bte_1d_gray", ("x", "t"), {"vg": 1.0, "tau": 1.0, "k": 0.1, "Cv": 1.0, "T_eq": 300.0})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("T",), pde=_replace(spec.pde, fields=("T",)))
+    loss_fn = compile_problem(spec)
+
+    vg, tau, alpha_th, T_eq = 1.0, 1.0, 0.1, 300.0
+    k_wave = 1.0
+    omega_r = k_wave * vg
+    tau_d = tau / (1 + alpha_th * k_wave ** 2 * tau)
+    A = 2.0
+
+    # Wrong dispersion relation (2x the correct omega_r).
+    wrong = _ExactFn(lambda X: T_eq + A * torch.exp(-X[:, 1:2] / tau_d) * torch.sin(k_wave * X[:, 0:1] - 2 * omega_r * X[:, 1:2]))
+    xt = torch.rand(64, 2, requires_grad=True)
+    batch = _empty_batch(xt, n_coords=2, n_fields=1)
+    out = loss_fn(wrong, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1e-3, f"phonon_bte_1d_gray residual should be nonzero for the wrong dispersion relation, got {float(res.item())}"
