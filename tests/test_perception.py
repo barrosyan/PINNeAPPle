@@ -17,7 +17,12 @@ unreliable rather than returning them.
 """
 from __future__ import annotations
 
+import shutil
+import subprocess
+from pathlib import Path
+
 import numpy as np
+import pytest
 from scipy.ndimage import map_coordinates
 
 from pinneapple_perception import (
@@ -117,3 +122,30 @@ def test_audio_modal_recovers_known_frequencies():
     assert abs(freqs_found[1] - f2) < 0.1, f"expected ~{f2} Hz, got {freqs_found[1]}"
     # peaks are sorted by amplitude descending; f1 has the larger amplitude
     assert peaks[0][0] == freqs_found[0]
+
+
+def test_piv_on_real_encoded_video_recovers_known_shift():
+    """Everything above uses pure numpy arrays -- this test decodes a
+    REAL libx264-encoded video (`tests/fixtures/perception/known_shift_real.mp4`,
+    provenance in that directory's README) with a real `ffmpeg` subprocess
+    and checks PIV recovers the known constant sub-pixel velocity
+    (vx=2.3, vy=-1.7 px/frame) the fixture was built from, despite real
+    video compression artifacts the synthetic tests never exercise."""
+    if shutil.which("ffmpeg") is None:
+        pytest.skip("ffmpeg not installed -- cannot decode the real video fixture")
+
+    fixture = Path(__file__).parent / "fixtures" / "perception" / "known_shift_real.mp4"
+    W, H, T = 128, 128, 6
+    proc = subprocess.run(
+        ["ffmpeg", "-y", "-i", str(fixture), "-pix_fmt", "gray", "-f", "rawvideo", "-"],
+        capture_output=True, check=True,
+    )
+    frames = np.frombuffer(proc.stdout, dtype=np.uint8).reshape(T, H, W).astype(np.float64)
+
+    seq = piv_velocity_sequence(frames, dt=1.0, window_size=32, search_margin=16, step=32)
+    assert seq["u"].shape[0] >= 4
+    # Same ~0.3px tolerance as the synthetic sub-pixel test (peak-locking
+    # bias), confirmed empirically before this test was written: real
+    # measured values were u=2.21+/-0.07, v=-1.79+/-0.06.
+    assert abs(seq["u"].mean() - 2.3) < 0.3, f"mean u={seq['u'].mean()}, expected ~2.3"
+    assert abs(seq["v"].mean() - (-1.7)) < 0.3, f"mean v={seq['v'].mean()}, expected ~-1.7"
