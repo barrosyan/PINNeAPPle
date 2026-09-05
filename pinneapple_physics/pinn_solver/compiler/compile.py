@@ -176,6 +176,44 @@ def compile_problem(
                     q = q[:, None]
             res_list.append(lap_aniso + q)
 
+        elif pde_kind == "heat_equation_transient":
+            # Transient (time-dependent) heat conduction, distinguished
+            # from the plain "heat_equation" kind because
+            # car_brake_thermal's coords are cylindrical (r, z, t), not
+            # Cartesian (x, y, t) -- a brake disc genuinely is an
+            # axisymmetric body, so its Laplacian needs the standard
+            # extra (1/r)*dT/dr term:
+            #   rho*cp*dT/dt = k*[d2T/dr2 + (1/r)*dT/dr + d2T/dz2] + q
+            # (verified this session with sympy: the plain Cartesian
+            # laplacian(), which omits the (1/r)*dT/dr term, gives a
+            # nonzero, wrong residual for e.g. T=ln(r) even though that
+            # function exactly solves the TRUE axisymmetric equation).
+            if not has_t:
+                raise ValueError("heat_equation_transient expects a time coord 't'.")
+            if "r" not in coords or "z" not in coords:
+                raise ValueError("heat_equation_transient expects coords 'r' and 'z' (axisymmetric).")
+            if len(field_names) != 1:
+                raise ValueError("heat_equation_transient expects a scalar field (T).")
+            T = fields[field_names[0]]
+            alpha = float(p.get("alpha", 1e-5))
+            r_idx = _coord_index(coords, "r")
+            z_idx = _coord_index(coords, "z")
+            r_val = xcol[:, r_idx:r_idx + 1]
+            gT = grad(T, xcol)
+            dT_dr = gT[:, r_idx:r_idx + 1]
+            d2T_dr2 = grad(dT_dr, xcol)[:, r_idx:r_idx + 1]
+            d2T_dz2 = grad(gT[:, z_idx:z_idx + 1], xcol)[:, z_idx:z_idx + 1]
+            lap_axisym = d2T_dr2 + dT_dr / r_val + d2T_dz2
+            q_fn = ctx.get("source_fn") or ctx.get("q_fn")
+            q = torch.zeros_like(T)
+            if q_fn is not None:
+                q_np = q_fn(xcol.detach().cpu().numpy(), ctx)
+                q = torch.as_tensor(q_np, device=device, dtype=T.dtype)
+                if q.ndim == 1:
+                    q = q[:, None]
+            Tt = time_derivative(T, xcol, t_index)  # type: ignore[arg-type]
+            res_list.append(Tt - alpha * lap_axisym - q)
+
         elif pde_kind == "wave_equation":
             if not has_t:
                 raise ValueError("Wave equation expects time coord 't'.")
@@ -248,7 +286,16 @@ def compile_problem(
             else:
                 raise ValueError(f"Unsupported Burgers configuration: spatial_dim={spatial_dim}, fields={field_names}")
 
-        elif pde_kind == "navier_stokes_incompressible":
+        elif pde_kind in ("navier_stokes_incompressible", "incompressible_navier_stokes_2d"):
+            # "incompressible_navier_stokes_2d" (aircraft_wing_aerodynamics,
+            # car_external_aero) is the identical physics as
+            # "navier_stokes_incompressible" at spatial_dim=2 -- same
+            # fields (u, v, p), same params ({nu, Re}), same steady 2D
+            # incompressible momentum+continuity equations. This was a
+            # naming collision (found the same way reaction_diffusion_2d
+            # was: two presets pointing at physics that already existed
+            # under a different kind string), not missing physics.
+            #
             # Steady-state presets (no 't' coord by design, e.g.
             # channel_flow_3d/lid_driven_cavity_3d/pipe_flow_3d) used to
             # hit this branch's unconditional "expects time coord 't'"
@@ -783,6 +830,69 @@ def compile_problem(
 
             res_list.append(res_r)
             res_list.append(res_z)
+
+        elif pde_kind in ("incompressible_navier_stokes_energy_2d", "incompressible_navier_stokes_energy_3d",
+                          "navier_stokes_energy_2d"):
+            # Steady incompressible Navier-Stokes momentum+continuity
+            # (identical to "navier_stokes_incompressible" above) coupled
+            # one-way to a steady advection-diffusion energy equation:
+            #   u.grad(T) = alpha_T*laplacian(T) + Q_source/(rho*cp)
+            # Thermal diffusivity alpha_T = nu/Pr is assumed from a fixed
+            # Prandtl number (air, Pr=0.71, standard engineering value)
+            # since none of datacenter_airflow_2d/datacenter_cfd_3d/
+            # furnace_combustion_zone provide a thermal conductivity
+            # parameter directly -- override via params["Pr"] if a
+            # different fluid's Prandtl number is needed.
+            # These 3 preset names collapsed onto one physics
+            # implementation the same way "incompressible_navier_stokes_2d"
+            # did above -- distinct kind strings, identical equations.
+            if spatial_dim not in (2, 3):
+                raise ValueError(f"{pde_kind} expects 2D or 3D spatial dims.")
+            needed = ["u", "v", "p", "T"] + (["w"] if spatial_dim == 3 else [])
+            for n in needed:
+                if n not in fields:
+                    raise ValueError(f"{pde_kind} expects field '{n}' in outputs.")
+
+            nu = float(p.get("nu", 1.5e-5))
+            Re = float(p.get("Re", 100.0))
+            inv_Re = float(p.get("inv_Re", 1.0 / Re))
+            Pr = float(p.get("Pr", 0.71))
+            alpha_T = nu / Pr
+            rho = float(p.get("rho", 1.2))
+            cp = float(p.get("cp", 1006.0))
+            Q_source = float(p.get("Q_source", 0.0))
+
+            if spatial_dim == 2:
+                u, v, p_, T = fields["u"], fields["v"], fields["p"], fields["T"]
+                U = torch.cat([u, v], dim=1)
+            else:
+                u, v, wv, p_, T = fields["u"], fields["v"], fields["w"], fields["p"], fields["T"]
+                U = torch.cat([u, v, wv], dim=1)
+
+            sp_idx = [coords.index(n) for n in spatial_coord_names]
+            JU = jacobian(U, xcol)
+            JUs = JU[:, :, sp_idx]
+            conv = torch.zeros((xcol.shape[0], spatial_dim), device=device, dtype=xcol.dtype)
+            for i in range(spatial_dim):
+                for j in range(spatial_dim):
+                    conv[:, i] = conv[:, i] + U[:, j] * JUs[:, i, j]
+
+            gp = grad(p_, xcol)
+            lap_u = laplacian(u, xcol, spatial_indices)
+            lap_v = laplacian(v, xcol, spatial_indices)
+            res_list.append(conv[:, 0:1] + gp[:, sp_idx[0]:sp_idx[0] + 1] - inv_Re * lap_u)
+            res_list.append(conv[:, 1:2] + gp[:, sp_idx[1]:sp_idx[1] + 1] - inv_Re * lap_v)
+            if spatial_dim == 3:
+                lap_w = laplacian(wv, xcol, spatial_indices)
+                res_list.append(conv[:, 2:3] + gp[:, sp_idx[2]:sp_idx[2] + 1] - inv_Re * lap_w)
+            res_list.append(divergence(U, xcol, spatial_indices))
+
+            gT = grad(T, xcol)
+            u_dot_gradT = torch.zeros((xcol.shape[0], 1), device=device, dtype=xcol.dtype)
+            for i in range(spatial_dim):
+                u_dot_gradT = u_dot_gradT + U[:, i:i + 1] * gT[:, sp_idx[i]:sp_idx[i] + 1]
+            lap_T = laplacian(T, xcol, spatial_indices)
+            res_list.append(u_dot_gradT - alpha_T * lap_T - Q_source / (rho * cp))
 
         elif pde_kind == "stokes":
             # Steady creeping (zero-inertia) flow: momentum without the

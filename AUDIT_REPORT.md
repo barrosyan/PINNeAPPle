@@ -333,6 +333,47 @@ test this session — a known, stated gap, not a defect.
 Tests: `test_manufactured_solutions.py` now 14/14 passing (4 new: 2 for
 `reaction_diffusion_2d`, 2 for `black_scholes_1d`).
 
+**Fourth batch**: two more naming collisions found the same way (a
+preset's `pde.kind` string pointing at physics that already existed
+under a *different* kind string) plus one genuinely new coupled-physics
+kind:
+
+- `incompressible_navier_stokes_2d` (`aircraft_wing_aerodynamics`,
+  `car_external_aero`) — identical physics to the already-implemented
+  `navier_stokes_incompressible` at 2 spatial dims (same fields `u,v,p`,
+  same params `{nu, Re}`). Aliased into the existing branch.
+- `heat_equation_transient` (`car_brake_thermal`) — NOT a pure alias:
+  this preset's coords are cylindrical `(r, z, t)` (a brake disc is
+  genuinely axisymmetric), so the plain Cartesian `laplacian()` used by
+  `heat_equation` would silently give the wrong answer (missing the
+  standard `(1/r)*dT/dr` term) — confirmed with `sympy`: `T=ln(r)` is
+  exactly harmonic in the axisymmetric sense but has a nonzero Cartesian
+  Laplacian (`-1/r²`). Implemented as its own kind with the correct
+  axisymmetric term.
+- `incompressible_navier_stokes_energy_2d` / `_3d` /
+  `navier_stokes_energy_2d` (`datacenter_airflow_2d`, `datacenter_cfd_3d`,
+  `furnace_combustion_zone`) — three more distinct kind strings that all
+  collapsed onto ONE new implementation: steady incompressible NS coupled
+  one-way to a steady advection-diffusion energy equation, with thermal
+  diffusivity assumed from a fixed air Prandtl number (Pr=0.71, since none
+  of the three presets supply thermal conductivity directly) and an
+  optional volumetric heat source term (`furnace_combustion_zone`'s
+  combustion heat release).
+
+MMS coverage added for the two new formulations (the NS-2D alias reuses
+the existing, already-tested `navier_stokes_incompressible` coverage, so
+needed no new test): `heat_equation_transient` verified against
+`T=ln(r)` (axisymmetric-harmonic, `sympy`-confirmed); the NS+energy
+coupling verified against a genuine potential-flow field
+(`u=x²-y², v=-2xy`, velocity potential `x³/3-xy²`) whose stream function
+(`x²y-y³/3`) is by construction both the exact energy-equation solution
+(constant along streamlines) and independently harmonic — momentum,
+continuity, AND energy all satisfied by one `sympy`-verified manufactured
+solution simultaneously.
+
+**Net result of this fourth batch**: Tier A failures **42/137 → 36/137**.
+`test_manufactured_solutions.py`: 18/18 passing.
+
 ## Category 2 — not a defect: generic smoke test doesn't fit the architecture's real input shape
 
 **~20 of the 62 failures.** `ModelRegistry.list()` includes time-series
