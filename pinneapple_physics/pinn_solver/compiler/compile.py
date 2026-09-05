@@ -966,6 +966,91 @@ def compile_problem(
             res_list.append(hut + grad(F2x, xcol)[:, x_idx:x_idx + 1] + grad(F2y, xcol)[:, y_idx:y_idx + 1] + g_grav * h * bx)
             res_list.append(hvt + grad(F3x, xcol)[:, x_idx:x_idx + 1] + grad(F3y, xcol)[:, y_idx:y_idx + 1] + g_grav * h * by)
 
+        elif pde_kind == "shallow_water_2d":
+            # Nonlinear ROTATING shallow-water equations in PRIMITIVE
+            # variables (h, u, v), f-plane approximation (climate_atmosphere_2d)
+            # -- genuinely different from "shallow_water" above, which uses
+            # conservative variables (h, hu, hv) and has no Coriolis term.
+            # Not a naming collision like reaction_diffusion_2d/
+            # incompressible_navier_stokes_2d were: different field
+            # variables AND an extra physics term (rotation), so this is
+            # its own kind rather than an alias.
+            #   dh/dt + d(hu)/dx + d(hv)/dy = 0
+            #   du/dt + u*du/dx + v*du/dy - f*v + g*dh/dx = 0
+            #   dv/dt + u*dv/dx + v*dv/dy + f*u + g*dh/dy = 0
+            if not has_t:
+                raise ValueError("shallow_water_2d expects a time coord 't'.")
+            for n in ("h", "u", "v"):
+                if n not in fields:
+                    raise ValueError(f"shallow_water_2d expects field '{n}'.")
+            g_grav = float(p.get("g", 9.81))
+            f_cor = float(p.get("f", 1e-4))
+            x_idx = _coord_index(coords, "x")
+            y_idx = _coord_index(coords, "y")
+            h, u_vel, v_vel = fields["h"], fields["u"], fields["v"]
+
+            gh = grad(h, xcol)
+            gu = grad(u_vel, xcol)
+            gv = grad(v_vel, xcol)
+            ht = time_derivative(h, xcol, t_index)  # type: ignore[arg-type]
+            ut = time_derivative(u_vel, xcol, t_index)  # type: ignore[arg-type]
+            vt = time_derivative(v_vel, xcol, t_index)  # type: ignore[arg-type]
+
+            hu_x = grad(h * u_vel, xcol)[:, x_idx:x_idx + 1]
+            hv_y = grad(h * v_vel, xcol)[:, y_idx:y_idx + 1]
+            res_list.append(ht + hu_x + hv_y)
+            res_list.append(
+                ut + u_vel * gu[:, x_idx:x_idx + 1] + v_vel * gu[:, y_idx:y_idx + 1]
+                - f_cor * v_vel + g_grav * gh[:, x_idx:x_idx + 1]
+            )
+            res_list.append(
+                vt + u_vel * gv[:, x_idx:x_idx + 1] + v_vel * gv[:, y_idx:y_idx + 1]
+                + f_cor * u_vel + g_grav * gh[:, y_idx:y_idx + 1]
+            )
+
+        elif pde_kind == "stommel_gyre_2d":
+            # Stommel (1948) wind-driven ocean-gyre barotropic streamfunction
+            # model: r*laplacian(psi) + beta*dpsi/dx = curl(tau)/(rho0*H).
+            # climate_ocean_gyre's own docstring gives the intended default
+            # forcing curl(tau) = (tau0*pi/W)*sin(pi*y/W), but W (basin
+            # width) is not one of the PDE's params (only used internally
+            # by the preset to compute a diagnostic velocity scale) -- so,
+            # consistent with "poisson"/"heat_equation" elsewhere in this
+            # compiler, the forcing is read from ctx["source_fn"] (already
+            # expected to return curl(tau)/(rho0*H) directly) and defaults
+            # to zero (unforced decay) if the caller doesn't supply one.
+            if len(field_names) != 1:
+                raise ValueError("stommel_gyre_2d expects 1 scalar field (psi).")
+            psi = fields[field_names[0]]
+            beta = float(p.get("beta", 2e-11))
+            r_fric = float(p.get("r", 1e-7))
+            x_idx = _coord_index(coords, "x")
+            dpsi_dx = grad(psi, xcol)[:, x_idx:x_idx + 1]
+            lap_psi = laplacian(psi, xcol, spatial_indices)
+            forcing_fn = ctx.get("source_fn")
+            forcing = torch.zeros_like(psi)
+            if forcing_fn is not None:
+                f_np = forcing_fn(xcol.detach().cpu().numpy(), ctx)
+                forcing = torch.as_tensor(f_np, device=device, dtype=psi.dtype)
+                if forcing.ndim == 1:
+                    forcing = forcing[:, None]
+            res_list.append(r_fric * lap_psi + beta * dpsi_dx - forcing)
+
+        elif pde_kind == "opinion_dynamics_2d":
+            # Continuum Hegselmann-Krause opinion dynamics (bistable
+            # Allen-Cahn-style reaction-diffusion):
+            #   du/dt = D*laplacian(u) + alpha*u*(1-u^2)
+            if not has_t:
+                raise ValueError("opinion_dynamics_2d expects a time coord 't'.")
+            if len(field_names) != 1:
+                raise ValueError("opinion_dynamics_2d expects 1 scalar field (u).")
+            u_op = fields[field_names[0]]
+            D_diff = float(p.get("D", 0.01))
+            alpha_op = float(p.get("alpha", 1.0))
+            ut = time_derivative(u_op, xcol, t_index)  # type: ignore[arg-type]
+            lap_u = laplacian(u_op, xcol, spatial_indices)
+            res_list.append(ut - D_diff * lap_u - alpha_op * u_op * (1.0 - u_op * u_op))
+
         elif pde_kind == "euler_compressible":
             # Inviscid compressible flow, conservative form, ideal gas (gamma-law).
             if not has_t:

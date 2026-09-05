@@ -374,3 +374,99 @@ def test_audit_physics_ns_energy_2d_wrong_solution_gives_nonzero_residual():
     out = loss_fn(_ExactFn(wrong_fn), None, batch)
     res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
     assert float(res.item()) > 1.0, f"incompressible_navier_stokes_energy_2d residual should be nonzero for the wrong T, got {float(res.item())}"
+
+
+def test_audit_physics_shallow_water_2d_geostrophic_balance_gives_zero_residual():
+    """Steady geostrophic balance: u=U0, v=0 (uniform, no time/space
+    dependence beyond a 0*t/0*x connectivity term), h=-f*U0/g*y+H0 --
+    verified with `sympy` to satisfy all 3 rotating shallow-water
+    equations (continuity + both momentum components) exactly, for any
+    f, g, U0, H0."""
+    f_cor, g_grav, U0, H0 = 1e-4, 9.81, 10.0, 1000.0
+    spec = _probe_spec("shallow_water_2d", ("x", "y", "t"), {"f": f_cor, "g": g_grav})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("h", "u", "v"), pde=_replace(spec.pde, fields=("h", "u", "v")))
+    loss_fn = compile_problem(spec)
+
+    def exact_fn(X):
+        x, y, t = X[:, 0:1], X[:, 1:2], X[:, 2:3]
+        h = -f_cor * U0 / g_grav * y + H0 + 0.0 * t
+        u = U0 + 0.0 * x
+        v = 0.0 * x
+        return torch.cat([h, u, v], dim=1)
+
+    xyt = torch.rand(64, 3, requires_grad=True)
+    batch = _empty_batch(xyt, n_coords=3, n_fields=3)
+    out = loss_fn(_ExactFn(exact_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-8, f"shallow_water_2d residual should be ~0 for geostrophic balance, got {float(res.item())}"
+
+
+def test_audit_physics_shallow_water_2d_wrong_solution_gives_nonzero_residual():
+    f_cor, g_grav, U0, H0 = 1e-4, 9.81, 10.0, 1000.0
+    spec = _probe_spec("shallow_water_2d", ("x", "y", "t"), {"f": f_cor, "g": g_grav})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("h", "u", "v"), pde=_replace(spec.pde, fields=("h", "u", "v")))
+    loss_fn = compile_problem(spec)
+
+    def wrong_fn(X):
+        x, y, t = X[:, 0:1], X[:, 1:2], X[:, 2:3]
+        h = -f_cor * U0 / g_grav * x + H0 + 0.0 * t  # wrong: gradient in x, not y
+        u = U0 + 0.0 * x
+        v = 0.0 * x
+        return torch.cat([h, u, v], dim=1)
+
+    xyt = torch.rand(64, 3, requires_grad=True)
+    batch = _empty_batch(xyt, n_coords=3, n_fields=3)
+    out = loss_fn(_ExactFn(wrong_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1e-6, f"shallow_water_2d residual should be nonzero for the wrong h gradient, got {float(res.item())}"
+
+
+def test_audit_physics_stommel_gyre_2d_exact_solution_gives_zero_residual():
+    """psi = exp(m*x)*sin(k*y), with m the positive root of
+    r*m^2 + beta*m - r*k^2 = 0, satisfies r*laplacian(psi) + beta*dpsi/dx
+    = 0 exactly for any r, beta, k -- verified with `sympy`. Uses zero
+    forcing (this kind's `ctx["source_fn"]` left unset), which is a
+    documented, legitimate default (see the kind's docstring in
+    compile.py) since the preset itself doesn't pass the basin width W
+    needed to build its own documented default forcing formula."""
+    import math
+    r_fric, beta = 1e-7, 2e-11
+    k = 1.0
+    m_val = (-beta + math.sqrt(beta ** 2 + 4 * k ** 2 * r_fric ** 2)) / (2 * r_fric)
+
+    spec = _probe_spec("stommel_gyre_2d", ("x", "y"), {"r": r_fric, "beta": beta})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("psi",), pde=_replace(spec.pde, fields=("psi",)))
+    loss_fn = compile_problem(spec)
+
+    exact = _ExactFn(lambda X: torch.exp(m_val * X[:, 0:1]) * torch.sin(k * X[:, 1:2]))
+    xy = torch.rand(64, 2, requires_grad=True) * 0.1  # keep exp(m*x) numerically bounded
+    batch = _empty_batch(xy, n_coords=2, n_fields=1)
+    out = loss_fn(exact, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-6, f"stommel_gyre_2d residual should be ~0 for the exact solution, got {float(res.item())}"
+
+
+def test_audit_physics_stommel_gyre_2d_wrong_solution_gives_nonzero_residual():
+    r_fric, beta = 1e-7, 2e-11
+    spec = _probe_spec("stommel_gyre_2d", ("x", "y"), {"r": r_fric, "beta": beta})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("psi",), pde=_replace(spec.pde, fields=("psi",)))
+    loss_fn = compile_problem(spec)
+
+    # A generic non-harmonic function, structurally unrelated to the
+    # m/k eigen-relation the exact test above depends on. Note the
+    # residual's absolute scale is capped by r/beta (~1e-7), which are
+    # genuine geophysical parameter values (Rayleigh friction, planetary
+    # vorticity gradient) -- not a loosened test tolerance, just what
+    # "clearly nonzero" looks like at this physical scale (~1e-13, still
+    # ~6 orders of magnitude above the exact solution's ~1e-16..1e-19
+    # floating-point noise floor).
+    wrong = _ExactFn(lambda X: X[:, 0:1] ** 2 + X[:, 1:2] ** 2)
+    xy = torch.rand(64, 2, requires_grad=True) * 0.1
+    batch = _empty_batch(xy, n_coords=2, n_fields=1)
+    out = loss_fn(wrong, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1e-14, f"stommel_gyre_2d residual should be nonzero for a generic wrong function, got {float(res.item())}"

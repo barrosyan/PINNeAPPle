@@ -374,6 +374,41 @@ solution simultaneously.
 **Net result of this fourth batch**: Tier A failures **42/137 → 36/137**.
 `test_manufactured_solutions.py`: 18/18 passing.
 
+**Fifth batch**: climate and social-dynamics presets.
+
+- `shallow_water_2d` (`climate_atmosphere_2d`) — genuinely NOT the same
+  as the existing `shallow_water` kind (which uses conservative
+  variables `h,hu,hv` and has no rotation term): this is the rotating
+  shallow-water system in PRIMITIVE variables `h,u,v` with an explicit
+  Coriolis term (f-plane approximation), a real, different physics
+  formulation, not a naming collision. Verified with `sympy` against a
+  steady geostrophic-balance exact solution (`u=U0` constant, `v=0`,
+  `h` linear in `y` with slope `-f*U0/g`) — the textbook balance between
+  Coriolis deflection and pressure-gradient force, satisfying continuity
+  and both momentum components exactly.
+- `stommel_gyre_2d` (`climate_ocean_gyre`) — Stommel's (1948) wind-driven
+  barotropic streamfunction model. The preset's own docstring documents a
+  default wind-stress-curl forcing formula, but doesn't pass the basin
+  width `W` it depends on as a PDE param — implemented reading the
+  forcing from `ctx["source_fn"]` (same convention as `poisson`/
+  `heat_equation` elsewhere in this compiler), defaulting to zero
+  (unforced decay) when not supplied. Verified with `sympy` against
+  `psi = exp(m*x)*sin(k*y)`, `m` the positive root of a quadratic derived
+  directly from the PDE — an honest closed-form solution, not a
+  simplification.
+- `opinion_dynamics_2d` — a genuinely nonlinear (cubic reaction term)
+  2D PDE; a real closed-form manufactured solution was not derived this
+  session (attempts using constant, purely-1D, or quadratic-in-space
+  ansätze either hit this codebase's `laplacian()`-helper limitation
+  with spatially-constant fields, or couldn't satisfy the cubic term
+  in more than one point) — Tier A (compiles and runs) only, a stated
+  gap not a silent one.
+
+**Net result of this fifth batch**: Tier A failures **36/137 → 33/137**.
+`test_manufactured_solutions.py`: 22/22 passing (4 new, for
+`shallow_water_2d` and `stommel_gyre_2d`; `opinion_dynamics_2d` has no
+MMS test, per the gap noted above).
+
 ## Category 2 — not a defect: generic smoke test doesn't fit the architecture's real input shape
 
 **~20 of the 62 failures.** `ModelRegistry.list()` includes time-series
