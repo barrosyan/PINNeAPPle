@@ -265,6 +265,10 @@ packages = [
   # ── extended packages ─────────────────────────────────────────────────────
   "pinneapple_worldmodel",
   "pinneapple_quantum",
+  "pinneapple_hub",          # push_to_hub/from_pretrained model hub
+  "pinneapple_llm",          # LLM-assisted pipeline drafting + physics guardrail
+  "pinneapple_blender",      # Blender export/render bridge
+  "pinneapple_perception",   # extract physics from images/video/audio
 
   # ── arena + compatibility shims ───────────────────────────────────────────
   "pinneapple_arena",     # YAML/JSON-driven multi-model benchmark runner

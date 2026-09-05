@@ -254,6 +254,92 @@ verification above).
 
 ---
 
+## Active learning, transfer/meta-learning, and physics-from-perception
+
+User request: "include ways to do active learning and transfer learning
+in PINNeAPPle" and, separately, "some way to try to extract physics from
+images/videos/sounds, etc."
+
+**Active learning and transfer/meta-learning already existed**,
+comprehensively so — `pinneapple_data/active_learning.py`
+(residual/variance/expected-improvement/RAR strategies) and
+`pinneapple_adaptation/{transfer_learning,meta_learning}` (layer
+freezing, progressive unfreezing, discriminative LRs, parametric-family
+transfer, MMD domain adaptation, MAML, Reptile) — but neither had ever
+been exercised end-to-end by any test. Verifying them (not rebuilding
+them) found two real bugs, the same shape as several others this
+session: a documented top-level convenience function silently skipping a
+required setup call.
+
+- `pinneapple_adaptation.fine_tune()` never called
+  `TransferTrainer.prepare()` — every call raised `RuntimeError` no
+  matter what.
+- `pinneapple_adaptation.meta_learning.meta_train()` never called
+  `trainer.train()` — it returned an UNTRAINED trainer despite its own
+  docstring promising "Trained trainer object with .adapt() method";
+  `.adapt()` on it ran without error but adapted from the model's random
+  initialization, not a real meta-learned one.
+
+Both fixed and verified: `fine_tune()` against a real compiled Laplace
+residual (loss 0.0039→0.0005 over 20 epochs); `meta_train` (Reptile)
+against a real parametric Burgers-ν task family (meta-loss decreasing,
+`.adapt()` producing a usable model). `ResidualBasedAL` (existing
+active-learning code) was also run through a full residual-based
+adaptive-refinement (RAR) loop against a real compiled residual — no bug
+found, already correct. All three locked in as regression tests in
+`tests/test_adaptation_and_active_learning.py`.
+
+**Physics-from-perception was genuinely new** — no inverse
+(image/video/audio → physics) capability existed;
+`pinneapple_worldmodel` is the forward direction (simulate physics →
+render synthetic training images/video). Added `pinneapple_perception`,
+three extractors, each validated against a synthetic known-ground-truth
+case (not just "runs"), using only numpy/scipy (no new dependency):
+
+- `video_piv.piv_velocity_field` — cross-correlation Particle Image
+  Velocimetry (the actual standard experimental-fluid-dynamics
+  technique, not a generic optical-flow method repurposed for this).
+  Recovers a known integer-pixel shift to <0.005px and a known sub-pixel
+  shift to ~0.15px (the well-documented "peak-locking" bias inherent to
+  correlation-based sub-pixel estimation, not an implementation defect —
+  matches published PIV accuracy). Found and fixed a real bug while
+  validating it: windows near the image border returned wildly wrong
+  vectors (search regions got asymmetrically clipped by the border, so a
+  genuine large displacement had no valid match candidate inside the
+  truncated search region) — fixed by excluding near-border windows
+  entirely rather than searching a truncated region, matching standard
+  PIV practice.
+- `image_geometry.extract_boundary_points` / `estimate_bounding_circle`
+  — boundary-pixel extraction + ordering into a contour, validated
+  against a known synthetic circle (center recovered to 0.01px, radius
+  to <1px given expected pixelization bias).
+- `audio_modal.extract_dominant_frequencies` — FFT peak-picking with
+  sub-bin parabolic refinement, validated against known synthetic
+  sine-wave frequencies (recovered to <0.03 Hz for non-bin-aligned true
+  frequencies).
+
+Output from all three is plain numpy arrays shaped to drop directly into
+an existing `DataConstraint`/`solve_pde` call — no new integration layer
+needed, they produce exactly the x/y (/t) + field-value arrays those
+already expect.
+
+**Also fixed as a byproduct**: `pyproject.toml`'s `packages` list was
+missing `pinneapple_hub`, `pinneapple_llm`, and `pinneapple_blender`
+(all added earlier this session) — a real packaging gap found while
+adding `pinneapple_perception` to the same list: a built wheel/sdist
+would have silently excluded those three packages entirely, even though
+they work fine in this editable-install development environment where
+the whole repo is on `sys.path` regardless of what's declared.
+
+**Not done this session**: no test using a REAL video/image/audio file
+(only synthetic, controlled ground-truth cases) — a real camera
+recording has noise, lens distortion, non-uniform lighting, and
+compression artifacts a synthetic test doesn't exercise; `video_piv` in
+particular would benefit from testing against a real, published PIV
+benchmark image pair before being trusted on real experimental footage.
+
+---
+
 ## P1 — near-term (days, one engineer, no new infrastructure)
 
 ### 1.1 Full-library evidenced audit (the honest version of "audit everything")
