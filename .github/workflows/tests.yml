@@ -32,3 +32,6 @@ jobs:
 
       - name: Rest of the test suite
         run: pytest tests/ -q --ignore=tests/test_full_library_matrix.py --ignore=tests/test_manufactured_solutions.py || true
+
+      - name: Model hub governance — reject any model card missing validation_metrics/reference_source
+        run: python scripts/validate_model_card.py
