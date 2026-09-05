@@ -374,3 +374,157 @@ def test_guardrail_report_skipped_reflects_reference_data_not_supplied():
     report = PhysicsGuardrail(spec).check(model)
     assert "reference_data_match" in report.skipped
     assert "reference_data_match" not in report.checked_names
+
+
+# ---------------------------------------------------------------------------
+# Reference-data auto-fetch from a UPD zarr store on disk
+#
+# Audit result (full writeup in ROADMAP_PHYSICS_AI_HUB.md section P3.2):
+# pinneapple_pdb has NO named-benchmark-dataset catalog. Its
+# PhysicalDatasetBuilder only ever builds datasets by querying external
+# Earth-data hubs (NASA CMR / earthaccess) and writing the result to disk;
+# its catalog_path parquet is an output manifest of what a given build
+# produced (keyed by a content hash 'uid'), not an input registry a caller
+# could resolve a friendly name against without having built it first.
+# schema_templates() is the only name -> dict lookup in the package, and it
+# returns physical-schema metadata (governing equations, units policy),
+# never x/y data arrays. So PhysicsGuardrail's auto-fetch (below) resolves
+# a real FILE PATH to the on-disk UPD zarr format
+# PhysicalDatasetBuilder._write_upd actually writes for every shard (a
+# plain xr.Dataset.to_zarr(...) store) -- not a name from a catalog. These
+# tests build one for real with plain xarray (the identical on-disk shape
+# _write_upd produces) and read it back end-to-end -- no mocks.
+# ---------------------------------------------------------------------------
+
+def _write_real_upd_zarr(path, n: int = 6):
+    """Build and write a real xr.Dataset to `path` in exactly the format
+    PhysicalDatasetBuilder._write_upd uses (``ds.to_zarr(path, mode="w")``)
+    -- an (x, y) grid plus a data variable 'u' = x**2 - y**2, the same
+    exact harmonic solution used by
+    ``test_end_to_end_laplace_2d_exact_solution_is_trustworthy`` above, so
+    a model implementing that exact solution should score ~0 RMSE against
+    it."""
+    import xarray as xr
+
+    xs = np.linspace(0.0, 1.0, n)
+    ys = np.linspace(0.0, 1.0, n)
+    xx, yy = np.meshgrid(xs, ys, indexing="ij")
+    uu = xx ** 2 - yy ** 2
+    ds = xr.Dataset(
+        data_vars={"u": (("x", "y"), uu.astype("float32"))},
+        coords={"x": xs.astype("float32"), "y": ys.astype("float32")},
+    )
+    ds.to_zarr(str(path), mode="w")
+    return ds
+
+
+def test_load_reference_from_upd_zarr_shapes_and_values_match_manual_extraction(tmp_path):
+    spec = get_preset("laplace_2d")  # coords=('x','y'), fields=('u',)
+    zarr_path = tmp_path / "laplace_ref.zarr"
+    _write_real_upd_zarr(zarr_path)
+
+    guardrail = PhysicsGuardrail(spec)
+    ref_x, ref_y = guardrail._load_reference_from_upd_zarr(str(zarr_path))
+    assert ref_x.shape == (36, 2)
+    assert ref_y.shape == (36, 1)
+    # y == x0^2 - x1^2 exactly, for every row (this is the exact solution
+    # the fixture was built from) -- confirms columns weren't shuffled.
+    assert np.allclose(ref_y[:, 0], ref_x[:, 0] ** 2 - ref_x[:, 1] ** 2, atol=1e-5)
+
+
+def test_load_reference_from_upd_zarr_missing_variable_raises_keyerror(tmp_path):
+    spec = get_preset("laplace_2d")
+    zarr_path = tmp_path / "laplace_ref_missing.zarr"
+    _write_real_upd_zarr(zarr_path)
+    guardrail = PhysicsGuardrail(spec)
+    with pytest.raises(KeyError):
+        guardrail._load_reference_from_upd_zarr(str(zarr_path), y_vars=["not_a_real_field"])
+
+
+def test_check_reference_dataset_path_matches_manual_reference_arrays_end_to_end(tmp_path):
+    """The auto-fetch path (``reference_dataset_path=...``) must produce
+    the SAME CheckResult (same RMSE, same pass/fail, same set of checked
+    names) as manually loading the identical underlying data and passing
+    ``reference_x``/``reference_y`` directly -- this is the core contract
+    of an ADDITIVE alternative API: the manual path must keep working
+    unchanged, and the two paths must agree when fed the same data."""
+    spec = get_preset("laplace_2d")
+    zarr_path = tmp_path / "laplace_ref_e2e.zarr"
+    ds = _write_real_upd_zarr(zarr_path)
+    model = _ExactFn(lambda x: (x[:, 0:1] ** 2 - x[:, 1:2] ** 2))
+
+    # manual path: extract the identical arrays by hand
+    df = ds.to_dataframe().reset_index()
+    manual_x = df[["x", "y"]].to_numpy(dtype="float32")
+    manual_y = df[["u"]].to_numpy(dtype="float32")
+    manual_report = PhysicsGuardrail(spec).check(
+        model, reference_x=manual_x, reference_y=manual_y, reference_rmse_threshold=1e-3,
+    )
+
+    # auto-fetch path: same UPD zarr store, resolved by file path
+    auto_report = PhysicsGuardrail(spec).check(
+        model, reference_dataset_path=str(zarr_path), reference_rmse_threshold=1e-3,
+    )
+
+    manual_check = next(c for c in manual_report.checks if c.name == "reference_data_match")
+    auto_check = next(c for c in auto_report.checks if c.name == "reference_data_match")
+    assert manual_check.passed
+    assert auto_check.passed
+    assert math.isclose(manual_check.value, auto_check.value, rel_tol=1e-6)
+    assert set(manual_report.checked_names) == set(auto_report.checked_names)
+    assert manual_report.trustworthy and auto_report.trustworthy
+
+
+def test_check_reference_dataset_path_and_manual_arrays_are_mutually_exclusive(tmp_path):
+    spec = get_preset("laplace_2d")
+    zarr_path = tmp_path / "laplace_ref_excl.zarr"
+    _write_real_upd_zarr(zarr_path)
+    model = _ExactFn(lambda x: (x[:, 0:1] ** 2 - x[:, 1:2] ** 2))
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        PhysicsGuardrail(spec).check(
+            model,
+            reference_dataset_path=str(zarr_path),
+            reference_x=np.zeros((1, 2), dtype="float32"),
+            reference_y=np.zeros((1, 1), dtype="float32"),
+            reference_rmse_threshold=1e-3,
+        )
+
+
+def test_check_reference_dataset_path_requires_rmse_threshold(tmp_path):
+    spec = get_preset("laplace_2d")
+    zarr_path = tmp_path / "laplace_ref_thresh.zarr"
+    _write_real_upd_zarr(zarr_path)
+    model = _ExactFn(lambda x: (x[:, 0:1] ** 2 - x[:, 1:2] ** 2))
+    with pytest.raises(ValueError, match="reference_rmse_threshold"):
+        PhysicsGuardrail(spec).check(model, reference_dataset_path=str(zarr_path))
+
+
+def test_check_reference_dataset_path_custom_x_y_vars(tmp_path):
+    """``reference_x_vars``/``reference_y_vars`` override the
+    ``spec.coords``/``spec.fields`` defaults -- confirm a store using
+    different variable names than the spec's own coords/fields can still
+    be read by naming them explicitly."""
+    import xarray as xr
+
+    spec = get_preset("laplace_2d")
+    zarr_path = tmp_path / "laplace_ref_customvars.zarr"
+    xs = np.linspace(0.0, 1.0, 4)
+    ys = np.linspace(0.0, 1.0, 4)
+    xx, yy = np.meshgrid(xs, ys, indexing="ij")
+    uu = xx ** 2 - yy ** 2
+    ds = xr.Dataset(
+        data_vars={"solution": (("lon", "lat"), uu.astype("float32"))},
+        coords={"lon": xs.astype("float32"), "lat": ys.astype("float32")},
+    )
+    ds.to_zarr(str(zarr_path), mode="w")
+
+    model = _ExactFn(lambda x: (x[:, 0:1] ** 2 - x[:, 1:2] ** 2))
+    report = PhysicsGuardrail(spec).check(
+        model,
+        reference_dataset_path=str(zarr_path),
+        reference_x_vars=["lon", "lat"],
+        reference_y_vars=["solution"],
+        reference_rmse_threshold=1e-3,
+    )
+    check = next(c for c in report.checks if c.name == "reference_data_match")
+    assert check.passed, check.detail
