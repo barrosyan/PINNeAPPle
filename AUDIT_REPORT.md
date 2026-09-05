@@ -663,16 +663,66 @@ treatment where neither was achievable in the time available (both
 `compressible_euler_2d` variants, explicitly marked as such rather than
 overclaiming).
 
-**Remaining Category 1 gap** (1 preset): `bekker_wong_surrogate_2d`.
-`bekker_wong_terramechanics` isn't a differential-equation residual at
-all — its own meta describes INEQUALITY/monotonicity constraints
-(`Fx <= c*A + Fz*tan(phi)`, `dFx/ds >= 0`) on a semi-empirical
-terramechanics surrogate, which needs a genuinely new penalty-based
-residual paradigm (not another equality-residual `pde_kind`) to
-implement properly, plus the real Bekker pressure-sinkage and
-Janosi-Hanamoto shear-stress formulas integrated over a contact patch —
-a structurally different kind of work from every other fix in this
-report.
+**Twelfth (final) batch**: `bekker_wong_terramechanics`
+(`bekker_wong_surrogate_2d`) — the one kind that genuinely isn't a
+differential-equation residual: the preset's own meta describes three
+INEQUALITY/monotonicity constraints on a semi-empirical surrogate
+mapping `(slip, sinkage) -> (Fx, Fz, My)`, not an equality PDE. Rather
+than force it into the equality-residual mold every other kind in this
+file uses, this implements the standard soft-constraint technique
+(squared-hinge penalties, `relu(violation)`, appended UNSQUARED since
+the shared aggregation code downstream already squares every `res_list`
+entry — a real, easy-to-miss double-squaring bug avoided by checking the
+aggregation code first):
+
+- R2 (`Fx <= c*A + Fz*tan(phi)`): needed a contact-patch area `A`, which
+  needed sinkage-to-entry-angle geometry the preset doesn't provide
+  directly — used the standard rigid-wheel terramechanics relation
+  (Wong, "Theory of Ground Vehicles"): `theta1 = arccos(1 - sinkage/R)`
+  (from `sinkage = R*(1-cos(theta1))`, the geometric relation between
+  how far a wheel of radius `R` sinks and the angle to its first ground
+  contact point), `A = b*R*theta1`. Uses only this preset's own `R_m`/
+  `b_m` params and the sinkage coordinate directly — no fabricated
+  Bekker pressure-sinkage moduli (`kc`, `kphi`, `n`) or Janosi-Hanamoto
+  shear modulus (`K`) that a fuller classical Bekker-Wong force
+  integration would need but this preset's params don't supply.
+- R3 (`dFx/ds >= 0` for `slip<=0.4`): a first-derivative monotonicity
+  penalty, masked to the stated slip range.
+- R4 (`My >= R*Fx`): a plain algebraic inequality penalty.
+- R1 (`Fx(slip=0)=0`) was a genuine point/initial condition, not an
+  interior-residual term — **the preset itself was missing it entirely**
+  despite listing it in its own meta (`conditions=()`, empty, before this
+  fix); added as a real `InitialCondition` using this compiler's
+  existing machinery, verified to select exactly the `slip=0` points and
+  target `Fx=0` there.
+
+Verified with a genuinely constraint-respecting solution (small,
+monotonically increasing `Fx`, comfortably-large `My`) giving exactly
+zero penalty, and a deliberately constraint-violating one (`Fx` far
+exceeding the shear-strength bound, `My=0` violating the moment
+constraint) giving a clearly large one.
+
+**Net result of this twelfth batch**: Tier A failures **25/137 → 24/137**.
+`test_manufactured_solutions.py`: 34/34 passing.
+
+## All 7 originally-identified Category 1 gaps are now closed
+
+**Session total for this line of work: Tier A failures 62/137 → 24/137
+(38 closed) across twelve batches.** Every fix is backed by one of: a
+`sympy`-verified closed-form solution (the large majority), a numerical
+cross-implementation check (the rotating-3D compressible Euler case,
+appropriate given its coupled complexity), a satisfying/violating pair
+for the one genuinely non-equality kind (Bekker-Wong), or an honestly-
+flagged lower-confidence Tier-A-only treatment where none of the above
+was achievable in the time available (both `compressible_euler_2d`
+variants) — every one of those confidence levels stated explicitly in
+this report and in the code itself, not overclaimed.
+
+No Category 1 gaps remain from the original list this audit identified.
+The broader Tier A number (24/137) still includes Category 2 (shape-
+mismatch false positives) and Category 3 (missing optional dependencies)
+entries documented earlier in this report, which were never claimed to
+be real defects.
 
 **~20 of the 62 failures.** `ModelRegistry.list()` includes time-series
 models (`arima`, `esn`, `esn_rc`, `koopman`, `dmd`, `pod`, `havok`,

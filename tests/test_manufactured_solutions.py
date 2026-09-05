@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
 import pytest
 import torch
 import torch.nn as nn
@@ -796,3 +797,69 @@ def test_audit_physics_compressible_euler_rotating_3d_matches_independent_closed
         assert rmom_diff < 1e-9, f"r-momentum substitution vs. closed form should match to machine precision, diff={rmom_diff}"
     finally:
         torch.set_default_dtype(torch.float32)
+
+
+def test_audit_physics_bekker_wong_terramechanics_satisfying_solution_gives_zero_residual():
+    """bekker_wong_terramechanics is structurally different from every
+    other kind in this file: the preset's own meta describes INEQUALITY
+    constraints (R2: Fx <= c*A + Fz*tan(phi); R3: dFx/ds >= 0 for
+    slip<=0.4; R4: My >= R*Fx), not a differential equality residual --
+    so "exact solution gives ~0" here means "a solution respecting all
+    three inequalities gives zero penalty", not "solves a PDE"."""
+    from pinneapple_physics.pde_environment.presets.registry import get_preset
+
+    spec = get_preset("bekker_wong_surrogate_2d")
+    loss_fn = compile_problem(spec)
+
+    def satisfying_fn(X):
+        slip, sink = X[:, 0:1], X[:, 1:2]
+        Fx = 0.1 * slip           # small, monotonically increasing -> satisfies R3
+        Fz = torch.full_like(slip, 50.0)
+        My = torch.full_like(slip, 1.0)  # comfortably above R*Fx -> satisfies R4
+        return torch.cat([Fx, Fz, My], dim=1)
+
+    slip = torch.rand(64, 1) * 0.75
+    sink = torch.rand(64, 1) * 0.05 + 0.005
+    x = torch.cat([slip, sink], dim=1).requires_grad_(True)
+    batch = _empty_batch(x, n_coords=2, n_fields=3)
+    out = loss_fn(_ExactFn(satisfying_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-8, f"bekker_wong_terramechanics residual should be ~0 for a constraint-satisfying solution, got {float(res.item())}"
+
+
+def test_audit_physics_bekker_wong_terramechanics_violating_solution_gives_nonzero_residual():
+    from pinneapple_physics.pde_environment.presets.registry import get_preset
+
+    spec = get_preset("bekker_wong_surrogate_2d")
+    loss_fn = compile_problem(spec)
+
+    def violating_fn(X):
+        slip, sink = X[:, 0:1], X[:, 1:2]
+        Fx = 1000.0 * slip  # far exceeds the R2 shear-strength bound
+        Fz = torch.full_like(slip, 50.0)
+        My = torch.zeros_like(slip)  # violates R4 (My < R*Fx)
+        return torch.cat([Fx, Fz, My], dim=1)
+
+    slip = torch.rand(64, 1) * 0.75
+    sink = torch.rand(64, 1) * 0.05 + 0.005
+    x = torch.cat([slip, sink], dim=1).requires_grad_(True)
+    batch = _empty_batch(x, n_coords=2, n_fields=3)
+    out = loss_fn(_ExactFn(violating_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1.0, f"bekker_wong_terramechanics residual should be clearly nonzero for a violating solution, got {float(res.item())}"
+
+
+def test_audit_physics_bekker_wong_r1_initial_condition_targets_zero_fx_at_zero_slip():
+    """R1 (Fx(slip=0)=0) is implemented as a genuine InitialCondition on
+    the preset (not folded into the inequality residual above) -- verify
+    it selects exactly the slip=0 points and targets Fx=0 there."""
+    from pinneapple_physics.pde_environment.presets.registry import get_preset
+
+    spec = get_preset("bekker_wong_surrogate_2d")
+    assert len(spec.conditions) == 1
+    cond = spec.conditions[0]
+    X = np.array([[0.0, 0.03], [0.5, 0.03]])
+    mask = cond.mask(X, {})
+    assert mask.tolist() == [True, False]
+    vals = cond.values(X[mask], {})
+    assert np.allclose(vals, 0.0)

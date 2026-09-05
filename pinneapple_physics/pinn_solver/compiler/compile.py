@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import numpy as np
@@ -1772,6 +1773,74 @@ def compile_problem(
             )
             # Ideal-gas state
             res_list.append(p_pres - rho * R_gas * T_temp)
+
+        elif pde_kind == "bekker_wong_terramechanics":
+            # Bekker-Wong rigid-wheel/deformable-soil surrogate
+            # (bekker_wong_surrogate_2d) -- structurally DIFFERENT from
+            # every other kind in this compiler: the preset's own meta
+            # states 3 INEQUALITY/monotonicity constraints on a
+            # semi-empirical surrogate mapping (slip, sinkage) -> (Fx,
+            # Fz, My), not a differential EQUALITY residual. Implemented
+            # as squared-hinge penalty terms (relu(violation)^2, the
+            # standard soft-constraint / inequality-as-loss technique):
+            # each entry appended to res_list is the UNSQUARED violation
+            # itself (relu(...), zero when satisfied) -- the aggregation
+            # below this dispatch chain already squares every res_list
+            # entry via `torch.mean(pde_res**2)`, so appending an
+            # already-squared value here would square it AGAIN.
+            #   R2: Fx <= c*A + Fz*tan(phi)   (Mohr-Coulomb shear-strength bound)
+            #   R3: dFx/ds >= 0 for slip in [0, 0.4]   (monotonic traction buildup)
+            #   R4: My >= R*Fx   (moment must cover the drawbar-pull torque)
+            # R1 (Fx(slip=0)=0) is a genuine point/initial condition, not
+            # an interior-residual term -- it belongs in (and was added
+            # to) the preset's own `conditions` tuple, using this
+            # compiler's existing InitialCondition machinery, not
+            # reimplemented here.
+            #
+            # Contact-patch area A uses the standard rigid-wheel
+            # terramechanics geometry (Wong, "Theory of Ground
+            # Vehicles"): entry angle theta1 = arccos(1 - sinkage/R)
+            # (from z = R*(1-cos(theta1)), the sinkage-to-entry-angle
+            # relation for a rigid wheel of radius R), contact arc length
+            # l = R*theta1, area A = b*l -- not fabricated, and uses only
+            # this preset's own R_m/b_m parameters and the sinkage
+            # coordinate directly, no unstated Bekker pressure-sinkage
+            # moduli (kc, kphi, n) or Janosi-Hanamoto shear modulus (K)
+            # this preset's params don't provide.
+            if "slip" not in coords or "sinkage" not in coords:
+                raise ValueError("bekker_wong_terramechanics expects coords ('slip','sinkage').")
+            for n in ("Fx", "Fz", "My"):
+                if n not in fields:
+                    raise ValueError(f"bekker_wong_terramechanics expects field '{n}'.")
+            c_Pa = float(p.get("c_Pa", 1400.0))
+            phi_deg = float(p.get("phi_deg", 30.0))
+            R_m = float(p.get("R_m", 0.125))
+            b_m = float(p.get("b_m", 0.060))
+            phi_rad = math.radians(phi_deg)
+
+            slip_idx = _coord_index(coords, "slip")
+            sink_idx = _coord_index(coords, "sinkage")
+            slip_col = xcol[:, slip_idx:slip_idx + 1]
+            sinkage = xcol[:, sink_idx:sink_idx + 1]
+
+            Fx, Fz, My = fields["Fx"], fields["Fz"], fields["My"]
+
+            theta1 = torch.acos(torch.clamp(1.0 - sinkage / R_m, -1.0 + 1e-6, 1.0 - 1e-6))
+            contact_area = b_m * R_m * theta1
+
+            # R2: Fx <= c*A + Fz*tan(phi)
+            r2_violation = torch.relu(Fx - (c_Pa * contact_area + Fz * math.tan(phi_rad)))
+            res_list.append(r2_violation)
+
+            # R3: dFx/ds >= 0 for slip in [0, 0.4]
+            dFx_ds = grad(Fx, xcol)[:, slip_idx:slip_idx + 1]
+            r3_mask = (slip_col <= 0.4).to(dFx_ds.dtype)
+            r3_violation = torch.relu(-dFx_ds) * r3_mask
+            res_list.append(r3_violation)
+
+            # R4: My >= R*Fx
+            r4_violation = torch.relu(R_m * Fx - My)
+            res_list.append(r4_violation)
 
         elif pde_kind == "kepler_two_body_orbit":
             # Restricted two-body problem, planar Cartesian formulation
