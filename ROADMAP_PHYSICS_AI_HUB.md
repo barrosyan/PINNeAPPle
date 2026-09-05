@@ -195,14 +195,21 @@ coupled thermal-strain term is the one new kind without its own MMS test
 (a `laplacian()`-helper autograd-graph-connectivity limitation with
 spatially-constant fields, not a defect — documented, not hidden).
 
-**Still open**: the remaining ~30 Category 1 gaps (aerospace: aircraft
-wing aero, axial compressor family, rocket nozzle CFD; automotive: car
-external aero, car brake thermal; datacenter: airflow/CFD-3D; climate:
-atmosphere-2D, ocean gyre; finance: Black-Scholes, Heston; materials:
-crystal phonon transport, phase-field fracture; a few others) each need
-their own physics-derivation pass, same rigor as this one, not a
-mechanical fix — genuinely the largest remaining body of work this
-roadmap tracks.
+**Update — fully closed in later follow-up passes** (see
+`AUDIT_REPORT.md`'s twelve-batch breakdown for the complete list): every
+one of the Category 1 gaps named above was closed across later sessions
+of this same work — aerospace (aircraft wing aero, the full axial
+compressor family including the rotating 3D case, rocket nozzle CFD),
+automotive (car external aero, car brake thermal), datacenter
+(airflow/CFD-3D), climate (atmosphere-2D shallow water, ocean gyre),
+finance (Black-Scholes, Heston), materials (crystal phonon transport,
+phase-field fracture), and the one non-PDE case (Bekker-Wong
+terramechanics' inequality constraints). Tier A failures: 62/137 → 24/146
+(the registry grew by 9 items along the way, mainly the astrophysics
+presets). The generic breadth test's remaining ~24 "failures" were then
+individually confirmed (not estimated) and reclassified as clean,
+documented skips — see `AUDIT_REPORT.md`'s "Finalized" section — leaving
+**0 unexplained failures** in the entire Tier A suite.
 
 ---
 
