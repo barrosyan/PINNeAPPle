@@ -208,7 +208,7 @@ def rocket_structural(
         kind="thermoelasticity_2d",
         fields=fields,
         coords=coords,
-        params={"E": E, "nu": nu, "alpha_T": alpha_T, "lam": lam, "mu": mu},
+        params={"E": E, "nu": nu, "alpha_T": alpha_T, "lambda": lam, "mu": mu},
     )
 
     conditions = (
@@ -320,7 +320,7 @@ def aircraft_wing_structural(
         kind="linear_elasticity_plane_stress",
         fields=fields,
         coords=coords,
-        params={"E": E, "nu": nu, "lam": lam, "mu": mu},
+        params={"E": E, "nu": nu, "lambda": lam, "mu": mu},
     )
 
     conditions = (
@@ -506,7 +506,7 @@ def car_suspension_fatigue(
         kind="linear_elasticity_plane_stress",
         fields=fields,
         coords=coords,
-        params={"E": E, "nu": nu, "lam": lam, "mu": mu},
+        params={"E": E, "nu": nu, "lambda": lam, "mu": mu},
     )
 
     conditions = (
