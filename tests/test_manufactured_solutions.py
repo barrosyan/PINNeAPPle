@@ -281,3 +281,96 @@ def test_audit_physics_black_scholes_1d_wrong_solution_gives_nonzero_residual():
     out = loss_fn(exact_wrong_sigma, None, batch)
     res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
     assert float(res.item()) > 1e-4, f"black_scholes_1d residual should be nonzero for the wrong-sigma price, got {float(res.item())}"
+
+
+def test_audit_physics_heat_equation_transient_axisymmetric_exact_solution_gives_zero_residual():
+    """T = ln(r) (t-independent) is harmonic in the AXISYMMETRIC sense
+    (d2T/dr2 + (1/r)*dT/dr + d2T/dz2 = 0, verified with `sympy`) -- the
+    plain Cartesian laplacian() used elsewhere in this file would give a
+    nonzero, wrong residual for this same function (missing the (1/r)
+    term), which is exactly why heat_equation_transient (car_brake_thermal,
+    an axisymmetric brake disc) needed its own kind rather than reusing
+    heat_equation."""
+    spec = _probe_spec("heat_equation_transient", ("r", "z", "t"), {"alpha": 0.5})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("T",), pde=_replace(spec.pde, fields=("T",)))
+    loss_fn = compile_problem(spec)
+    exact = _ExactFn(lambda X: torch.log(X[:, 0:1]) + 0.0 * X[:, 2:3])
+    r = torch.rand(64, 1) * 2.0 + 0.2  # away from the r=0 axis singularity
+    z = torch.rand(64, 1)
+    t = torch.rand(64, 1)
+    x = torch.cat([r, z, t], dim=1).requires_grad_(True)
+    batch = _empty_batch(x, n_coords=3, n_fields=1)
+    out = loss_fn(exact, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-8, f"heat_equation_transient residual should be ~0 for the exact axisymmetric solution, got {float(res.item())}"
+
+
+def test_audit_physics_heat_equation_transient_wrong_solution_gives_nonzero_residual():
+    spec = _probe_spec("heat_equation_transient", ("r", "z", "t"), {"alpha": 0.5})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("T",), pde=_replace(spec.pde, fields=("T",)))
+    loss_fn = compile_problem(spec)
+    wrong = _ExactFn(lambda X: X[:, 0:1] ** 2 + X[:, 1:2] ** 2 + 0.0 * X[:, 2:3])
+    r = torch.rand(64, 1) * 2.0 + 0.2
+    z = torch.rand(64, 1)
+    t = torch.rand(64, 1)
+    x = torch.cat([r, z, t], dim=1).requires_grad_(True)
+    batch = _empty_batch(x, n_coords=3, n_fields=1)
+    out = loss_fn(wrong, None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1.0, f"heat_equation_transient residual should be nonzero for r^2+z^2, got {float(res.item())}"
+
+
+def test_audit_physics_ns_energy_2d_exact_solution_gives_zero_residual():
+    """u=x^2-y^2, v=-2xy (div-free, harmonic -- reused from the
+    elasticity MMS test) is a genuine potential-flow velocity field with
+    velocity potential phi=x^3/3-xy^2; p=-0.5*(x^2+y^2)^2 makes the
+    momentum equation exact for ANY Reynolds number (the viscous term is
+    independently zero since u,v are each harmonic); T = x^2*y - y^3/3 is
+    this flow's stream function, which by construction satisfies
+    u.grad(T)=0 exactly (T is constant along streamlines) AND is itself
+    harmonic -- so with Q_source=0, the energy equation is satisfied for
+    ANY thermal diffusivity too. All verified with `sympy` before use
+    here."""
+    spec = _probe_spec("incompressible_navier_stokes_energy_2d", ("x", "y"),
+                        {"nu": 1.0, "Re": 1.0, "rho": 1.0, "cp": 1.0, "Q_source": 0.0, "Pr": 1.0})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("u", "v", "p", "T"), pde=_replace(spec.pde, fields=("u", "v", "p", "T")))
+    loss_fn = compile_problem(spec)
+
+    def exact_fn(X):
+        x, y = X[:, 0:1], X[:, 1:2]
+        u = x ** 2 - y ** 2
+        v = -2 * x * y
+        p = -0.5 * (x ** 2 + y ** 2) ** 2
+        T = x ** 2 * y - y ** 3 / 3.0
+        return torch.cat([u, v, p, T], dim=1)
+
+    xy = torch.rand(64, 2, requires_grad=True)
+    batch = _empty_batch(xy, n_coords=2, n_fields=4)
+    out = loss_fn(_ExactFn(exact_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-8, f"incompressible_navier_stokes_energy_2d residual should be ~0, got {float(res.item())}"
+
+
+def test_audit_physics_ns_energy_2d_wrong_solution_gives_nonzero_residual():
+    spec = _probe_spec("incompressible_navier_stokes_energy_2d", ("x", "y"),
+                        {"nu": 1.0, "Re": 1.0, "rho": 1.0, "cp": 1.0, "Q_source": 0.0, "Pr": 1.0})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("u", "v", "p", "T"), pde=_replace(spec.pde, fields=("u", "v", "p", "T")))
+    loss_fn = compile_problem(spec)
+
+    def wrong_fn(X):
+        x, y = X[:, 0:1], X[:, 1:2]
+        u = x ** 2 - y ** 2
+        v = -2 * x * y
+        p = -0.5 * (x ** 2 + y ** 2) ** 2
+        T = x ** 2 * y + y ** 3 / 3.0  # wrong sign -- not the true stream function
+        return torch.cat([u, v, p, T], dim=1)
+
+    xy = torch.rand(64, 2, requires_grad=True)
+    batch = _empty_batch(xy, n_coords=2, n_fields=4)
+    out = loss_fn(_ExactFn(wrong_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1.0, f"incompressible_navier_stokes_energy_2d residual should be nonzero for the wrong T, got {float(res.item())}"
