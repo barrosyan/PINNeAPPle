@@ -31,13 +31,33 @@ def _colormap(values: np.ndarray, cmap_name: str = "viridis") -> np.ndarray:
     """values (N,) -> (N,3) uint8 RGB. Uses matplotlib (a base PINNeAPPle
     dependency, `matplotlib>=3.8` in pyproject.toml) if available; falls
     back to a plain grayscale ramp if not, rather than hard-failing on a
-    dependency that should already be present."""
+    dependency that should already be present.
+
+    Found and fixed a real, silent bug while validating this bridge
+    against a real Blender install: ``matplotlib.cm.get_cmap`` was
+    removed in matplotlib 3.9 (deprecated since 3.7), so on any
+    matplotlib >=3.9 (this repo's own `pyproject.toml` only pins
+    `>=3.8`, and 3.11 is what's actually installed here) this always
+    raised ``AttributeError`` and silently fell through to the grayscale
+    fallback below -- every exported PLY got grayscale vertex colours,
+    never the requested colormap, with no warning at all. Confirmed by
+    inspecting a real exported frame's raw RGB triplet (R==G==B, i.e.
+    grayscale) before this fix. ``matplotlib.colormaps[name]`` is the
+    replacement API (available since matplotlib 3.5), tried first now;
+    the old ``cm.get_cmap`` is kept as a fallback for matplotlib <3.5
+    installs, and the bare grayscale ramp remains the final fallback for
+    when matplotlib isn't installed at all."""
     vmin, vmax = float(values.min()), float(values.max())
     span = (vmax - vmin) or 1.0
     norm = np.clip((values - vmin) / span, 0.0, 1.0)
     try:
-        import matplotlib.cm as cm
-        colors = cm.get_cmap(cmap_name)(norm)[:, :3]
+        import matplotlib as mpl
+        try:
+            cmap = mpl.colormaps[cmap_name]
+        except AttributeError:
+            import matplotlib.cm as cm
+            cmap = cm.get_cmap(cmap_name)
+        colors = cmap(norm)[:, :3]
         return (colors * 255).astype(np.uint8)
     except Exception:
         gray = (norm * 255).astype(np.uint8)

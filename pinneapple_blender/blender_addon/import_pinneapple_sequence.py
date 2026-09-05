@@ -38,6 +38,16 @@ def main():
     if not paths:
         raise SystemExit(f"no frame_*.ply files found in {ply_dir}")
 
+    # Start from a genuinely empty scene, not Blender's factory-default
+    # Cube/Camera/Light -- confirmed by actually running this script and
+    # inspecting the saved .blend that without this, the default Cube
+    # was left behind, visible, sitting in the same scene as (and
+    # visually obscuring, in a real test render) the imported point-cloud
+    # frames. `use_empty=True` is the standard way to get a clean scene
+    # from a headless script, rather than deleting the default objects
+    # one by one after the fact.
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+
     bpy.context.scene.frame_start = 0
     bpy.context.scene.frame_end = len(paths) - 1
 
@@ -61,7 +71,13 @@ def main():
         # not just in vertex-paint view mode.
         if obj.data.color_attributes:
             mat = bpy.data.materials.new(name=f"pinneapple_mat_{i:04d}")
-            mat.use_nodes = True
+            # A material's node_tree (with a default Principled BSDF
+            # already wired up) exists on creation in current Blender --
+            # explicitly setting `use_nodes = True` is a no-op here and
+            # raises "expected to be removed in Blender 6.0"
+            # DeprecationWarning (confirmed against a real Blender 5.2.1
+            # install), so it's dropped rather than kept for an
+            # already-true default.
             bsdf = mat.node_tree.nodes.get("Principled BSDF")
             attr_node = mat.node_tree.nodes.new("ShaderNodeVertexColor")
             attr_node.layer_name = obj.data.color_attributes[0].name
