@@ -331,12 +331,33 @@ would have silently excluded those three packages entirely, even though
 they work fine in this editable-install development environment where
 the whole repo is on `sys.path` regardless of what's declared.
 
-**Not done this session**: no test using a REAL video/image/audio file
-(only synthetic, controlled ground-truth cases) — a real camera
-recording has noise, lens distortion, non-uniform lighting, and
-compression artifacts a synthetic test doesn't exercise; `video_piv` in
-particular would benefit from testing against a real, published PIV
-benchmark image pair before being trusted on real experimental footage.
+**Done in a follow-up pass**: `video_piv` was validated against a REAL
+`ffmpeg`/`libx264`-encoded video, not just numpy arrays --
+`tests/fixtures/perception/known_shift_real.mp4` (built from frames with
+a known constant sub-pixel velocity, then genuinely video-compressed;
+full provenance in that directory's README), decoded via a real
+`ffmpeg` subprocess in `tests/test_perception.py`. First attempt used
+`ffmpeg`'s own `scroll` video filter to generate the motion and gave
+wildly inconsistent frame-to-frame velocity (varying from -20 to +11px
+across consecutive frame pairs that should all show the same constant
+value) — traced to the `scroll` filter's own semantics not producing the
+assumed simple constant-velocity translation (confirmed it wasn't a
+compression-artifact issue by re-testing at `-qp 0`, near-lossless,
+which gave the identical inconsistent pattern). Switched to generating
+frames directly with `scipy.ndimage.shift` at a known velocity BEFORE
+encoding, which isolates exactly the encode/decode round-trip: recovered
+`u=2.21±0.07, v=-1.79±0.06 px/frame` against the true `(2.3, -1.7)` --
+same ~0.1-0.15px "peak-locking" precision as the pure-numpy synthetic
+test, confirming real video compression doesn't meaningfully degrade
+this technique's accuracy.
+
+**Still not done**: no test using a real, non-synthetic-source image or
+audio file (image_geometry/audio_modal remain numpy-only validated);
+`video_piv` still hasn't been tested against a real, published PIV
+benchmark image pair (a genuine experimental fluid-flow recording, as
+opposed to a random-noise texture built specifically to have this
+technique's ideal statistical properties) or camera-realistic effects
+(lens distortion, non-uniform lighting, motion blur).
 
 ---
 
