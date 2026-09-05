@@ -829,15 +829,54 @@ check were still missing** and are what this follow-up pass adds; see
   `pinneapple_llm/guardrail.py`'s own class docstring for the full
   derivation.
 
-  **Still NOT built** (unchanged from before this pass): reference-data
-  auto-fetch from a named benchmark dataset — it depends on
-  `pinneapple_pdb`'s own dataset registry being audited first, which
-  1.1's "still open" cartesian-product pass has not reached yet.
-  Dimensional analysis and conservation both remain scoped to the
-  families listed above, not generalized to every `pde_kind` this
-  project supports (see `pinneapple_llm/guardrail.py`'s docstring for
-  why a fully general per-equation symbolic balance-checker was
-  explicitly not attempted this pass).
+  **Reference-data auto-fetch: audited and partially built in this
+  follow-up pass.** Audit of `pinneapple_pdb` (`builder.py`,
+  `templates.py`, `validate.py`, `shard.py`, `derived.py`, read in full)
+  found **no named-benchmark-dataset catalog** — the thing the paragraph
+  above envisioned does not exist: `PhysicalDatasetBuilder` only ever
+  builds datasets by querying external Earth-data hubs (NASA CMR /
+  earthaccess) and writing the result to disk; it has no reader of its
+  own. Its `catalog_path` parquet is an *output* manifest of what a given
+  build produced (keyed by a content-hash `uid`), not an *input* registry
+  a caller could resolve a friendly name against without having built it
+  first. `schema_templates()` is the only name→dict lookup in the
+  package, and it returns physical-schema metadata (governing equations,
+  units policy) — never x/y data arrays. Inventing a fake named catalog
+  with one or two placeholder entries just to have something to ship
+  would be exactly the kind of overclaiming this whole gate exists to
+  prevent, so that was not done.
+
+  What was built instead — real and useful, but explicitly *not* the
+  named-catalog lookup: `PhysicsGuardrail.check()` now also accepts a
+  `reference_dataset_path` argument, an ADDITIVE alternative to the
+  existing manual `reference_x`/`reference_y` arrays (which keep working
+  completely unchanged). It resolves a real **file path** to the on-disk
+  UPD zarr format `PhysicalDatasetBuilder._write_upd` actually writes for
+  every shard (a plain `xr.Dataset.to_zarr(...)` store — a real,
+  already-existing artifact of this codebase's own dataset-building
+  path), loads it via the new `_load_reference_from_upd_zarr` helper
+  (optional `reference_x_vars`/`reference_y_vars` pick which data
+  variables/coordinates to stack, defaulting to `self.spec.coords`/
+  `self.spec.fields`), and feeds the result into the existing, unchanged
+  `_check_reference` exactly like a manually-supplied array pair would.
+  Proven end-to-end against a real UPD zarr store built and written to
+  disk inside the test (no mocks) — see `tests/test_physics_guardrail
+  .py`'s new reference-data-auto-fetch section (6 new tests, 30 total in
+  the file, all passing), including a test asserting the auto-fetch path
+  and the manual-array path produce the identical `CheckResult` (same
+  RMSE, same pass/fail) when fed the same underlying data.
+
+  **Still NOT built**: the actual named-benchmark-dataset registry itself
+  — that would require `pinneapple_pdb` to grow a real name→dataset
+  catalog (e.g. a curated table of known DNS/experimental benchmarks
+  resolvable by a short string like `"channel_flow_re_180_dns"`), which is
+  out of scope for a guardrail-side change alone and remains open for
+  whoever next touches `pinneapple_pdb`. Dimensional analysis and
+  conservation both remain scoped to the families listed above, not
+  generalized to every `pde_kind` this project supports (see
+  `pinneapple_llm/guardrail.py`'s docstring for why a fully general
+  per-equation symbolic balance-checker was explicitly not attempted this
+  pass).
 
 ### 3.3 Why an LLM alone cannot replace this
 Worth stating explicitly, since it's the actual competitive thesis: a raw
