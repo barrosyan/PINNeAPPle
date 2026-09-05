@@ -501,9 +501,49 @@ against the textbook solid-body-rotation solution: zero relative velocity
 **Net result of this seventh batch**: Tier A failures **32/137 → 31/137**.
 `test_manufactured_solutions.py`: 26/26 passing.
 
-**Remaining Category 1 gaps** (8 presets, ~31 counting Category 2/3
-overlaps in the raw Tier A number): `axial_compressor_cascade_2d`,
-`axial_compressor_meanline`, `axial_compressor_stage_3d`,
+**Eighth batch**: two of the axial-compressor presets, tackled with the
+turbomachinery preset's own documented equations doing most of the work:
+
+- `compressor_meanline_1d` (`axial_compressor_meanline`) — the preset's
+  own docstring states the exact 3 governing equations (stage-averaged
+  energy, continuity, ideal-gas state) for 4 of its 5 fields
+  (`T_t, p_t, rho, u`); implemented exactly as documented. The 5th field,
+  `c_theta` (tangential velocity), has NO governing equation or boundary
+  condition anywhere in the preset itself — rather than invent an
+  unstated Euler-turbine-work/swirl equation for it, it was left with no
+  PDE residual, matching exactly what the preset specifies rather than
+  adding unstated physics. Verified with a real (non-trivial, `sympy`-
+  checkable by hand) manufactured solution: `T_t` linear in `s`, `u` and
+  `rho` constant, `p_t` from the ideal-gas relation — satisfies all
+  3 documented equations simultaneously.
+- `compressible_euler_2d` (`axial_compressor_cascade_2d`) — genuinely
+  different from the existing `euler_compressible` kind (primitive
+  variables `rho,u,v,p,T` here vs. conservative `rho,rho_u,rho_v,E`
+  there, and steady here vs. unsteady there). Implemented by building
+  the conservative fluxes algebraically from the primitive fields and
+  reusing the EXACT SAME flux-divergence formulas as the already-Tier-B-
+  verified `euler_compressible` branch (steady, so its time-derivative
+  terms are simply dropped), plus the ideal-gas state equation (needed
+  since `p` is here an independent field, not derived from `E`).
+  **Honest confidence note**: unlike the other new kinds this session,
+  this one does NOT have an independent nonlinear closed-form MMS test —
+  genuine 2D nonlinear compressible-Euler exact solutions are hard to
+  construct quickly (verified by hand: forcing spatially-constant
+  velocity/density/pressure via momentum+energy also forces temperature
+  constant, i.e. uniform flow is the only 1D-reducible self-consistent
+  case without a driving mechanism like an area change — too weak a
+  check to claim as verification, since a flux formula with a sign error
+  would still trivially satisfy it). Correctness here is inherited from
+  the reused, already-verified flux formulas, not independently
+  re-derived — Tier A (compiles, runs) confirmed; treat with
+  correspondingly moderate confidence.
+
+**Net result of this eighth batch**: Tier A failures **31/137 → 29/137**.
+`test_manufactured_solutions.py`: 28/28 passing (2 new, for
+`compressor_meanline_1d`; `compressible_euler_2d` intentionally has none,
+per the honesty note above).
+
+**Remaining Category 1 gaps** (5 presets): `axial_compressor_stage_3d`,
 `bekker_wong_surrogate_2d`, `crystal_phonon`, `material_fracture_2d`,
 `rocket_nozzle_cfd`. Explicitly not attempted this session, with
 reasons: `bekker_wong_terramechanics` isn't a differential-equation
@@ -513,14 +553,17 @@ semi-empirical terramechanics surrogate, which would need a genuinely
 new penalty-based residual paradigm (not another equality-residual
 `pde_kind`) to implement properly, plus the real Bekker pressure-sinkage
 and Janosi-Hanamoto shear-stress formulas integrated over a contact
-patch — a larger, riskier undertaking than this session's per-item
-budget. The remaining ones (compressor cascade/meanline/rotating stage
-aerodynamics, phonon Boltzmann transport, phase-field fracture, rocket
-nozzle axisymmetric compressible flow) are each genuine, nontrivial
-physics-derivation tasks in specialized domains where getting a subtle
-sign or term wrong is a real risk without more dedicated research time
-per item than a shared session budget affords — flagged honestly as
-open rather than rushed.
+patch. `axial_compressor_stage_3d` needs compressible Euler in
+CYLINDRICAL coordinates in a ROTATING frame simultaneously (metric terms
+for the cylindrical divergence PLUS Coriolis/centrifugal terms PLUS the
+compressible energy equation, at once) — a meaningfully higher error-risk
+combination than the 2D Cartesian cascade case just done, not attempted
+without more dedicated derivation time. `crystal_phonon` (phonon
+Boltzmann transport), `material_fracture_2d` (phase-field/Cahn-Hilliard
+coupled to elasticity), and `rocket_nozzle_cfd` (axisymmetric
+compressible Euler, the same cylindrical-metric risk as the compressor
+stage) are each genuine, nontrivial physics-derivation tasks in
+specialized domains — flagged honestly as open rather than rushed.
 
 **~20 of the 62 failures.** `ModelRegistry.list()` includes time-series
 models (`arima`, `esn`, `esn_rc`, `koopman`, `dmd`, `pod`, `havok`,
