@@ -305,6 +305,34 @@ second-derivative-of-a-constant autograd-graph-connectivity limitation,
 not a defect in the new code) — tracked as a known gap, not silently
 skipped.
 
+**Third batch, same pass**: while triaging `drug_diffusion_tissue`
+(kind `"reaction_diffusion_2d"`), found this was never actually a
+missing-physics gap at all — a naming collision. An existing
+`"reaction_diffusion"` kind already existed in `compile.py`, but it
+implements two-species nonlinear Gray-Scott kinetics (fields `u`, `v`);
+`drug_diffusion_tissue` needs a completely different, much simpler
+single-species linear model (`dC/dt = D*laplacian(C) - lambda*C`, field
+`C`). Added `reaction_diffusion_2d` as its own kind rather than
+overloading the existing one. Also added `black_scholes_1d` (the real
+Black, Scholes 1973 PDE) and `heston_pde_2d` (Heston 1993, with the
+correlated mixed derivative term). Both finance presets use `tau`
+(time-to-expiry), not `t`, as their time-like coordinate — same
+`has_t`/`t_index`-independent pattern as `lane_emden_polytrope`'s `xi`.
+
+`black_scholes_1d`'s MMS test uses the REAL closed-form Black-Scholes
+European call price (not an arbitrary manufactured function) — verified
+with `sympy` to solve the PDE exactly — which is a stronger check than
+usual: it proves the residual is correct against the actual textbook
+solution practitioners would compare it to, not just some function that
+happens to satisfy the equation. `heston_pde_2d` has no simple closed
+form (real Heston pricing needs the Fourier/characteristic-function
+method), so it has Tier A coverage (runs, finite loss) but no Tier B MMS
+test this session — a known, stated gap, not a defect.
+
+**Net result of this third batch**: Tier A failures **45/137 → 42/137**.
+Tests: `test_manufactured_solutions.py` now 14/14 passing (4 new: 2 for
+`reaction_diffusion_2d`, 2 for `black_scholes_1d`).
+
 ## Category 2 — not a defect: generic smoke test doesn't fit the architecture's real input shape
 
 **~20 of the 62 failures.** `ModelRegistry.list()` includes time-series
