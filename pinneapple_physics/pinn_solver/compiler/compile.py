@@ -831,6 +831,65 @@ def compile_problem(
             res_list.append(res_r)
             res_list.append(res_z)
 
+        elif pde_kind == "axisymmetric_linear_elasticity_torsion":
+            # threaded_coupling_tc50_rotating: axisymmetric elasticity
+            # (u_r, u_z) -- identical physics to "axisymmetric_linear_elasticity"
+            # above -- PLUS a decoupled torsional equation for u_theta
+            # (the preset's own docstring/meta already state the torsion
+            # problem decouples from the meridional one in linear
+            # elasticity, and give the exact torsional Navier equation):
+            #   d^2(u_theta)/dr^2 + (1/r)*d(u_theta)/dr - u_theta/r^2
+            #     + d^2(u_theta)/dz^2 = 0
+            if "r" not in coords or "z" not in coords:
+                raise ValueError("axisymmetric_linear_elasticity_torsion expects coords ('r','z').")
+            for n in ("u_r", "u_z", "u_θ"):
+                if n not in fields:
+                    raise ValueError(f"axisymmetric_linear_elasticity_torsion expects field '{n}'.")
+
+            lam = float(p.get("lambda", 1.0))
+            mu = float(p.get("mu", 1.0))
+
+            r_idx = _coord_index(coords, "r")
+            z_idx = _coord_index(coords, "z")
+            r_col = xcol[:, r_idx:r_idx + 1]
+
+            u_r, u_z, u_th = fields["u_r"], fields["u_z"], fields["u_θ"]
+            grad_ur = grad(u_r, xcol)
+            grad_uz = grad(u_z, xcol)
+
+            dur_dr = grad_ur[:, r_idx:r_idx + 1]
+            dur_dz = grad_ur[:, z_idx:z_idx + 1]
+            duz_dr = grad_uz[:, r_idx:r_idx + 1]
+            duz_dz = grad_uz[:, z_idx:z_idx + 1]
+
+            eps_rr = dur_dr
+            eps_tt = u_r / r_col
+            eps_zz = duz_dz
+            eps_rz = 0.5 * (dur_dz + duz_dr)
+
+            tr_eps = eps_rr + eps_tt + eps_zz
+            sigma_rr = lam * tr_eps + 2.0 * mu * eps_rr
+            sigma_tt = lam * tr_eps + 2.0 * mu * eps_tt
+            sigma_zz = lam * tr_eps + 2.0 * mu * eps_zz
+            sigma_rz = 2.0 * mu * eps_rz
+
+            grad_srr = grad(sigma_rr, xcol)
+            grad_srz = grad(sigma_rz, xcol)
+            grad_szz = grad(sigma_zz, xcol)
+
+            dsrr_dr = grad_srr[:, r_idx:r_idx + 1]
+            dsrz_dz = grad_srz[:, z_idx:z_idx + 1]
+            dsrz_dr = grad_srz[:, r_idx:r_idx + 1]
+            dszz_dz = grad_szz[:, z_idx:z_idx + 1]
+
+            res_list.append(dsrr_dr + dsrz_dz + (sigma_rr - sigma_tt) / r_col)
+            res_list.append(dsrz_dr + dszz_dz + sigma_rz / r_col)
+
+            duth_dr = grad(u_th, xcol)[:, r_idx:r_idx + 1]
+            d2uth_dr2 = grad(duth_dr, xcol)[:, r_idx:r_idx + 1]
+            d2uth_dz2 = grad(grad(u_th, xcol)[:, z_idx:z_idx + 1], xcol)[:, z_idx:z_idx + 1]
+            res_list.append(d2uth_dr2 + duth_dr / r_col - u_th / (r_col * r_col) + d2uth_dz2)
+
         elif pde_kind in ("incompressible_navier_stokes_energy_2d", "incompressible_navier_stokes_energy_3d",
                           "navier_stokes_energy_2d"):
             # Steady incompressible Navier-Stokes momentum+continuity
