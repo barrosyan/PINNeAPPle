@@ -719,22 +719,121 @@ check were still missing** and are what this follow-up pass adds; see
   checks reuse existing `compile_problem`/`pinneapple_analysis` machinery
   once 1.1 confirms what's actually wired up there today).
 - **Status: conservation + dimensional-analysis checks added in this
-  follow-up pass** (`pinneapple_llm/guardrail.py`). `_check_conservation`
-  re-evaluates a spatial integral balance (net flux through the domain
-  boundary vs. any source term the `ProblemSpec` declares) for the
-  `pde_kind` families where that balance has a known closed form
-  (incompressible continuity, steady heat conduction) — skipped, not
-  faked, for kinds without one, following the same "absent, not a false
-  pass" convention as the existing reference-data check.
-  `_check_dimensional_analysis` replaces the old positive-value-only
-  parameter check with a real units-consistency pass driven by a small
-  per-`pde_kind` unit table (declares each parameter's physical
-  dimension, e.g. `nu` is [L^2/T]; flags an internally inconsistent
-  combination, not just a negative number). Reference-data auto-fetch
-  from a named benchmark dataset (the other piece called out above) is
-  still not built — it depends on `pinneapple_pdb`'s own dataset registry
-  being audited first, which 1.1's "still open" cartesian-product pass
-  has not reached yet.
+  follow-up pass** (`pinneapple_llm/guardrail.py`,
+  `tests/test_physics_guardrail.py`) — precise scope below, since
+  overclaiming "units + conservation checked" would be exactly the kind
+  of vague, unfalsifiable claim this whole gate exists to prevent.
+
+  `_check_dimensional_analysis` (dispatched from
+  `_check_parameter_sanity`, which now always runs exactly ONE of it or
+  the legacy heuristic below, never both) is a real, table-driven units-
+  and-structure check, but **only for five `pde_kind` families**, each
+  keyed separately (parameter names collide across families with
+  different physical meanings — found for real via this table: `nu` is
+  kinematic viscosity [L^2/T], must be > 0, in the diffusion/Navier-
+  Stokes families below, but the *dimensionless* Poisson's ratio in the
+  elasticity family, valid range (-1, 0.5), legitimately negative for an
+  auxetic material — the old global "nu must be positive" heuristic
+  would have wrongly rejected that):
+    - diffusion/advection-diffusion/Burgers (`heat_equation`,
+      `advection_diffusion`, `burgers`): the diffusion/viscosity
+      coefficient (`alpha`/`kappa`/`nu`, whichever this pde_kind's
+      compiled residual reads) must be a positive [L^2/T] real number.
+    - steady conduction (`heat_equation_steady`, `_multilayer`,
+      `_anisotropic`): thermal conductivity (`k`/`k_eff`/`k_x,y,z`) must
+      be a positive [M·L/(T^3·Θ)] real number.
+    - transient conduction (`heat_equation_transient`): `alpha` must be
+      a positive diffusivity, AND — when `k`, `rho`, `cp` are *also*
+      declared (as `car_brake_thermal`'s preset does, alongside the
+      `alpha` the compiled residual actually reads) — the NUMERIC
+      relation `alpha == k/(rho*cp)` is verified to hold (the dimensions
+      force this exactly: `[k]/([rho]*[cp]) = [L^2/T]`). Confirmed
+      `car_brake_thermal`'s own declared values satisfy this to <0.01%;
+      a synthetic mismatch is caught with a clear >2% relative-error
+      report.
+    - incompressible Navier-Stokes (`navier_stokes_incompressible`,
+      `incompressible_navier_stokes_2d`): `Re`/`inv_Re` must be positive
+      and dimensionless, `Re*inv_Re == 1` when both given, `nu` (if
+      given) must be a positive [L^2/T] viscosity.
+    - linear elasticity (`linear_elasticity`, `_plane_strain`,
+      `_plane_stress`): `E` and `mu` (shear modulus) must be positive
+      stresses; `lambda`/`lam` (first Lame parameter) need only be
+      finite — NOT positive, since an auxetic material makes it
+      negative — with the real stability constraint checked on the
+      implied bulk modulus `lambda + 2*mu/3 > 0` instead; `nu` must be
+      in (-1, 0.5); and when `E`, `nu`, `lambda`, `mu` are all given, the
+      standard isotropic relations `lambda == E*nu/((1+nu)(1-2nu))` and
+      `mu == E/(2*(1+nu))` are verified numerically. **Real finding from
+      building this**: `aircraft_wing_structural` and
+      `car_suspension_fatigue` (both in `presets/engineering.py`) declare
+      their Lame parameter under the key `"lam"`, but
+      `compile.py`'s `linear_elasticity*` residual reads
+      `params["lambda"]` only (defaulting silently to `1.0` if absent) —
+      this check now catches that mismatch and reports it as a failing
+      `dimensional_analysis` check; the two presets themselves are NOT
+      fixed as part of this pass (out of scope for the guardrail work,
+      left as a now-documented, concretely-reproducible open item for
+      whoever next touches `presets/engineering.py`).
+  Every other `pde_kind` (laplace, poisson, wave_equation, darcy, stokes,
+  hyperelasticity_neo_hookean, maxwell_te, biot_poroelasticity, ... —
+  everything not in the five families above) falls back to the
+  ORIGINAL positivity-only heuristic (still runs, so nothing regresses,
+  but not the same rigor) — the report's own check name
+  (`dimensional_analysis` vs. `parameter_sanity`) tells a caller which
+  one actually ran for a given spec, rather than leaving it implicit.
+
+  `_check_conservation` re-evaluates a Monte-Carlo boundary-flux estimate
+  for **exactly two families**, and is ABSENT from the report (never a
+  false pass) for every other `pde_kind`:
+    - incompressible continuity (`navier_stokes_incompressible`,
+      `incompressible_navier_stokes_2d`): net outward volume flux of the
+      model's velocity field through `domain_bounds`'s box boundary,
+      which the divergence theorem says must be ~0 for a divergence-free
+      field. For a time-dependent spec, evaluated at one fixed time
+      slice (continuity holds instantaneously, not just aggregated over
+      time).
+    - steady heat conduction with **no source term** (`heat_equation_
+      steady`, `_multilayer`, `_anisotropic`): net Fourier's-law flux
+      (`-k*grad(T)`, or `-k_i*dT/dx_i` per-axis for the anisotropic
+      kind) through the boundary, must be ~0. This explicitly ASSUMES
+      `q=0` — a spec solved with a nonzero `ctx['source_fn']` (a
+      training-time argument, not part of `ProblemSpec` itself, so this
+      check has no way to see it) will report a nonzero imbalance even
+      for an otherwise-correct solution. Documented as an explicit scope
+      limit, not silently ignored.
+
+  Both report a *normalised* imbalance ratio (`|net flux| / sum(|per-face
+  flux|)`), not a raw flux value, specifically so one threshold works
+  across arbitrarily different domain sizes/field magnitudes. The
+  default threshold (0.15) and sample count (2048 points/face) were
+  picked from an empirical noise-floor characterization done BEFORE
+  choosing them, not guessed: on a numerically-EXACT divergence-free 3D
+  velocity field (built from `curl` of a smooth vector potential, so its
+  divergence is exactly zero by construction), the observed imbalance
+  ratio at 2048 points/face had mean ~0.007–0.010 and max ~0.027–0.05
+  over 50-trial resampling on domains matching this repo's own
+  `channel_flow_3d`/`lid_driven_cavity_3d` presets; the steady-conduction
+  analogue is far quieter (~1e-4 at the same sample count, on an exact
+  harmonic `T`). A deliberately non-conservative field (nonzero-
+  divergence velocity; a non-harmonic `T` implying a hidden source) gave
+  a ratio of exactly 1.0 in both cases (no cross-face cancellation at
+  all). 0.15 sits ~3–20x above the observed noise ceiling and ~6.7x
+  below the "clearly broken" ratio of 1.0 — comfortable margin on both
+  sides for a Monte-Carlo estimator, not a coin-flip threshold; see
+  `tests/test_physics_guardrail.py` for the exact-good/exact-bad
+  contrast tests this was validated against (24 tests, all passing) and
+  `pinneapple_llm/guardrail.py`'s own class docstring for the full
+  derivation.
+
+  **Still NOT built** (unchanged from before this pass): reference-data
+  auto-fetch from a named benchmark dataset — it depends on
+  `pinneapple_pdb`'s own dataset registry being audited first, which
+  1.1's "still open" cartesian-product pass has not reached yet.
+  Dimensional analysis and conservation both remain scoped to the
+  families listed above, not generalized to every `pde_kind` this
+  project supports (see `pinneapple_llm/guardrail.py`'s docstring for
+  why a fully general per-equation symbolic balance-checker was
+  explicitly not attempted this pass).
 
 ### 3.3 Why an LLM alone cannot replace this
 Worth stating explicitly, since it's the actual competitive thesis: a raw
