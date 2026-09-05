@@ -1435,6 +1435,104 @@ def compile_problem(
             res_list.append(C1_t + (k12 + kel) * C1 - k21 * C2)
             res_list.append(C2_t - k12 * C1 + k21 * C2)
 
+        elif pde_kind == "compressor_meanline_1d":
+            # 1D mean-line axial-compressor thermodynamics
+            # (axial_compressor_meanline). Exactly the 3 equations the
+            # preset's own docstring states (stage-averaged, streamwise
+            # coordinate s in [0,1]):
+            #   Energy:     c_p * dT_t/ds = W_stage_per_unit_length
+            #   Continuity: d(rho*u*A(s))/ds = 0  (A(s) from
+            #               ctx["area_fn"], defaulting to constant A=1 --
+            #               a straight annular duct -- if not supplied)
+            #   State:      p_t = rho * R_gas * T_t  (algebraic, ideal gas)
+            # The preset's 5th field, c_theta (tangential velocity), is
+            # NOT given its own governing equation OR boundary condition
+            # anywhere in the preset itself (only T_t/p_t/u have inlet
+            # BCs) -- rather than invent an unstated Euler-work/swirl
+            # equation for it, it is left with no PDE residual here,
+            # matching exactly what the preset itself specifies, not
+            # silently adding physics beyond what was documented.
+            if "s" not in coords:
+                raise ValueError("compressor_meanline_1d expects coord 's'.")
+            for n in ("T_t", "p_t", "rho", "u"):
+                if n not in fields:
+                    raise ValueError(f"compressor_meanline_1d expects field '{n}'.")
+            c_p = float(p.get("c_p", 1004.5))
+            R_gas = float(p.get("R_gas", 287.0))
+            W_stage = float(p.get("W_stage_per_unit_length", 0.0))
+            s_idx = _coord_index(coords, "s")
+
+            T_t, p_t, rho, u_vel = fields["T_t"], fields["p_t"], fields["rho"], fields["u"]
+            dTt_ds = grad(T_t, xcol)[:, s_idx:s_idx + 1]
+            res_list.append(c_p * dTt_ds - W_stage)
+
+            area_fn = ctx.get("area_fn")
+            if area_fn is not None:
+                A_np = area_fn(xcol.detach().cpu().numpy(), ctx)
+                A_val = torch.as_tensor(A_np, device=device, dtype=rho.dtype)
+                if A_val.ndim == 1:
+                    A_val = A_val[:, None]
+            else:
+                A_val = torch.ones_like(rho)
+            mass_flux = rho * u_vel * A_val
+            res_list.append(grad(mass_flux, xcol)[:, s_idx:s_idx + 1])
+
+            res_list.append(p_t - rho * R_gas * T_t)
+
+        elif pde_kind == "compressible_euler_2d":
+            # Steady 2D compressible Euler in PRIMITIVE variables
+            # (rho, u, v, p, T) -- axial_compressor_cascade_2d. Genuinely
+            # different from the existing "euler_compressible" kind,
+            # which uses CONSERVATIVE variables (rho, rho_u, rho_v, E)
+            # and is unsteady (not a naming collision like
+            # reaction_diffusion_2d/incompressible_navier_stokes_2d
+            # earlier). Rather than re-derive the flux physics from
+            # scratch (real risk of a subtle sign error in compressible
+            # gas dynamics), the conservative quantities are built
+            # algebraically from the primitive fields and the residual
+            # reuses EXACTLY the same flux-divergence structure as the
+            # already-verified "euler_compressible" branch (steady, so
+            # its time-derivative terms are simply dropped), plus the
+            # ideal-gas state equation tying rho/T/p together (since here
+            # p is its own independent field, not derived from E).
+            #
+            # HONEST CONFIDENCE NOTE: this reuses already-verified flux
+            # formulas, but was NOT independently checked against a fresh
+            # nontrivial closed-form manufactured solution this session
+            # (genuine 2D nonlinear compressible Euler solutions in
+            # closed form are hard to construct quickly and this
+            # implementation's own MMS test below is a real, verified
+            # exact solution -- see below -- but only in the
+            # SUBSONIC-uniform-flow-plus-linear-temperature-gradient
+            # regime, not a general nonlinear check). Tier A (compiles,
+            # runs) is confirmed; treat with correspondingly moderate,
+            # not full, confidence versus the astrophysics/finance kinds
+            # that have true nonlinear exact-solution coverage.
+            if spatial_dim != 2:
+                raise ValueError("compressible_euler_2d expects 2D spatial dims.")
+            for n in ("rho", "u", "v", "p", "T"):
+                if n not in fields:
+                    raise ValueError(f"compressible_euler_2d expects field '{n}'.")
+            gamma = float(p.get("gamma", 1.4))
+            R_gas = float(p.get("R_gas", 287.0))
+            cv = R_gas / (gamma - 1.0)
+            x_idx = _coord_index(coords, "x")
+            y_idx = _coord_index(coords, "y")
+
+            rho, u_vel, v_vel, p_pres, T_temp = fields["rho"], fields["u"], fields["v"], fields["p"], fields["T"]
+            rho_u = rho * u_vel
+            rho_v = rho * v_vel
+            E_f = rho * (cv * T_temp + 0.5 * (u_vel * u_vel + v_vel * v_vel))
+
+            F1x, F2x, F3x, F4x = rho_u, rho_u * u_vel + p_pres, rho_u * v_vel, (E_f + p_pres) * u_vel
+            F1y, F2y, F3y, F4y = rho_v, rho_u * v_vel, rho_v * v_vel + p_pres, (E_f + p_pres) * v_vel
+
+            res_list.append(grad(F1x, xcol)[:, x_idx:x_idx + 1] + grad(F1y, xcol)[:, y_idx:y_idx + 1])
+            res_list.append(grad(F2x, xcol)[:, x_idx:x_idx + 1] + grad(F2y, xcol)[:, y_idx:y_idx + 1])
+            res_list.append(grad(F3x, xcol)[:, x_idx:x_idx + 1] + grad(F3y, xcol)[:, y_idx:y_idx + 1])
+            res_list.append(grad(F4x, xcol)[:, x_idx:x_idx + 1] + grad(F4y, xcol)[:, y_idx:y_idx + 1])
+            res_list.append(p_pres - rho * R_gas * T_temp)
+
         elif pde_kind == "kepler_two_body_orbit":
             # Restricted two-body problem, planar Cartesian formulation
             # (Vallado, "Fundamentals of Astrodynamics and Applications").

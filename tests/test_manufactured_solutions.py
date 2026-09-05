@@ -572,3 +572,58 @@ def test_audit_physics_ns_rotating_frame_wrong_solution_gives_nonzero_residual()
     out = loss_fn(_ExactFn(wrong_fn), None, batch)
     res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
     assert float(res.item()) > 1.0, f"rotating-frame NS residual should be nonzero for the wrong pressure field, got {float(res.item())}"
+
+
+def test_audit_physics_compressor_meanline_1d_exact_solution_gives_zero_residual():
+    """T_t linear in s (satisfies the energy equation exactly by
+    construction), u and rho constant (satisfies continuity with A=1),
+    p_t=rho*R_gas*T_t (satisfies the ideal-gas state equation exactly)
+    -- all three of axial_compressor_meanline's own documented equations
+    satisfied simultaneously by construction."""
+    c_p, R_gas, W_stage = 1004.5, 287.0, 5000.0
+    spec = _probe_spec("compressor_meanline_1d", ("s",),
+                        {"c_p": c_p, "R_gas": R_gas, "W_stage_per_unit_length": W_stage})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("T_t", "p_t", "rho", "u"), pde=_replace(spec.pde, fields=("T_t", "p_t", "rho", "u")))
+    loss_fn = compile_problem(spec)
+
+    T_t0, u0, rho0 = 288.15, 136.0, 3.676
+
+    def exact_fn(X):
+        s = X[:, 0:1]
+        T_t = T_t0 + (W_stage / c_p) * s
+        u = u0 + 0.0 * s
+        rho = rho0 + 0.0 * s
+        p_t = rho * R_gas * T_t
+        return torch.cat([T_t, p_t, rho, u], dim=1)
+
+    s = torch.rand(64, 1, requires_grad=True)
+    batch = _empty_batch(s, n_coords=1, n_fields=4)
+    out = loss_fn(_ExactFn(exact_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-6, f"compressor_meanline_1d residual should be ~0, got {float(res.item())}"
+
+
+def test_audit_physics_compressor_meanline_1d_wrong_solution_gives_nonzero_residual():
+    c_p, R_gas, W_stage = 1004.5, 287.0, 5000.0
+    spec = _probe_spec("compressor_meanline_1d", ("s",),
+                        {"c_p": c_p, "R_gas": R_gas, "W_stage_per_unit_length": W_stage})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("T_t", "p_t", "rho", "u"), pde=_replace(spec.pde, fields=("T_t", "p_t", "rho", "u")))
+    loss_fn = compile_problem(spec)
+
+    T_t0, u0, rho0 = 288.15, 136.0, 3.676
+
+    def wrong_fn(X):
+        s = X[:, 0:1]
+        T_t = T_t0 + (W_stage / c_p) * s
+        u = u0 + 0.0 * s
+        rho = rho0 + 10.0 * s  # breaks continuity (mass flux no longer constant)
+        p_t = rho * R_gas * T_t
+        return torch.cat([T_t, p_t, rho, u], dim=1)
+
+    s = torch.rand(64, 1, requires_grad=True)
+    batch = _empty_batch(s, n_coords=1, n_fields=4)
+    out = loss_fn(_ExactFn(wrong_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1.0, f"compressor_meanline_1d residual should be nonzero for broken continuity, got {float(res.item())}"
