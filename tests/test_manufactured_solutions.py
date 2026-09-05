@@ -525,3 +525,50 @@ def test_audit_physics_axisymmetric_elasticity_torsion_wrong_solution_gives_nonz
     out = loss_fn(_ExactFn(wrong_fn), None, batch)
     res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
     assert float(res.item()) > 1.0, f"axisymmetric torsion residual should be nonzero for u_theta=r^2, got {float(res.item())}"
+
+
+def test_audit_physics_ns_rotating_frame_solid_body_rotation_gives_zero_residual():
+    """u=v=0 (zero relative velocity -- the fluid co-rotates exactly with
+    the frame), p=0.5*omega^2*(x^2+y^2) (the classic hydrostatic-style
+    pressure field that balances the centrifugal term) satisfies the
+    rotating-frame Navier-Stokes equations exactly for ANY omega --
+    verified with `sympy` before use here."""
+    omega = 200.0  # ~2000 RPM, matching fan_cooler_cfd's default
+    spec = _probe_spec("incompressible_navier_stokes_rotating_frame", ("x", "y"), {"omega": omega, "Re": 100.0})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("u", "v", "p"), pde=_replace(spec.pde, fields=("u", "v", "p")))
+    loss_fn = compile_problem(spec)
+
+    def exact_fn(X):
+        x, y = X[:, 0:1], X[:, 1:2]
+        u = 0.0 * x
+        v = 0.0 * y
+        p = 0.5 * omega * omega * (x ** 2 + y ** 2)
+        return torch.cat([u, v, p], dim=1)
+
+    xy = torch.rand(64, 2, requires_grad=True)
+    batch = _empty_batch(xy, n_coords=2, n_fields=3)
+    out = loss_fn(_ExactFn(exact_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) < 1e-6, f"rotating-frame NS residual should be ~0 for solid-body rotation, got {float(res.item())}"
+
+
+def test_audit_physics_ns_rotating_frame_wrong_solution_gives_nonzero_residual():
+    omega = 200.0
+    spec = _probe_spec("incompressible_navier_stokes_rotating_frame", ("x", "y"), {"omega": omega, "Re": 100.0})
+    from dataclasses import replace as _replace
+    spec = _replace(spec, fields=("u", "v", "p"), pde=_replace(spec.pde, fields=("u", "v", "p")))
+    loss_fn = compile_problem(spec)
+
+    def wrong_fn(X):
+        x, y = X[:, 0:1], X[:, 1:2]
+        u = 0.0 * x
+        v = 0.0 * y
+        p = 0.5 * omega * omega * (x ** 2 - y ** 2)  # wrong sign on the y term
+        return torch.cat([u, v, p], dim=1)
+
+    xy = torch.rand(64, 2, requires_grad=True)
+    batch = _empty_batch(xy, n_coords=2, n_fields=3)
+    out = loss_fn(_ExactFn(wrong_fn), None, batch)
+    res = out["pde"] if isinstance(out, dict) and "pde" in out else out["total"]
+    assert float(res.item()) > 1.0, f"rotating-frame NS residual should be nonzero for the wrong pressure field, got {float(res.item())}"
