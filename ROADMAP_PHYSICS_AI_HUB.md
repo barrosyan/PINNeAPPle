@@ -66,15 +66,102 @@ optional-dep ones reported back instead of eating everything after them).
 
 **Still open** (this pass only checked "does it import," not "does it run
 correctly"), two separate items:
-- **Item A — architecture×preset cartesian product**: upgrading Tier A
-  from architecture-alone/preset-alone (always paired with
-  `modified_mlp`, 3 epochs, a tiny batch) to a genuine architecture×preset
-  cartesian product at a more realistic epoch/batch size.
-- **Item B — 6-package breadth extension**: extending Tier-A-style "build
-  one instance, run one forward/backward pass" breadth testing to these 6
-  packages' (`pinneapple_design`, `pinneapple_systems`,
-  `pinneapple_analysis`, `pinneapple_adaptation`, `pinneapple_tools`,
-  `pinneapple_simulation`) actual classes, not just their imports.
+- **Item A — architecture×preset cartesian product**: ✅ done —
+  `tests/test_cartesian_breadth.py`. **Not** the full ~92×~54 cartesian
+  product (4968 combos — infeasible at a real training budget in a test
+  suite); a deliberately-diverse **10 architectures × 7 presets = 70
+  combinations**, documented family-by-family (why each was picked) in the
+  file's own module docstring. Architectures: `vanilla_pinn` (plain
+  baseline), `modified_mlp` (Fourier-feature highway MLP — also Tier A's
+  own fixed preset-test architecture), `bench_res_mlp` (residual/deep MLP),
+  `bench_fourier_mlp` (a second, independent Fourier-features MLP),
+  `siren` (sinusoidal/implicit-neural-representation family), `vpinn`
+  (variational/weak-form loss family), `xtfc` (functional-connections/
+  hard-constraint family), plus `pinnsformer` (attention/transformer),
+  `deeponet` and `fno` (operator learning) included specifically as
+  **expected negative cases** to exercise the skip logic honestly. No true
+  KAN is registered (`kae` is a Kolmogorov-Arnold-style *autoencoder*,
+  `x -> x_hat`, not a coordinate regressor a PINN preset can train), so it
+  was left out rather than forced in. Presets: `laplace_2d`/`poisson_2d`
+  (elliptic), `burgers_1d` (hyperbolic/nonlinear), `drug_diffusion_tissue`
+  (parabolic reaction-diffusion), `lid_driven_cavity_3d` (incompressible
+  Navier-Stokes), `plane_stress_2d` (structural/elasticity — called with
+  `E=1.0, nu=0.3` instead of real-steel `E=210e9`, since at the real
+  modulus the residual's magnitude sits outside float32 precision and the
+  loss is numerically frozen regardless of learning rate, confirmed by
+  hand — a non-dimensionalization gap in the preset itself, worth its own
+  follow-up), and `space_debris_cw_relative_motion` (this repo's
+  astrophysics/space vertical — `kepler_two_body_orbit` was tried first
+  and rejected: its `1/r**3` term makes the residual numerically explode
+  from an untrained network at every learning rate tried, a real property
+  of that preset, not an epoch-budget problem).
+  Settings: 150 epochs, `n_collocation=256`, `hidden_dim=32, n_layers=3`,
+  `lr=1e-3` (`lr=3e-4` for `xtfc` only — found empirically flaky at 1e-3
+  specifically on `burgers_1d` across 5 seeds, stable at 3e-4 with no
+  regression on the other 6 presets). Pass criterion: `final_loss < 0.5 *
+  first_epoch_loss` — chosen because every genuinely-training combination
+  clears it with wide margin (worst observed ratio 0.192, most under
+  0.01), while a wrong-signature call that runs but never trains (ratio
+  ≥ 1) fails it immediately — the exact class of bug Tier A's
+  finite-loss-only check cannot catch. Real result: **49/70 ran and
+  passed, 21/70 skipped** (7×`pinnsformer` — double-backward through a
+  fused attention kernel not implemented on CPU, a real current PyTorch
+  limitation, new heuristic added for this since Tier A's single-backward
+  smoke test never needs `create_graph=True`; 7×`deeponet` — needs
+  `branch_dim`/`trunk_dim` at construction, reusing Tier A's existing
+  incompatible-calling-convention heuristic; 7×`fno` — rejects the flat
+  point-cloud input, reusing Tier A's existing wrong-input-shape
+  heuristic), **0 failed**, run twice to confirm no flakiness. Wall-clock:
+  ~230s for the 49 training combinations run standalone (isolated
+  measurement); ~6:47 for a `pytest` invocation that happened to run
+  concurrently with another agent's test suite in the same shared
+  checkout (CPU-contention noise, not this file's own cost).
+- **Item B — 6-package breadth extension** (done): extended Tier-A-style
+  "build one instance, run one operation, assert no crash" breadth testing
+  to these 6 packages' actual classes, not just their imports (the "third
+  audit pass" above only checked imports). New file:
+  `tests/test_breadth_six_packages.py` (2900+ lines). Enumeration method:
+  every package's public classes were found by an AST scan cross-referenced
+  against each package's own `__init__.py` top-level re-exports, then read
+  by hand (not guessed) to decide, per class, whether a plausible generic
+  synthetic input exists. Pure dataclass-style config/result containers
+  (177 of them, across the 5 non-`pinneapple_adaptation` packages) are
+  covered separately by one systematic `test_breadth_dataclass_construction`
+  sweep at the bottom of the file, which imports every submodule of each
+  package and tries to construct every dataclass found with a generic
+  placeholder value (a zero array/tensor, `1`/`1.0`/`"test"`/`True`, an
+  empty list/dict, etc.) for any field lacking a default.
+
+  | Package | Non-dataclass classes found | Exercised | Skipped (reason) |
+  |---|---|---|---|
+  | `pinneapple_adaptation` | 10 (incl. 3 dataclass configs, all consumed as real trainer/model inputs, not placeholders) | 10 | 0 |
+  | `pinneapple_design` | 46 | 42 (incl. 2 verified-abstract contract checks: `ConstraintBase`/`ObjectiveBase` confirmed to raise `TypeError`) | 4 (3 base classes whose methods are `NotImplementedError` stubs meant to be overridden — `PhysicsDomain2D`/`PhysicsDomain3D`/`SDFShape`; 1 needs a real STL file + missing optional `trimesh` — `STLDomainBatchBuilder`) |
+  | `pinneapple_systems` | 61 | 45 | 16 (4 abstract bases confirmed via `TypeError`/never-instantiated-directly — `CoSimNode`, `BaseStream`, `ForecastModel`, plus `EdgeRuntime` needing `onnxruntime`; 2 need a live network broker — `MQTTStream`/`KafkaStream`; 10 need an optional dependency not installed in this environment — 6 classical forecasters (xgboost/lightgbm/scikit-learn-family), `FFTNNForecaster`/`HHTNNForecaster` (sklearn/PyEMD), `ClassicalTuner`/`NeuralTuner` (optuna)) |
+  | `pinneapple_analysis` | 39 | 36 | 3 (abstract bases confirmed via `TypeError` — `DataMisfitBase`, `RegularizerBase`, `ObsOperatorBase`) |
+  | `pinneapple_tools` | 8 | 5 | 3 (`Backend` Protocol confirmed non-instantiable; `BenchmarkTaskBase` abstract base; `JAXBackend` needs `jax`, not installed) |
+  | `pinneapple_simulation` | 21 | 19 (incl. 2 verified-abstract contract checks: `ParticleSystem`/`SolverBase` confirmed to raise `NotImplementedError`) | 1 (`MATLABEngine` needs a real licensed MATLAB install) — **plus 1 genuine bug, kept as a strict `xfail`, see below** |
+  | **dataclass sweep (5 packages, cross-cutting)** | 177 dataclasses | 165 constructed successfully | 12 (9 have a field type with no generic placeholder and no default — e.g. `ThreadProfile`, `GasState`, `RateFn`, `TimeSeriesSpec`, `BenchmarkTaskBase`, `ItemType`, `Type[SolverBase]`; 3 rejected the sweep's generic placeholder via their own real validation, not a bug — `GasComposition` mole-fraction sum, `MuJoCoConfig` needs a real model path/XML, `MeshData` vertex-shape check) |
+
+  **Bug found (FOUND-NOT-FIXED, not a small/obviously-safe fix)**:
+  `pinneapple_simulation/external_solvers/fenics/solver.py`'s
+  `solve_and_package()` imports a nonexistent `FEniCSBridge` (the real class
+  is `FEnicsBridge`, lower-case "n") — fails with `ImportError` regardless
+  of whether dolfinx/FEniCS is installed — and even fixing that name would
+  not be enough, since it then calls the bridge with a constructor signature
+  (`pde=`, `domain=`, `bcs=`, `**solver_opts`) that the real
+  `FEnicsBridge.__init__` (`mesh_nx, mesh_ny, element_degree,
+  solver_backend`) does not accept; this convenience wrapper appears to
+  predate a later refactor of the bridge to a `problem_spec`-based calling
+  convention. Kept as `test_breadth_fenics_workflow_solve_and_package_bug`,
+  a strict `@pytest.mark.xfail(raises=ImportError)` with the full
+  root-cause analysis in its docstring, rather than silently patched or
+  swept into a skip — a genuine future fix flips it to an
+  unexpected-pass failure instead of quietly going green. No other bugs
+  were found in this pass (contrast the "third audit pass" above, which
+  found 2 import-path bugs via import-smoke-testing alone).
+
+  **Final result**: `pytest tests/test_breadth_six_packages.py -v` →
+  **296 passed, 39 skipped, 1 xfailed, 0 failed** (~31s).
 
 ---
 
