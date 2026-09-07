@@ -528,3 +528,104 @@ def test_check_reference_dataset_path_custom_x_y_vars(tmp_path):
     )
     check = next(c for c in report.checks if c.name == "reference_data_match")
     assert check.passed, check.detail
+
+
+# ---------------------------------------------------------------------------
+# Reference-data auto-fetch from pinneapple_pdb's named benchmark catalog
+#
+# Added alongside pinneapple_pdb/benchmarks.py's small, curated catalog (see
+# ROADMAP_PHYSICS_AI_HUB.md section P3.2 for what changed there): a THIRD,
+# additive way to supply reference data to check() --
+# reference_benchmark="name" -- resolved through
+# pinneapple_pdb.get_benchmark(name) into real, independently-verified
+# reference arrays (see tests/test_pdb_benchmark_catalog.py for the
+# catalog's own correctness tests, cross-checked against published
+# Lane-Emden surface-radius tables). These tests prove reference_benchmark
+# produces the EXACT SAME CheckResult as the manual reference_x/reference_y
+# path, end-to-end, using a real catalog entry (lane_emden_n1.5) -- the same
+# additive-alternative contract already proven for reference_dataset_path
+# above.
+# ---------------------------------------------------------------------------
+
+def _approx_lane_emden_theta_phi(x: torch.Tensor) -> torch.Tensor:
+    """A cheap near-origin approximation (NOT the true n=1.5 solution --
+    there is no closed form) of theta(xi)/phi(xi); good enough for these
+    tests, which only check that both reference-data routes agree with
+    each other on the SAME model, not that this model is physically
+    accurate (mirrors how test_check_reference_dataset_path_matches_
+    manual_reference_arrays_end_to_end above just needs one consistent
+    model, not a trained one)."""
+    xi = x[:, 0:1]
+    theta = torch.clamp(1.0 - xi ** 2 / 6.0, min=0.0)
+    phi = -xi / 3.0
+    return torch.cat([theta, phi], dim=1)
+
+
+def test_check_reference_benchmark_matches_manual_reference_arrays_end_to_end():
+    from pinneapple_pdb import get_benchmark
+
+    spec = get_preset("lane_emden_polytrope", n=1.5)  # coords=('t',), fields=('theta','phi')
+    entry = get_benchmark("lane_emden_n1.5")
+    model = _ExactFn(_approx_lane_emden_theta_phi)
+
+    manual_report = PhysicsGuardrail(spec).check(
+        model, reference_x=entry.reference_x, reference_y=entry.reference_y,
+        reference_rmse_threshold=10.0,
+    )
+    benchmark_report = PhysicsGuardrail(spec).check(
+        model, reference_benchmark="lane_emden_n1.5", reference_rmse_threshold=10.0,
+    )
+
+    manual_check = next(c for c in manual_report.checks if c.name == "reference_data_match")
+    benchmark_check = next(c for c in benchmark_report.checks if c.name == "reference_data_match")
+    assert math.isclose(manual_check.value, benchmark_check.value, rel_tol=1e-6)
+    assert manual_check.passed == benchmark_check.passed
+    assert set(manual_report.checked_names) == set(benchmark_report.checked_names)
+    # NOTE: not asserting overall .trustworthy here -- _approx_lane_emden_theta_phi
+    # is a cheap near-origin approximation, not a real solution of the
+    # nonlinear Lane-Emden ODE, so pde_residual legitimately fails for it;
+    # this test only needs the two reference-data ROUTES to agree with each
+    # other on the reference_data_match check specifically (asserted above),
+    # matching test_check_reference_dataset_path_matches_manual_reference_
+    # arrays_end_to_end's contract.
+
+
+def test_check_reference_benchmark_unknown_name_raises_keyerror():
+    spec = get_preset("lane_emden_polytrope", n=1.5)
+    model = _ExactFn(_approx_lane_emden_theta_phi)
+    with pytest.raises(KeyError):
+        PhysicsGuardrail(spec).check(model, reference_benchmark="not_a_real_benchmark", reference_rmse_threshold=1.0)
+
+
+def test_check_reference_benchmark_mutually_exclusive_with_manual_arrays():
+    spec = get_preset("lane_emden_polytrope", n=1.5)
+    model = _ExactFn(_approx_lane_emden_theta_phi)
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        PhysicsGuardrail(spec).check(
+            model, reference_benchmark="lane_emden_n1.5",
+            reference_x=np.zeros((1, 1), dtype="float32"), reference_y=np.zeros((1, 2), dtype="float32"),
+            reference_rmse_threshold=1.0,
+        )
+
+
+def test_check_reference_benchmark_mutually_exclusive_with_dataset_path(tmp_path):
+    spec = get_preset("lane_emden_polytrope", n=1.5)
+    model = _ExactFn(_approx_lane_emden_theta_phi)
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        PhysicsGuardrail(spec).check(
+            model, reference_benchmark="lane_emden_n1.5",
+            reference_dataset_path=str(tmp_path / "unused.zarr"),
+            reference_rmse_threshold=1.0,
+        )
+
+
+def test_check_reference_benchmark_incompatible_spec_raises_valueerror():
+    """laplace_2d has coords=('x','y')/fields=('u',) -- 2 input columns, 1
+    output column -- while lane_emden_n1.5's catalog entry has 1 input
+    column / 2 output columns. Passing an incompatible spec must raise a
+    clear error, not silently misalign columns and report a meaningless
+    RMSE."""
+    spec = get_preset("laplace_2d")
+    model = _ExactFn(lambda x: (x[:, 0:1] ** 2 - x[:, 1:2] ** 2))
+    with pytest.raises(ValueError, match="not built for this kind"):
+        PhysicsGuardrail(spec).check(model, reference_benchmark="lane_emden_n1.5", reference_rmse_threshold=1.0)
