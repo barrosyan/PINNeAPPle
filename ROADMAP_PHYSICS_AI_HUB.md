@@ -688,19 +688,37 @@ against a real (not hypothetical) local-model response, not from theory:
    returns a watertight mesh when called directly, but silently
    degraded through `build_mesh` before this fix.
 
-**Honest reliability finding, not "fixed" because there is nothing to
-mechanically fix about an LLM's semantic choice**: asked for "a box with
-a cylindrical hole cut through it," `llama3.2:3b` sometimes returns the
-CSG operands in the wrong order (`cylinder MINUS box` instead of `box
-MINUS cylinder`) — structurally valid (a real watertight solid comes out
-either way) but not the shape the prompt described. This is a genuine,
-observed small-local-model limitation on directional CSG semantics, not
-a code defect — `build_recipe` faithfully executes exactly what was
-specified, which is the entire point of the "LLM proposes, code never
-guesses" design; a stronger model or a more constrained prompt (e.g.
-requiring an explicit `"primary"`/`"subtracted"` labelling instead of
-positional "self"/"other") would likely improve this, and is a natural
-next step, not attempted here.
+**Reliability finding, and this one WAS empirically improved (not just
+diagnosed)**: asked for "a box with a cylindrical hole cut through it,"
+`llama3.2:3b` used to sometimes return the CSG operands in the wrong
+order (`cylinder MINUS box` instead of `box MINUS cylinder`) —
+structurally valid (a real watertight solid comes out either way) but
+not the shape the prompt described. The candidate fix flagged here
+earlier ("a more constrained prompt... requiring an explicit
+`"primary"`/`"subtracted"` labelling instead of positional
+"self"/"other"") was implemented and measured against the real model,
+10 trials per side:
+- OLD schema (`"boolean": {"op": "cut", "other": <node>}`, this node
+  implicitly the base): **0/10 (0%) correct order** — 6/10 (60%) swapped
+  (cylinder as base, box as tool), 4/10 (40%) didn't even attempt a CSG
+  boolean at all.
+- NEW schema (`"boolean": {"op": "cut", "base": <node>, "tool":
+  <node>}`, both operands named explicitly, no implicit "self";
+  `cad_draft.py`'s `_SYSTEM_PROMPT_MESH`): **18/20 (90%) correct order**
+  across two 10-trial runs — 0/20 swapped, 2/20 (10%) failed for an
+  unrelated reason (a malformed/null builder name, correctly rejected by
+  the existing hallucination guard, not an ordering mistake). The new
+  schema surfaced its own small formatting quirk in the process — the
+  model sometimes closes the "boolean" object one bracket early and
+  writes "tool" as a sibling of "boolean" rather than nested inside it —
+  recovered losslessly by a new `_normalize_recipe_node` (same category
+  of fix as the earlier stringified-array recovery: the base/tool pair
+  is still unambiguously present, just mis-nested). Net effect: a real,
+  large, measured improvement (0% to 90%, zero swaps at the new rate),
+  not a claim of perfect reliability — the model still occasionally
+  fails outright on roughly 1/10 attempts, which is why this path's test
+  still retries a few times before failing rather than assuming success
+  on the first try.
 
 A second live instance of the same class of variability, on the
 `draft_cadquery_template` path: asked for a 12-fin heat-sink plate, the

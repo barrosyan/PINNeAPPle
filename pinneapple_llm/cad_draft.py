@@ -47,6 +47,7 @@ from typing import Any, Dict, List, Optional
 from ._dispatch import call_llm
 
 _ALLOWED_BOOLEAN_OPS = {"union", "cut", "diff", "difference", "intersect", "intersection"}
+_CUT_OPS = {"cut", "diff", "difference"}
 
 # A deliberately curated subset of `primitives.py`'s full builder
 # registry -- not every registered name (e.g. `woven_tube`/`braid_tube`
@@ -72,21 +73,46 @@ else, of the exact form:
 
 {"kind": "mesh_recipe", "recipe": <node>, "reasoning": "<one sentence>"}
 
-where <node> is:
+A <node> is EITHER:
+(a) a plain primitive, optionally unioned/intersected with another node: \
 {"name": "<a builder name from AVAILABLE BUILDERS>", "params": {<builder's own params>}, \
-"boolean": {"op": "<union|cut|intersect>", "other": <node>}}
+"boolean": {"op": "union"|"intersect", "other": <node>}}
+(b) ONLY for cutting a hole, a compound cut node -- see "cut" below -- \
+which has NO "name"/"params" of its own: \
+{"boolean": {"op": "cut", "base": <node>, "tool": <node>}}
 
 "params" is a flat object of that builder's own parameters (e.g. \
-{"radius": 0.5} for a sphere) -- always include it, even if empty ({}). \
-"boolean" is OPTIONAL (omit it entirely for a single primitive with no CSG \
-combination). When present, it combines this node with ANOTHER node \
-("other", which is itself a full node with its own "name"/"params" and \
-optionally its own nested "boolean" -- arbitrary nesting is allowed for \
-more complex shapes). "op" must be one of: union (merge), cut (subtract \
-"other" from this shape), intersect (keep only the overlap).
+{"radius": 0.5} for a sphere) -- always include it, even if empty ({}), on \
+every node that has a "name".
+
+"union" (merge) and "intersect" (keep only the overlap) are SYMMETRIC: the \
+result is identical no matter which shape is "this node" and which is \
+"other", so operand order never matters for them.
+
+"cut" is DIFFERENT and DIRECTIONAL: material is actually removed, so \
+swapping the two shapes produces a DIFFERENT, WRONG piece of geometry even \
+though it still builds without error (this is a real, previously-observed \
+failure mode -- getting this backwards is silent, not a crash). For this \
+reason "cut" is NEVER written using form (a)'s implicit-"self" shape --  \
+always use the explicit compound form (b) instead: \
+{"boolean": {"op": "cut", "base": <node>, "tool": <node>}}, where:
+- "base" is the shape that KEEPS its material -- the solid block that ends \
+up with a hole in it (e.g. the box).
+- "tool" is the shape used to remove material FROM "base", like a drill \
+bit -- it does not appear in the final result itself, only the negative \
+imprint it leaves behind (e.g. the cylinder that becomes the hole).
+For "a box with a cylindrical hole cut through it": "base" is the box, \
+"tool" is the cylinder. NEVER the other way around -- double-check which \
+of the two shapes is the container being drilled into (base) versus the \
+drill/hole shape (tool) before writing the JSON.
+Either "base" or "tool" can itself be an arbitrarily nested node (its own \
+"boolean" of any op, including another cut), for more complex shapes.
+
+"boolean" is OPTIONAL on a plain node (form (a)) -- omit it entirely for a \
+single primitive with no CSG combination at all.
 
 Rules:
-- "name" (at every level of nesting) MUST be exactly one of the names in \
+- "name" (on every node that has one) MUST be exactly one of the names in \
 AVAILABLE BUILDERS. Never invent a name.
 - "params" MUST only use the parameter names documented for that builder. \
 Never invent a parameter name.
@@ -154,6 +180,50 @@ def _normalize_params(params: Dict[str, Any]) -> Dict[str, Any]:
     return {k: _normalize_param_value(v) for k, v in (params or {}).items()}
 
 
+def _normalize_recipe_node(node: Any) -> Any:
+    """Undo another real, observed local-model quirk with the new
+    explicit-cut ``{"boolean": {"op": "cut", "base": <node>, "tool":
+    <node>}}`` schema: llama3.2:3b sometimes closes the "boolean" object
+    one bracket too early (right after "base") and writes "tool" as a
+    SIBLING of "boolean" inside the enclosing recipe node instead of
+    nested inside it -- i.e. ``{"boolean": {"op": "cut", "base": ...}, \
+    "tool": ...}`` instead of ``{"boolean": {"op": "cut", "base": ..., \
+    "tool": ...}}``. This is a pure bracket-placement slip, not a
+    semantic one: "base"/"tool" are still individually present and still
+    the semantically-correct pair (confirmed across repeated real runs --
+    the model is not confused about WHICH shape is which, only about
+    where the closing brace belongs), so this is a lossless,
+    unambiguous structural re-nesting -- exactly the same kind of fix as
+    ``_normalize_param_value``'s stringified-array recovery, not a guess
+    at any missing value. A response that is ACTUALLY missing "tool"
+    entirely (not just misplaced) is left untouched and still fails
+    naturally in ``_validate_mesh_node``, as it should."""
+    if not isinstance(node, dict):
+        return node
+    boolean = node.get("boolean")
+    if (
+        isinstance(boolean, dict)
+        and str(boolean.get("op", "")).lower().strip() in _CUT_OPS
+        and "base" in boolean and "tool" not in boolean
+        and "tool" in node
+    ):
+        node = dict(node)
+        boolean = dict(boolean)
+        boolean["tool"] = node.pop("tool")
+        node["boolean"] = boolean
+    # Recurse into every nested node position, whichever shape this node
+    # turned out to be.
+    boolean = node.get("boolean")
+    if isinstance(boolean, dict):
+        boolean = dict(boolean)
+        for key in ("base", "tool", "other"):
+            if key in boolean:
+                boolean[key] = _normalize_recipe_node(boolean[key])
+        node = dict(node)
+        node["boolean"] = boolean
+    return node
+
+
 def _validate_mesh_node(node: Any, *, builder_names: set, path: str = "recipe") -> None:
     """Recursively validate one recipe node against the real builder
     registry AND the exact ``{"name", "params", "boolean"?}`` shape --
@@ -168,18 +238,21 @@ def _validate_mesh_node(node: Any, *, builder_names: set, path: str = "recipe") 
     this check existed: llama3.2:3b naturally nested params under
     ``"params"`` even when asked for a flatter shape, which silently
     produced the wrong-sized geometry until this exact-shape check and
-    the matching ``params`` field in the prompt/schema were added."""
+    the matching ``params`` field in the prompt/schema were added.
+
+    A "cut" node may be shaped two ways: the legacy implicit-"self" form
+    (``{"name", "params", "boolean": {"op": "cut", "other": <node>}}``,
+    where THIS node's own name/params are the base and "other" is the
+    tool being removed), still accepted here for backward compatibility
+    with hand-built/previously-saved recipes; or the newer, explicit
+    compound form (``{"boolean": {"op": "cut", "base": <node>, "tool":
+    <node>}}``, with no "name"/"params" of its own), which the prompt now
+    exclusively teaches the LLM to use instead -- see the module
+    docstring and ``_SYSTEM_PROMPT_MESH`` for why the implicit-"self"
+    shape was a real, observed source of the model swapping which shape
+    keeps its material versus which one is drilled out."""
     if not isinstance(node, dict):
         raise ValueError(f"{path}: expected a JSON object, got {type(node).__name__}")
-    name = node.get("name")
-    if name not in builder_names:
-        raise ValueError(
-            f"{path}.name: LLM named builder '{name}', not in the real registry "
-            f"({sorted(builder_names)}) -- refusing to use a hallucinated builder name."
-        )
-    params = node.get("params", {})
-    if not isinstance(params, dict):
-        raise ValueError(f"{path}.params: expected a JSON object, got {type(params).__name__}: {params!r}")
     # "reasoning" is tolerated-but-ignored at any node level: a real
     # local-model response was observed redundantly repeating its
     # top-level "reasoning" string inside the recipe node too. Unlike a
@@ -195,9 +268,40 @@ def _validate_mesh_node(node: Any, *, builder_names: set, path: str = "recipe") 
             f"parameters belong inside \"params\", not merged into the node itself."
         )
     boolean = node.get("boolean")
+    is_explicit_cut = (
+        isinstance(boolean, dict)
+        and "base" in boolean and "tool" in boolean
+        and str(boolean.get("op", "")).lower().strip() in _CUT_OPS
+    )
+    if is_explicit_cut:
+        # Explicit compound cut node: "name"/"params" of the ENCLOSING
+        # node are not required (a cut node's identity comes entirely
+        # from "base"/"tool") -- but if a model includes a "name" anyway,
+        # still reject it if it's a hallucinated one rather than
+        # silently ignoring a signal that something is off.
+        if "name" in node and node["name"] not in builder_names:
+            raise ValueError(
+                f"{path}.name: LLM named builder '{node['name']}', not in the real registry "
+                f"({sorted(builder_names)}) -- refusing to use a hallucinated builder name."
+            )
+        _validate_mesh_node(boolean["base"], builder_names=builder_names, path=f"{path}.boolean.base")
+        _validate_mesh_node(boolean["tool"], builder_names=builder_names, path=f"{path}.boolean.tool")
+        return
+    name = node.get("name")
+    if name not in builder_names:
+        raise ValueError(
+            f"{path}.name: LLM named builder '{name}', not in the real registry "
+            f"({sorted(builder_names)}) -- refusing to use a hallucinated builder name."
+        )
+    params = node.get("params", {})
+    if not isinstance(params, dict):
+        raise ValueError(f"{path}.params: expected a JSON object, got {type(params).__name__}: {params!r}")
     if boolean is not None:
         if not isinstance(boolean, dict) or "op" not in boolean or "other" not in boolean:
-            raise ValueError(f"{path}.boolean: must be an object with 'op' and 'other' keys, got: {boolean!r}")
+            raise ValueError(
+                f"{path}.boolean: must be an object with 'op' and 'other' keys (or, for 'cut', "
+                f"'base'+'tool' instead of 'other'), got: {boolean!r}"
+            )
         op = str(boolean["op"]).lower().strip()
         if op not in _ALLOWED_BOOLEAN_OPS:
             raise ValueError(
@@ -208,17 +312,37 @@ def _validate_mesh_node(node: Any, *, builder_names: set, path: str = "recipe") 
 
 
 def _node_to_build_mesh_kwargs(node: Dict[str, Any]) -> Dict[str, Any]:
-    """Convert a validated ``{"name", "params", "boolean"?}`` node into
-    the flat ``**params`` shape ``primitives.build_mesh`` itself expects
-    (name + its params merged at one level, with an optional "boolean"
-    key whose "other" is the same flat shape, recursively) -- this
-    conversion is what lets the LLM-facing schema stay recursively
-    self-similar and explicit about which keys are real builder params
-    (nested under "params") without that ambiguity leaking into
-    ``build_mesh``'s own, differently-shaped calling convention."""
+    """Convert a validated node into the flat ``**params`` shape
+    ``primitives.build_mesh`` itself expects (name + its params merged at
+    one level, with an optional "boolean" key whose "other" is the same
+    flat shape, recursively) -- this conversion is what lets the
+    LLM-facing schema stay recursively self-similar and explicit about
+    which keys are real builder params (nested under "params") without
+    that ambiguity leaking into ``build_mesh``'s own, differently-shaped
+    calling convention.
+
+    Handles both accepted "cut" shapes: the explicit compound form
+    (``{"boolean": {"op": "cut", "base": <node>, "tool": <node>}}``) is
+    flattened by converting "base" first (its own name/params/nested
+    booleans become THIS flat dict, exactly as if "base" had been the
+    node all along) and then attaching "tool" as build_mesh's own
+    "other" -- i.e. "base"+"tool" desugars directly to the same flat
+    ``{"op": "cut", "other": <tool-flat>}`` shape build_mesh has always
+    taken, so no change was needed downstream in build_mesh/primitives
+    itself. The legacy implicit-"self" form (name/params at this level,
+    "boolean": {"op": ..., "other": <node>}) is flattened as before."""
+    boolean = node.get("boolean")
+    is_explicit_cut = (
+        isinstance(boolean, dict)
+        and "base" in boolean and "tool" in boolean
+        and str(boolean.get("op", "")).lower().strip() in _CUT_OPS
+    )
+    if is_explicit_cut:
+        flat = _node_to_build_mesh_kwargs(boolean["base"])
+        flat["boolean"] = {"op": boolean["op"], "other": _node_to_build_mesh_kwargs(boolean["tool"])}
+        return flat
     flat = _normalize_params(node.get("params", {}))
     flat["name"] = node["name"]
-    boolean = node.get("boolean")
     if boolean is not None:
         flat["boolean"] = {"op": boolean["op"], "other": _node_to_build_mesh_kwargs(boolean["other"])}
     return flat
@@ -269,6 +393,7 @@ def draft_mesh_recipe(
     recipe = parsed.get("recipe")
     reasoning = parsed.get("reasoning", "")
     if recipe is not None:
+        recipe = _normalize_recipe_node(recipe)
         _validate_mesh_node(recipe, builder_names=builder_names)
 
     return CadRecipeResult(kind="mesh_recipe", recipe=recipe, reasoning=reasoning, raw_response=raw)
@@ -369,8 +494,9 @@ def build_recipe(result: CadRecipeResult):
             raise ValueError("result.recipe is None -- the LLM judged nothing fit; nothing to build.")
         from pinneapple_design.geometry.gen.primitives import build_mesh, list_builders
 
-        _validate_mesh_node(result.recipe, builder_names=set(list_builders()))
-        return build_mesh(**_node_to_build_mesh_kwargs(result.recipe))
+        recipe = _normalize_recipe_node(result.recipe)
+        _validate_mesh_node(recipe, builder_names=set(list_builders()))
+        return build_mesh(**_node_to_build_mesh_kwargs(recipe))
 
     if result.kind == "cadquery_template":
         if result.name is None:
