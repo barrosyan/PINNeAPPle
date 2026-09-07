@@ -50,6 +50,8 @@ from pinneapple_physics.pde_environment.presets.astrophysics import (
     cr3bp_omega_gradient,
     schwarzschild_light_bending_weak_field,
     schwarzschild_light_bending_u_exact,
+    shakura_sunyaev_accretion_disk,
+    shakura_sunyaev_flux_exact,
 )
 
 
@@ -674,3 +676,107 @@ def test_schwarzschild_deflection_angle_matches_famous_eddington_value():
     deflection_arcsec = spec.pde.meta["deflection_angle_weak_field_arcsec"]
     print(f"Weak-field deflection angle: {deflection_arcsec:.4f} arcsec (Eddington 1919: ~1.75 arcsec)")
     assert 1.7 < deflection_arcsec < 1.8, f"Deflection angle should be ~1.75 arcsec, got {deflection_arcsec}"
+
+
+# ===========================================================================
+# Shakura-Sunyaev accretion-disk torque-balance ODE
+# ===========================================================================
+#
+# The preset's real SI-unit defaults (GM ~ 1.3e21, Mdot ~ 1.4e15, R_in ~
+# 8.9e4) make the raw compiled residual astronomically large in absolute
+# terms (an MSE loss over quantities with these units is ~1e27-ish even
+# for the exact solution -- floating-point magnitude, not error), so
+# (same reasoning as `schwarzschild_light_bending_weak_field`'s MMS test
+# above) these two tests instead build the "shakura_sunyaev_disk_1d" PDE
+# kind directly (bypassing the preset function) with clean dimensionless
+# toy parameters GM=Mdot=R_in=1, exactly analogous to
+# `test_euler_compressible_1d_smooth_advected_pulse_gives_near_zero_residual`'s
+# custom-ProblemSpec pattern elsewhere in this file. This isolates and
+# tests the compiled ODE residual's correctness independent of unit choice.
+
+def _shakura_sunyaev_probe_spec(GM: float = 1.0, Mdot: float = 1.0, R_in: float = 1.0):
+    from pinneapple_physics.pde_environment.spec import PDETermSpec, ProblemSpec
+    from pinneapple_physics.pde_environment.environment_typing import CoordNames
+    from pinneapple_physics.pde_environment.scales import ScaleSpec
+
+    coords: CoordNames = ("t",)
+    fields = ("F",)
+    pde = PDETermSpec(kind="shakura_sunyaev_disk_1d", fields=fields, coords=coords,
+                       params={"GM": GM, "Mdot": Mdot, "R_in": R_in})
+    return ProblemSpec(name="_shakura_sunyaev_probe", dim=0, coords=coords, fields=fields,
+                        pde=pde, conditions=(), scales=ScaleSpec())
+
+
+def test_shakura_sunyaev_exact_flux_gives_near_zero_residual():
+    """The exact closed-form flux F(r) = (3 GM Mdot)/(8 pi r^3) * [1 -
+    sqrt(R_in/r)] -- verified this session with `sympy` to satisfy
+    d/dr[r^3 F(r)] = (3 GM Mdot sqrt(R_in))/(16 pi) * r^(-3/2) exactly
+    (see `shakura_sunyaev_flux_exact`'s docstring in astrophysics.py) --
+    must give a near-zero compiled residual."""
+    GM, Mdot, R_in = 1.0, 1.0, 1.0
+    spec = _shakura_sunyaev_probe_spec(GM, Mdot, R_in)
+    loss_fn = compile_problem(spec)
+
+    def exact(tcol):
+        r = tcol[:, 0:1]
+        F = (3.0 * GM * Mdot) / (8.0 * math.pi * r ** 3) * (1.0 - torch.sqrt(torch.as_tensor(R_in) / r))
+        return F
+
+    r = (torch.rand(128, 1) * 9.0 + 1.05).requires_grad_(True)  # r in [1.05, 10.05], away from R_in=1 singular boundary
+    batch = _empty_batch(r, n_coords=1, n_fields=1)
+    out = loss_fn(_ExactFn(exact), None, batch)
+    res = float(_pde_residual(out).item())
+    assert res < 1e-10, f"Shakura-Sunyaev disk residual should be ~0 for the exact flux profile, got {res}"
+
+
+def test_shakura_sunyaev_wrong_flux_missing_inner_truncation_gives_nonzero_residual():
+    """A common real modeling mistake: using the far-field flux
+    F(r) = (3 GM Mdot)/(8 pi r^3) with NO inner-edge truncation term (i.e.
+    ignoring the zero-torque boundary condition at R_in entirely). Then
+    r^3 F(r) is a constant, so d/dr[r^3 F(r)] = 0 while the true source
+    term (3 GM Mdot sqrt(R_in))/(16 pi) r^(-3/2) is manifestly nonzero --
+    must give a clearly nonzero residual."""
+    GM, Mdot, R_in = 1.0, 1.0, 1.0
+    spec = _shakura_sunyaev_probe_spec(GM, Mdot, R_in)
+    loss_fn = compile_problem(spec)
+
+    def wrong(tcol):
+        r = tcol[:, 0:1]
+        F = (3.0 * GM * Mdot) / (8.0 * math.pi * r ** 3)  # missing the [1 - sqrt(R_in/r)] truncation
+        return F
+
+    r = (torch.rand(128, 1) * 9.0 + 1.05).requires_grad_(True)
+    batch = _empty_batch(r, n_coords=1, n_fields=1)
+    out = loss_fn(_ExactFn(wrong), None, batch)
+    res = float(_pde_residual(out).item())
+    assert res > 1e-5, f"Shakura-Sunyaev residual should be clearly nonzero without the inner-truncation term, got {res}"
+
+
+def test_shakura_sunyaev_exact_matches_module_reference_function():
+    """Cross-check `shakura_sunyaev_flux_exact` (the numpy reference used
+    for the preset's IC/meta) against the torch closed form used in the
+    residual test above -- both must agree, not just each independently
+    look plausible."""
+    GM, Mdot, R_in = 1.0, 1.0, 1.0
+    r = np.linspace(1.05, 10.05, 50)
+    ref = shakura_sunyaev_flux_exact(r, GM, Mdot, R_in)
+    torch_val = ((3.0 * GM * Mdot) / (8.0 * math.pi * torch.tensor(r) ** 3)
+                 * (1.0 - torch.sqrt(torch.tensor(R_in) / torch.tensor(r)))).numpy()
+    assert np.allclose(ref, torch_val, rtol=1e-10)
+
+
+def test_shakura_sunyaev_accretion_disk_preset_reports_realistic_physical_numbers():
+    """Sanity/cross-check of the preset's own headline numbers at its
+    real (SI-unit) defaults: a 10-solar-mass black hole accreting at 10%
+    Eddington should give R_in (the Schwarzschild ISCO) of order 10-100
+    km and a peak effective temperature of order 1e6-1e7 K (~0.1-1 keV,
+    the observed thermal disk-temperature range for real stellar-mass
+    black-hole X-ray binaries in the soft state, e.g. Cygnus X-1-like
+    sources) -- not merely a plausible-looking, unchecked number."""
+    spec = shakura_sunyaev_accretion_disk()
+    R_in_km = spec.pde.meta["R_in_km"]
+    T_peak_K = spec.pde.meta["T_eff_peak_K"]
+    print(f"Shakura-Sunyaev disk: R_in={R_in_km:.2f} km, T_eff_peak={T_peak_K:.3e} K "
+          f"at r_peak=(49/36) R_in")
+    assert 10.0 < R_in_km < 200.0, f"R_in should be of order tens-hundreds of km for a 10 Msun BH, got {R_in_km}"
+    assert 1e6 < T_peak_K < 1e7, f"Peak T_eff should be of order 1e6-1e7 K, got {T_peak_K}"

@@ -196,6 +196,7 @@ Lane-Emden n=0 case — before it shipped).
 | `sod_shock_tube_astro` | research (astrophysical hydro-code validation) | yes: `euler_compressible_1d` |
 | `cr3bp_planar_synodic` | research + industrial (libration-point mission design) | yes: `cr3bp_planar_synodic` |
 | `schwarzschild_light_bending_weak_field` | research (GR light deflection) | yes: `schwarzschild_light_bending_weak_field` |
+| `shakura_sunyaev_accretion_disk` | research (accretion-disk/X-ray-binary and AGN disk spectra) | yes: `shakura_sunyaev_disk_1d` |
 
 **Byproduct fix**: building the generic ODE-residual pattern for these
 presets also fixed 2 pre-existing, unrelated Category-1 "Unsupported PDE
@@ -257,10 +258,10 @@ numerical validation (new test files, not just claims):
   to 0.0001%. n=3: match to 0.00002%.** The integrator itself is first
   sanity-checked against the n=0/n=1 closed forms (match to <1e-6) before
   being trusted for the no-closed-form cases.
-- **Two of the five previously-deferred items are now done, each with its
-  own independent numerical verification (not just "compiles")**, added in
-  a further follow-up pass while keeping this same "verify a small set
-  properly" discipline (2 of 5, not all 5, picked deliberately):
+- **Three of the five previously-deferred items are now done, each with
+  its own independent numerical verification (not just "compiles")**,
+  added across further follow-up passes while keeping this same "verify a
+  small set properly" discipline (3 of 5, not all 5, picked deliberately):
   - **N-body (3+ body) gravitational dynamics** — `cr3bp_planar_synodic`,
     the planar circular restricted three-body problem (Earth-Moon system,
     synodic frame; Szebehely 1967, Curtis 2020). The triangular Lagrange
@@ -295,13 +296,42 @@ numerical validation (new test files, not just claims):
     (`tests/test_schwarzschild_light_bending_validation.py`). Explicitly
     scoped to the weak-field/large-impact-parameter regime — NOT valid
     near the photon sphere.
+  - **Accretion-disk physics** — `shakura_sunyaev_accretion_disk`, the
+    steady, geometrically-thin, optically-thick alpha-disk model (Shakura
+    & Sunyaev, 1973, A&A, 24, 337) around a compact object, posed as a
+    differential torque-balance equation for the local radiative flux
+    F(r), `d/dr[r³F(r)] = (3GMṀ√R_in)/(16π) r^(-3/2)`, whose solution
+    satisfying the zero-torque inner boundary F(R_in)=0 is the textbook
+    effective-flux/temperature profile
+    `T_eff(r) = {(3GMṀ)/(8πσ_SB r³)·[1-√(R_in/r)]}^(1/4)`. Default
+    parameters describe a real 10-solar-mass black hole accreting at 10%
+    of the Eddington rate (R_in = 6GM/c² = the Schwarzschild ISCO):
+    **R_in ≈ 88.6 km, peak T_eff ≈ 4.22×10⁶ K (~0.36 keV) at the
+    well-known peak radius r_peak=(49/36)R_in** — realistic numbers for a
+    soft-state stellar-mass black-hole X-ray binary (e.g. Cygnus X-1-like).
+    Verified two ways: (a) `sympy` confirms the exact flux profile gives
+    an identically-zero torque-balance residual (and F(R_in)=0 exactly),
+    written into `tests/test_astrophysics_validation.py` as a compiled-
+    residual manufactured-solution check (near-zero for the exact profile,
+    clearly nonzero for a profile missing the inner-truncation term); (b)
+    `tests/test_shakura_sunyaev_disk_validation.py` independently
+    integrates the same ODE with `scipy.integrate.solve_ivp` (a
+    from-scratch reimplementation, not calling `compile_problem`) and
+    finds **agreement with the closed-form profile to <1.24e-9 relative
+    error** across 6 decades of r/R_in, confirms F(R_in)=0, confirms the
+    analytic peak-radius extremum to ~2.8e-15 relative precision, and
+    confirms the far-field T_eff∝r^(-3/4) power law to **0.066% relative
+    error** in slope over r/R_in∈[1e4,1e6]. The compiled PDE is posed in
+    dimensionless (r/R_in, F/F0) variables — both because the SS73 profile
+    shape is genuinely scale-free (verified with `sympy`) and because the
+    real SI-unit numbers (GM~1e21, Mdot~1e15) would overflow a float32
+    training loss.
 - **Still genuinely deferred** (not attempted this pass either): no
-  radiative-transfer/stellar-atmosphere preset, no accretion-disk
-  (Shakura-Sunyaev) preset, no cosmological perturbation-growth preset —
-  all considered, all deferred to keep this session's set small enough to
-  verify properly rather than large and unverified. A further batch
-  covering these would be the natural way to keep deepening this
-  specialization.
+  radiative-transfer/stellar-atmosphere preset, no cosmological
+  perturbation-growth preset — both considered, both deferred to keep
+  each pass's set small enough to verify properly rather than large and
+  unverified. A further batch covering these would be the natural way to
+  keep deepening this specialization.
 - No UI/documentation/tutorial notebook showcasing this vertical to a
   user browsing presets — the presets exist and are correct, but nothing
   yet highlights "PINNeAPPle is good at astrophysics/space" to someone

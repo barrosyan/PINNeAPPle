@@ -2045,6 +2045,41 @@ def compile_problem(
             res_list.append(u_phi - up_f)
             res_list.append(up_phi + u_f - 3.0 * m_grav * u_f * u_f)
 
+        elif pde_kind == "shakura_sunyaev_disk_1d":
+            # Steady, geometrically-thin, optically-thick alpha-disk
+            # (Shakura & Sunyaev, 1973, A&A, 24, 337). Differential form
+            # of angular-momentum/torque conservation for the local
+            # one-sided radiative flux F(r) (r := xcol[:,0], playing the
+            # role of the radial coordinate -- same 't'-as-generic-
+            # coordinate convention as lane_emden_polytrope's xi and
+            # schwarzschild_light_bending_weak_field's phi):
+            #   d/dr[r^3 F(r)] = (3 G M Mdot sqrt(R_in)) / (16 pi) * r^(-3/2)
+            # This is the derivative of the well-known algebraic result
+            # F(r) = (3 G M Mdot)/(8 pi r^3) * [1 - sqrt(R_in/r)], whose
+            # boundary condition F(R_in)=0 encodes the standard SS73
+            # zero-torque inner-edge assumption. T_eff(r) = (F(r)/sigma_SB)^(1/4)
+            # is a simple closed-form post-processing quantity, not a
+            # separate PINN output -- see presets/astrophysics.py for the
+            # `sympy` verification of this exact ODE/solution pair. Note:
+            # `shakura_sunyaev_accretion_disk` feeds this branch
+            # DIMENSIONLESS params (r~ := r/R_in, F~ := F/F0) rather than
+            # real SI values, both to make the SS73 profile's universal
+            # shape explicit and to keep this residual's magnitude
+            # float32-friendly (real SI GM/Mdot/R_in span ~1e-8 to ~1e21
+            # and would overflow a squared loss) -- see that preset's
+            # docstring for the exact rescaling used.
+            if "F" not in fields:
+                raise ValueError("shakura_sunyaev_disk_1d expects field 'F'.")
+            GM = float(p.get("GM", 1.0))
+            Mdot = float(p.get("Mdot", 8.0 * math.pi / 3.0))
+            R_in = float(p.get("R_in", 1.0))
+            F_f = fields["F"]
+            r = xcol[:, 0:1]
+            r3F = r ** 3 * F_f
+            d_r3F_dr = grad(r3F, xcol)[:, 0:1]
+            source = (3.0 * GM * Mdot * math.sqrt(R_in)) / (16.0 * math.pi) * r ** (-1.5)
+            res_list.append(d_r3F_dr - source)
+
         elif pde_kind == "euler_compressible_1d":
             # Inviscid compressible flow, conservative form, ideal gas
             # (gamma-law), 1D -- e.g. the Sod shock tube (Sod, 1978) and
