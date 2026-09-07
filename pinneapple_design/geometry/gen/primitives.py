@@ -104,6 +104,22 @@ def _boolean_engines_available() -> Tuple[str, ...]:
     """
     Returns a tuple of boolean engines available in trimesh environment.
     Typical names can include: 'manifold', 'blender', 'scad', etc.
+
+    Found and fixed a real bug while validating CAD-recipe generation:
+    ``trimesh.boolean.engines_available`` includes a literal ``None``
+    entry alongside the real engine-name strings (confirmed: a real
+    install with ``manifold3d`` present returned
+    ``{None, 'blender', 'manifold'}``) -- ``sorted()`` on a set mixing
+    ``None`` with strings raises ``TypeError`` unconditionally, which the
+    bare ``except Exception: return tuple()`` below silently swallowed.
+    The net effect: this function ALWAYS reported "no engines available"
+    on every install that actually has one, so every boolean CSG
+    operation (``build_mesh(..., boolean={...})``) silently fell back to
+    non-watertight concatenation instead of a real, watertight boolean --
+    even with a working ``manifold3d`` installed. Confirmed directly:
+    ``a.difference(b)`` on two real trimesh solids succeeds and returns a
+    watertight result when called directly, but failed this way through
+    ``build_mesh`` before the fix.
     """
     try:
         import trimesh
@@ -111,8 +127,11 @@ def _boolean_engines_available() -> Tuple[str, ...]:
         eng = getattr(trimesh.boolean, "engines_available", None)
         if eng is None:
             return tuple()
-        # engines_available can be set-like or list-like
-        return tuple(sorted(list(eng)))
+        # engines_available can be set-like or list-like, and (per the
+        # bug above) may contain a literal None sentinel -- drop it
+        # before sorting, since real engine names are always strings.
+        names = [e for e in eng if e is not None]
+        return tuple(sorted(names))
     except Exception:
         return tuple()
 
@@ -288,6 +307,16 @@ def _rmf_frames(centerline: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndar
 # =============================================================================
 # Public factory API
 # =============================================================================
+def list_builders() -> Tuple[str, ...]:
+    """Every registered builder name (all aliases included, e.g. both
+    ``"box"`` and ``"cube"``) -- the real, checkable catalog for anything
+    that needs to know what :func:`build_mesh` can build without
+    hardcoding a guessed list (e.g. an LLM-drafting layer presenting a
+    catalog of real options, mirroring ``pinneapple_physics.pde_environment
+    .presets.registry.list_presets()``'s pattern for PDE presets)."""
+    return tuple(sorted(_BUILDERS.keys()))
+
+
 def build_mesh(name: str, **params) -> MeshData:
     """
     General factory:

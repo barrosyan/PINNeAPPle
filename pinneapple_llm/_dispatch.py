@@ -63,7 +63,7 @@ def call_llm(
     elif provider == "ollama":
         from .local_llm import call_ollama
 
-        response = call_ollama(prompt, model or "llama3.1", api_key, system, **provider_kwargs)
+        response = call_ollama(prompt, model or "llama3.1", api_key, system, json_mode=json_mode, **provider_kwargs)
 
     else:
         raise ValueError(f"unknown provider '{provider}', expected one of {_PROVIDERS}")

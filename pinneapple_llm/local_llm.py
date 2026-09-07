@@ -81,19 +81,34 @@ def call_ollama(
     host: str = "127.0.0.1",
     port: int = 11434,
     timeout: int = 300,
+    json_mode: bool = False,
 ) -> str:
     """Chat-completion call against a local Ollama server. Raises a clear
     error (not a generic connection-refused traceback) if no server is
     reachable -- call :func:`start_server` first, or run ``ollama serve``
-    yourself."""
+    yourself.
+
+    ``json_mode``: forwards Ollama's own ``format: "json"`` request field
+    (supported since Ollama 0.1.9) so the server constrains generation to
+    valid JSON. Found and fixed a real gap while wiring this provider up
+    for CAD-recipe drafting: ``_dispatch.call_llm``'s ``json_mode`` flag
+    was silently dropped for the ``"ollama"`` provider (unlike the
+    ``"openai"`` branch, which already maps it to ``response_format``) --
+    every ``json_mode=True`` caller (``draft_problem``, ``draft_geometry``,
+    ...) got a plain, unconstrained chat completion when run against a
+    local model, with no error or warning that the JSON-mode request was
+    ignored. Smaller local models in particular benefit from this
+    constraint (they are the ones most likely to wrap JSON in prose or
+    markdown fences otherwise)."""
     import requests
 
     url = f"http://{host}:{port}/api/chat"
     messages = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": prompt}]
+    payload = {"model": model or "llama3.1", "messages": messages, "stream": False}
+    if json_mode:
+        payload["format"] = "json"
     try:
-        r = requests.post(
-            url, json={"model": model or "llama3.1", "messages": messages, "stream": False}, timeout=timeout,
-        )
+        r = requests.post(url, json=payload, timeout=timeout)
     except requests.exceptions.ConnectionError as e:
         raise ConnectionError(
             f"could not reach a local Ollama server at {host}:{port} -- call "
