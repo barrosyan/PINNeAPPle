@@ -494,13 +494,81 @@ same ~0.1-0.15px "peak-locking" precision as the pure-numpy synthetic
 test, confirming real video compression doesn't meaningfully degrade
 this technique's accuracy.
 
-**Still not done**: no test using a real, non-synthetic-source image or
-audio file (image_geometry/audio_modal remain numpy-only validated);
+**Done in a further follow-up pass, using real content already present on
+this offline, camera-less machine** (no internet access to fetch an
+external dataset, no camera/microphone to capture new real-world data —
+both genuinely infeasible here):
+
+- `audio_modal.extract_dominant_frequencies` validated against a real,
+  mastered, uncompressed-PCM macOS system sound
+  (`/System/Library/Sounds/Glass.aiff`, not a numpy sine wave), decoded
+  via `ffmpeg`. Of the 14 stock system sounds surveyed (Ping, Tink, Glass,
+  Morse, Bottle, Purr, Frog, Sosumi, Basso, Blow, Funk, Hero, Pop,
+  Submarine), most do NOT have one stable dominant tone: Sosumi/Morse play
+  a multi-note pattern (the true dominant pitch changes over time), and
+  Tink/Ping decay so fast that later time windows are mostly noise floor.
+  Glass has a single clean resonance across its ~1.4s decay. Since a
+  mastered sound effect has no known ground-truth frequency to assert
+  against, the test cross-validates against real physics instead: a
+  genuine resonant mode's frequency must be constant over time, so two
+  independent, non-overlapping time windows of the same real recording
+  were checked for agreement — confirmed empirically at 390.95 Hz vs
+  391.32 Hz (0.37 Hz apart), with a peak1/peak2 amplitude dominance ratio
+  of ~3.6 (a genuinely clean single tone). Test:
+  `test_audio_modal_recovers_stable_tone_from_real_system_sound`.
+- `image_geometry.extract_boundary_points`/`estimate_bounding_circle`
+  validated against a real, externally-produced image asset: macOS's
+  Clock.app icon (`AppIcon.icns`), which contains a genuine circular
+  clock face rendered/PNG-compressed by Apple's design tooling, not by
+  this codebase or numpy. This is honestly NOT a photograph of a physical
+  circular object (a photographed coin/pipe/shaft cross-section) — that
+  remains genuinely infeasible here. Other real image content on the
+  machine was surveyed first and rejected as unsuitable: the
+  `/System/Library/Desktop Pictures/*.heic` wallpapers are almost all
+  abstract gradient graphics with no clean circular boundary; scipy's own
+  bundled `dots.png` test image turned out to be purely binary (2 unique
+  pixel values, no anti-aliasing) — a hand-drawn test bitmap no more
+  "real" than the existing numpy test; and the only genuine photograph
+  found in local dependencies (matplotlib's bundled `grace_hopper.jpg`) is
+  a photo of an identifiable real person, deliberately not used for this.
+  The Clock icon does add real value the synthetic test can't: naively
+  thresholding a real anti-aliased/compressed image is messy in a
+  realistic way (it also picks up the boundary of every digit/hand mark
+  drawn inside the face, giving a badly broken contour — confirmed
+  empirically: max consecutive boundary jump ~46px, fit residual std
+  ~21px) until a standard `scipy.ndimage.binary_fill_holes` pass is
+  applied first. After that, the fitted circle (127.3, 128.5, r=88.0)
+  agrees with an independent bounding-box estimate (127.5, 128.5, r=88.0)
+  to within 0.5px. Test:
+  `test_image_geometry_recovers_circle_from_real_rendered_icon`.
+- `video_piv` tested against REAL, ffmpeg-implemented camera-realistic
+  degradations applied to the existing real-encoded fixture
+  (`known_shift_real.mp4`): lens distortion (`lenscorrection`) and
+  non-uniform/vignette lighting (`vignette`), at fairly strong but
+  photographically plausible levels, left the recovered velocity within
+  the same ~0.3px tolerance as the undistorted fixture (u err 0.14 vs.
+  baseline 0.09, v err 0.04 vs. 0.09) — the normalized cross-correlation
+  is robust to these because each interrogation window is independently
+  normalized. Motion blur (`tmix`, temporal frame-blending — approximating
+  a real camera's finite-exposure smear) does NOT hold up: mean error
+  rose to 0.54/0.25px and per-vector scatter roughly 10x (u std 0.88 vs.
+  0.07), a genuine, honestly-documented limitation, not swept under an
+  inflated tolerance. Tests: `test_piv_robust_to_real_lens_distortion_and_vignette`,
+  `test_piv_degraded_by_real_motion_blur`.
+
+**Still not done, and genuinely infeasible in this environment**:
 `video_piv` still hasn't been tested against a real, published PIV
 benchmark image pair (a genuine experimental fluid-flow recording, as
 opposed to a random-noise texture built specifically to have this
-technique's ideal statistical properties) or camera-realistic effects
-(lens distortion, non-uniform lighting, motion blur).
+technique's ideal statistical properties, or the camera-realistic
+*effects* layered onto it above) — that requires either internet access
+to fetch a real dataset (e.g. a standard PIV challenge image pair) or a
+real seeded-flow capture, neither available on this offline,
+camera-less machine. Likewise, `image_geometry` still hasn't been
+validated against an actual photograph of a physical part/object (as
+opposed to a real rendered icon asset) — no such photo exists on this
+machine that isn't either an identifiable person's photo or an abstract
+graphic.
 
 ---
 
