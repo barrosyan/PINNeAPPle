@@ -50,6 +50,11 @@ General relativity (research)
                                        by a spherical mass (weak-field
                                        Schwarzschild limit)
 
+Accretion-disk physics (research)
+  - shakura_sunyaev_accretion_disk   : Steady thin alpha-disk radial
+                                       structure (Shakura-Sunyaev 1973)
+                                       effective-temperature profile
+
 Every physical constant defaults to a real value (Earth mu/J2/Re for the
 orbital-mechanics presets; a canonical Milky-Way-like scale for the halo
 preset, in dimensionless N-body units as is standard practice for galactic-
@@ -1234,5 +1239,228 @@ def schwarzschild_light_bending_weak_field(
             "specialization": "astrophysics/general_relativity",
             "applicability": "research",
             "regime_of_validity": "weak-field / large impact parameter only (m/b << 1); not strong-field.",
+        },
+    )
+
+
+# ===========================================================================
+# ACCRETION DISK PHYSICS
+# ===========================================================================
+
+def shakura_sunyaev_flux_exact(r: np.ndarray, GM: float, Mdot: float, R_in: float) -> np.ndarray:
+    """Closed-form radial flux profile of a steady, geometrically-thin,
+    optically-thick alpha-disk (Shakura & Sunyaev, 1973, A&A, 24, 337),
+    F(r) := sigma_SB * T_eff(r)^4 (so T_eff(r) = (F(r)/sigma_SB)^(1/4)):
+
+        F(r) = (3 G M Mdot) / (8 pi r^3) * [1 - sqrt(R_in/r)]
+
+    Verified this session with `sympy`: substituting this F(r) into the
+    disk's differential angular-momentum/torque-balance equation (see
+    `shakura_sunyaev_disk_1d` in the compiler),
+        d/dr[r^3 F(r)] = (3 G M Mdot sqrt(R_in)) / (16 pi) * r^(-3/2),
+    gives an EXACT (symbolically simplified to identically 0) residual,
+    and F(R_in) = 0 exactly -- the standard SS73 zero-torque inner-
+    boundary condition -- both confirmed symbolically before being
+    written into this file. r < R_in has no disk material (returns a
+    clamped 0 via `shakura_sunyaev_teff_exact`, not used here directly).
+    """
+    r = np.asarray(r, dtype=np.float64)
+    return (3.0 * GM * Mdot) / (8.0 * math.pi * r ** 3) * (1.0 - np.sqrt(R_in / r))
+
+
+def shakura_sunyaev_teff_exact(r: np.ndarray, GM: float, Mdot: float, R_in: float,
+                                sigma_SB: float = 5.670374419e-8) -> np.ndarray:
+    """Effective temperature profile T_eff(r) = (F(r)/sigma_SB)^(1/4), the
+    classic Shakura-Sunyaev (1973) alpha-disk result. Clamps F to >= 0
+    before the 1/4 power (r <= R_in gives F=0, i.e. no disk material
+    interior to the zero-torque truncation radius)."""
+    r = np.asarray(r, dtype=np.float64)
+    F = np.maximum(shakura_sunyaev_flux_exact(r, GM, Mdot, R_in), 0.0)
+    return (F / sigma_SB) ** 0.25
+
+
+@register_preset("shakura_sunyaev_accretion_disk")
+def shakura_sunyaev_accretion_disk(
+    M_bh_solar: float = 10.0,     # black-hole mass, solar masses (typical stellar-mass BH XRB)
+    Mdot_edd_frac: float = 0.1,   # accretion rate as a fraction of the Eddington rate
+    eta: float = 0.1,             # radiative efficiency, Mdot_Edd := L_Edd/(eta c^2)
+    r_out_factor: float = 1.0e4,  # outer domain edge, in units of R_in
+) -> ProblemSpec:
+    """Steady, geometrically-thin, optically-thick alpha-disk (Shakura &
+    Sunyaev, 1973, A&A, 24, 337) around a compact object -- the canonical
+    accretion-disk model underlying essentially every X-ray-binary and
+    AGN accretion-disk spectral calculation since the 1970s.
+
+    Governing equation (differential form of angular-momentum/torque
+    conservation in a steady thin disk with a zero-torque inner boundary
+    -- see `shakura_sunyaev_disk_1d` in the compiler) for the local
+    one-sided radiative flux F(r):
+
+        d/dr[r^3 F(r)] = (3 G M Mdot sqrt(R_in)) / (16 pi) * r^(-3/2)
+
+    whose unique solution satisfying the zero-torque inner boundary
+    condition F(R_in)=0 is the textbook Shakura-Sunyaev effective-flux
+    profile:
+
+        F(r) = (3 G M Mdot) / (8 pi r^3) * [1 - sqrt(R_in/r)]
+
+    and effective temperature T_eff(r) = (F(r)/sigma_SB)^(1/4) -- the
+    classic Shakura-Sunyaev (1973) formula.
+
+    Units: this equation is genuinely scale-free -- substituting the
+    dimensionless radius r~ := r/R_in and dimensionless flux
+    F~ := F/F0 (F0 := 3 G M Mdot / (8 pi R_in^3), the natural flux scale)
+    turns it into a completely parameter-free equation,
+    F~(r~) = r~^-3 - r~^-3.5, satisfying d/dr~[r~^3 F~] = 0.5 r~^-1.5
+    (verified this session with `sympy`: substituting F~(r~) gives an
+    exact zero residual for ANY (G,M,Mdot,R_in)) -- i.e. the SS73 disk's
+    temperature-profile SHAPE (zero at the inner edge, peaking at
+    r~=49/36, falling off as r~^-3/4 at large r~) is universal, and only
+    the overall length scale R_in and flux/temperature scale F0/T0 depend
+    on the physical M, Mdot. The compiled PDE below is therefore posed in
+    these dimensionless (r~, F~) variables -- both to make this universal
+    shape explicit AND to keep the compiled residual's magnitude
+    well-conditioned for float32 training (the real SI-unit numbers below
+    span ~1e-8 to ~1e21 and would overflow a naive float32 loss). The
+    real, physical numbers (R_in in km, Mdot in Msun/yr, T_eff_peak in K)
+    are computed from real inputs below and reported in `pde.meta` for
+    interpretation; `shakura_sunyaev_flux_exact`/`shakura_sunyaev_teff_exact`
+    (this module) take real physical (GM, Mdot, R_in) SI arguments and
+    return real physical F/T_eff, for use wherever real units are wanted.
+
+    Default parameters: M = 10 solar masses (a typical stellar-mass
+    black-hole X-ray binary, e.g. Cygnus X-1-like), R_in = 6GM/c^2 (the
+    Schwarzschild innermost-stable-circular-orbit radius for a
+    non-spinning black hole -- the standard SS73 assumption for the
+    disk's zero-torque inner edge), Mdot = 10% of the Eddington accretion
+    rate (a bright, thermal/soft-state-like accretion rate for a
+    stellar-mass black-hole transient in outburst), eta=0.1 the standard
+    radiative efficiency used to define Mdot_Edd := L_Edd/(eta c^2).
+
+    With these defaults: R_in ~ 88.6 km, Mdot ~ 2.22e-8 Msun/yr, peak
+    T_eff ~ 4.22e6 K (~0.36 keV, a realistic soft-state disk temperature)
+    at the well-known peak radius r_peak = (49/36) R_in -- verified this
+    session that d(T_eff^4)/dr = 0 there to ~1e-14 relative precision,
+    i.e. essentially machine-precision confirmation of the textbook
+    result, not merely a plausible-looking number.
+
+    Fields: F (dimensionless flux, F~ := F/F0 above); T_eff(r) =
+    T0 * F~(r/R_in)^(1/4) is a simple closed-form post-processing
+    quantity, not a separate PINN output.
+
+    Verification (see ROADMAP_PHYSICS_AI_HUB.md and this preset's test
+    files for the actual numbers achieved):
+      (a) `tests/test_astrophysics_validation.py` plugs the exact F~(r~)
+          above directly into the compiled residual (near-zero) and a
+          wrong profile that omits the inner-truncation term (clearly
+          nonzero, since it ignores the zero-torque boundary condition --
+          a common real modeling mistake).
+      (b) `tests/test_shakura_sunyaev_disk_validation.py` independently
+          integrates the SAME differential equation (in real physical
+          units) with `scipy.integrate.solve_ivp` (a from-scratch
+          reimplementation, NOT calling `compile_problem` or importing
+          anything from the compiler) starting from F(R_in)=0, and
+          cross-checks: agreement with the closed form, F(R_in)=0, and
+          the far-field T_eff ~ r^(-3/4) power-law scaling.
+
+    Only the Shakura-Sunyaev alpha-disk model is implemented here (a
+    genuine, textbook, directly-verifiable algebraic/ODE result). A full
+    radiative-transfer/stellar-atmosphere preset and a cosmological
+    perturbation-growth preset remain explicitly deferred -- see
+    ROADMAP_PHYSICS_AI_HUB.md.
+    """
+    coords: CoordNames = ("t",)  # 't' plays the role of the dimensionless radial coordinate r~ := r/R_in (same convention as lane_emden_polytrope's xi / schwarzschild's phi)
+    fields = ("F",)  # dimensionless flux F~ := F/F0
+
+    G = 6.674e-11               # SI, m^3 kg^-1 s^-2
+    c = 2.99792458e8            # m/s (SI-exact)
+    sigma_SB = 5.670374419e-8   # W m^-2 K^-4 (SI, CODATA)
+    M_sun = 1.98892e30          # kg
+    m_p = 1.67262192369e-27     # kg (proton mass, CODATA)
+    sigma_T = 6.6524587321e-29  # m^2 (Thomson cross section, CODATA)
+
+    M_bh = M_bh_solar * M_sun
+    GM = G * M_bh
+    R_in = 6.0 * GM / (c * c)   # Schwarzschild ISCO (non-spinning BH), the SS73 zero-torque inner edge
+
+    L_edd = 4.0 * math.pi * G * M_bh * m_p * c / sigma_T   # Eddington luminosity
+    Mdot_edd = L_edd / (eta * c * c)
+    Mdot = Mdot_edd_frac * Mdot_edd
+
+    F0 = (3.0 * GM * Mdot) / (8.0 * math.pi * R_in ** 3)   # natural flux scale, W/m^2
+    T0 = (F0 / sigma_SB) ** 0.25                            # natural temperature scale, K
+
+    r_peak_tilde = 49.0 / 36.0   # well-known SS73 peak-temperature radius, in units of R_in (universal, independent of M/Mdot)
+    F_peak_tilde = r_peak_tilde ** -3 - r_peak_tilde ** -3.5
+    T_peak = T0 * F_peak_tilde ** 0.25
+
+    # Dimensionless PDE params (GM~, Mdot~, R_in~) chosen so that this
+    # module's `shakura_sunyaev_disk_1d` residual -- unchanged, expecting
+    # the SAME (GM, Mdot, R_in)-parameterized formula -- reproduces
+    # EXACTLY the r~ = r/R_in, F~ = F/F0 rescaling above (verified this
+    # session with `sympy`): R_in~ = 1 (domain starts at r~=1), and
+    # GM~ * Mdot~ = 8*pi/3 (any GM~, Mdot~ factorization works; GM~=1 is
+    # the simplest choice).
+    GM_tilde, Mdot_tilde, R_in_tilde = 1.0, 8.0 * math.pi / 3.0, 1.0
+
+    pde = PDETermSpec(
+        kind="shakura_sunyaev_disk_1d",
+        fields=fields,
+        coords=coords,
+        params={"GM": GM_tilde, "Mdot": Mdot_tilde, "R_in": R_in_tilde},
+        meta={
+            "note": "Shakura-Sunyaev (1973) alpha-disk torque-balance ODE for the dimensionless flux F~(r~).",
+            "R_in_m": R_in,
+            "R_in_km": R_in / 1000.0,
+            "M_bh_solar": M_bh_solar,
+            "Mdot_kg_s": Mdot,
+            "Mdot_Msun_per_yr": Mdot / M_sun * 3.15576e7,
+            "Mdot_edd_frac": Mdot_edd_frac,
+            "r_peak_over_R_in": r_peak_tilde,
+            "T_eff_peak_K": T_peak,
+            "F0_W_m2": F0,
+            "T0_K": T0,
+            "sigma_SB": sigma_SB,
+            "dimensionless_note": "PDE coord 't' is r/R_in; field 'F' is F/F0 -- "
+            "real T_eff(r) = T0_K * F~(r/R_in)**0.25.",
+            "exact_flux_fn": "pinneapple_physics.pde_environment.presets.astrophysics.shakura_sunyaev_flux_exact",
+            "exact_teff_fn": "pinneapple_physics.pde_environment.presets.astrophysics.shakura_sunyaev_teff_exact",
+        },
+    )
+
+    def _ic_selector(X, ctx):
+        return np.isclose(X[:, 0], 1.0)
+
+    ic_F = InitialCondition(
+        name="ic_F", fields=("F",), selector_type="callable",
+        selector=_ic_selector,
+        value_fn=lambda X, ctx: np.zeros((X.shape[0], 1), dtype=np.float32),
+        weight=20.0,
+    )
+
+    return ProblemSpec(
+        name="shakura_sunyaev_accretion_disk",
+        dim=0,
+        coords=coords,
+        fields=fields,
+        pde=pde,
+        conditions=(ic_F,),
+        sample_defaults={"n_col": 20_000, "n_ic": 500},
+        scales=ScaleSpec(L=r_out_factor, U=max(F_peak_tilde, 1e-12)),
+        field_ranges={"F": (0.0, F_peak_tilde * 1.05)},
+        references=(
+            "Shakura, N.I., Sunyaev, R.A. (1973). Black holes in binary "
+            "systems. Observational appearance. A&A, 24, 337-355.",
+            "Frank, J., King, A., Raine, D. (2002). Accretion Power in "
+            "Astrophysics, 3rd ed. Cambridge University Press, Ch. 5.",
+        ),
+        domain_bounds={"t": (1.0, r_out_factor)},
+        meta={
+            "specialization": "astrophysics/accretion_disk",
+            "applicability": "research",
+            "regime_of_validity": "steady-state, geometrically-thin, optically-thick "
+            "(Shakura-Sunyaev alpha-disk regime); not valid for slim/ADAF disks near "
+            "or above Eddington, nor for the disk's vertical/radial structure beyond "
+            "the effective-temperature profile.",
         },
     )
