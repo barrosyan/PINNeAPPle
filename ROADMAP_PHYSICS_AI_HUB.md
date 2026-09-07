@@ -504,6 +504,156 @@ technique's ideal statistical properties) or camera-realistic effects
 
 ---
 
+## LLM-driven CAD/geometry generation, tested against a real local Llama
+
+User priority: "garantir que o PINNeAPPle consegue gerar diferentes
+geometrias, inclusive em níveis de complexidade distintas, usando LLMs...
+para os testes usando o llama local" — generate CAD files via an LLM, at
+varying complexity, tested with the local Ollama model rather than a
+hosted API.
+
+**Found first**: this needed real infrastructure that wasn't installed --
+`cadquery` (declared in `pyproject.toml`'s `cad` extra but never actually
+installed), `trimesh`/`manifold3d` (the `geom` extra + a real boolean-CSG
+engine), and a local `llama3.2:3b` model (only `qwen2.5:1.5b` had been
+pulled earlier this session, for the unrelated fine-tuning work). All
+installed into `.venv` before any of this could be tested for real.
+
+**New module**: `pinneapple_llm/cad_draft.py` — same constrained
+"LLM selects/parametrises real building blocks, never writes code"
+pattern as `draft.py`/`geometry_draft.py`, extended from picking ONE named
+preset to *composing* a recipe:
+- `draft_mesh_recipe`: the LLM proposes a (possibly CSG-nested) tree of
+  `pinneapple_design.geometry.gen.primitives.build_mesh` builders (box,
+  sphere, cylinder, plane, channel) combined via real boolean ops (union/
+  cut/intersect) — validated recursively against the real registry at
+  every depth before a single line of geometry code runs, exactly
+  mirroring `draft_problem`'s hallucination check but recursive.
+- `draft_cadquery_template`: the LLM picks + parametrises one of
+  `cadquery_gen`'s genuinely parametric CAD templates (`cold_plate_channel`,
+  `finned_plate`) for a true B-rep, STEP-exportable part.
+- `build_recipe`/`export_recipe`: deterministic, non-LLM execution +
+  export (`.stl` always for a mesh recipe; `.step` too, honestly labelled
+  as a triangulated shell rather than a true B-rep, if `cadquery` is
+  installed; a genuine parametric STEP for a CadQuery template).
+
+**Complexity ladder actually exercised, end-to-end, against a real local
+`llama3.2:3b`** (not just unit-tested against hand-built recipes):
+1. a single primitive (a sphere) — correct on every attempt tried.
+2. one CSG boolean (a box with a cylindrical hole) — structurally valid
+   every time (a real, watertight solid), but see the reliability finding
+   below.
+3. a nested, multi-level CSG combination — verified deterministically
+   (not LLM-drafted, since composing a *specific* multi-step spatial
+   layout via natural language is a much harder ask of a 3B model than
+   this ladder needed to prove the point); the execution path itself
+   handles arbitrary nesting depth correctly.
+4. a genuinely parametric CAD template (a 12-fin heat-sink plate) —
+   correct parameters, real STEP file (`ISO-10303-21` header from the
+   actual OCC kernel) confirmed on every attempt tried.
+
+**Three real bugs found and fixed** while getting this to actually work
+against a real (not hypothetical) local-model response, not from theory:
+1. `_dispatch.call_llm`/`local_llm.call_ollama` silently dropped the
+   `json_mode` flag for the `"ollama"` provider (unlike the `"openai"`
+   branch, which already maps it to `response_format`) — every
+   `json_mode=True` caller (`draft_problem`, `draft_geometry`, and this
+   new module) got an unconstrained chat completion against a local
+   model, with no error or warning that JSON mode was ignored. Fixed by
+   forwarding Ollama's own `format: "json"` request field.
+2. The model naturally nests builder parameters under a `"params"` key
+   (matching this repo's own `"kwargs"` convention elsewhere) — an
+   earlier, flatter schema draft silently defaulted a requested
+   `radius=0.5` to the builder's own default (`1.0`) with no error at
+   all when the model didn't match that exact flat shape. Fixed by
+   matching the schema to the model's (and this repo's) natural
+   convention, PLUS explicit-shape validation that rejects any
+   unexpected top-level key rather than silently ignoring it —
+   re-checked at `build_recipe`'s own execution boundary too, not
+   trusted to have already been checked by whichever drafting call
+   produced the recipe.
+3. The same model sometimes stringifies an array value inside `"params"`
+   (`"extents": "[1, 1, 1]"` instead of a real JSON array) even when the
+   rest of the response is entirely correct. Fixed via a narrow, lossless
+   JSON re-decode of exactly that pattern — a genuinely wrong string
+   still fails naturally downstream, this only recovers a known,
+   observed formatting quirk.
+4. (Found in `pinneapple_design.geometry.gen.primitives`, surfaced while
+   validating CSG composition, not an LLM-related bug): `_boolean_engines_
+   available()` crashed on `sorted()` (mixing a literal `None` sentinel
+   with engine-name strings from `trimesh.boolean.engines_available`) and
+   the surrounding bare `except Exception` silently swallowed it — so
+   this function ALWAYS reported "no boolean engine available", and
+   every CSG operation silently fell back to non-watertight
+   concatenation even with a real, working `manifold3d` engine installed.
+   Confirmed directly: `a.difference(b)` on two real solids succeeds and
+   returns a watertight mesh when called directly, but silently
+   degraded through `build_mesh` before this fix.
+
+**Honest reliability finding, not "fixed" because there is nothing to
+mechanically fix about an LLM's semantic choice**: asked for "a box with
+a cylindrical hole cut through it," `llama3.2:3b` sometimes returns the
+CSG operands in the wrong order (`cylinder MINUS box` instead of `box
+MINUS cylinder`) — structurally valid (a real watertight solid comes out
+either way) but not the shape the prompt described. This is a genuine,
+observed small-local-model limitation on directional CSG semantics, not
+a code defect — `build_recipe` faithfully executes exactly what was
+specified, which is the entire point of the "LLM proposes, code never
+guesses" design; a stronger model or a more constrained prompt (e.g.
+requiring an explicit `"primary"`/`"subtracted"` labelling instead of
+positional "self"/"other") would likely improve this, and is a natural
+next step, not attempted here.
+
+A second live instance of the same class of variability, on the
+`draft_cadquery_template` path: asked for a 12-fin heat-sink plate, the
+model sometimes invents a parameter name (`"r"`) not in `finned_plate`'s
+real schema — correctly caught and rejected by the hallucination guard
+with a clear `ValueError`, exactly as designed, on that specific call.
+The test for this path retries a few times before failing (mirroring
+what a real caller would actually do — these calls are cheap and
+stateless, rejection isn't fatal, just worth trying again), which is
+itself the honest, correct way to consume a guarded LLM call against a
+model that isn't perfectly reliable on the first attempt, rather than
+either loosening the guard or demanding one-shot perfection from a 3B
+local model.
+
+**Also actually tested for real, not by inference**: `pinneapple_blender`
+(Blender bridge, done in an earlier follow-up pass) and this module now
+both exercise real local tool installs end-to-end in the same session --
+`brew install --cask blender` and this module's `cadquery`/`trimesh`/
+`manifold3d`/local-Llama install, respectively.
+
+Tests: `tests/test_mesh_primitives_registry.py` (the boolean-engine bug,
+deterministic), `tests/test_llm_cad_generation.py` (11 tests: 8
+deterministic validation/normalization regressions + 3 real, live-Ollama
+end-to-end tests across the complexity ladder, skipped — not failed — if
+no local Ollama server/model is reachable). Also fixed, found as a
+byproduct while installing `trimesh` for this work (previously latent,
+since `tests/pinneapple_geom/test_mesh_ops.py`'s own `importorskip
+("trimesh")` short-circuited collection before reaching the broken
+import when trimesh wasn't installed): a stale import path
+(`pinneapple_geom.*`, a package that no longer exists — renamed to
+`pinneapple_design.geometry` in an earlier refactor this session, this
+one test file never updated) — fixed as a plain import-path correction
+(verified the actual API is otherwise unchanged), plus installing the
+declared `fast-simplification` optional dependency the test's simplify
+step also needs.
+
+**Not attempted**: a genuinely free-form CAD-code-generation path (the
+LLM writing actual CadQuery/OpenSCAD-style script text) — deliberately
+out of scope, for the same reason `draft_problem` never lets the LLM
+write PDE code: an LLM asked to write CAD code directly can silently
+produce geometry that looks plausible while being dimensionally wrong or
+self-intersecting, with nothing mechanically checking it. Also not
+attempted: exposing the more exotic registered builders (`woven_tube`/
+`braid_tube`, many interacting parameters) to the LLM catalog — a
+deliberate scoping choice for reliability with a small local model,
+documented in `cad_draft.py`'s own module docstring; any name actually in
+the real registry is still accepted and executed if named, only the
+prompt's own catalog list is curated.
+
+---
+
 ## P1 — near-term (days, one engineer, no new infrastructure)
 
 **Status update**: 1.2, 1.3, and 1.4 below were all completed in later
