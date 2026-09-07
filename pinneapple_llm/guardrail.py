@@ -667,19 +667,24 @@ class PhysicsGuardrail:
 
         Honesty note (see ``ROADMAP_PHYSICS_AI_HUB.md`` section 3.2): this
         is deliberately a FILE-path fetch, not a "named benchmark dataset"
-        lookup. ``pinneapple_pdb`` (audited in full for this change --
-        ``builder.py``, ``shard.py``, ``derived.py``, ``validate.py``,
-        ``templates.py``) has no catalog mapping a string name to a known
-        benchmark dataset: ``PhysicalDatasetBuilder`` only ever fetches
-        from external Earth-data hubs (NASA CMR / earthaccess) and WRITES
-        the result to disk; it has no reader of its own, and its
-        ``catalog_path`` parquet is an output manifest of what a given
-        build produced (keyed by a content hash ``uid``), not an input
-        registry of pre-known datasets a caller could look up by a
-        friendly name without having built them first. ``schema_templates()``
-        is the only name->dict lookup in the package, and it returns
-        *physical-schema metadata* (governing equations, units policy),
-        never x/y data arrays.
+        lookup. ``PhysicalDatasetBuilder`` only ever fetches from external
+        Earth-data hubs (NASA CMR / earthaccess) and WRITES the result to
+        disk; it has no reader of its own, and its ``catalog_path`` parquet
+        is an output manifest of what a given build produced (keyed by a
+        content hash ``uid``), not an input registry of pre-known datasets
+        a caller could look up by a friendly name without having built
+        them first. This method remains the direct file-path route for
+        exactly that case (an already-built UPD store on disk).
+
+        A separate, small, curated NAME-based catalog was since added
+        (``pinneapple_pdb.benchmark_catalog()``/``get_benchmark()``, in
+        ``pinneapple_pdb/benchmarks.py``) -- see ``check()``'s
+        ``reference_benchmark`` parameter for the route that resolves
+        through it. That catalog is independent of
+        ``PhysicalDatasetBuilder``/this method entirely (it is a small set
+        of in-repo, independently-verified reference arrays, not a UPD
+        zarr store on disk), which is why both routes coexist rather than
+        one replacing the other.
 
         What this method actually does is read back the on-disk format
         ``PhysicalDatasetBuilder._write_upd`` really produces for every
@@ -732,6 +737,54 @@ class PhysicsGuardrail:
         reference_x = df[xn].to_numpy(dtype="float32")
         reference_y = df[yn].to_numpy(dtype="float32")
         return reference_x, reference_y
+
+    # ------------------------------------------------------------------
+    # Reference-data auto-fetch from pinneapple_pdb's named benchmark catalog
+    # ------------------------------------------------------------------
+    def _load_reference_from_benchmark(self, name: str) -> Tuple[Any, Any]:
+        """Load ``(reference_x, reference_y)`` arrays from
+        ``pinneapple_pdb``'s small, curated, NAME-based benchmark catalog
+        (``pinneapple_pdb.benchmarks``, added alongside this method) -- so
+        ``check()`` can be given a friendly string like
+        ``"lane_emden_n1.5"`` instead of either manually-extracted arrays
+        or a file path to a UPD zarr store (``reference_dataset_path``,
+        see ``_load_reference_from_upd_zarr`` above).
+
+        This is a THIRD, additive way to invoke the same underlying
+        ``_check_reference`` -- it does not replace either of the other
+        two. Unlike ``_load_reference_from_upd_zarr``, no variable-name
+        selection happens here: each ``BenchmarkEntry`` already stores its
+        ``reference_x``/``reference_y`` as plain arrays in the right
+        column order for the ``pde_kind`` it was built for, so the only
+        check this method does is that the *shape* (number of columns)
+        matches ``self.spec.coords``/``self.spec.fields`` -- not that the
+        names agree, since e.g. ``lane_emden_polytrope``'s single
+        coordinate is conventionally named ``"t"`` (a compiler-convention
+        artifact) even though it physically represents the benchmark's
+        ``"xi"``.
+
+        Raises
+        ------
+        KeyError if ``name`` is not in the catalog (from
+            ``pinneapple_pdb.get_benchmark`` itself).
+        ValueError if the benchmark's column counts don't match this
+            guardrail's ``self.spec`` -- i.e. this benchmark was not built
+            for this kind of problem.
+        """
+        from pinneapple_pdb import get_benchmark
+
+        entry = get_benchmark(name)
+        n_coords = len(self.spec.coords)
+        n_fields = len(self.spec.fields)
+        if entry.reference_x.shape[1] != n_coords or entry.reference_y.shape[1] != n_fields:
+            raise ValueError(
+                f"benchmark '{name}' provides {entry.reference_x.shape[1]} input column(s) "
+                f"(x_vars={entry.x_vars}) / {entry.reference_y.shape[1]} output column(s) "
+                f"(y_vars={entry.y_vars}), but self.spec expects {n_coords} coord(s) "
+                f"{tuple(self.spec.coords)} / {n_fields} field(s) {tuple(self.spec.fields)} -- "
+                "this benchmark was not built for this kind of ProblemSpec"
+            )
+        return entry.reference_x, entry.reference_y
 
     # ------------------------------------------------------------------
     # Conservation checks
@@ -929,6 +982,7 @@ class PhysicsGuardrail:
         reference_dataset_path: Optional[str] = None,
         reference_x_vars: Optional[Sequence[str]] = None,
         reference_y_vars: Optional[Sequence[str]] = None,
+        reference_benchmark: Optional[str] = None,
     ) -> GuardrailReport:
         """Run every applicable check and return a :class:`GuardrailReport`.
 
@@ -951,18 +1005,27 @@ class PhysicsGuardrail:
             actually writes), auto-loaded via
             ``_load_reference_from_upd_zarr`` and used exactly like a
             manually-supplied ``reference_x``/``reference_y`` pair.
-            Mutually exclusive with ``reference_x``/``reference_y`` --
-            pass one or the other, not both. NOTE: this resolves a FILE
-            PATH, not a name from a named-benchmark catalog -- see
-            ``_load_reference_from_upd_zarr``'s docstring and
-            ``ROADMAP_PHYSICS_AI_HUB.md`` section 3.2 for why
-            (``pinneapple_pdb`` has no such catalog to resolve a name
-            against).
+            Mutually exclusive with ``reference_x``/``reference_y`` and
+            with ``reference_benchmark`` -- pass exactly one way to supply
+            reference data. NOTE: this resolves a FILE PATH, not a name
+            from a named-benchmark catalog -- see
+            ``_load_reference_from_upd_zarr``'s docstring for why this and
+            ``reference_benchmark`` below are deliberately two separate
+            routes rather than one replacing the other.
         reference_x_vars, reference_y_vars : only used with
             ``reference_dataset_path`` -- which data variables/coordinates
             of the UPD store to stack into ``reference_x``/
             ``reference_y`` respectively; default to ``self.spec.coords``/
             ``self.spec.fields`` (see ``_load_reference_from_upd_zarr``).
+        reference_benchmark : a THIRD, additive alternative to
+            ``reference_x``/``reference_y`` and ``reference_dataset_path``:
+            a name (e.g. ``"lane_emden_n1.5"``) resolved through
+            ``pinneapple_pdb``'s small, curated named-benchmark catalog
+            (``pinneapple_pdb.benchmark_catalog()``/``get_benchmark()``,
+            see ``_load_reference_from_benchmark``) into real reference
+            arrays, then used exactly like a manually-supplied
+            ``reference_x``/``reference_y`` pair. Mutually exclusive with
+            both other reference-data routes -- pass exactly one.
 
         The dimensional-analysis and conservation checks are only real,
         structural verification for the ``pde_kind`` families documented
@@ -971,6 +1034,14 @@ class PhysicsGuardrail:
         the latter is simply absent from ``report.checks`` (see
         ``GuardrailReport.checked_names``/``skipped``).
         """
+        if reference_benchmark is not None:
+            if reference_x is not None or reference_y is not None or reference_dataset_path is not None:
+                raise ValueError(
+                    "reference_benchmark is mutually exclusive with reference_x/reference_y and "
+                    "reference_dataset_path -- pass exactly one way to supply reference data"
+                )
+            reference_x, reference_y = self._load_reference_from_benchmark(reference_benchmark)
+
         if reference_dataset_path is not None:
             if reference_x is not None or reference_y is not None:
                 raise ValueError(

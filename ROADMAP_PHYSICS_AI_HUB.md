@@ -1173,54 +1173,85 @@ check were still missing** and are what this follow-up pass adds; see
   `pinneapple_llm/guardrail.py`'s own class docstring for the full
   derivation.
 
-  **Reference-data auto-fetch: audited and partially built in this
-  follow-up pass.** Audit of `pinneapple_pdb` (`builder.py`,
+  **Reference-data auto-fetch: audited and built across two follow-up
+  passes.** The first pass audited `pinneapple_pdb` (`builder.py`,
   `templates.py`, `validate.py`, `shard.py`, `derived.py`, read in full)
-  found **no named-benchmark-dataset catalog** — the thing the paragraph
-  above envisioned does not exist: `PhysicalDatasetBuilder` only ever
-  builds datasets by querying external Earth-data hubs (NASA CMR /
-  earthaccess) and writing the result to disk; it has no reader of its
+  and found **no named-benchmark-dataset catalog**: `PhysicalDatasetBuilder`
+  only ever builds datasets by querying external Earth-data hubs (NASA CMR
+  / earthaccess) and writing the result to disk; it has no reader of its
   own. Its `catalog_path` parquet is an *output* manifest of what a given
   build produced (keyed by a content-hash `uid`), not an *input* registry
   a caller could resolve a friendly name against without having built it
-  first. `schema_templates()` is the only name→dict lookup in the
+  first. `schema_templates()` was the only name→dict lookup in the
   package, and it returns physical-schema metadata (governing equations,
-  units policy) — never x/y data arrays. Inventing a fake named catalog
-  with one or two placeholder entries just to have something to ship
-  would be exactly the kind of overclaiming this whole gate exists to
-  prevent, so that was not done.
-
-  What was built instead — real and useful, but explicitly *not* the
-  named-catalog lookup: `PhysicsGuardrail.check()` now also accepts a
-  `reference_dataset_path` argument, an ADDITIVE alternative to the
-  existing manual `reference_x`/`reference_y` arrays (which keep working
-  completely unchanged). It resolves a real **file path** to the on-disk
+  units policy) — never x/y data arrays. That pass explicitly declined to
+  invent a fake named catalog with placeholder entries just to have
+  something to ship (exactly the kind of overclaiming this gate exists to
+  prevent), and instead added `PhysicsGuardrail.check()`'s
+  `reference_dataset_path` argument: an ADDITIVE alternative to the
+  manual `reference_x`/`reference_y` arrays (which keep working
+  completely unchanged) that resolves a real **file path** to the on-disk
   UPD zarr format `PhysicalDatasetBuilder._write_upd` actually writes for
-  every shard (a plain `xr.Dataset.to_zarr(...)` store — a real,
-  already-existing artifact of this codebase's own dataset-building
-  path), loads it via the new `_load_reference_from_upd_zarr` helper
-  (optional `reference_x_vars`/`reference_y_vars` pick which data
-  variables/coordinates to stack, defaulting to `self.spec.coords`/
-  `self.spec.fields`), and feeds the result into the existing, unchanged
-  `_check_reference` exactly like a manually-supplied array pair would.
-  Proven end-to-end against a real UPD zarr store built and written to
-  disk inside the test (no mocks) — see `tests/test_physics_guardrail
-  .py`'s new reference-data-auto-fetch section (6 new tests, 30 total in
-  the file, all passing), including a test asserting the auto-fetch path
-  and the manual-array path produce the identical `CheckResult` (same
-  RMSE, same pass/fail) when fed the same underlying data.
+  every shard, via the `_load_reference_from_upd_zarr` helper.
 
-  **Still NOT built**: the actual named-benchmark-dataset registry itself
-  — that would require `pinneapple_pdb` to grow a real name→dataset
-  catalog (e.g. a curated table of known DNS/experimental benchmarks
-  resolvable by a short string like `"channel_flow_re_180_dns"`), which is
-  out of scope for a guardrail-side change alone and remains open for
-  whoever next touches `pinneapple_pdb`. Dimensional analysis and
-  conservation both remain scoped to the families listed above, not
-  generalized to every `pde_kind` this project supports (see
-  `pinneapple_llm/guardrail.py`'s docstring for why a fully general
-  per-equation symbolic balance-checker was explicitly not attempted this
-  pass).
+  **This pass added the actual named-benchmark catalog** —
+  `pinneapple_pdb/benchmarks.py`'s `benchmark_catalog()` / `get_benchmark
+  (name)` / `list_benchmarks()`, following the same `@register_x` /
+  `get_x(name)` / `list_x()` convention as
+  `pinneapple_physics.pde_environment.presets.registry`. Honest about
+  scope: it is **two curated entries, not a comprehensive suite**:
+  `"lane_emden_n1.5"` (non-relativistic degenerate star / white-dwarf
+  core) and `"lane_emden_n3"` (Eddington standard model / relativistic
+  degenerate limit) — the astrophysically standard Lane-Emden polytropic
+  indices that `lane_emden_polytrope` already models but has no
+  closed-form solution for. Each entry independently re-integrates the
+  Lane-Emden ODE with `scipy.integrate.solve_ivp` (a fresh implementation,
+  not imported from the compiled residual) into a real `theta(xi)`/`phi
+  (xi)` profile from the center to the surface, and is cross-checked on
+  every lookup against the published surface radius xi_1 (Hansen, Kawaler
+  & Trimble, *Stellar Interiors*, 2nd ed., Table 4.1: xi_1=3.65375 for
+  n=1.5, 6.89685 for n=3 — the same numbers
+  `tests/test_lane_emden_numerical_validation.py` independently verifies)
+  to <0.1% relative error; a drift beyond that raises rather than
+  silently handing back an unverified profile. A real OpenFOAM LES
+  channel-flow dataset (Re_tau=180) also exists, in the sibling
+  `splash-pinneapple` project on this machine, and was deliberately
+  **not** added as a third entry: it lives at an absolute filesystem path
+  outside this repository (not portable to another checkout, CI, or
+  contributor's machine), is a 200+MB zipped OpenFOAM case rather than a
+  small in-repo array, and needs bespoke OpenFOAM-binary-format parsing
+  code that exists only in that other project, not in PINNeAPPle — real
+  future work, not something to fake with a hardcoded single-machine path.
+
+  `PhysicsGuardrail.check()` now has a THIRD, additive
+  `reference_benchmark` argument (e.g. `reference_benchmark=
+  "lane_emden_n1.5"`) resolving through this catalog into real reference
+  arrays via the new `_load_reference_from_benchmark` helper, then feeding
+  the existing, unchanged `_check_reference` exactly like a
+  manually-supplied array pair would — `reference_x`/`reference_y` and
+  `reference_dataset_path` both keep working completely unchanged, and all
+  three are mutually exclusive. Proven end-to-end (same `CheckResult`,
+  same RMSE, same pass/fail as the manual-array path fed the identical
+  data) in `tests/test_physics_guardrail.py`'s new reference-benchmark
+  section (5 new tests, 35 total in the file, all passing); the catalog
+  itself has its own correctness tests in
+  `tests/test_pdb_benchmark_catalog.py` (11 tests: shapes, column order,
+  monotonic/physically-sane profiles, and the published-xi_1 cross-check,
+  all passing). Side finding while wiring this up: `pinneapple_pdb/
+  __init__.py` imported `earthaccess`/`python-cmr` — an *optional* extra
+  (`pip install pinneapple[earthdata]`) — unconditionally at module level
+  in `builder.py`, making the whole package (including the new benchmark
+  catalog) fail to import in any environment without that extra installed
+  (confirmed failing before this fix: `tests/test_smoke_imports.py`).
+  Fixed by making those imports lazy (inside the methods that actually use
+  them), which the package's own `pyproject.toml` extras structure already
+  implied should be the case.
+
+  Dimensional analysis and conservation both remain scoped to the
+  families listed above, not generalized to every `pde_kind` this project
+  supports (see `pinneapple_llm/guardrail.py`'s docstring for why a fully
+  general per-equation symbolic balance-checker was explicitly not
+  attempted this pass).
 
 ### 3.3 Why an LLM alone cannot replace this
 Worth stating explicitly, since it's the actual competitive thesis: a raw

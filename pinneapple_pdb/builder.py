@@ -11,9 +11,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 import xarray as xr
 
-import earthaccess
-from cmr import GranuleQuery
-
 from .templates import schema_templates
 from .validate import ValidationSpec, standardize_dims, validate_dataset
 from .derived import DerivedSpec, apply_derived
@@ -204,7 +201,14 @@ class PhysicalDatasetBuilder:
         self.schema = PhysicalSchema()
 
     def login(self, persist: bool = True) -> None:
-        """Log in to Earth data hub (earthaccess); persists credentials if requested."""
+        """Log in to Earth data hub (earthaccess); persists credentials if requested.
+
+        ``earthaccess`` is an optional extra (``pip install
+        pinneapple[earthdata]`` -- see pyproject.toml), imported lazily here
+        rather than at module level so the rest of ``pinneapple_pdb``
+        (e.g. ``benchmark_catalog()``, ``schema_templates()``) stays
+        importable without it installed."""
+        import earthaccess
         earthaccess.login(persist=persist)
 
     def list_collections(
@@ -215,6 +219,7 @@ class PhysicalDatasetBuilder:
         limit: int = 20,
     ) -> List[Dict[str, Any]]:
         """Search and list available datasets; returns list of metadata dicts."""
+        import earthaccess
         self.login(True)
         kw: Dict[str, Any] = {}
         if keyword: kw["keyword"] = keyword
@@ -419,6 +424,8 @@ class PhysicalDatasetBuilder:
     # -------- internals --------
     def _search_granules(self, max_granules: int) -> Tuple[List[Any], Dict[str, Any]]:
         """Search granules via earthaccess or CMR; returns (granules, notes)."""
+        import earthaccess
+        from cmr import GranuleQuery
         temporal = _temporal(self.spacetime.time_start, self.spacetime.time_end) if (self.spacetime.time_start and self.spacetime.time_end) else None
         bbox = self.spacetime.bbox
 
