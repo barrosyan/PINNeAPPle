@@ -28,4 +28,13 @@ PINNEAPPLE_CAPABILITIES = {
         "pinneapple_simulation.external_solvers.openfoam: bridge to run external "
         "OpenFOAM cases, read fields/meshes, and export results into PINNeAPPle",
     ],
+    "physics_knowledge": [
+        "pinneapple_problemdesign.knowledge.physics_knowledge.PHENOMENON_KNOWLEDGE_BASE: "
+        "phenomenon -> governing-equation -> typical-parameters -> assumptions "
+        "records sourced from real pinneapple_physics.pde_environment.presets "
+        "modules (cfd, engineering, solid_mechanics, astrophysics, ...), each "
+        "traceable back to its source preset via preset_module/preset_function",
+        "pinneapple_problemdesign.knowledge.physics_knowledge.lookup_phenomenon(name_or_keyword): "
+        "keyword search over the knowledge base for problem-design plan generation",
+    ],
 }

@@ -25,6 +25,16 @@ class ConditionSpec:
                        beam moment/shear conditions where there is only one
                        spatial coordinate and no directional ambiguity).
       - "robin"     -> a u + b n·∇u = g
+      - "interface" -> coupling condition at a shared multi-domain boundary:
+                       value continuity  field_A(x) - field_B(x) = g_value(x)
+                       flux continuity   k_A n·∇field_A - k_B n·∇field_B = g_flux(x)
+                       (default g_value=g_flux=0, i.e. plain continuity of
+                       value and weighted normal flux across the interface,
+                       as in conjugate heat transfer or fluid-structure
+                       coupling). ``fields`` must be exactly the two field
+                       names (field_A, field_B) evaluated on either side of
+                       the interface; the flux weights are given via
+                       ``interface_coeffs={"k_a":..., "k_b":...}``.
       - "initial"   -> u(x,t0)=g(x)
       - "data"      -> supervised constraint at points
 
@@ -51,6 +61,7 @@ class ConditionSpec:
     weight: float = 1.0
     order: int = 1
     deriv_coord: Optional[str] = None
+    interface_coeffs: Optional[Dict[str, float]] = None
 
     def mask(self, X: np.ndarray, ctx: Dict[str, Any]) -> np.ndarray:
         if self.selector_type == "all":
@@ -235,6 +246,75 @@ def RobinBC(
         selector=selector,
         value_fn=value_fn,
         weight=weight,
+    )
+
+
+def InterfaceBC(
+    name: str,
+    fields: FieldNames,
+    selector_type: SelectorType = "all",
+    selector: Optional[Union[Dict[str, Any], Callable[[np.ndarray, Dict[str, Any]], np.ndarray]]] = None,
+    value_fn: Optional[Callable[[np.ndarray, Dict[str, Any]], np.ndarray]] = None,
+    weight: float = 1.0,
+    k_a: float = 1.0,
+    k_b: float = 1.0,
+) -> ConditionSpec:
+    """Construct an interface / coupling boundary condition between two subdomains.
+
+    Enforces, at a shared multi-domain boundary (e.g. a conjugate heat
+    transfer interface or a fluid-structure interface), the two conditions
+    that are standard for such couplings:
+
+      1. Value continuity:   field_a(x)          - field_b(x)          = g_value(x)
+      2. Flux continuity:    k_a * n.grad(field_a) - k_b * n.grad(field_b) = g_flux(x)
+
+    where ``field_a``/``field_b`` are the same physical quantity evaluated
+    on either side of the interface (e.g. ``("T_solid", "T_fluid")`` for
+    conjugate heat transfer, with ``k_a``/``k_b`` the two sides' thermal
+    conductivities), and ``g_value``/``g_flux`` default to zero (plain
+    continuity of value and weighted normal flux). ``value_fn``, when
+    given, must return an ``(N, 2)`` array: column 0 is the target value
+    jump, column 1 is the target flux jump.
+
+    Unlike ``DirichletBC``/``RobinBC``/etc., there is no dict-shorthand
+    form: an interface condition inherently couples exactly two distinct
+    field names, so ``fields`` must always be given explicitly as
+    ``(field_a, field_b)``.
+
+    Parameters
+    ----------
+    fields:
+        Exactly two field names: ``(field_a, field_b)``.
+    k_a, k_b:
+        Flux weighting coefficients for ``field_a`` and ``field_b``
+        respectively (e.g. thermal conductivities, elastic moduli).
+
+    Example::
+
+        InterfaceBC(
+            "solid_fluid_interface",
+            ("T_solid", "T_fluid"),
+            selector_type="tag",
+            selector={"tag": "chr_interface"},
+            k_a=k_solid, k_b=k_fluid,
+        )
+    """
+    if fields is None or len(fields) != 2:
+        raise ValueError(
+            "InterfaceBC requires exactly two field names (field_a, field_b) -- "
+            "the same physical quantity evaluated on each side of the shared "
+            "interface (e.g. ('T_solid', 'T_fluid') for conjugate heat "
+            f"transfer); got fields={fields!r}"
+        )
+    return ConditionSpec(
+        name=name,
+        kind="interface",
+        fields=tuple(fields),
+        selector_type=selector_type,
+        selector=selector,
+        value_fn=value_fn,
+        weight=weight,
+        interface_coeffs={"k_a": float(k_a), "k_b": float(k_b)},
     )
 
 

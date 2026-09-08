@@ -40,7 +40,7 @@ def _split_fields(y: torch.Tensor, field_names: Sequence[str]) -> Dict[str, torc
 
 
 def _gather_condition_points(batch: Dict[str, Any], cond: ConditionSpec):
-    if cond.kind in ("dirichlet", "neumann", "robin"):
+    if cond.kind in ("dirichlet", "neumann", "robin", "interface"):
         return batch.get("x_bc"), batch.get("y_bc")
     if cond.kind == "initial":
         return batch.get("x_ic"), batch.get("y_ic")
@@ -2214,6 +2214,42 @@ def compile_problem(
                     flux = norm_dot_grad(u, Xr, n)
                     parts.append(a * u + b_ * flux)
                 lhs = torch.cat(parts, dim=1)
+                l = mse(lhs, Yc)
+                out[f"bc_{cond.name}"] = l.detach()
+                total = total + (w.w_bc * float(cond.weight)) * l
+
+            elif cond.kind == "interface":
+                # Coupling condition at a shared multi-domain boundary: value
+                # continuity (field_a == field_b) and weighted-flux continuity
+                # (k_a * n.grad(field_a) == k_b * n.grad(field_b)), as in
+                # conjugate heat transfer or fluid-structure interfaces. See
+                # ConditionSpec/InterfaceBC docstrings for the exact scope.
+                if len(cond.fields) != 2:
+                    raise ValueError(
+                        f"InterfaceBC '{cond.name}' requires exactly two fields "
+                        f"(field_a, field_b); got {cond.fields}"
+                    )
+                field_a, field_b = cond.fields
+                coeffs = cond.interface_coeffs or {"k_a": 1.0, "k_b": 1.0}
+                k_a = float(coeffs.get("k_a", 1.0))
+                k_b = float(coeffs.get("k_b", 1.0))
+                n = batch.get("n_bc")
+                if n is None:
+                    raise KeyError("InterfaceBC requires batch['n_bc']")
+                n = n.to(device)
+                if mask_key in batch:
+                    n = n[batch[mask_key].to(device).bool()]
+
+                Xr = Xc.clone().detach().requires_grad_(True)
+                fvals_r = eval_fields(Xr)
+                u_a = fvals_r[field_a]
+                u_b = fvals_r[field_b]
+                flux_a = norm_dot_grad(u_a, Xr, n)
+                flux_b = norm_dot_grad(u_b, Xr, n)
+
+                value_diff = u_a - u_b
+                flux_diff = k_a * flux_a - k_b * flux_b
+                lhs = torch.cat([value_diff, flux_diff], dim=1)
                 l = mse(lhs, Yc)
                 out[f"bc_{cond.name}"] = l.detach()
                 total = total + (w.w_bc * float(cond.weight)) * l
