@@ -8,7 +8,7 @@ version = "0.4.0"
 description = "PINNeAPPle: Physics-Informed Neural Networks platform — PDE problem design, PINN/operator/GNN models, UQ, digital twins, meta-learning, active learning, validation, and REST serving."
 readme = "README.md"
 requires-python = ">=3.10"
-license = "MIT"
+license = "Apache-2.0"
 authors = [
   { name = "Yan Barros" }
 ]
@@ -24,7 +24,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
   "Topic :: Scientific/Engineering",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Scientific/Engineering :: Physics",
@@ -265,6 +265,7 @@ packages = [
   # ── extended packages ─────────────────────────────────────────────────────
   "pinneapple_worldmodel",
   "pinneapple_quantum",
+  "pinneapple_registry",     # local artifact registry: models, datasets, experiments
   "pinneapple_hub",          # push_to_hub/from_pretrained model hub
   "pinneapple_llm",          # LLM-assisted pipeline drafting + physics guardrail
   "pinneapple_blender",      # Blender export/render bridge

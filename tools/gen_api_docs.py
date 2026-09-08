@@ -26,6 +26,11 @@ TARGET_PACKAGES = [
     "pinneapple_models",
     "pinneapple_solvers",
     "pinneapple_train",
+    "pinneapple_registry",
+    "pinneapple_hub",
+    "pinneapple_llm",
+    "pinneapple_blender",
+    "pinneapple_perception",
 ]
 
 PACKAGE_OVERVIEWS = {
