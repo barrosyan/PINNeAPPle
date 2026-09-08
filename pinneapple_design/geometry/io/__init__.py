@@ -13,6 +13,12 @@ try:
 except Exception:
     step_to_mesh = None  # type: ignore
 
+# IGES → mesh (gmsh)
+try:
+    from .iges import iges_to_mesh  # noqa: F401
+except Exception:
+    iges_to_mesh = None  # type: ignore
+
 # CADQuery bridge (optional)
 try:
     from .cadquery_bridge import build_parametric_part  # noqa: F401
@@ -22,5 +28,6 @@ except Exception:
 
 __all__ = [
     "step_to_mesh",
+    "iges_to_mesh",
     "build_parametric_part",
 ]

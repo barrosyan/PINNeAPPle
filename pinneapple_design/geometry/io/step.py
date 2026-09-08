@@ -118,11 +118,8 @@ def step_to_mesh(
     finally:
         gmsh.finalize()
 
-    import meshio  # type: ignore
-    msh = meshio.read(str(out_msh))
-
     # Convert to MeshData (triangles preferred for surface PINNs)
-    mesh = load_meshio(msh)
+    mesh = load_meshio(out_msh)
 
     # If we wrote a temporary .msh next to STEP and no cache_dir specified, clean up best-effort
     if cache_dir_p is None:
