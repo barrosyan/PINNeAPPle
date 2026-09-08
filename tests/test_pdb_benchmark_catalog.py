@@ -6,7 +6,7 @@ docstring both flagged: until this pass, ``pinneapple_pdb`` had no way to
 resolve a friendly name (e.g. ``"lane_emden_n1.5"``) to a real reference
 dataset -- only a file-path fetch existed.
 
-Both catalog entries here are the astrophysically standard Lane-Emden
+Two catalog entries are the astrophysically standard Lane-Emden
 polytropic indices (n=1.5, n=3) that
 ``pinneapple_physics.pde_environment.presets.astrophysics
 .lane_emden_polytrope`` models but has no closed-form solution for. Each
@@ -17,6 +17,26 @@ and cross-checks the result against the published surface radius xi_1
 same numbers ``tests/test_lane_emden_numerical_validation.py`` independently
 verifies. These tests confirm the catalog resolves to real, physically
 correct values, not placeholders.
+
+The third entry, ``concorde_high_aoa``, is explicitly a THEORETICAL
+closed-form cross-check (the Polhamus 1966 leading-edge-suction vortex-lift
+analogy for slender delta wings, in its low-aspect-ratio asymptotic limit)
+evaluated at Concorde's approximate wing aspect ratio -- NOT real Concorde
+wind-tunnel or flight-test data, which is not available with a citable
+public source. See ``benchmarks.py``'s docstring and the entry's own
+``verification_note`` for the exact scope and limitations.
+
+Two further entries close classical benchmark gaps flagged by a capability
+audit: ``blasius_flat_plate`` (the Blasius laminar flat-plate boundary-layer
+similarity solution, independently integrated via a shooting method and
+cross-checked against the published wall-shear parameter f''(0)=0.332057,
+Howarth 1938 / Schlichting & Gersten) and
+``planewall_transient_conduction_bi1`` (1D transient conduction in a plane
+wall with convective boundary conditions, Biot number 1.0, the one-term
+series centerline-temperature history, independently re-solved via
+``scipy.optimize.brentq`` and cross-checked against Incropera & DeWitt's
+published Table 5.1 eigenvalue/coefficient). Same "never fabricate, always
+re-verify" pattern as every other entry in this catalog.
 """
 from __future__ import annotations
 
@@ -33,17 +53,29 @@ from pinneapple_pdb import (
 _PUBLISHED_XI1 = {"lane_emden_n1.5": 3.65375, "lane_emden_n3": 6.89685}
 
 
+_ALL_BENCHMARK_NAMES = {
+    "lane_emden_n1.5",
+    "lane_emden_n3",
+    "concorde_high_aoa",
+    "blasius_flat_plate",
+    "planewall_transient_conduction_bi1",
+}
+
+
 def test_list_benchmarks_contains_lane_emden_entries():
     names = list_benchmarks()
     assert "lane_emden_n1.5" in names
     assert "lane_emden_n3" in names
+    assert "concorde_high_aoa" in names
+    assert "blasius_flat_plate" in names
+    assert "planewall_transient_conduction_bi1" in names
     # Small, curated -- not a comprehensive suite (see benchmarks.py's module docstring).
-    assert len(names) == 2
+    assert len(names) == 5
 
 
 def test_benchmark_catalog_returns_all_entries_by_name():
     catalog = benchmark_catalog()
-    assert set(catalog.keys()) == {"lane_emden_n1.5", "lane_emden_n3"}
+    assert set(catalog.keys()) == _ALL_BENCHMARK_NAMES
     for name, entry in catalog.items():
         assert isinstance(entry, BenchmarkEntry)
         assert entry.name == name
@@ -99,3 +131,143 @@ def test_lane_emden_benchmark_reference_source_cites_published_table(name):
     entry = get_benchmark(name)
     assert "Hansen" in entry.reference_source or "Chandrasekhar" in entry.reference_source
     assert str(_PUBLISHED_XI1[name]) in entry.reference_source
+
+
+def test_concorde_high_aoa_benchmark_shapes_and_column_order():
+    entry = get_benchmark("concorde_high_aoa")
+    assert entry.x_vars == ("alpha_deg",)
+    assert entry.y_vars == ("cl",)
+    n = entry.reference_x.shape[0]
+    assert entry.reference_x.shape == (n, 1)
+    assert entry.reference_y.shape == (n, 1)
+    assert entry.reference_x.dtype == np.float32
+    assert entry.reference_y.dtype == np.float32
+    # AoA sweep must be strictly increasing and include 10 degrees.
+    assert np.all(np.diff(entry.reference_x[:, 0]) > 0)
+    assert 10.0 in entry.reference_x[:, 0]
+
+
+def test_concorde_high_aoa_benchmark_cl_is_physically_sane():
+    """CL must be zero at zero AoA and monotonically increasing over the
+    sweep -- the qualitative vortex-lift signature (CL keeps rising well
+    past where a conventional wing would stall) that is the whole point of
+    citing the Polhamus analogy for a slender delta wing."""
+    entry = get_benchmark("concorde_high_aoa")
+    alpha = entry.reference_x[:, 0]
+    cl = entry.reference_y[:, 0]
+    assert cl[0] == pytest.approx(0.0, abs=1e-6)  # CL(0)=0 by construction
+    assert np.all(np.diff(cl) > 0)  # monotonically increasing over 0..20 deg
+    cl_at_10deg = float(cl[np.argmin(np.abs(alpha - 10.0))])
+    assert 0.0 < cl_at_10deg < 2.0  # sane bound for a vortex-lift-dominated CL
+
+
+def test_concorde_high_aoa_benchmark_is_explicit_about_not_being_real_data():
+    """This benchmark must never be mistaken for real Concorde wind-tunnel or
+    flight-test data -- both the description and the verification_note must
+    say so explicitly (see benchmarks.py's module docstring)."""
+    entry = get_benchmark("concorde_high_aoa")
+    assert "Polhamus" in entry.reference_source
+    assert "NASA TN D-3767" in entry.reference_source
+    for text in (entry.description, entry.verification_note):
+        assert "not" in text.lower()
+        assert "concorde" in text.lower()
+
+
+# ---------------------------------------------------------------------------
+# Blasius flat-plate boundary layer
+# ---------------------------------------------------------------------------
+
+def test_blasius_benchmark_shapes_and_column_order():
+    entry = get_benchmark("blasius_flat_plate")
+    assert entry.x_vars == ("eta",)
+    assert entry.y_vars == ("f", "f_prime", "f_pprime")
+    n = entry.reference_x.shape[0]
+    assert entry.reference_x.shape == (n, 1)
+    assert entry.reference_y.shape == (n, 3)
+    assert entry.reference_x.dtype == np.float32
+    assert entry.reference_y.dtype == np.float32
+    # eta (the similarity coordinate) must be strictly increasing from the wall outward.
+    assert np.all(np.diff(entry.reference_x[:, 0]) > 0)
+
+
+def test_blasius_benchmark_matches_published_wall_shear_parameter():
+    """f''(0) (the first reference_y[0, 2] value, i.e. the wall value of the
+    third column) must match the published Howarth (1938) / Schlichting &
+    Gersten value to <0.1% -- the same tolerance the Lane-Emden entries use
+    for their own published cross-check."""
+    entry = get_benchmark("blasius_flat_plate")
+    fpp0 = float(entry.reference_y[0, 2])
+    published = 0.332057
+    rel_err = abs(fpp0 - published) / published
+    assert rel_err < 1e-3, f"blasius_flat_plate: f''(0)={fpp0} vs published {published}, rel_err={rel_err:.4%}"
+
+
+def test_blasius_benchmark_velocity_profile_is_physically_sane():
+    """f'(eta) = u/U_inf must start at 0 (no-slip at the wall) and increase
+    monotonically-ish to ~1 at the edge of the profile (freestream) -- a
+    sanity check that the profile is a real physical solution."""
+    entry = get_benchmark("blasius_flat_plate")
+    f_prime = entry.reference_y[:, 1]
+    assert f_prime[0] == pytest.approx(0.0, abs=1e-6)  # no-slip at the wall
+    assert f_prime[-1] == pytest.approx(1.0, abs=1e-3)  # freestream match
+    assert f_prime[0] < f_prime[-1]  # net increase from wall to freestream
+
+
+def test_blasius_benchmark_reference_source_cites_published_value():
+    entry = get_benchmark("blasius_flat_plate")
+    assert "Howarth" in entry.reference_source or "Schlichting" in entry.reference_source
+    assert "0.332057" in entry.reference_source
+
+
+def test_blasius_benchmark_is_explicit_about_normalization_convention():
+    """This benchmark's f''(0) must never be confused with the 0.4696 value
+    that belongs to a different similarity-variable scaling -- the
+    verification_note must say so explicitly (see benchmarks.py's module
+    docstring)."""
+    entry = get_benchmark("blasius_flat_plate")
+    assert "0.4696" in entry.verification_note
+
+
+# ---------------------------------------------------------------------------
+# 1D transient conduction in a plane wall (Bi=1.0)
+# ---------------------------------------------------------------------------
+
+def test_planewall_conduction_benchmark_shapes_and_column_order():
+    entry = get_benchmark("planewall_transient_conduction_bi1")
+    assert entry.x_vars == ("fourier_number",)
+    assert entry.y_vars == ("theta_star_centerline",)
+    n = entry.reference_x.shape[0]
+    assert entry.reference_x.shape == (n, 1)
+    assert entry.reference_y.shape == (n, 1)
+    assert entry.reference_x.dtype == np.float32
+    assert entry.reference_y.dtype == np.float32
+    # Fourier number sweep must be strictly increasing, and restricted to the
+    # one-term approximation's own documented validity range (Fo > 0.2).
+    assert np.all(np.diff(entry.reference_x[:, 0]) > 0)
+    assert np.all(entry.reference_x[:, 0] >= 0.2)
+
+
+def test_planewall_conduction_benchmark_matches_published_eigenvalue_and_coefficient():
+    """The independently-solved zeta_1/C1 (recoverable from the reference
+    curve itself: theta*_0(Fo) = C1*exp(-zeta_1^2*Fo)) must match Incropera
+    & DeWitt's published Table 5.1 values for Bi=1.0 to <0.1% -- checked here
+    via the verification_note, which records the exact re-derived numbers."""
+    entry = get_benchmark("planewall_transient_conduction_bi1")
+    assert "0.8603" in entry.verification_note
+    assert "1.1191" in entry.verification_note
+
+
+def test_planewall_conduction_benchmark_temperature_decays_monotonically():
+    """theta*_0(Fo) must decay monotonically toward 0 as Fo increases (the
+    wall cools/heats toward the fluid temperature over time) -- a sanity
+    check that the curve is a real physical solution, not a placeholder."""
+    entry = get_benchmark("planewall_transient_conduction_bi1")
+    theta = entry.reference_y[:, 0]
+    assert np.all(np.diff(theta) < 0)  # strictly decreasing
+    assert np.all(theta > 0.0)  # never overshoots past the fluid temperature within this Fo range
+
+
+def test_planewall_conduction_benchmark_reference_source_cites_incropera():
+    entry = get_benchmark("planewall_transient_conduction_bi1")
+    assert "Incropera" in entry.reference_source
+    assert "Table 5.1" in entry.reference_source
