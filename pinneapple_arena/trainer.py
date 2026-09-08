@@ -33,9 +33,27 @@ class TrainResult:
     train_losses: List[float]
     train_time: float
     metrics: Dict[str, float] = field(default_factory=dict)
+    # Physics-residual (PDE-violation) loss value at the end of training, for
+    # PINN-family models only. This is *not* a re-derived quantity — it is
+    # the same physics/PDE-residual term the training loop already computes
+    # and backpropagates through each step (see `_train_pinn_autograd`'s
+    # `r_loss` and `_train_pinn_compiled`'s non-bc/ic/data compiled terms),
+    # windowed-averaged over the final few epochs for stability. Left as
+    # `None` for supervised/graph model families, where no physics residual
+    # is computed at all — never fabricated.
+    physics_residual: Optional[float] = None
     uq_result: Optional[Any] = None
     inverse_result: Optional[Any] = None
     extra: Dict[str, Any] = field(default_factory=dict)
+
+
+def _windowed_final(values: List[float], window: int = 20) -> Optional[float]:
+    """Mean of the last ``window`` values — a stable "final" reading that
+    smooths step-to-step noise without hiding a residual that never
+    converged. Returns ``None`` for an empty history."""
+    if not values:
+        return None
+    return float(np.mean(values[-window:]))
 
 
 # ── optimiser / scheduler factory ─────────────────────────────────────────────
@@ -90,21 +108,23 @@ def train_pinn(
     t_ubc = torch.tensor(uv_bc,  dtype=torch.float32, device=device)
 
     losses = []
+    res_losses: List[float] = []
     t0 = time.time()
 
     if compiled_losses is not None:
         _train_pinn_compiled(model, opt, sched, tc, compiled_losses,
-                             t_int, t_bc, t_ubc, losses, log_interval, cfg.name)
+                             t_int, t_bc, t_ubc, losses, res_losses, log_interval, cfg.name)
     else:
         _train_pinn_autograd(model, opt, sched, tc, pinn_residuals_fn,
-                             t_int, t_bc, t_ubc, problem_params, losses, log_interval, cfg.name)
+                             t_int, t_bc, t_ubc, problem_params, losses, res_losses, log_interval, cfg.name)
 
     return TrainResult(name=cfg.name, model=model,
-                       train_losses=losses, train_time=time.time() - t0)
+                       train_losses=losses, train_time=time.time() - t0,
+                       physics_residual=_windowed_final(res_losses))
 
 
 def _train_pinn_autograd(model, opt, sched, tc, residuals_fn,
-                         t_int, t_bc, t_ubc, params, losses, log_interval, name):
+                         t_int, t_bc, t_ubc, params, losses, res_losses, log_interval, name):
     for ep in range(1, tc.epochs + 1):
         model.train()
         opt.zero_grad()
@@ -117,18 +137,29 @@ def _train_pinn_autograd(model, opt, sched, tc, residuals_fn,
         if sched:
             sched.step()
         losses.append(loss.item())
+        # r_loss is the PDE-residual term already computed (and backpropped)
+        # each step by `residuals_fn`, separate from the boundary-condition
+        # loss — capture it as-is rather than re-deriving a residual.
+        res_losses.append(r_loss.item())
         if ep % log_interval == 0 or ep == 1:
             print(f"  [{name}] epoch {ep:5d}/{tc.epochs}  "
                   f"res={r_loss.item():.3e}  bc={bc_loss.item():.3e}")
 
 
 def _train_pinn_compiled(model, opt, sched, tc, compiled_losses,
-                         t_int, t_bc, t_ubc, losses, log_interval, name):
+                         t_int, t_bc, t_ubc, losses, res_losses, log_interval, name):
     """Training loop using losses compiled by pinneapple_physics.compile_physics."""
     for ep in range(1, tc.epochs + 1):
         model.train()
         opt.zero_grad()
         total = torch.tensor(0.0, device=t_int.device)
+        # Sub-total of the terms that look like PDE/physics residual terms
+        # (as opposed to bc_*/ic_*/data_* terms) — see the naming convention
+        # documented in pinneapple_physics's AdaptiveWeights ("pde", "bc_*",
+        # "ic_*", "data_*"). Falls back to `total` below when no term's name
+        # lets us tell them apart.
+        physics_total = torch.tensor(0.0, device=t_int.device)
+        has_physics_term = False
         try:
             # compiled_losses is Dict[str, callable]; each callable may accept
             # (model, x_col) or (model, x_col, x_bc, y_bc) — try both
@@ -142,6 +173,10 @@ def _train_pinn_compiled(model, opt, sched, tc, compiled_losses,
                         continue
                 if torch.is_tensor(lval):
                     total = total + lval
+                    key = str(lname).lower()
+                    if not key.startswith(("bc", "ic", "data")):
+                        physics_total = physics_total + lval
+                        has_physics_term = True
         except Exception as e:
             # compiled losses failed mid-epoch — warn once and skip
             warnings.warn(f"[Arena] compiled_losses failed at epoch {ep}: {e}. "
@@ -153,6 +188,7 @@ def _train_pinn_compiled(model, opt, sched, tc, compiled_losses,
         if sched:
             sched.step()
         losses.append(total.item())
+        res_losses.append(physics_total.item() if has_physics_term else total.item())
         if ep % log_interval == 0 or ep == 1:
             print(f"  [{name}] epoch {ep:5d}/{tc.epochs}  loss={total.item():.3e}  "
                   f"(pinneapple_physics compiled losses)")

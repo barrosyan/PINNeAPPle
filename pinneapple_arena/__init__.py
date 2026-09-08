@@ -70,7 +70,7 @@ from .config import (
     UQConfig,
     DatasetConfig,
 )
-from .arena import Arena
+from .arena import Arena, rank_by_accuracy, physics_aware_rank
 from .problems import get_problem, list_problems, list_problems_by_domain, ArenaProblem, register_problem
 from .model_factory import (
     build_model,
@@ -104,6 +104,13 @@ from .dataset_bench import (
     list_benchmarks,
     get_benchmark_preset,
 )
+from .nas import (
+    ArchitectureCandidate,
+    ArchitectureSearchSpace,
+    DEFAULT_CANDIDATES,
+    NASResult,
+    search_architecture,
+)
 
 __version__ = "0.2.0"
 
@@ -114,6 +121,8 @@ __all__ = [
     "InverseConfig", "UQConfig", "DatasetConfig",
     # main class
     "Arena",
+    # comparison / ranking
+    "rank_by_accuracy", "physics_aware_rank",
     # problems
     "ArenaProblem", "get_problem", "register_problem",
     "list_problems", "list_problems_by_domain",
@@ -131,4 +140,7 @@ __all__ = [
     # dataset-backed problems and benchmarks
     "DatasetProblem",
     "DATASET_PRESETS", "benchmark_dataset", "list_benchmarks", "get_benchmark_preset",
+    # architecture + hyperparameter search (NAS-over-a-fixed-catalog)
+    "ArchitectureCandidate", "ArchitectureSearchSpace", "DEFAULT_CANDIDATES",
+    "NASResult", "search_architecture",
 ]

@@ -268,8 +268,12 @@ def plot_metrics_table(
     n_m = len(model_names)
     n_f = len(field_names)
 
+    show_residual = any(getattr(r, "physics_residual", None) is not None for r in train_results)
+
     cols = ["Model"] + [f"L2 {f}" for f in field_names] + \
            [f"Linf {f}" for f in field_names] + ["Time (s)"]
+    if show_residual:
+        cols.append("Physics-Res")
     rows = []
     for mi, res in enumerate(eval_results):
         m = res["metrics"]
@@ -280,6 +284,9 @@ def plot_metrics_table(
         for f in field_names:
             row.append(f"{m.get(f'Linf_{f}', float('nan')):.3e}")
         row.append(f"{tr.train_time:.1f}")
+        if show_residual:
+            pr = getattr(tr, "physics_residual", None)
+            row.append(f"{pr:.3e}" if pr is not None else "n/a")
         rows.append(row)
 
     fig, ax = plt.subplots(figsize=(max(10, 2 * len(cols)), 1.5 + 0.5 * n_m), dpi=dpi)

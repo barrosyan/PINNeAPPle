@@ -23,7 +23,7 @@ from __future__ import annotations
 import os
 import time
 import warnings
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -61,6 +61,107 @@ def _build_delaunay_graph(xy: np.ndarray):
     ], axis=0)
     edge_attr = np.concatenate([xy[dst] - xy[src], xy[src] - xy[dst]], axis=0)
     return edge_index, edge_attr
+
+
+# ── accuracy / physics-aware ranking ──────────────────────────────────────────
+
+def _accuracy_score(eres: Dict[str, Any], field_names: List[str]) -> float:
+    """Mean relative-L2 error across fields — lower is better. This is the
+    same accuracy notion already shown in `_print_summary`'s ``rel-*``
+    columns, just reduced to one scalar for ranking purposes."""
+    m = eres.get("metrics", {})
+    rels = [m[f"rel_{f}"] for f in field_names if f"rel_{f}" in m]
+    if not rels:
+        return float("nan")
+    return float(np.mean(rels))
+
+
+def rank_by_accuracy(train_results: List[TrainResult],
+                      eval_results: List[Dict[str, Any]],
+                      field_names: List[str]) -> List[Tuple[str, float]]:
+    """Pure-accuracy ranking: (name, mean_rel_error) sorted ascending
+    (best first). This is Arena's default, unchanged ranking behaviour."""
+    by_name = {e["name"]: e for e in eval_results}
+    scored = [(tres.name, _accuracy_score(by_name[tres.name], field_names))
+              for tres in train_results if tres.name in by_name]
+    scored.sort(key=lambda t: (t[1] != t[1], t[1]))  # NaN sorts last
+    return scored
+
+
+def physics_aware_rank(
+    train_results: List[TrainResult],
+    eval_results: List[Dict[str, Any]],
+    field_names: List[str],
+    n_std: float = 2.0,
+    residual_threshold: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Additive, opt-in comparison view layered on top of the default
+    pure-accuracy ranking.
+
+    Keeps ``ranking`` identical to :func:`rank_by_accuracy` (accuracy is
+    still what orders the models) but also flags any PINN-family model
+    whose ``physics_residual`` is an outlier relative to the group —
+    i.e. a model that *looks* accurate at the evaluation points but is
+    violating the PDE it was trained against. Flags are additive
+    annotations, never a silent re-ordering: a model that ranks #1 on
+    accuracy and gets flagged still ranks #1.
+
+    Parameters
+    ----------
+    n_std:
+        A model is flagged if its ``physics_residual`` exceeds
+        ``median + n_std * std`` of the group of models that report one.
+        Ignored (outlier test skipped) if fewer than 2 models report a
+        residual.
+    residual_threshold:
+        Optional absolute cutoff. If set, any model whose residual exceeds
+        this value is flagged in addition to (not instead of) the
+        relative-outlier test above.
+
+    Returns
+    -------
+    dict with keys:
+        ``ranking``               — same as :func:`rank_by_accuracy`
+        ``physics_residuals``     — {name: residual} for models that have one
+        ``flagged_high_residual`` — names flagged as outliers, in ranking order
+        ``group_median``, ``group_std`` — stats used for the outlier test
+                                           (``None`` if too few data points)
+    """
+    ranking = rank_by_accuracy(train_results, eval_results, field_names)
+    residuals = {tres.name: tres.physics_residual
+                 for tres in train_results if tres.physics_residual is not None}
+
+    group_median: Optional[float] = None
+    group_std: Optional[float] = None
+    flagged: List[str] = []
+
+    if residuals:
+        vals = np.array(list(residuals.values()), dtype=float)
+        if len(vals) >= 2:
+            group_median = float(np.median(vals))
+            group_std = float(np.std(vals))
+        for name, r in residuals.items():
+            is_relative_outlier = (
+                group_median is not None and group_std is not None and group_std > 0
+                and r > group_median + n_std * group_std
+            )
+            is_absolute_outlier = (
+                residual_threshold is not None and r > residual_threshold
+            )
+            if is_relative_outlier or is_absolute_outlier:
+                flagged.append(name)
+
+    # preserve ranking order in the flagged list
+    order = {name: i for i, (name, _) in enumerate(ranking)}
+    flagged.sort(key=lambda n: order.get(n, len(order)))
+
+    return {
+        "ranking": ranking,
+        "physics_residuals": residuals,
+        "flagged_high_residual": flagged,
+        "group_median": group_median,
+        "group_std": group_std,
+    }
 
 
 # ── Arena ─────────────────────────────────────────────────────────────────────
@@ -102,8 +203,17 @@ class Arena:
 
     # ── main entry point ──────────────────────────────────────────────────────
 
-    def run(self) -> "Arena":
-        """Train all models, evaluate, optionally run UQ/inverse, produce figures."""
+    def run(self, physics_aware: bool = False) -> "Arena":
+        """Train all models, evaluate, optionally run UQ/inverse, produce figures.
+
+        Parameters
+        ----------
+        physics_aware:
+            Opt-in. When True, additionally prints the physics-aware
+            comparison view (see :func:`physics_aware_rank`) after the
+            standard summary. Does not change the standard summary or the
+            default pure-accuracy behaviour for callers who leave this off.
+        """
         self._prepare_data()
         self._train_all()
         self._evaluate_all()
@@ -114,6 +224,8 @@ class Arena:
         if self.cfg.output.save_figures:
             self._visualize()
         self._print_summary()
+        if physics_aware:
+            self._print_physics_aware_summary()
         return self
 
     # ── data preparation ──────────────────────────────────────────────────────
@@ -369,6 +481,7 @@ class Arena:
     def _print_summary(self):
         d = self._data
         field_names = d["field_names"]
+        show_residual = any(t.physics_residual is not None for t in self._train_results)
         print("\n" + "=" * 70)
         print(f"  ARENA RESULTS  >>  {self.cfg.problem.name}")
         print("=" * 70)
@@ -376,6 +489,8 @@ class Arena:
         for f in field_names:
             header += f"  L2-{f:<8}  rel-{f:<6}"
         header += "  Time(s)"
+        if show_residual:
+            header += "  Physics-Res"
         print(header)
         print("-" * 70)
         for tres, eres in zip(self._train_results, self._eval_results):
@@ -385,6 +500,9 @@ class Arena:
                 row += (f"  {m.get(f'L2_{f}', float('nan')):.3e}    "
                         f"{m.get(f'rel_{f}', float('nan')):.3e}  ")
             row += f"  {tres.train_time:6.1f}"
+            if show_residual:
+                row += ("  " + (f"{tres.physics_residual:.3e}"
+                                 if tres.physics_residual is not None else "n/a"))
             print(row)
             if tres.uq_result is not None:
                 try:
@@ -399,6 +517,38 @@ class Arena:
                 except Exception:
                     pass
         print("=" * 70)
+
+    # ── physics-aware comparison (opt-in, additive) ──────────────────────────
+
+    def physics_aware_summary(self, n_std: float = 2.0,
+                              residual_threshold: Optional[float] = None
+                              ) -> Dict[str, Any]:
+        """Compute (without printing) the physics-aware comparison view.
+        See :func:`physics_aware_rank` for the return shape."""
+        return physics_aware_rank(
+            self._train_results, self._eval_results, self._data["field_names"],
+            n_std=n_std, residual_threshold=residual_threshold,
+        )
+
+    def _print_physics_aware_summary(self, n_std: float = 2.0,
+                                     residual_threshold: Optional[float] = None):
+        result = self.physics_aware_summary(n_std=n_std, residual_threshold=residual_threshold)
+        print("\n" + "-" * 70)
+        print("  PHYSICS-AWARE VIEW  (accuracy ranking unchanged; outliers flagged)")
+        print("-" * 70)
+        if not result["physics_residuals"]:
+            print("  (no model in this run reports a physics_residual — nothing to flag)")
+            print("-" * 70)
+            return
+        for rank, (name, score) in enumerate(result["ranking"], start=1):
+            r = result["physics_residuals"].get(name)
+            r_str = f"{r:.3e}" if r is not None else "n/a"
+            flag = "  <-- FLAGGED: high physics residual" if name in result["flagged_high_residual"] else ""
+            print(f"  #{rank}  {name:<22}  rel-err={score:.3e}  physics-res={r_str}{flag}")
+        if result["group_median"] is not None:
+            print(f"  (group median={result['group_median']:.3e}, "
+                  f"std={result['group_std']:.3e}, threshold=median+{n_std}*std)")
+        print("-" * 70)
 
     # ── accessors ─────────────────────────────────────────────────────────────
 
