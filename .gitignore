@@ -21,6 +21,7 @@ numpy.libs
 pinneapple_app/frontend
 
 # Build/output cruft
+docs/api/
 dist/
 runs/
 run_results/
