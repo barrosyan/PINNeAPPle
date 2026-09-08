@@ -1,15 +1,146 @@
 """Plan builder: dispatches to FNO-first or PINN-first based on task_type."""
 from __future__ import annotations
 
-from typing import List
-from ..schema import ProblemSpec, Plan, PlanStep, Gap, uses_pinn_approach
+from typing import Dict, List, Optional
+from ..schema import ProblemSpec, Plan, PlanStep, Gap, uses_pinn_approach, uses_cfd_approach
 
 
-def build_plan(spec: ProblemSpec, gaps: List[Gap]) -> Plan:
-    """Dispatch to the appropriate plan builder based on spec.task_type."""
-    if uses_pinn_approach(spec):
-        return build_plan_pinn_first(spec, gaps)
-    return build_plan_fno_first(spec, gaps)
+# ---------------------------------------------------------------------------
+# Optional bridge to pinneapple_worldmodel's PhysicsOrchestrator tool registry
+# ---------------------------------------------------------------------------
+#
+# ``pinneapple_worldmodel`` is treated as an OPTIONAL dependency of
+# ``pinneapple_problemdesign``: this module never assumes it is importable
+# and never fails if it (or any of the heavier physics stacks its tools
+# lazily import) is missing. This mirrors the try/except ImportError
+# fallback pattern used elsewhere in the repo for optional deps, e.g.
+# ``pinneapple_neural.trainer.adaptive_sweep`` (Optuna) and
+# ``pinneapple_design.geometry.io.step`` (pythonocc-core).
+#
+# The dependency direction is strictly one-way: problemdesign -> (optionally)
+# worldmodel. ``pinneapple_worldmodel`` never imports anything from
+# ``pinneapple_problemdesign``, so no circular import is introduced.
+
+# Categories to query in pinneapple_worldmodel.physics_tools.PhysicsToolRegistry
+# for each plan flavour, reusing the exact same dispatch signals
+# (uses_cfd_approach / uses_pinn_approach) that already select which static
+# plan builder runs, so the live-tool lookup stays consistent with the
+# textual plan it augments.
+_CFD_TOOL_CATEGORIES = ("simulation", "pde_solving", "geometry")
+_PINN_TOOL_CATEGORIES = ("pde_solving", "training")
+_FNO_TOOL_CATEGORIES = ("training", "timeseries", "data_generation")
+
+
+def available_orchestrator_tools(spec: ProblemSpec) -> List[Dict[str, object]]:
+    """Read-only lookup of real, currently-registered tools from
+    ``pinneapple_worldmodel.orchestrator.PhysicsOrchestrator``'s
+    ``PhysicsToolRegistry`` that are relevant to *spec*.
+
+    This never raises: if ``pinneapple_worldmodel`` is not importable, or
+    the registry cannot be constructed for any reason, it returns ``[]``.
+    Only tools that are actually available (``PhysicsTool.is_available()``,
+    i.e. their underlying module could be imported) are returned, since the
+    point of this bridge is to surface what could be executed *right now*
+    via the orchestrator -- not a wishlist of tool names.
+
+    Returns a list of plain dicts (one per matching tool) with keys
+    ``name``, ``category``, ``description``, ``module_path``, ``tags`` --
+    i.e. the real metadata already carried by ``PhysicsTool``, not an
+    invented shape.
+    """
+    try:
+        from pinneapple_worldmodel.physics_tools import PhysicsToolRegistry
+    except ImportError:
+        return []
+
+    try:
+        registry = PhysicsToolRegistry()
+        registry.register_all()
+
+        if uses_cfd_approach(spec):
+            categories = _CFD_TOOL_CATEGORIES
+        elif uses_pinn_approach(spec):
+            categories = _PINN_TOOL_CATEGORIES
+        else:
+            categories = _FNO_TOOL_CATEGORIES
+
+        seen = set()
+        matches = []
+        for category in categories:
+            for tool in registry.list_by_category(category):
+                if tool.name in seen or not tool.is_available():
+                    continue
+                seen.add(tool.name)
+                matches.append(tool)
+
+        return [
+            {
+                "name": tool.name,
+                "category": tool.category,
+                "description": tool.description,
+                "module_path": tool.module_path,
+                "tags": list(tool.tags),
+            }
+            for tool in matches
+        ]
+    except Exception:
+        # Defensive: any instantiation/registration error in the optional
+        # dependency must never break problemdesign's plan generation.
+        return []
+
+
+def _orchestrator_tools_step(spec: ProblemSpec) -> Optional[PlanStep]:
+    """Build an additive ``PlanStep`` naming real orchestrator tools, or
+    ``None`` if the bridge found nothing (never a fake placeholder step)."""
+    tools = available_orchestrator_tools(spec)
+    if not tools:
+        return None
+    return PlanStep(
+        title="Available orchestrator tools",
+        why=(
+            "pinneapple_worldmodel.orchestrator.PhysicsOrchestrator's live "
+            "PhysicsToolRegistry currently has these registered, executable "
+            "tools relevant to this problem -- consider calling them "
+            "directly (via PhysicsOrchestrator or PhysicsToolRegistry.get) "
+            "instead of reimplementing equivalent functionality."
+        ),
+        actions=[
+            f"{t['name']} [{t['category']}]: {t['description']}" for t in tools
+        ],
+        pinneapple_modules=sorted({t["module_path"] for t in tools}),
+        exit_criteria=[],
+    )
+
+
+def build_plan(
+    spec: ProblemSpec,
+    gaps: List[Gap],
+    use_orchestrator_bridge: bool = True,
+) -> Plan:
+    """Dispatch to the appropriate plan builder based on spec.task_type.
+
+    When ``use_orchestrator_bridge`` is True (the default), this additionally
+    -- and read-only -- consults ``pinneapple_worldmodel``'s
+    ``PhysicsToolRegistry`` and appends an extra "Available orchestrator
+    tools" step naming real, currently-registered tools relevant to *spec*,
+    on top of (never instead of) the existing static plan. If
+    ``pinneapple_worldmodel`` is unavailable or no relevant tools are found,
+    the plan is identical to what it would have been with the bridge
+    disabled.
+    """
+    if uses_cfd_approach(spec):
+        plan = build_plan_cfd_first(spec, gaps)
+    elif uses_pinn_approach(spec):
+        plan = build_plan_pinn_first(spec, gaps)
+    else:
+        plan = build_plan_fno_first(spec, gaps)
+
+    if use_orchestrator_bridge:
+        extra_step = _orchestrator_tools_step(spec)
+        if extra_step is not None:
+            plan.steps.append(extra_step)
+
+    return plan
 
 
 def build_plan_pinn_first(spec: ProblemSpec, gaps: List[Gap]) -> Plan:
@@ -198,5 +329,103 @@ def build_plan_fno_first(spec: ProblemSpec, gaps: List[Gap]) -> Plan:
             "GO: baseline beats naive and meets acceptance criteria.",
             "NO-GO: data is insufficient/ambiguous (critical gaps), leakage exists, or target definition is unstable.",
             "REVISE: adjust horizon/window/metrics if the real use-case demands it.",
+        ],
+    )
+
+
+def build_plan_cfd_first(spec: ProblemSpec, gaps: List[Gap]) -> Plan:
+    """Plan for external-aerodynamics/CFD/fluid-dynamics problems, using
+    PINNeAPPle's Lattice-Boltzmann solver, RANS/LES turbulence-closure
+    presets, vortex-identification post-processing, and (optionally) the
+    OpenFOAM bridge, instead of defaulting to generic PINN/FNO advice."""
+    recommended = (
+        "CFD-first: resolve the flow with the Lattice-Boltzmann solver (or bridge to an "
+        "external OpenFOAM case for higher-fidelity/complex geometry), apply an appropriate "
+        "RANS/LES turbulence closure, and post-process with vortex-identification diagnostics."
+    )
+    alternatives = [
+        "External OpenFOAM run (case_builder/runner) when geometry or Reynolds number is "
+        "outside what the in-repo LBM solver handles well",
+        "PINN surrogate trained on LBM/OpenFOAM output for fast AoA-sweep interpolation "
+        "once reference solves exist",
+        "Neural operator (FNO) surrogate across the AoA sweep if many geometries/conditions "
+        "must be evaluated cheaply",
+    ]
+    steps: List[PlanStep] = [
+        PlanStep(
+            title="Define geometry, voxelization/CAD input, and AoA sweep",
+            why="LBM/OpenFOAM meshing and boundary conditions depend on a concrete "
+                "geometry representation and the set of angles of attack to evaluate.",
+            actions=[
+                "Confirm CAD format (e.g. STL/STEP) or voxel resolution for the body.",
+                "Confirm the angle-of-attack sweep values (geometry.aoa_sweep_deg).",
+                "Confirm Reynolds number / inflow velocity and domain size.",
+            ],
+            pinneapple_modules=[
+                "pinneapple_simulation.numerical_solvers.lbm (LBMSolver / LBMSolver3D)",
+                "pinneapple_simulation.external_solvers.openfoam (case_builder, mesh_reader)",
+            ],
+            exit_criteria=["Geometry, voxel/mesh resolution, and AoA sweep are all specified."],
+        ),
+        PlanStep(
+            title="Select turbulence closure and numerical method",
+            why="Reynolds number and flow regime (attached vs separated/high-AoA) determine "
+                "whether a RANS closure, LES closure, or laminar LBM run is appropriate.",
+            actions=[
+                "Pick a RANS closure (k-omega-SST or Spalart-Allmaras) for attached, "
+                "moderate-Re flow, or WALE LES for transient/separated flow.",
+                "Confirm physics.numerical_method (e.g. 'LBM' vs an external finite-volume run).",
+            ],
+            pinneapple_modules=[
+                "pinneapple_physics.pde_environment.turbulence_presets "
+                "(KOmegaSSTResiduals, SpalartAllmarasResiduals, WALEResiduals)",
+            ],
+            exit_criteria=["Turbulence model and numerical method are recorded in the spec."],
+        ),
+        PlanStep(
+            title="Run the flow solve across the AoA sweep",
+            why="Each angle of attack requires its own solve; sweeping is how "
+                "lift/drag-vs-AoA behavior (including high-AoA separation) is characterized.",
+            actions=[
+                "Run LBMSolver.from_problem_spec()/solve_from_spec() (2D) or construct "
+                "LBMSolver3D directly (3D) for each AoA, or stage_case_for_scenario()+"
+                "run_openfoam_case() for an external solve.",
+                "Save trajectory output (rho, u) or exported OpenFOAM fields per AoA.",
+            ],
+            pinneapple_modules=[
+                "pinneapple_simulation.numerical_solvers.lbm",
+                "pinneapple_simulation.external_solvers.openfoam (runner, export_bundle)",
+            ],
+            exit_criteria=["A converged flow field exists for every AoA in the sweep."],
+        ),
+        PlanStep(
+            title="Post-process: vortex identification and force coefficients",
+            why="Q-criterion/lambda2/vorticity diagnostics are how leading-edge vortices "
+                "and separation are visualized and validated at high AoA.",
+            actions=[
+                "Compute Q-criterion/lambda2/vorticity fields from the solved velocity field.",
+                "Derive lift/drag coefficients from the surface pressure/stress field.",
+                "Compare against a cite-able reference (e.g. a named pinneapple_pdb benchmark, "
+                "or thin-airfoil/vortex-lift theory at low-to-moderate AoA) rather than an "
+                "unverified number.",
+            ],
+            pinneapple_modules=[
+                "pinneapple_tools.visualization.vortex "
+                "(compute_q_criterion_2d/3d, compute_lambda2_3d, compute_vorticity_2d/3d)",
+            ],
+            exit_criteria=["Vortex diagnostics and force coefficients are computed for each AoA."],
+        ),
+    ]
+    return Plan(
+        recommended_approach=recommended,
+        alternatives=alternatives,
+        steps=steps,
+        go_no_go=[
+            "GO: flow solves converge across the AoA sweep and diagnostics match the "
+            "expected qualitative behavior (e.g. vortex lift onset at high AoA).",
+            "NO-GO: solver fails to converge, or no cite-able reference exists to sanity-check "
+            "the resulting force coefficients.",
+            "REVISE: switch to the external OpenFOAM bridge if the in-repo LBM solver's "
+            "geometry/Reynolds-number range is insufficient.",
         ],
     )

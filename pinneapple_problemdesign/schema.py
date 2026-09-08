@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional, Literal
+from typing import Any, Dict, List, Optional, Literal, Tuple
 from datetime import datetime
 
 
@@ -65,6 +65,11 @@ class PhysicsSpec:
     parameters_known: List[str] = field(default_factory=list)
     parameters_unknown: List[str] = field(default_factory=list)
     units: Dict[str, str] = field(default_factory=dict)
+    # CFD-specific, both optional/free-text (no fixed enumerated set the way
+    # TaskType/RiskLevel/GapSeverity are): unset means "not elicited yet",
+    # matching the non-invention policy's treatment of other unset fields.
+    turbulence_model: Optional[str] = None  # e.g. "RANS k-omega-SST", "LES WALE"
+    numerical_method: Optional[str] = None  # e.g. "LBM", "finite volume", "finite element"
 
 
 @dataclass
@@ -73,6 +78,12 @@ class GeometrySpec:
     representation: str = ""
     sensors: List[str] = field(default_factory=list)
     coordinate_system: str = ""
+    # CFD/CAD-specific, all optional and defaulting to unset (None) so the
+    # non-invention policy (see policy.py) keeps treating an un-elicited
+    # value as "not specified" rather than a guessed default.
+    cad_format: Optional[str] = None  # e.g. "stl", "step"
+    voxel_resolution: Optional[Tuple[int, int, int]] = None
+    aoa_sweep_deg: Optional[List[float]] = None  # angle-of-attack sweep values, degrees
 
 
 @dataclass
@@ -140,6 +151,36 @@ def uses_pinn_approach(spec: "ProblemSpec") -> bool:
     if spec.task_type in _PINN_IF_PHYSICS_TASK_TYPES:
         return bool(spec.physics.governing_equations)
     return False
+
+
+# Free-text keywords that flag an external-aerodynamics/CFD/fluid-dynamics
+# problem when no dedicated task_type exists for it (TaskType has no "cfd"
+# member -- see the Literal above). Checked against domain_context/goal/title.
+_CFD_KEYWORDS = (
+    "aerodynamic", "airfoil", "wing", "drag coefficient", "lift coefficient",
+    "cfd", "fluid dynamics", "reynolds number", "angle of attack", " aoa ",
+    "lattice boltzmann", "wind tunnel",
+)
+
+
+def uses_cfd_approach(spec: "ProblemSpec") -> bool:
+    """Whether ``spec`` describes an external-aerodynamics/CFD problem that
+    should get the LBM/turbulence-closure/vortex-postprocessing plan
+    (``knowledge.mapping.build_plan_cfd_first``) instead of generic PINN/FNO
+    advice.
+
+    Single source of truth for ``knowledge.mapping.build_plan``'s dispatch,
+    mirroring ``uses_pinn_approach`` above. True when the elicited spec
+    already names a turbulence model or CFD numerical method, specifies an
+    angle-of-attack sweep, or the free-text goal/domain_context/title
+    mentions aerodynamics-flavoured keywords.
+    """
+    if spec.physics.turbulence_model or spec.physics.numerical_method:
+        return True
+    if spec.geometry.aoa_sweep_deg:
+        return True
+    text = f" {spec.domain_context} {spec.goal} {spec.title} ".lower()
+    return any(kw in text for kw in _CFD_KEYWORDS)
 
 
 @dataclass

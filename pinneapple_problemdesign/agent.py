@@ -61,8 +61,14 @@ class DesignAgent:
       - once sufficient => build plan (FNO-first) and render report
     """
 
-    def __init__(self, llm: LLMProvider):
+    def __init__(self, llm: LLMProvider, use_orchestrator_bridge: bool = True):
         self.llm = llm
+        # Optional, read-only bridge to pinneapple_worldmodel's
+        # PhysicsToolRegistry (see knowledge.mapping.available_orchestrator_tools).
+        # Defaults to True since it is additive/safe; disable for
+        # offline/deterministic testing or when pinneapple_worldmodel should
+        # never be consulted.
+        self.use_orchestrator_bridge = use_orchestrator_bridge
 
     def start(self) -> DesignState:
         return DesignState()
@@ -115,7 +121,10 @@ class DesignAgent:
 
             if state.stage == "finalization":
                 # Build the plan + translate to concrete Pinneapple API objects
-                state.plan = build_plan(state.spec, state.gaps)
+                state.plan = build_plan(
+                    state.spec, state.gaps,
+                    use_orchestrator_bridge=self.use_orchestrator_bridge,
+                )
                 pinneapple_spec = build_pinneapple_spec(state.spec)
                 state.done = True
                 report = state.to_report()
