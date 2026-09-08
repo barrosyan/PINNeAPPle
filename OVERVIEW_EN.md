@@ -47,6 +47,21 @@ pinneapple_systems      ← Coupled systems, time series, digital twins
 pinneapple_tools        ← Visualization, export, benchmarking
 ```
 
+Beyond these core modules and `pinneapple_data`, `pinneapple_pdb`, and `pinneapple_problemdesign`
+(covered in sections 10–12), the repository includes several other top-level packages:
+
+- `pinneapple_app` — web application (FastAPI + frontend) for benchmarking PINN models in the browser (Docker-composed backend/frontend)
+- `pinneapple_arena` — YAML/JSON-driven multi-model benchmark runner (~80+ architectures, physics losses, UQ, inverse problems)
+- `pinneapple_blender` — exports a field/trajectory as a `.ply` sequence, and optionally builds/renders a Blender scene via a real local Blender install
+- `pinneapple_hub` — model hub client (`push_to_hub`/`from_pretrained` + `ModelCard`) built on the Hugging Face Hub
+- `pinneapple_llm` — LLM-assisted physics-AI pipeline drafting, gated by a mandatory `PhysicsGuardrail` verification layer
+- `pinneapple_models` — compatibility shim re-exporting `pinneapple_neural.architectures` (not a separate package)
+- `pinneapple_perception` — extracts physics observations (velocity fields, boundary geometry, modal frequencies) from images, video, and audio
+- `pinneapple_registry` — local, self-hosted artifact registry: versioned model/dataset storage, experiment tracking, and problem-spec history
+- `pinneapple_solvers` — compatibility shim re-exporting `pinneapple_simulation.numerical_solvers` (not a separate package)
+- `pinneapple_train` — compatibility shim re-exporting `pinneapple_neural.trainer` (not a separate package)
+- `pinneapple_worldmodel` — generalist Physics Foundation Model trained across many physics domains
+
 **4-line quickstart:**
 
 ```python
