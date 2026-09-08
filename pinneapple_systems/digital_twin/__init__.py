@@ -59,6 +59,12 @@ from .signal_reconstruction import (
     reconstruct_interpolate,
     reconstruct_model_based,
 )
+from .prognostics import (
+    HealthIndicatorHistory,
+    RULEstimate,
+    estimate_rul,
+    estimate_rul_from_twin,
+)
 
 __all__ = [
     # Core
@@ -99,4 +105,9 @@ __all__ = [
     "reconstruct_wavelet",
     "reconstruct_interpolate",
     "reconstruct_model_based",
+    # Prognostics / predictive maintenance
+    "HealthIndicatorHistory",
+    "RULEstimate",
+    "estimate_rul",
+    "estimate_rul_from_twin",
 ]
