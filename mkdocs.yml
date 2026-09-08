@@ -59,12 +59,17 @@ plugins:
 watch:
   - docs
   - pinneapple_arena
+  - pinneapple_blender
   - pinneapple_data
   - pinneapple_design
+  - pinneapple_hub
+  - pinneapple_llm
   - pinneapple_models
   - pinneapple_pdb
+  - pinneapple_perception
   - pinneapple_physics
   - pinneapple_problemdesign
+  - pinneapple_registry
   - pinneapple_tools
   - pinneapple_solvers
   - pinneapple_systems

@@ -65,7 +65,7 @@
 | **YAML pipeline** | `run_full_pipeline(config.yaml)` | Scripts Python | PINNeAPPle mais simples |
 | **Export** | ONNX, TorchScript, checkpoint | ONNX, TensorRT, Triton | PhysicsNeMo melhor deploy NVIDIA |
 | **Solvers** | FEniCS, OpenFOAM, FDM, FEM, SPH, LBM | OpenFOAM (básico) | PINNeAPPle mais completo |
-| **Licença** | Open source (MIT) | Open source (Apache 2.0) | Ambos abertos |
+| **Licença** | Open source (Apache 2.0) | Open source (Apache 2.0) | Ambos abertos |
 
 ---
 
