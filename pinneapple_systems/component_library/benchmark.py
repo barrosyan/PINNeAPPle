@@ -40,20 +40,33 @@ def benchmark_component_type(
     lr: float = 1e-3,
     eval_coords: Optional[torch.Tensor] = None,
     eval_targets: Optional[torch.Tensor] = None,
+    log_dir: Optional[str] = None,
 ) -> ComponentBenchmarkResult:
     """Trains every architecture registered for ``component_type`` on the
     same data and ranks them by final validation loss (ascending — lower
     is better). If ``eval_coords``/``eval_targets`` are given, also attaches
     RMSE/MAPE/R² per architecture via ``ComponentModel.evaluate()``.
+
+    ``log_dir`` defaults to a fresh temp directory (never
+    ``TrainConfig``'s own default of ``"runs"``, a relative path that
+    would otherwise write into — and collide with — whatever the caller's
+    current working directory happens to be, e.g. a shared repo checkout).
     """
+    import tempfile
+
     specs = ComponentRegistry.by_type(component_type)
     if not specs:
         raise KeyError(f"No components registered for component_type='{component_type}'")
 
+    resolved_log_dir = log_dir or tempfile.mkdtemp(prefix="pinneapple_component_benchmark_")
+
     rows: List[Dict[str, Any]] = []
     for spec in specs:
         model = ComponentRegistry.build(spec.name)
-        result = model.fit(train_loader, val_loader, epochs=epochs, lr=lr, run_name=f"bench_{spec.name}")
+        result = model.fit(
+            train_loader, val_loader, epochs=epochs, lr=lr,
+            run_name=f"bench_{spec.name}", log_dir=resolved_log_dir,
+        )
         row: Dict[str, Any] = {"name": spec.name, "final_loss": result["best_val"]}
         if eval_coords is not None and eval_targets is not None:
             row["metrics"] = model.evaluate(eval_coords, eval_targets)
