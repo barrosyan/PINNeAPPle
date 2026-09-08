@@ -29,7 +29,8 @@ from __future__ import annotations
 import json
 import os, sys
 # Ensure project root is on path when script is run directly
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# (this script now lives in examples/scratch/, two levels down from root)
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 import os
@@ -53,7 +54,10 @@ from pinneapple_tools.visualization import (
 )
 
 # ── Output directory ──────────────────────────────────────────────────────
-OUT = os.path.join(os.path.dirname(__file__), "results_chassis")
+# examples/ (one level up from examples/scratch/) -- results_chassis/ lives
+# alongside the other curated examples, not in scratch/.
+_EXAMPLES_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.path.join(_EXAMPLES_DIR, "results_chassis")
 os.makedirs(OUT, exist_ok=True)
 
 use_cfd_style()

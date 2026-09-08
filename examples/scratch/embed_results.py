@@ -5,12 +5,16 @@ Embeds generated PNGs (base64) and real loss data into the HTML presentation.
 from __future__ import annotations
 import base64, json, os, sys
 
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# repo root (this script now lives in examples/scratch/, two levels down)
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-OUT  = os.path.join(os.path.dirname(__file__), "results_chassis")
-HTML = os.path.join(os.path.dirname(__file__), "chassis_structural_analysis.html")
+# examples/ (one level up from examples/scratch/) -- results_chassis/ and the
+# HTML report live alongside the other curated examples, not in scratch/.
+_EXAMPLES_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT  = os.path.join(_EXAMPLES_DIR, "results_chassis")
+HTML = os.path.join(_EXAMPLES_DIR, "chassis_structural_analysis.html")
 
 # ── Load images ───────────────────────────────────────────────────────────
 imgs = {}

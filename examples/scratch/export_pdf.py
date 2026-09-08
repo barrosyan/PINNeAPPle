@@ -6,7 +6,8 @@ Waits for MathJax, Chart.js and all images to fully render before capturing.
 from __future__ import annotations
 import asyncio, os, sys, time
 
-_DIR = os.path.dirname(os.path.abspath(__file__))
+# examples/ (this script now lives in examples/scratch/, one level deeper)
+_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HTML = os.path.join(_DIR, "chassis_structural_analysis.html")
 PDF  = os.path.join(_DIR, "chassis_structural_analysis.pdf")
 

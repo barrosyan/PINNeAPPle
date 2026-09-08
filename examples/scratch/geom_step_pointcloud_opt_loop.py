@@ -8,7 +8,7 @@ This script shows three workflows:
 3) Optimization loop: tune SDF params to match a target (toy objective)
 
 Run:
-  python examples/geom_step_pointcloud_opt_loop.py
+  python examples/scratch/geom_step_pointcloud_opt_loop.py
 
 Optional deps:
   pip install gmsh meshio scikit-image cma
