@@ -8,9 +8,12 @@ Functions
 ---------
 Analysis (numpy / torch input):
   compute_vorticity_2d        — ω_z scalar field
+  compute_vorticity_3d        — full vorticity vector field (curl u)
   compute_q_criterion_2d      — Q = 0.5(|Ω|²-|S|²) on 2-D structured grid
   compute_q_criterion_3d      — Q on 3-D structured grid
   compute_lambda2_3d          — λ₂ vortex criterion (Jeong & Hussain 1995)
+  compute_enstrophy           — 0.5*sum(|ω|²), accepts 2-D scalar or 3-D vector vorticity
+  compute_dissipation_rate    — viscous dissipation rate ε = 2ν S_ij S_ij (3-D)
 
 Visualization:
   plot_vorticity              — coloured vorticity map
@@ -99,6 +102,69 @@ def compute_q_criterion_2d(
 # Analysis — 3D
 # ---------------------------------------------------------------------------
 
+def compute_vorticity_3d(
+    u: "ArrayLike",
+    v: "ArrayLike",
+    w: "ArrayLike",
+    dx: float = 1.0,
+    dy: float = 1.0,
+    dz: float = 1.0,
+) -> np.ndarray:
+    """
+    Full vorticity vector field ω = ∇×u for 3-D flow:
+      ω_x = ∂w/∂y − ∂v/∂z
+      ω_y = ∂u/∂z − ∂w/∂x
+      ω_z = ∂v/∂x − ∂u/∂y
+
+    u, v, w : 3-D arrays (nx, ny, nz).
+    Returns ω stacked as (3, nx, ny, nz) — components [ω_x, ω_y, ω_z].
+    """
+    u_ = _np(u);  v_ = _np(v);  w_ = _np(w)
+
+    dudy = np.gradient(u_, dy, axis=1)
+    dudz = np.gradient(u_, dz, axis=2)
+    dvdx = np.gradient(v_, dx, axis=0)
+    dvdz = np.gradient(v_, dz, axis=2)
+    dwdx = np.gradient(w_, dx, axis=0)
+    dwdy = np.gradient(w_, dy, axis=1)
+
+    omega_x = dwdy - dvdz
+    omega_y = dudz - dwdx
+    omega_z = dvdx - dudy
+    return np.stack([omega_x, omega_y, omega_z], axis=0)
+
+
+def compute_strain_rate_tensor_3d(
+    u: "ArrayLike",
+    v: "ArrayLike",
+    w: "ArrayLike",
+    dx: float = 1.0,
+    dy: float = 1.0,
+    dz: float = 1.0,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Symmetric strain-rate tensor S_ij = 0.5(∂u_i/∂x_j + ∂u_j/∂x_i) for 3-D flow.
+
+    u, v, w : 3-D arrays (nx, ny, nz).
+    Returns (S11, S22, S33, S12, S13, S23), each (nx, ny, nz).
+    """
+    u_ = _np(u);  v_ = _np(v);  w_ = _np(w)
+
+    dudx = np.gradient(u_, dx, axis=0)
+    dudy = np.gradient(u_, dy, axis=1)
+    dudz = np.gradient(u_, dz, axis=2)
+    dvdx = np.gradient(v_, dx, axis=0)
+    dvdy = np.gradient(v_, dy, axis=1)
+    dvdz = np.gradient(v_, dz, axis=2)
+    dwdx = np.gradient(w_, dx, axis=0)
+    dwdy = np.gradient(w_, dy, axis=1)
+    dwdz = np.gradient(w_, dz, axis=2)
+
+    S11 = dudx;            S22 = dvdy;            S33 = dwdz
+    S12 = 0.5*(dudy+dvdx); S13 = 0.5*(dudz+dwdx);  S23 = 0.5*(dvdz+dwdy)
+    return S11, S22, S33, S12, S13, S23
+
+
 def compute_q_criterion_3d(
     u: "ArrayLike",
     v: "ArrayLike",
@@ -114,19 +180,14 @@ def compute_q_criterion_3d(
     """
     u_ = _np(u);  v_ = _np(v);  w_ = _np(w)
 
-    dudx = np.gradient(u_, dx, axis=0)
     dudy = np.gradient(u_, dy, axis=1)
     dudz = np.gradient(u_, dz, axis=2)
     dvdx = np.gradient(v_, dx, axis=0)
-    dvdy = np.gradient(v_, dy, axis=1)
     dvdz = np.gradient(v_, dz, axis=2)
     dwdx = np.gradient(w_, dx, axis=0)
     dwdy = np.gradient(w_, dy, axis=1)
-    dwdz = np.gradient(w_, dz, axis=2)
 
-    # Symmetric (strain) tensor components
-    S11 = dudx;           S22 = dvdy;          S33 = dwdz
-    S12 = 0.5*(dudy+dvdx); S13 = 0.5*(dudz+dwdx); S23 = 0.5*(dvdz+dwdy)
+    S11, S22, S33, S12, S13, S23 = compute_strain_rate_tensor_3d(u_, v_, w_, dx, dy, dz)
     norm_S2 = S11**2 + S22**2 + S33**2 + 2*(S12**2 + S13**2 + S23**2)
 
     # Antisymmetric (rotation) tensor
@@ -134,6 +195,39 @@ def compute_q_criterion_3d(
     norm_W2 = 2*(W12**2 + W13**2 + W23**2)
 
     return 0.5 * (norm_W2 - norm_S2)
+
+
+def compute_enstrophy(vorticity: "ArrayLike") -> float:
+    """
+    Enstrophy: 0.5 * sum(|ω|²).
+
+    Accepts either a 2-D scalar vorticity field (ω_z, from compute_vorticity_2d)
+    or a 3-D vector vorticity field stacked as (3, nx, ny, nz) (from
+    compute_vorticity_3d). No branching is needed: |ω|² at a point is the sum
+    of its squared components, so summing squared entries over every axis
+    (including the stacked-component axis, when present) gives the same
+    total in both cases.
+    """
+    w_ = _np(vorticity)
+    return 0.5 * float(np.sum(w_**2))
+
+
+def compute_dissipation_rate(
+    strain_rate_tensor_components: Tuple["ArrayLike", "ArrayLike", "ArrayLike",
+                                          "ArrayLike", "ArrayLike", "ArrayLike"],
+    nu: float,
+) -> np.ndarray:
+    """
+    Viscous/turbulent dissipation rate: ε = 2ν S_ij S_ij (double contraction
+    of the strain-rate tensor).
+
+    strain_rate_tensor_components: (S11, S22, S33, S12, S13, S23), e.g. from
+    compute_strain_rate_tensor_3d(u, v, w, dx, dy, dz).
+    Returns ε field, same shape as the S_ij components.
+    """
+    S11, S22, S33, S12, S13, S23 = (_np(s) for s in strain_rate_tensor_components)
+    S_ij_S_ij = S11**2 + S22**2 + S33**2 + 2.0*(S12**2 + S13**2 + S23**2)
+    return 2.0 * nu * S_ij_S_ij
 
 
 def compute_lambda2_3d(
