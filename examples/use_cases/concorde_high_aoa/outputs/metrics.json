@@ -1,0 +1,203 @@
+{
+  "geometry": {
+    "root_chord": 1.0,
+    "semispan": 0.425,
+    "wing_area": 0.425,
+    "aspect_ratio": 1.7,
+    "fuselage_length": 1.5,
+    "fuselage_radius": 0.08,
+    "is_parametric_stand_in_not_real_concorde_cad": true
+  },
+  "lbm_config": {
+    "resolution": 56,
+    "Re": 300.0,
+    "u_in": 0.04,
+    "steps": 600,
+    "save_every": 150
+  },
+  "turbulence": {
+    "model": "les_smagorinsky",
+    "Cs": 0.17,
+    "solver_family": "lbm"
+  },
+  "primary_aoa_deg": 10.0,
+  "primary_aoa_result": {
+    "aoa_deg": 10.0,
+    "CL": 0.3316407048396087,
+    "CD": 0.23543876497888103,
+    "CM": -0.13157491350067177,
+    "CY": 0.01630487278984202,
+    "Cp_mean": -0.09367165413997387,
+    "Cp_min": -1.48846968160408,
+    "Cp_max": 1.2683812900155527,
+    "n_solid_voxels": 755,
+    "solve_time_s": 24.60344910621643,
+    "mean_speed_history": [
+      0.03960520029067993,
+      0.039436839520931244,
+      0.03928760066628456,
+      0.039147425442934036
+    ],
+    "Q_max": 0.07552463020642089,
+    "Q_positive_fraction": 0.037559220116618074,
+    "enstrophy": 425.2052201087444,
+    "dissipation_mean": 5.6270494449369694e-05
+  },
+  "aoa_sweep": [
+    {
+      "aoa_deg": 0.0,
+      "CL": -0.033252438687995406,
+      "CD": 0.10896379518238374,
+      "CM": -0.01799188963950936,
+      "CY": 0.009322192258988062,
+      "Cp_mean": -0.015578921231081889,
+      "Cp_min": -1.4966933429105358,
+      "Cp_max": 1.174267515447987,
+      "n_solid_voxels": 840,
+      "solve_time_s": 25.04707407951355,
+      "mean_speed_history": [
+        0.03963519260287285,
+        0.03947079926729202,
+        0.03932718187570572,
+        0.03919052705168724
+      ],
+      "Q_max": 0.05789344251470792,
+      "Q_positive_fraction": 0.030521137026239067,
+      "enstrophy": 377.5741917943407,
+      "dissipation_mean": 4.5733448321582634e-05
+    },
+    {
+      "aoa_deg": 5.0,
+      "CL": 0.25282688556488864,
+      "CD": 0.16648277039837617,
+      "CM": -0.10573710047075568,
+      "CY": 0.007874313591334935,
+      "Cp_mean": -0.05647804825087274,
+      "Cp_min": -1.5060539446429646,
+      "Cp_max": 1.2014174849651016,
+      "n_solid_voxels": 724,
+      "solve_time_s": 24.63887906074524,
+      "mean_speed_history": [
+        0.03962548077106476,
+        0.039463069289922714,
+        0.039321791380643845,
+        0.039188023656606674
+      ],
+      "Q_max": 0.07443983572452305,
+      "Q_positive_fraction": 0.0317966472303207,
+      "enstrophy": 377.7385098071392,
+      "dissipation_mean": 4.651209924039903e-05
+    },
+    {
+      "aoa_deg": 10.0,
+      "CL": 0.3316407048396087,
+      "CD": 0.23543876497888103,
+      "CM": -0.13157491350067177,
+      "CY": 0.01630487278984202,
+      "Cp_mean": -0.09367165413997387,
+      "Cp_min": -1.48846968160408,
+      "Cp_max": 1.2683812900155527,
+      "n_solid_voxels": 755,
+      "solve_time_s": 24.60344910621643,
+      "mean_speed_history": [
+        0.03960520029067993,
+        0.039436839520931244,
+        0.03928760066628456,
+        0.039147425442934036
+      ],
+      "Q_max": 0.07552463020642089,
+      "Q_positive_fraction": 0.037559220116618074,
+      "enstrophy": 425.2052201087444,
+      "dissipation_mean": 5.6270494449369694e-05
+    },
+    {
+      "aoa_deg": 15.0,
+      "CL": 0.5180470338590298,
+      "CD": 0.4028759560229268,
+      "CM": -0.23342076983477927,
+      "CY": 0.02406660724505186,
+      "Cp_mean": -0.11993365494149749,
+      "Cp_min": -1.4983564502868123,
+      "Cp_max": 1.2831638577189746,
+      "n_solid_voxels": 768,
+      "solve_time_s": 24.593984842300415,
+      "mean_speed_history": [
+        0.039587538689374924,
+        0.03940311819314957,
+        0.0392361655831337,
+        0.039079148322343826
+      ],
+      "Q_max": 0.06863199484032284,
+      "Q_positive_fraction": 0.036636752915451896,
+      "enstrophy": 422.6793215209698,
+      "dissipation_mean": 6.345142834869283e-05
+    },
+    {
+      "aoa_deg": 20.0,
+      "CL": 0.5880953069784003,
+      "CD": 0.6150477025641741,
+      "CM": -0.2873303670970974,
+      "CY": 0.0071206231945146435,
+      "Cp_mean": -0.23609337390527385,
+      "Cp_min": -1.501034527722556,
+      "Cp_max": 1.1946632195247846,
+      "n_solid_voxels": 726,
+      "solve_time_s": 24.743349075317383,
+      "mean_speed_history": [
+        0.039564140141010284,
+        0.03937182575464249,
+        0.03919624164700508,
+        0.03903224319219589
+      ],
+      "Q_max": 0.0823712706191709,
+      "Q_positive_fraction": 0.03744533527696793,
+      "enstrophy": 438.7042286273098,
+      "dissipation_mean": 7.092201735372532e-05
+    }
+  ],
+  "validation": {
+    "benchmark": "concorde_high_aoa",
+    "reference_source": "Polhamus, E.C., 'A Concept of the Vortex Lift of Sharp-Edge Delta Wings Based on a Leading-Edge-Suction Analogy', NASA TN D-3767 (1966); slender-wing potential-flow lift-curve-slope constant Kp=pi*AR/2 per R. T. Jones, 'Properties of Low-Aspect-Ratio Pointed Wings at Speeds Below and Above the Speed of Sound', NACA Report 835 (1946).",
+    "verification_note": "LOW/MEDIUM-fidelity THEORETICAL cross-check only -- explicitly NOT a substitute for real Concorde wind-tunnel or flight-test data, which is not available to this codebase with a citable public source (see module docstring). Kp=pi*AR/2 and Kv=2 are the Polhamus formula's own low-aspect-ratio ASYMPTOTIC limit, not chart-read values for Concorde's exact aspect ratio, so applying them at AR~1.7 (not vanishingly small) is itself an approximation on top of the theory. What IS verified: an independent finite-difference re-evaluation of this implementation's small-angle CL slope reproduces the cited closed-form constant Kp=pi*AR/2 (R. T. Jones, NACA Report 835) to <0.1% -- i.e. the code correctly implements the cited formula, not that the formula correctly predicts a real Concorde's lift.",
+    "reference_alpha_deg": [
+      0.0,
+      2.0,
+      4.0,
+      6.0,
+      8.0,
+      10.0,
+      12.0,
+      14.0,
+      16.0,
+      18.0,
+      20.0
+    ],
+    "reference_CL": [
+      0.0,
+      0.09551496058702469,
+      0.19507628679275513,
+      0.2978108525276184,
+      0.40280434489250183,
+      0.5091109275817871,
+      0.6157633662223816,
+      0.7217835783958435,
+      0.8261927366256714,
+      0.9280222058296204,
+      1.0263235569000244
+    ],
+    "sim_alpha_deg": [
+      0.0,
+      5.0,
+      10.0,
+      15.0,
+      20.0
+    ],
+    "sim_CL": [
+      -0.033252438687995406,
+      0.25282688556488864,
+      0.3316407048396087,
+      0.5180470338590298,
+      0.5880953069784003
+    ]
+  }
+}
