@@ -14,50 +14,71 @@ Quick start
 >>> # Load a problem
 >>> spec = pp.get_preset("burgers_1d", nu=0.01)
 
->>> # Check available models
+>>> # Check available models (registry names are lowercase, e.g. "vanilla_pinn")
 >>> pp.list_models()
 
->>> # Train a PINN (see examples/ for full workflows)
->>> model = pp.build_model("VanillaPINN", in_dim=2, out_dim=1)
+>>> # Build a model (see examples/ for full training workflows)
+>>> model = pp.build_model("vanilla_pinn", in_dim=2, out_dim=1)
 
 >>> # Create a digital twin
 >>> dt = pp.build_digital_twin(model, field_names=["u"])
 
->>> # Full-pipeline quickstart (generates geometry, trains, visualizes)
+>>> # Print a summary of a preset and suggested next steps
 >>> pp.quickstart("burgers_1d")
 
 Submodules
 ----------
-Core:
-- pinneapple_environment   problem presets, PDE specs, BCs, RANS turbulence presets
-- pinneapple_models        PINN, DeepONet, FNO, GNO, GNN, autoencoders, SIREN,
-                          ModifiedMLP, HashGridMLP, MeshGraphNet, AFNO
-- pinneapple_train         Trainer, metrics, AMP, parallelization, sweeps,
-                          TimeMarchingTrainer, DDPPINNTrainer, CausalPINNTrainer
-- pinneapple_pinn          physics loss compiler (PINNFactory), DoMINO decomposition
-- pinneapple_solvers       FDM, FEM, FVM, SPH, OpenFOAM, FEniCS bridges,
-                          CADToCFDPipeline, NSFlowSolver, CFDMesh
-- pinneapple_data          collocation samplers, active learning, dataset builders
-- pinneapple_geom          geometry generation, SDF, mesh, CSG domains
-- pinneapple_inference     grid inference, error maps, streamlines, isosurfaces
-- pinneapple_digital_twin  digital twin runtime, sensor streams, anomaly detection
-- pinneapple_arena         benchmark runner, YAML experiments, end-to-end pipeline
+This top-level package eagerly re-exports selected functions/classes from
+the packages below (see the ``try/except`` import blocks further down this
+file for the exact symbols). Import from the underlying package directly
+for anything not re-exported here.
 
-Advanced:
-- pinneapple_symbolic      symbolic PDE compiler (SymPy → autograd), HardBC, PeriodicBC
-- pinneapple_uq            uncertainty quantification (MC Dropout, ensemble, conformal)
-- pinneapple_transfer      transfer learning and parametric fine-tuning
-- pinneapple_meta          meta-learning: MAML and Reptile for PDE families
-- pinneapple_validate      physical consistency validation (conservation, BCs, symmetry)
-- pinneapple_serve         REST API inference server (FastAPI)
-- pinneapple_export        model export to ONNX and TorchScript
-- pinneapple_backend       multi-backend support: PyTorch + JAX (vmap/jit)
-- pinneapple_dynamics      differentiable dynamics: rigid body, MPM, SPH particles
-- pinneapple_worldmodel    world foundation model integration (NVIDIA Cosmos adapter)
+- pinneapple_physics     problem presets/PDE specs (pde_environment), the
+                        symbolic PDE compiler and BC enforcement
+                        (symbolic_pde: SymbolicPDE, HardBC, PeriodicBC, ...),
+                        and the physics-loss compiler plus DoMINO domain
+                        decomposition (pinn_solver)
+- pinneapple_neural      model architectures and registry (architectures:
+                        SIREN, ModifiedMLP, HashGridMLP, MeshGraphNet, AFNO,
+                        ModelRegistry), training (trainer: Trainer,
+                        TrainConfig, TwoPhaseTrainer, TimeMarchingTrainer,
+                        DDPPINNTrainer, CausalPINNTrainer), and inference /
+                        post-processing (predictor: infer_on_grid_1d/2d,
+                        FlowVisualizer, streamlines, isosurfaces)
+- pinneapple_data        collocation sampling (CollocationSampler) and
+                        residual-based active learning
+- pinneapple_design      geometry primitives and CSG domains (geometry) and
+                        design optimization (design_optimizer: DesignOptLoop,
+                        objectives, constraints, adjoint shape optimization)
+- pinneapple_analysis    uncertainty quantification (uncertainty), physical
+                        consistency validation (validation), and inverse
+                        problems (inverse_problems: EKI, sensitivity, misfits)
+- pinneapple_systems     digital twin runtime (digital_twin)
+- pinneapple_simulation  differentiable particle/rigid-body/MPM dynamics
+                        (particle_dynamics) and mesh/FDM/FEM/FVM CFD solvers
+                        including the CAD→mesh→NS pipeline (numerical_solvers)
+- pinneapple_tools       model export to ONNX/TorchScript (model_export),
+                        multi-backend PyTorch+JAX support (compute_backends),
+                        and the benchmark suite including transfer- and
+                        meta-learning benchmarks (benchmark_suite)
+- pinneapple_worldmodel  world foundation model integration (Cosmos adapter)
+
+A few of these are also available as separate top-level packages that are
+pure compatibility shims re-exporting the same symbols: pinneapple_models
+(→ pinneapple_neural.architectures), pinneapple_train (→
+pinneapple_neural.trainer), pinneapple_solvers (→
+pinneapple_simulation.numerical_solvers). ``pinneapple_arena`` (YAML/JSON
+multi-model benchmark runner) and ``pinneapple_quantum`` (hybrid
+classical–quantum ML) are independent top-level packages, not re-exported
+here.
+
+Several of the names above are also reachable lazily as
+``pinneapple.<name>``, e.g. ``pp.models``, ``pp.train``, ``pp.solvers``,
+``pp.data``, ``pp.arena``, ``pp.quantum``, ``pp.worldmodel``.
 
 Examples
 --------
-See examples/pinneapple_arena/ for ready-to-run scripts:
+See examples/benchmark_suite/ for ready-to-run benchmark & pipeline scripts:
   01_quickstart_native.py           — Basic benchmark run
   03_pinn_burgers_full_pipeline.py  — Full PINN training with GPU + viz
   04_digital_twin_flow.py           — Live digital twin with anomaly detection
@@ -70,12 +91,12 @@ See examples/pinneapple_arena/ for ready-to-run scripts:
   12_physics_benchmark_suite.py     — Multi-architecture PINN Arena benchmark
   13_transfer_meta_benchmark.py     — Transfer & meta-learning benchmark
 
-New feature examples:
-  examples/pinneapple_pinn/03_symbolic_pde_hard_bc.py   — Symbolic PDE + HardBC
-  examples/pinneapple_models/60_new_architectures_demo.py — SIREN/ModMLP/AFNO/etc.
-  examples/pinneapple_pinn/06_domino_time_marching_demo.py — DoMINO + time-marching
-  examples/pinneapple_geom/07_csg_domain_demo.py         — CSG L-shape/annulus domains
-  examples/pinneapple_solvers/11_cad_cfd_pipeline_demo.py — CAD→mesh→NS→PINN pipeline
+Feature examples:
+  examples/pinn_solver/03_symbolic_pde_hard_bc.py     — Symbolic PDE + HardBC
+  examples/architectures/60_new_architectures_demo.py — SIREN/ModMLP/AFNO/etc.
+  examples/pinn_solver/06_domino_time_marching_demo.py — DoMINO + time-marching
+  examples/geometry/07_csg_domain_demo.py             — CSG L-shape/annulus domains
+  examples/numerical_solvers/11_cad_cfd_pipeline_demo.py — CAD→mesh→NS→PINN pipeline
 """
 
 from __future__ import annotations
@@ -401,7 +422,7 @@ def quickstart(problem_id: str = "burgers_1d", **problem_kwargs):
     print(border)
     print(f"  PDE kind    : {spec.pde.kind}")
     print(f"  Fields      : {spec.fields}")
-    print(f"  Coordinates : {spec.coord_names}")
+    print(f"  Coordinates : {spec.coords}")
     print(f"  Domain      : {spec.domain_bounds}")
     print(f"  Conditions  : {list(spec.conditions)}")
     print(f"  Solver      : {spec.solver_spec.get('name', 'N/A')}")
@@ -417,8 +438,8 @@ def quickstart(problem_id: str = "burgers_1d", **problem_kwargs):
     print(f"  2. from pinneapple_data import CollocationSampler")
     print(f"     sampler = CollocationSampler.from_problem_spec(spec)")
     print(f"     batch = sampler.sample(n_col=8000, n_bc=1000)")
-    print(f"  3. model = pp.build_model('VanillaPINN', in_dim={len(spec.coord_names)}, out_dim={len(spec.fields)})")
-    print(f"  4. See examples/pinneapple_arena/03_pinn_burgers_full_pipeline.py")
+    print(f"  3. model = pp.build_model('vanilla_pinn', in_dim={len(spec.coords)}, out_dim={len(spec.fields)})")
+    print(f"  4. See examples/benchmark_suite/03_pinn_burgers_full_pipeline.py")
     print(border)
     return spec
 

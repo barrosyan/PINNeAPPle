@@ -62,14 +62,28 @@ Além desses módulos principais e de `pinneapple_data`, `pinneapple_pdb` e `pin
 - `pinneapple_train` — shim de compatibilidade que re-exporta `pinneapple_neural.trainer` (não é um pacote separado)
 - `pinneapple_worldmodel` — modelo de mundo físico generalista (Physics Foundation Model) treinado em múltiplos domínios físicos
 
-**Quickstart de 4 linhas:**
+**Quickstart mínimo (funcional):**
 
 ```python
+import torch
 import pinneapple as pp
+from pinneapple_physics.pde_environment import get_preset
+from pinneapple_physics.pinn_solver.compiler import LossWeights, compile_problem
+from pinneapple_data import CollocationSampler
+from pinneapple_neural.trainer import Trainer, TrainConfig
 
-spec  = pp.get_preset("burgers_1d", nu=0.01)
-model = pp.build_model("SIREN", in_dim=2, out_dim=1, hidden_dim=64, n_layers=4)
-result = pp.train_model(model, spec.compile_losses(), epochs=5000)
+spec    = get_preset("burgers_1d", nu=0.01)
+sampler = CollocationSampler.from_problem_spec(spec, strategy="sobol")
+batch   = {k: (torch.from_numpy(v) if hasattr(v, "dtype") else v)
+           for k, v in sampler.sample(n_col=8000, n_bc=1000).items()}
+
+model   = pp.build_model("siren", in_dim=len(spec.coords), out_dim=len(spec.fields),
+                          hidden_dim=64, n_layers=4)
+loss_fn = compile_problem(spec, weights=LossWeights())
+
+loader  = torch.utils.data.DataLoader([batch], batch_size=1, collate_fn=lambda b: b[0])
+history = Trainer(model=model, loss_fn=loss_fn).fit(
+    loader, loader, TrainConfig(epochs=5000, lr=1e-3))
 ```
 
 ---
@@ -998,23 +1012,49 @@ print(report.pinneapple_code)  # código Python pronto para executar
 ### A. PINN simples (resolver uma PDE)
 
 ```python
+import torch
 import pinneapple as pp
+from pinneapple_physics.pde_environment import get_preset
+from pinneapple_physics.pinn_solver.compiler import LossWeights, compile_problem
+from pinneapple_data import CollocationSampler
+from pinneapple_neural.trainer import Trainer, TrainConfig
+from pinneapple_neural.predictor import plot_field_1d
 
-spec   = pp.get_preset("burgers_1d", nu=0.01)
-model  = pp.build_model("SIREN", in_dim=2, out_dim=1, hidden_dim=128, n_layers=6)
-result = pp.train_model(model, spec.compile_losses(), epochs=10_000)
-pp.plot(model, x_test, field_name="u", dim=1)
+spec    = get_preset("burgers_1d", nu=0.01)
+sampler = CollocationSampler.from_problem_spec(spec, strategy="sobol")
+batch   = {k: (torch.from_numpy(v) if hasattr(v, "dtype") else v)
+           for k, v in sampler.sample(n_col=8000, n_bc=1000).items()}
+
+model   = pp.build_model("siren", in_dim=len(spec.coords), out_dim=len(spec.fields),
+                          hidden_dim=128, n_layers=6)
+loss_fn = compile_problem(spec, weights=LossWeights())
+
+loader  = torch.utils.data.DataLoader([batch], batch_size=1, collate_fn=lambda b: b[0])
+Trainer(model=model, loss_fn=loss_fn).fit(loader, loader, TrainConfig(epochs=10_000))
+
+result = pp.infer_on_grid_1d(model, x_range=(-1, 1), t_range=(0, 1), field_names=["u"])
+plot_field_1d(result, "u")
 ```
 
-### B. Geração de dados + treinamento supervisionado
+### B. Geração de dataset em uma chamada (`generate_pinn_dataset`)
 
 ```python
+import torch
+from pinneapple_physics.pde_environment import get_preset
+from pinneapple_physics.pinn_solver.compiler import LossWeights, compile_problem
 from pinneapple_simulation import generate_pinn_dataset
-from pinneapple_neural import build_model, train_model
+from pinneapple_neural import build_model
+from pinneapple_neural.trainer import Trainer, TrainConfig
 
-dataset = generate_pinn_dataset("heat_3d", n_samples=200)
-model   = build_model("FNO", in_channels=3, out_channels=1)
-result  = train_model(model, dataset, epochs=5_000, supervised=True)
+spec    = get_preset("burgers_1d", nu=0.01)
+dataset = generate_pinn_dataset(spec, n_col=8000, n_bc=1000, n_ic=2000)
+batch   = {k: (torch.from_numpy(v) if hasattr(v, "dtype") else v) for k, v in dataset.items()}
+
+model   = build_model("vanilla_pinn", in_dim=len(spec.coords), out_dim=len(spec.fields))
+loss_fn = compile_problem(spec, weights=LossWeights())
+
+loader  = torch.utils.data.DataLoader([batch], batch_size=1, collate_fn=lambda b: b[0])
+result  = Trainer(model=model, loss_fn=loss_fn).fit(loader, loader, TrainConfig(epochs=5_000))
 ```
 
 ### C. Problema inverso (identificação de parâmetros)
@@ -1067,11 +1107,25 @@ from pinneapple_simulation.external_solvers.turbodesigner import (
 cfg  = TurboDesignerConfig(pressure_ratio=3.0, num_stages=5, rpm=10_000)
 data = TurboDesignerWorkflow(cfg).sweep({"pressure_ratio": [2.0, 3.0, 4.0]}, as_upd=True)
 
-# 2. Treinar PINN com constraints físicas + dados analíticos como âncora
-spec  = pp.get_preset("axial_compressor_meanline", pressure_ratio=3.0)
-model = pp.build_model("SIREN", in_dim=1, out_dim=5, hidden_dim=128, n_layers=6)
-result = pp.train_model(model, spec.compile_losses(), epochs=15_000,
-                         data_samples=data)
+# 2. Treinar um PINN com constraints físicas (ancorar aos dados analíticos
+#    significa mesclar `data` nas chaves "x_data"/"y_data" do batch, que
+#    compile_problem() lê para qualquer condição do tipo "data" no spec)
+from pinneapple_physics.pinn_solver.compiler import LossWeights, compile_problem
+from pinneapple_data import CollocationSampler
+from pinneapple_neural.trainer import Trainer, TrainConfig
+import torch
+
+spec    = pp.get_preset("axial_compressor_meanline", pressure_ratio=3.0)
+sampler = CollocationSampler.from_problem_spec(spec, strategy="sobol")
+batch   = {k: (torch.from_numpy(v) if hasattr(v, "dtype") else v)
+           for k, v in sampler.sample(n_col=4000, n_bc=500).items()}
+
+model   = pp.build_model("siren", in_dim=len(spec.coords), out_dim=len(spec.fields),
+                          hidden_dim=128, n_layers=6)
+loss_fn = compile_problem(spec, weights=LossWeights())
+
+loader  = torch.utils.data.DataLoader([batch], batch_size=1, collate_fn=lambda b: b[0])
+result  = Trainer(model=model, loss_fn=loss_fn).fit(loader, loader, TrainConfig(epochs=15_000))
 ```
 
 ---
