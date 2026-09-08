@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 from ..schema import ProblemSpec, Plan, PlanStep, Gap, uses_pinn_approach, uses_cfd_approach
+from ..method_selection import recommend_method_from_spec
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +113,43 @@ def _orchestrator_tools_step(spec: ProblemSpec) -> Optional[PlanStep]:
     )
 
 
+def _method_selection_step(spec: ProblemSpec) -> Optional[PlanStep]:
+    """Build an additive ``PlanStep`` naming a real recommended numerical
+    method + turbulence closure (from
+    ``pinneapple_problemdesign.method_selection.recommend_method_from_spec``),
+    or ``None`` if it found nothing to recommend (never a fake placeholder).
+
+    Mirrors ``_orchestrator_tools_step`` above: read-only, additive-only,
+    and safe to call for any ``spec`` regardless of task_type -- today's
+    ``ProblemSpec`` schema carries no structured numeric physics parameters
+    (see ``method_selection.recommend_method_from_spec``'s docstring), so
+    this returns ``None`` for essentially every spec until that changes.
+    """
+    rec = recommend_method_from_spec(spec)
+    if rec is None:
+        return None
+    return PlanStep(
+        title="Recommended numerical method",
+        why=(
+            "pinneapple_problemdesign.method_selection.recommend_method_from_spec "
+            "computed a flow regime from the elicited physical parameters and "
+            "mapped it to a real, registered numerical solver (and turbulence "
+            "closure where relevant) via an explicit decision table -- "
+            "consider this as a starting point rather than a validated "
+            "CFD-expert-system recommendation."
+        ),
+        actions=[
+            f"flow_regime: {rec.flow_regime}",
+            f"numerical_method: {rec.numerical_method}",
+            f"turbulence_model: {rec.turbulence_model.value if rec.turbulence_model else 'none'}",
+            f"confidence: {rec.confidence}",
+            f"rationale: {rec.rationale}",
+        ],
+        pinneapple_modules=["pinneapple_problemdesign.method_selection"],
+        exit_criteria=[],
+    )
+
+
 def build_plan(
     spec: ProblemSpec,
     gaps: List[Gap],
@@ -127,6 +165,15 @@ def build_plan(
     ``pinneapple_worldmodel`` is unavailable or no relevant tools are found,
     the plan is identical to what it would have been with the bridge
     disabled.
+
+    This also always (regardless of ``use_orchestrator_bridge``) -- and
+    read-only -- consults
+    ``pinneapple_problemdesign.method_selection.recommend_method_from_spec``
+    and appends a "Recommended numerical method" step when it returns a
+    recommendation, on top of (never instead of) the existing static plan.
+    When it returns ``None`` (today's ``ProblemSpec`` schema has no
+    structured numeric physics parameters), no such step is added and the
+    plan is unchanged.
     """
     if uses_cfd_approach(spec):
         plan = build_plan_cfd_first(spec, gaps)
@@ -139,6 +186,10 @@ def build_plan(
         extra_step = _orchestrator_tools_step(spec)
         if extra_step is not None:
             plan.steps.append(extra_step)
+
+    method_step = _method_selection_step(spec)
+    if method_step is not None:
+        plan.steps.append(method_step)
 
     return plan
 
