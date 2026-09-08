@@ -137,6 +137,7 @@ class CollocationSampler:
         sdf_fn: Optional[Callable[[np.ndarray], np.ndarray]] = None,
         boundary_samplers: Optional[Dict[str, Callable]] = None,
         condition_value_fns: Optional[Dict[str, Callable]] = None,
+        condition_fields: Optional[Dict[str, Tuple[str, ...]]] = None,
         fields: Tuple[str, ...] = ("u",),
         strategy: str = "lhs",
         seed: int = 0,
@@ -146,6 +147,14 @@ class CollocationSampler:
         self.sdf_fn = sdf_fn
         self.boundary_samplers = boundary_samplers or {}
         self.condition_value_fns = condition_value_fns or {}
+        # Per-condition field-name subset (e.g. a "wall" Dirichlet BC may only
+        # cover ("u", "v") of the problem's full field tuple). Used by
+        # sample() to scatter each condition's (possibly narrower) value_fn
+        # output into the correct columns of a full-width y_bc/y_ic array --
+        # without this, conditions covering different numbers of fields
+        # produce differently-shaped per-condition arrays that cannot be
+        # concatenated.
+        self.condition_fields = condition_fields or {}
         self.fields = tuple(fields)
         self.strategy = strategy
         self.seed = seed
@@ -194,12 +203,14 @@ class CollocationSampler:
         # Build boundary samplers from conditions
         boundary_samplers = {}
         condition_value_fns = {}
+        condition_fields = {}
 
         for cond in spec.conditions:
             name = cond.name
             sel_type = getattr(cond, "selector_type", None)
             sel = getattr(cond, "selector", None)
             vfn = getattr(cond, "value_fn", None)
+            condition_fields[name] = tuple(getattr(cond, "fields", fields))
 
             if sel_type == "tag" and isinstance(sel, dict):
                 tag = sel.get("tag", "boundary")
@@ -232,6 +243,7 @@ class CollocationSampler:
             fields=fields,
             boundary_samplers=boundary_samplers,
             condition_value_fns=condition_value_fns,
+            condition_fields=condition_fields,
             strategy=strategy,
             seed=seed,
         )
@@ -361,7 +373,10 @@ class CollocationSampler:
                 from pinneapple_design.geometry.sample import sample_latin_hypercube_box
                 lo = self._bounds_arr[:, 0].tolist()
                 hi = self._bounds_arr[:, 1].tolist()
-                pts = sample_latin_hypercube_box(lo, hi, n, seed=int(rng.integers(0, 2**31))).astype(np.float32)
+                # sample_latin_hypercube_box takes an optional `rng`
+                # (np.random.Generator), not a `seed` int -- reuse this
+                # sampler's own rng directly rather than reseeding a new one.
+                pts = sample_latin_hypercube_box(lo, hi, n, rng=rng).astype(np.float32)
             except ImportError:
                 pts = _sample_lhs(self._bounds_arr, n, rng)
         else:
@@ -369,7 +384,8 @@ class CollocationSampler:
                 from pinneapple_design.geometry.sample import sample_uniform_box
                 lo = self._bounds_arr[:, 0].tolist()
                 hi = self._bounds_arr[:, 1].tolist()
-                pts = sample_uniform_box(lo, hi, n, seed=int(rng.integers(0, 2**31))).astype(np.float32)
+                # See note above: `rng`, not `seed`, is the real kwarg.
+                pts = sample_uniform_box(lo, hi, n, rng=rng).astype(np.float32)
             except ImportError:
                 pts = _sample_uniform(self._bounds_arr, n, rng)
 
@@ -427,6 +443,8 @@ class CollocationSampler:
         y_bc_parts = []
         region_labels = []
 
+        field_col = {f: i for i, f in enumerate(self.fields)}
+
         if self.boundary_samplers:
             regions = list(self.boundary_samplers.keys())
             n_per = n_bc_per_region or max(1, _n_bc // len(regions))
@@ -438,17 +456,34 @@ class CollocationSampler:
                 x_bc_parts.append(pts)
                 region_labels.extend([rname] * len(pts))
 
-                # Target values from condition value_fns
+                # Target values from condition value_fns. A condition may only
+                # cover a subset of self.fields (self.condition_fields[rname]),
+                # so its raw value_fn output can be narrower than len(self.fields)
+                # and different conditions' outputs can have different widths.
+                # Scatter each condition's own columns into a full-width
+                # (len(self.fields)) array by field name so all regions'
+                # target arrays share one consistent shape and can be
+                # concatenated below.
+                cond_fields = self.condition_fields.get(rname, self.fields)
                 vfn = self.condition_value_fns.get(rname)
                 if vfn is not None:
                     ctx_dict = {"bounds": {c: self.bounds.get(c, (0.0, 1.0)) for c in self.coord_names}}
                     try:
-                        yvals = vfn(pts, ctx_dict)
-                        y_bc_parts.append(np.asarray(yvals, dtype=np.float32))
+                        yvals = np.asarray(vfn(pts, ctx_dict), dtype=np.float32)
+                        if yvals.ndim == 1:
+                            yvals = yvals[:, None]
                     except Exception:
-                        y_bc_parts.append(np.zeros((len(pts), len(self.fields)), dtype=np.float32))
+                        yvals = np.zeros((len(pts), len(cond_fields)), dtype=np.float32)
                 else:
-                    y_bc_parts.append(np.zeros((len(pts), len(self.fields)), dtype=np.float32))
+                    yvals = np.zeros((len(pts), len(cond_fields)), dtype=np.float32)
+
+                full = np.zeros((len(pts), len(self.fields)), dtype=np.float32)
+                n_cols = min(yvals.shape[1], len(cond_fields))
+                for j in range(n_cols):
+                    col = field_col.get(cond_fields[j])
+                    if col is not None:
+                        full[:, col] = yvals[:, j]
+                y_bc_parts.append(full)
         else:
             # No named regions: sample on all boundaries uniformly
             from pinneapple_simulation.numerical_solvers.problem_runner import _sample_boundary_tag

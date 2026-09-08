@@ -136,20 +136,16 @@ pip install "pinneapple[all]"          # everything
 > *"I understand the physics. I want to see what AI can do with it."*
 
 ```python
-from pinneapple_physics import ProblemSpec, DirichletBC, compile_physics, solve_pde
+from pinneapple_physics import get_preset, solve_pde
 from pinneapple_neural import build_model
 
-# Define a 2D Poisson problem
-spec = ProblemSpec(
-    coords=["x", "y"],
-    fields=["u"],
-    domain_bounds={"x": (0.0, 1.0), "y": (0.0, 1.0)},
-)
+# Load a 2D Poisson problem preset
+spec = get_preset("poisson_2d")
 
 # Build a SIREN network and train it in one call
-model = build_model("SIREN", in_dim=2, out_dim=1, hidden_dim=64, n_layers=4)
+model = build_model("siren", in_dim=2, out_dim=1, hidden_dim=64, n_layers=4)
 result = solve_pde(spec, model, epochs=3000)
-result["history"]  # loss history dict
+result["history"]  # {"loss": [...]}
 ```
 
 ---
@@ -160,9 +156,9 @@ result["history"]  # loss history dict
 ```python
 from pinneapple_tools.benchmark_suite import Arena
 
-runner  = Arena.from_yaml("configs/arena/burgers_benchmark.yaml")
-results = runner.run_all()
-results.leaderboard()
+runner  = Arena.from_preset("burgers_1d")
+results = runner.compare(["VanillaPINN", "siren"], epochs=2000)
+print(results.leaderboard())
 ```
 
 <div align="center">
@@ -180,19 +176,22 @@ results.leaderboard()
 ```python
 from pinneapple_neural.trainer import DDPPINNTrainer, DDPTrainerConfig
 from pinneapple_tools.model_export import export_onnx
-from pinneapple_systems.digital_twin import build_digital_twin
+from pinneapple_systems.digital_twin import build_digital_twin, MQTTStream
 
-# Distributed training
-cfg     = DDPTrainerConfig(n_epochs=10_000, device="cuda")
-trainer = DDPPINNTrainer(model, losses, cfg)
-trainer.train()
+# Distributed training: one DDPPINNTrainer.setup(rank, world_size) call per
+# spawned process, then loss_fn(model, epoch) -> Tensor each step
+cfg     = DDPTrainerConfig(backend="nccl", world_size=4)
+trainer = DDPPINNTrainer(model, cfg)
+trainer.setup(rank=0, world_size=4)
+history = trainer.train(loss_fn, n_epochs=10_000)
 
 # Export to ONNX
 export_onnx(model, "surrogate.onnx", example_input=x_sample)
 
 # Wrap as a live digital twin
 twin = build_digital_twin(model, field_names=["u", "v", "p"])
-twin.start_stream("mqtt://sensors.local")
+twin.add_stream(MQTTStream(broker="sensors.local", topic="plant/telemetry", sensor_id="s1", field_names=["u", "v", "p"]))
+twin.start()
 ```
 
 <div align="center">
@@ -222,21 +221,29 @@ twin.start_stream("mqtt://sensors.local")
 ## Quick Examples
 
 ```python
+import torch
+
 # ── Physics problem definition ──────────────────────────────────────────────
-from pinneapple_physics.pde_environment import ProblemSpec, DirichletBC, get_preset
+from pinneapple_physics.pde_environment import get_preset
 from pinneapple_physics.pinn_solver import compile_problem
 
-spec   = get_preset("ns_incompressible_2d")
+spec   = get_preset("burgers_1d")
 losses = compile_problem(spec)
 
 # ── Neural network architectures ────────────────────────────────────────────
 from pinneapple_neural.architectures import ModelRegistry, SIREN, AFNO
 from pinneapple_neural.trainer import Trainer, TrainConfig
+from pinneapple_simulation.numerical_solvers.problem_runner import generate_pinn_dataset
 
-model   = ModelRegistry.build("SIREN", in_dim=3, out_dim=2, hidden_dim=128, n_layers=6)
-cfg     = TrainConfig(n_epochs=5000, device="cuda")
-trainer = Trainer(model, losses, cfg)
-result  = trainer.train()
+model = ModelRegistry.build("siren", in_dim=2, out_dim=1, hidden_dim=128, n_layers=6)
+
+# One full physics batch (collocation + BC/IC points), re-used every epoch
+batch  = generate_pinn_dataset(spec, n_col=4096, n_bc=512)
+loader = [{k: (torch.as_tensor(v) if hasattr(v, "dtype") else v) for k, v in batch.items()}]
+
+cfg     = TrainConfig(epochs=5000, device="cuda")
+trainer = Trainer(model, losses)
+result  = trainer.fit(loader, loader, cfg)
 
 # ── Uncertainty quantification ──────────────────────────────────────────────
 from pinneapple_analysis.uncertainty import uq_predict
@@ -246,32 +253,32 @@ uq_result  = uq_predict(model, x_test, method="mc_dropout")
 val_report = validate_model(model, spec)
 
 # ── Design optimization ─────────────────────────────────────────────────────
-from pinneapple_design.geometry import get_domain, LidDrivenCavityDomain2D
+from pinneapple_design.geometry import get_domain
 from pinneapple_design.design_optimizer import DesignOptLoop, DesignOptConfig
 
-domain = LidDrivenCavityDomain2D(Re=1000)
+domain = get_domain("lid_driven_cavity_2d")
 x_int  = domain.sample_interior(4096)
 
 # ── Simulation data generation ──────────────────────────────────────────────
 from pinneapple_simulation.numerical_solvers import HeatConduction3D
+from pinneapple_simulation.numerical_solvers.fdm3d import HeatConfig3D
 
-solver = HeatConduction3D(nx=32, ny=32, nz=32)
-data   = solver.run(t_end=1.0)
+solver = HeatConduction3D(HeatConfig3D(nx=32, ny=32, nz=32))
+data   = solver.solve()
 
 # ── Time series forecasting ─────────────────────────────────────────────────
-from pinneapple_systems.time_series import LSTMForecaster
+from pinneapple_systems.time_series import NaiveForecaster
 
-forecaster = LSTMForecaster(horizon=24)
-forecaster.fit(train_df)
+forecaster = NaiveForecaster()
+forecaster.fit(train_series)
 forecast = forecaster.predict(24)
 
 # ── Benchmarking ────────────────────────────────────────────────────────────
-from pinneapple_tools.benchmark_suite import PINNArenaBenchmark, BenchmarkConfig
+from pinneapple_tools.benchmark_suite import Arena
 
-cfg    = BenchmarkConfig(tasks=["burgers_1d", "heat_2d", "ns_2d"])
-bench  = PINNArenaBenchmark(cfg)
-report = bench.run({"SIREN": siren_model, "AFNO": afno_model})
-report.leaderboard()
+runner = Arena.from_preset("poisson_2d")
+result = runner.run("siren", epochs=5000)
+print(result.summary())
 ```
 
 ---

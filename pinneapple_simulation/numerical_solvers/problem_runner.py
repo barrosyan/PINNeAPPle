@@ -240,6 +240,9 @@ def generate_pinn_dataset(
     # 1. Collocation points
     x_col = _sample_collocation(domain_bounds, coord_names, n_col, rng)
 
+    n_fields_out = len(fields)
+    field_col: Dict[str, int] = {f: i for i, f in enumerate(fields)}
+
     # 2. Boundary / initial condition points
     x_bc_list: List[np.ndarray] = []
     y_bc_list: List[np.ndarray] = []
@@ -271,18 +274,41 @@ def generate_pinn_dataset(
         if len(pts) == 0:
             continue
 
-        # Evaluate target values
+        # Evaluate target values. Different conditions may only define a
+        # subset of the problem's fields (cond.fields), so a condition's raw
+        # value_fn output can be narrower than n_fields_out and different
+        # conditions' outputs can therefore have different widths (e.g. an
+        # "inlet" Dirichlet BC on 3 fields vs. an "outlet" BC on 1 field).
+        # Per-condition arrays used to be collected at their own (differing)
+        # width and concatenated directly, which raised a ValueError from
+        # np.concatenate whenever two conditions covered different numbers of
+        # fields (see cpu_heatsink_thermal / axial_compressor_meanline).
+        #
+        # The compiler (pinneapple_physics/pinn_solver/compiler/compile.py)
+        # already expects a *full-width* y_bc/y_ic array that it slices down
+        # to a condition's own fields by name when the width matches
+        # len(field_names), so we build every condition's target at the full
+        # global width here and scatter its own columns into the matching
+        # global field positions (columns for fields this condition doesn't
+        # touch stay zero).
+        cond_fields = tuple(getattr(cond, "fields", fields))
         value_fn = getattr(cond, "value_fn", None)
         if value_fn is not None:
             try:
-                targets = value_fn(pts, ctx)
-                targets = np.asarray(targets, dtype=np.float32)
+                raw = np.asarray(value_fn(pts, ctx), dtype=np.float32)
+                if raw.ndim == 1:
+                    raw = raw[:, None]
             except Exception:
-                n_fields_cond = len(getattr(cond, "fields", fields))
-                targets = np.zeros((len(pts), n_fields_cond), dtype=np.float32)
+                raw = np.zeros((len(pts), len(cond_fields)), dtype=np.float32)
         else:
-            n_fields_cond = len(getattr(cond, "fields", fields))
-            targets = np.zeros((len(pts), n_fields_cond), dtype=np.float32)
+            raw = np.zeros((len(pts), len(cond_fields)), dtype=np.float32)
+
+        targets = np.zeros((len(pts), n_fields_out), dtype=np.float32)
+        n_cols = min(raw.shape[1], len(cond_fields))
+        for j in range(n_cols):
+            col = field_col.get(cond_fields[j])
+            if col is not None:
+                targets[:, col] = raw[:, j]
 
         target_list_x.append(pts)
         target_list_y.append(targets)
@@ -293,7 +319,6 @@ def generate_pinn_dataset(
         return np.zeros((0, ncols), dtype=np.float32)
 
     n_dims = len(coord_names)
-    n_fields_out = len(fields)
 
     x_bc = _concat_or_empty(x_bc_list, n_dims)
     y_bc = _concat_or_empty(y_bc_list, n_fields_out)

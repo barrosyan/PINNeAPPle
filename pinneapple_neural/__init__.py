@@ -25,8 +25,10 @@ Integration helpers
 Usage
 -----
 >>> from pinneapple_neural import build_model, train_model, predict
->>> model = build_model("SIREN", in_dim=2, out_dim=1, hidden_dim=64, n_layers=4)
->>> result = train_model(model, losses, epochs=5000)
+>>> model = build_model("siren", in_dim=2, out_dim=1, hidden_dim=64, n_layers=4)
+>>> # loss_fn(model, y_hat, batch) -> Tensor | dict[str, Tensor] (with "total")
+>>> # train_loader yields dict batches (or (x, y) tuples) per Trainer.fit
+>>> result = train_model(model, loss_fn, train_loader, epochs=5000)
 >>> pred = predict(model, x_test)
 """
 from __future__ import annotations
@@ -141,11 +143,43 @@ def build_model(name: str, **kwargs):
     return ModelRegistry.build(name, **kwargs)
 
 
-def train_model(model, losses, *, epochs: int = 5000, device: str = "cpu", **cfg_kwargs):
-    """Train a model with the given losses."""
-    cfg = TrainConfig(n_epochs=epochs, device=device, **cfg_kwargs)
-    t = Trainer(model, losses, cfg)
-    return t.train()
+def train_model(
+    model,
+    loss_fn,
+    train_loader,
+    val_loader=None,
+    *,
+    epochs: int = 5000,
+    device: str = "cpu",
+    **cfg_kwargs,
+):
+    """Train a model with the given loss function.
+
+    This is a thin shortcut over :class:`~pinneapple_neural.trainer.Trainer`.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+    loss_fn : callable(model, y_hat, batch) -> Tensor | dict[str, Tensor]
+        Matches ``Trainer.fit``'s ``loss_fn`` signature. A dict return value
+        must include a ``"total"`` key.
+    train_loader : iterable of batches (dict, or an ``(x, y)`` tuple) used
+        for training, in the format ``Trainer`` expects (see
+        ``Trainer._xy_batch``).
+    val_loader : optional iterable of validation batches in the same format;
+        defaults to ``train_loader`` when omitted.
+    epochs, device, **cfg_kwargs : forwarded to ``TrainConfig``.
+
+    Returns
+    -------
+    dict with ``best_val``, ``best_path``, and per-epoch ``history`` (see
+    ``Trainer.fit``).
+    """
+    cfg = TrainConfig(epochs=epochs, device=device, **cfg_kwargs)
+    t = Trainer(model, loss_fn)
+    if val_loader is None:
+        val_loader = train_loader
+    return t.fit(train_loader, val_loader, cfg)
 
 
 def predict(model, x, *, device: str = "cpu", batch_size: int = 4096):
@@ -159,9 +193,9 @@ def predict(model, x, *, device: str = "cpu", batch_size: int = 4096):
     return batched_inference(model, x, batch_size=batch_size)
 
 
-def train_and_predict(model, losses, x_test, *, epochs: int = 5000, device: str = "cpu"):
+def train_and_predict(model, loss_fn, train_loader, x_test, *, val_loader=None, epochs: int = 5000, device: str = "cpu"):
     """Convenience: train then evaluate on test points."""
-    train_result = train_model(model, losses, epochs=epochs, device=device)
+    train_result = train_model(model, loss_fn, train_loader, val_loader, epochs=epochs, device=device)
     preds = predict(model, x_test, device=device)
     return {"train_result": train_result, "predictions": preds}
 
