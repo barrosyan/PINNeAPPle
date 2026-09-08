@@ -46,12 +46,27 @@ def export_onnx(
     _out = output_names or ["output"]
     if dynamic_axes is None:
         dynamic_axes = {n: {0: "batch"} for n in _in + _out}
-    torch.onnx.export(
-        model, example_input, path,
-        input_names=_in, output_names=_out,
-        opset_version=opset_version,
-        dynamic_axes=dynamic_axes,
-    )
+    try:
+        # torch >= 2.5 defaults to the dynamo-based exporter, which needs
+        # the optional `onnxscript` package; force the legacy
+        # TorchScript-based exporter (what this function's opset_version/
+        # dynamic_axes kwargs were already written for) so export_onnx
+        # keeps working without that extra dependency.
+        torch.onnx.export(
+            model, example_input, path,
+            input_names=_in, output_names=_out,
+            opset_version=opset_version,
+            dynamic_axes=dynamic_axes,
+            dynamo=False,
+        )
+    except TypeError:
+        # Older torch versions (< 2.5) don't accept `dynamo` at all.
+        torch.onnx.export(
+            model, example_input, path,
+            input_names=_in, output_names=_out,
+            opset_version=opset_version,
+            dynamic_axes=dynamic_axes,
+        )
     return path
 
 
