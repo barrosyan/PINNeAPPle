@@ -34,7 +34,7 @@ result = trainer.fit(train_loader, val_loader, cfg)
 
 # 5. Create a digital twin
 dt = pp.build_digital_twin(model, field_names=["u", "v", "p"])
-from pinneapple_digital_twin import MockStream
+from pinneapple_systems.digital_twin import MockStream
 dt.add_stream(MockStream("inlet", ["u"], lambda t: {"u": 1.0 + 0.1*t}))
 with dt:
     import time; time.sleep(5)
@@ -85,7 +85,7 @@ print(dt.state.fields["u"].mean())
 ### 3. Digital twin with real sensor data
 ```python
 # See examples/04_digital_twin_flow.py
-from pinneapple_digital_twin import MQTTStream
+from pinneapple_systems.digital_twin import MQTTStream
 stream = MQTTStream("broker.local", "sensors/inlet", "inlet", ["u","v","p"])
 dt.add_stream(stream)
 ```
@@ -108,9 +108,9 @@ results = run_parallel_sweep(
 
 ### Add a new problem preset
 ```python
-from pinneapple_environment.presets.registry import register_preset
-from pinneapple_environment.spec import PDETermSpec, ProblemSpec
-from pinneapple_environment.conditions import DirichletBC
+from pinneapple_physics.pde_environment.presets.registry import register_preset
+from pinneapple_physics.pde_environment.spec import PDETermSpec, ProblemSpec
+from pinneapple_physics.pde_environment.conditions import DirichletBC
 
 @register_preset("my_problem")
 def my_problem(nu=0.01) -> ProblemSpec:
@@ -135,4 +135,4 @@ class MyModel(nn.Module):
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-Issues: https://github.com/your-org/pinneapple/issues
+Issues: https://github.com/barrosyan/PINNeAPPle/issues
