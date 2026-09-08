@@ -12,7 +12,9 @@ D2Q9 (LBMSolver):
   - from_problem_spec() / solve_from_spec() integration
 
 D3Q19 (LBMSolver3D):
-  - BGK, periodic BCs, trajectory output (rho, ux, uy, uz)
+  - BGK collision with optional Smagorinsky LES (3-D analogue of Hou 1994)
+  - Full-way bounce-back for arbitrary solid obstacles (periodic elsewhere)
+  - Trajectory output (rho, ux, uy, uz)
 
 References
 ----------
@@ -448,41 +450,189 @@ def airfoil_naca_mask(nx: int, ny: int, chord: int, aoa_deg: float = 0.0,
 
 
 # ===========================================================================
-# LBMSolver3D (D3Q19, BGK, periodic BCs)
+# Core D3Q19 functions (mirror the D2Q9 helpers above)
+# ===========================================================================
+
+def _macroscopic_3d(f, cx, cy, cz):
+    """Compute rho, ux, uy, uz from distribution f (19, nx, ny, nz)."""
+    Q = f.shape[0]
+    rho = f.sum(0)
+    ux = (f * cx.view(Q, 1, 1, 1)).sum(0) / rho.clamp(min=1e-10)
+    uy = (f * cy.view(Q, 1, 1, 1)).sum(0) / rho.clamp(min=1e-10)
+    uz = (f * cz.view(Q, 1, 1, 1)).sum(0) / rho.clamp(min=1e-10)
+    return rho, ux, uy, uz
+
+
+def _equilibrium_3d(rho, ux, uy, uz, cx, cy, cz, w):
+    """Maxwell-Boltzmann equilibrium distribution (19, nx, ny, nz)."""
+    Q = w.shape[0]
+    cu = cx.view(Q, 1, 1, 1)*ux + cy.view(Q, 1, 1, 1)*uy + cz.view(Q, 1, 1, 1)*uz
+    u2 = ux**2 + uy**2 + uz**2
+    feq = w.view(Q, 1, 1, 1) * rho * (1.0 + 3.0*cu + 4.5*cu**2 - 1.5*u2)
+    return feq
+
+
+def _stream_3d(f, cx, cy, cz):
+    """Streaming step: shift each distribution by its velocity vector."""
+    Q = f.shape[0]
+    f_out = torch.empty_like(f)
+    for i in range(Q):
+        dx = int(cx[i].item())
+        dy = int(cy[i].item())
+        dz = int(cz[i].item())
+        f_out[i] = torch.roll(f[i], shifts=(dx, dy, dz), dims=(0, 1, 2))
+    return f_out
+
+
+def _bounce_back_3d(f_post, f_streamed, solid, opp):
+    """
+    Full-way bounce-back at solid nodes, generalised from _bounce_back_2d
+    to the D3Q19 velocity set: incoming streamed population at a solid cell
+    is replaced by the pre-streaming population in the opposite direction.
+    """
+    Q = f_post.shape[0]
+    for i in range(Q):
+        f_streamed[i][solid] = f_post[opp[i]][solid]
+    return f_streamed
+
+
+def _smagorinsky_omega_3d(f, feq, rho, omega0, Cs, cx, cy, cz):
+    """
+    3-D analogue of _smagorinsky_omega: Hou (1994)-style LES-LBM local omega
+    adjustment, using the full D3Q19 non-equilibrium momentum-flux tensor.
+    Returns omega field (nx, ny, nz).
+    """
+    Q = f.shape[0]
+    cs2  = 1.0 / 3.0
+    tau0 = 1.0 / omega0
+    f_neq = f - feq
+
+    Pi_xx = (f_neq * cx.view(Q, 1, 1, 1)**2).sum(0)
+    Pi_yy = (f_neq * cy.view(Q, 1, 1, 1)**2).sum(0)
+    Pi_zz = (f_neq * cz.view(Q, 1, 1, 1)**2).sum(0)
+    Pi_xy = (f_neq * cx.view(Q, 1, 1, 1) * cy.view(Q, 1, 1, 1)).sum(0)
+    Pi_xz = (f_neq * cx.view(Q, 1, 1, 1) * cz.view(Q, 1, 1, 1)).sum(0)
+    Pi_yz = (f_neq * cy.view(Q, 1, 1, 1) * cz.view(Q, 1, 1, 1)).sum(0)
+
+    # |Π^neq|_F = sqrt(Pxx^2 + Pyy^2 + Pzz^2 + 2*(Pxy^2 + Pxz^2 + Pyz^2))
+    Pi_norm = torch.sqrt(Pi_xx**2 + Pi_yy**2 + Pi_zz**2 +
+                          2.0*(Pi_xy**2 + Pi_xz**2 + Pi_yz**2))
+
+    # Same effective-tau closure as the 2-D case (Hou 1994):
+    # tau_eff = tau0/2 + sqrt((tau0/2)^2 + Cs^2*sqrt(2)*|S|), |S| ≈ Pi_norm/(2*rho*cs2*tau0)
+    S_mag = Pi_norm / (2.0 * rho.clamp(min=1e-8) * cs2 * tau0)
+    tau_eff = 0.5*tau0 + torch.sqrt((0.5*tau0)**2 + Cs**2 * 1.4142 * S_mag)
+    return 1.0 / tau_eff.clamp(min=0.5001)   # stability: tau > 0.5
+
+
+def _lbm_step_3d(
+    f: torch.Tensor,
+    omega: float,
+    solid: Optional[torch.Tensor],
+    cx: torch.Tensor,
+    cy: torch.Tensor,
+    cz: torch.Tensor,
+    w: torch.Tensor,
+    opp: torch.Tensor,
+    Cs: float = 0.0,
+) -> torch.Tensor:
+    """
+    One complete D3Q19 BGK-LBM step.
+
+    Order: collision → streaming → bounce-back (periodic elsewhere).
+    """
+    rho, ux, uy, uz = _macroscopic_3d(f, cx, cy, cz)
+    feq = _equilibrium_3d(rho, ux, uy, uz, cx, cy, cz, w)
+
+    if Cs > 0.0:
+        omega_field = _smagorinsky_omega_3d(f, feq, rho, omega, Cs, cx, cy, cz)
+        f_post = f - omega_field * (f - feq)
+    else:
+        f_post = f - omega * (f - feq)
+
+    f_new = _stream_3d(f_post, cx, cy, cz)
+
+    if solid is not None:
+        f_new = _bounce_back_3d(f_post, f_new, solid, opp)
+
+    return f_new
+
+
+def airfoil_naca_mask_3d(nx: int, ny: int, nz: int, chord: int, aoa_deg: float = 0.0,
+                          naca: str = "0012", z0: int = 0,
+                          z1: Optional[int] = None) -> torch.Tensor:
+    """
+    3-D obstacle mask: the 2-D NACA airfoil cross-section (airfoil_naca_mask)
+    extruded uniformly along the z (span) axis from z0 to z1 (exclusive).
+    """
+    if z1 is None:
+        z1 = nz
+    mask_2d = airfoil_naca_mask(nx, ny, chord, aoa_deg=aoa_deg, naca=naca)
+    mask_3d = torch.zeros(nx, ny, nz, dtype=torch.bool)
+    mask_3d[:, :, z0:z1] = mask_2d.unsqueeze(-1)
+    return mask_3d
+
+
+# ===========================================================================
+# LBMSolver3D (D3Q19, BGK, bounce-back obstacles, optional Smagorinsky LES)
 # ===========================================================================
 
 @SolverRegistry.register(
     name="lbm_3d",
     family="pde",
-    description="Lattice Boltzmann D3Q19 BGK with periodic BCs.",
+    description="Lattice Boltzmann D3Q19 BGK with bounce-back obstacles and optional Smagorinsky LES.",
     tags=["lbm", "fluids", "3d"],
 )
 class LBMSolver3D(SolverBase):
     """
-    D3Q19 Lattice Boltzmann solver with periodic boundary conditions.
+    D3Q19 Lattice Boltzmann solver.
+
+    Boundary conditions are periodic everywhere except at solid nodes, which
+    use full-way bounce-back (same convention as LBMSolver's obstacle_mask).
 
     Parameters
     ----------
-    nx, ny, nz  : grid dimensions
-    Re          : Reynolds number
-    u_in        : mean inlet velocity
+    nx, ny, nz    : grid dimensions
+    Re            : Reynolds number
+    u_in          : mean inlet velocity
+    obstacle_mask : bool tensor (nx, ny, nz), True = solid cell
+    Cs            : Smagorinsky constant (0 = pure BGK; 0.1-0.18 for turbulence)
     """
 
     def __init__(
         self,
-        nx:   int   = 32,
-        ny:   int   = 32,
-        nz:   int   = 32,
-        Re:   float = 100.0,
-        u_in: float = 0.05,
+        nx:            int   = 32,
+        ny:            int   = 32,
+        nz:            int   = 32,
+        Re:            float = 100.0,
+        u_in:          float = 0.05,
+        obstacle_mask: Optional[torch.Tensor] = None,
+        Cs:            float = 0.0,
     ):
         super().__init__()
         self.nx = nx; self.ny = ny; self.nz = nz
+        self.Re = Re
+        self.Cs = Cs
         L    = float(nx)
         nu   = u_in * L / Re
         tau  = 3.0 * nu + 0.5
+        # Warn if Ma > 0.3 (compressibility errors become significant)
+        Ma = u_in * (3.0 ** 0.5)
+        if Ma > 0.3:
+            import warnings
+            warnings.warn(f"Ma={Ma:.3f} > 0.3 — LBM compressibility errors will be significant. Reduce u_in.")
+        # Warn if omega close to 2 (near stability limit)
+        if tau < 0.6:
+            import warnings
+            warnings.warn(f"tau={tau:.4f} (omega={1/tau:.3f}) is close to the stability limit. "
+                          f"Consider using Smagorinsky LES (Cs>0) or increasing Re/nx.")
         self.omega = float(1.0 / max(tau, 0.5001))
         self.u_in  = u_in
+
+        if obstacle_mask is not None:
+            self.register_buffer("solid", obstacle_mask.bool())
+        else:
+            self.solid = None
 
     def _init_f3(self, device):
         c, w, _ = _d3q19_tensors(device)
@@ -505,45 +655,30 @@ class LBMSolver3D(SolverBase):
         steps:      int = 1000,
         save_every: int = 100,
     ) -> SolverOutput:
-        dev = torch.device("cpu")
+        # Infer device from solid mask if available, else CPU
+        if self.solid is not None:
+            dev = self.solid.device
+        else:
+            dev = torch.device("cpu")
+
         c, w, opp = _d3q19_tensors(dev)
-        Q = 19
+        solid = self.solid.to(dev) if self.solid is not None else None
+        cx, cy, cz = c[:, 0], c[:, 1], c[:, 2]
+
         f = f0.to(dev) if f0 is not None else self._init_f3(dev)
 
         traj_ux, traj_uy, traj_uz = [], [], []
-        cx, cy, cz = c[:,0], c[:,1], c[:,2]
 
         for step in range(steps):
-            # Macroscopic
-            rho = f.sum(0)
-            ux  = (f * cx.view(Q,1,1,1)).sum(0) / rho.clamp(1e-10)
-            uy  = (f * cy.view(Q,1,1,1)).sum(0) / rho.clamp(1e-10)
-            uz  = (f * cz.view(Q,1,1,1)).sum(0) / rho.clamp(1e-10)
-
-            # Equilibrium
-            cu  = cx.view(Q,1,1,1)*ux + cy.view(Q,1,1,1)*uy + cz.view(Q,1,1,1)*uz
-            u2  = ux**2 + uy**2 + uz**2
-            feq = w.view(Q,1,1,1) * rho * (1 + 3*cu + 4.5*cu**2 - 1.5*u2)
-
-            # Collision
-            f = f - self.omega * (f - feq)
-
-            # Streaming (periodic)
-            f_new = torch.empty_like(f)
-            for i in range(Q):
-                dx, dy, dz = int(cx[i].item()), int(cy[i].item()), int(cz[i].item())
-                f_new[i] = torch.roll(f[i], shifts=(dx, dy, dz), dims=(0, 1, 2))
-            f = f_new
+            f = _lbm_step_3d(f, self.omega, solid, cx, cy, cz, w, opp, Cs=self.Cs)
 
             if (step + 1) % save_every == 0:
+                _, ux, uy, uz = _macroscopic_3d(f, cx, cy, cz)
                 traj_ux.append(ux.cpu())
                 traj_uy.append(uy.cpu())
                 traj_uz.append(uz.cpu())
 
-        rho = f.sum(0)
-        ux  = (f * cx.view(Q,1,1,1)).sum(0) / rho.clamp(1e-10)
-        uy  = (f * cy.view(Q,1,1,1)).sum(0) / rho.clamp(1e-10)
-        uz  = (f * cz.view(Q,1,1,1)).sum(0) / rho.clamp(1e-10)
+        rho, ux, uy, uz = _macroscopic_3d(f, cx, cy, cz)
 
         return SolverOutput(
             result=f,
