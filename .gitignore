@@ -18,4 +18,13 @@ numpy
 numpy-2.4.3.dist-info
 numpy.libs
 
-pinneaple_app/frontend
+pinneapple_app/frontend
+
+# Build/output cruft
+dist/
+runs/
+run_results/
+examples/_out/
+examples/_runs*/
+examples/results_chassis/
+examples/use_cases/*/outputs/
