@@ -24,6 +24,7 @@ from .research import search_literature, ResearchReport
 from .guardrail import PhysicsGuardrail, GuardrailReport, CheckResult
 from .conversation_store import ConversationStore, ConversationRecord
 from ._dispatch import call_llm
+from .agent_loop import AgentStep, AgentLoopResult, run_agent_loop
 
 try:
     from . import local_llm
@@ -44,5 +45,6 @@ __all__ = [
     "PhysicsGuardrail", "GuardrailReport", "CheckResult",
     "ConversationStore", "ConversationRecord",
     "call_llm", "local_llm",
+    "AgentStep", "AgentLoopResult", "run_agent_loop",
     "FinetuneConfig", "prepare_dataset", "finetune_lora",
 ]
