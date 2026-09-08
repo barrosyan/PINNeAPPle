@@ -71,9 +71,27 @@ class TrimeshBridge:
         if not isinstance(tm, trimesh.Trimesh):
             raise TypeError("repair_trimesh expects a trimesh.Trimesh")
 
-        # Basic cleanups (fast, safe)
-        tm.remove_duplicate_faces()
-        tm.remove_degenerate_faces()
+        # Basic cleanups (fast, safe).
+        #
+        # trimesh removed the in-place `remove_duplicate_faces()`/
+        # `remove_degenerate_faces()` mutator methods used here at some
+        # point after this was originally written -- confirmed against
+        # a real trimesh 5.1.0 install (`AttributeError:
+        # 'Trimesh' object has no attribute 'remove_duplicate_faces'`,
+        # found by actually calling `TrimeshBridge().load()` on a real
+        # file, not by reading a changelog). The current API exposes the
+        # same two cleanups as boolean-mask PROPERTIES
+        # (`unique_faces`/`nondegenerate_faces`) applied via the still-
+        # present `update_faces(mask)`; `remove_unreferenced_vertices`
+        # itself is unaffected and still a real in-place method.
+        if hasattr(tm, "remove_duplicate_faces"):
+            tm.remove_duplicate_faces()
+        else:
+            tm.update_faces(tm.unique_faces())
+        if hasattr(tm, "remove_degenerate_faces"):
+            tm.remove_degenerate_faces()
+        else:
+            tm.update_faces(tm.nondegenerate_faces())
         tm.remove_unreferenced_vertices()
 
         # Normals
