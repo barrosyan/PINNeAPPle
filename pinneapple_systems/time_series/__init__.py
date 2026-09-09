@@ -13,6 +13,9 @@ from .features.engineering import TSFeatureEngineer, rate_of_change, window_feat
 
 from .baselines.naive import NaiveForecaster, SeasonalNaiveForecaster, DriftForecaster
 
+# --- Classical statistical forecasters (statsmodels / pmdarima wrappers) ---
+from .classical_wrappers import StatsmodelsARIMAForecaster, AutoARIMAForecaster
+
 # --- Preparation pipeline ---
 from .preparation.imputer  import TimeSeriesImputer
 from .preparation.outliers import OutlierDetector
@@ -61,6 +64,8 @@ __all__ = [
     "TSFeatureEngineer", "rate_of_change", "window_features",
     # Baselines
     "NaiveForecaster", "SeasonalNaiveForecaster", "DriftForecaster",
+    # Classical statistical forecasters (statsmodels / pmdarima)
+    "StatsmodelsARIMAForecaster", "AutoARIMAForecaster",
     # Preparation
     "TimeSeriesImputer", "OutlierDetector", "TimeSeriesResampler",
     # EDA
