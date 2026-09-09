@@ -24,3 +24,15 @@ __all__ = [
     "LLMResponse",
     "GeminiProvider",
 ]
+
+# UnifiedPhysicsAgent composes DesignAgent with pinneapple_worldmodel's
+# PhysicsOrchestrator (see unified_agent.py's module docstring for the full
+# design rationale). pinneapple_worldmodel is treated the same way
+# knowledge/mapping.py already treats it -- as an optional dependency of
+# pinneapple_problemdesign -- so importing this package must not hard-fail
+# for anyone missing it or its (heavier) transitive deps.
+try:
+    from .unified_agent import UnifiedPhysicsAgent, UnifiedAgentResult
+    __all__ += ["UnifiedPhysicsAgent", "UnifiedAgentResult"]
+except ImportError:
+    pass
