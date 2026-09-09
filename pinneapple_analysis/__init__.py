@@ -17,6 +17,13 @@ inverse_problems  (was pinneapple_inverse)
     (local / global Sobol), EKI / TEKI, and the high-level
     ``InverseProblemSolver``. Also includes SINDy equation discovery.
 
+trust
+    Pre-consumption trust scoring of a trained model's own predictions
+    (OOD + residual + ensemble-variance), distinct from
+    ``pinneapple_llm.guardrail.PhysicsGuardrail`` (verifies LLM-proposed
+    specs) and ``pinneapple_systems.digital_twin``'s live sensor anomaly
+    detection. See ``trust.TrustGate``.
+
 Integration helpers
 -------------------
 ``analyze_model(model, spec, x, ...)``
@@ -37,6 +44,7 @@ from __future__ import annotations
 from . import uncertainty
 from . import validation
 from . import inverse_problems
+from . import trust
 
 # backward-compat aliases
 uq       = uncertainty
@@ -88,6 +96,9 @@ from .inverse_problems import (
     NeuralTermConfig, NeuralTermDiscovery,
 )
 
+# ── trust re-exports ──────────────────────────────────────────────────────────
+from .trust import TrustGate, TrustScore
+
 
 # ── Integration helpers ────────────────────────────────────────────────────────
 
@@ -124,7 +135,7 @@ def invert(model, y_obs, sensor_locs, *,
 
 __all__ = [
     # Sub-modules (new names)
-    "uncertainty", "validation", "inverse_problems",
+    "uncertainty", "validation", "inverse_problems", "trust",
     # Sub-modules (old aliases — backward compat)
     "uq", "validate", "inverse",
     # Integration
@@ -156,4 +167,6 @@ __all__ = [
     "CandidateLibrary", "SINDyResult", "SINDyIdentifier",
     "ResidualAnalysisResult", "ResidualAnalyzer",
     "NeuralTermConfig", "NeuralTermDiscovery",
+    # trust
+    "TrustGate", "TrustScore",
 ]

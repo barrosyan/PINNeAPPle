@@ -15,6 +15,7 @@ producing it.
 machine); ``finetune.py`` fine-tunes a local model on that logged data.
 """
 from .draft import draft_problem, DraftResult
+from .catalog_match import resolve_problem, ResolveResult
 from .geometry_draft import draft_geometry, GeometryDraftResult
 from .cad_draft import (
     draft_mesh_recipe, draft_cadquery_template, build_recipe, export_recipe, CadRecipeResult,
@@ -38,6 +39,7 @@ except Exception:
 
 __all__ = [
     "draft_problem", "DraftResult",
+    "resolve_problem", "ResolveResult",
     "draft_geometry", "GeometryDraftResult",
     "draft_mesh_recipe", "draft_cadquery_template", "build_recipe", "export_recipe", "CadRecipeResult",
     "draft_digital_twin", "build_3d_live_twin", "TwinDraftResult",
