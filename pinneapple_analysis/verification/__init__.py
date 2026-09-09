@@ -57,6 +57,42 @@ physics_confidence_score
     of the four possible checks can never be mistaken for one built from
     all of them. See that module's own docstring for the full
     anti-fabrication design rationale.
+
+geometry_intelligence
+    CAD/mesh -> semantic boundary regions -> boundary conditions. Two
+    stage: real, deterministic normal-vector-similarity face segmentation
+    + boundary-loop tracing + isoperimetric-quotient/axis-alignment
+    heuristics (wall/opening/symmetry_plane candidates), then optional
+    LLM semantic disambiguation ONLY for genuinely-ambiguous opening
+    regions (a fixed, checked label/BC-type vocabulary -- hallucinated
+    region ids/labels are rejected, never guessed at).
+
+solver_orchestration
+    Live introspection of which solver families (PINN, the classical
+    FDM/FEM/FVM/LBM/... registry, OpenFOAM, FEniCS) are ACTUALLY runnable
+    on this machine right now (never a hardcoded table), a
+    documented-scope-matching recommendation heuristic that only ever
+    recommends a family it just verified is available, and an honest
+    numeric solver-vs-solver comparison (max/mean/RMSE) of two
+    already-produced results.
+
+uncertainty_inverse
+    Wires PINNeAPPle's real UQ (``pinneapple_analysis.uncertainty``) and
+    inverse-problem (``pinneapple_analysis.inverse_problems``) machinery
+    end to end: ensemble/MC-dropout/decomposed/aleatoric uncertainty
+    reporting (each field honestly ``None`` when that method's underlying
+    class doesn't support it -- never fabricated), and inverse-parameter
+    estimation via a real alternating field-training/parameter-fitting
+    scheme (needed because the real solver only ever optimises a model's
+    ``inverse_params``, never its field weights) with parametric-bootstrap
+    parameter uncertainty.
+
+provenance
+    A structured, JSON-serializable ``ProvenanceRecord`` for one analysis
+    run -- problem description, drafted spec, architecture/training
+    config, environment, and verification report -- so a run can be
+    replayed or audited later. Intentionally a plain dataclass +
+    ``to_dict()``/``save()``/``load()``, not a database model.
 """
 from __future__ import annotations
 
@@ -99,6 +135,27 @@ from pinneapple_analysis.verification.physics_confidence_score import (
     PhysicsConfidenceScore,
     compute_physics_confidence,
 )
+from pinneapple_analysis.verification.geometry_intelligence import (
+    BoundaryLoop,
+    SurfaceRegion,
+    GeometryClassification,
+    classify_geometry,
+)
+from pinneapple_analysis.verification.solver_orchestration import (
+    list_available_solver_families,
+    SolverRecommendation,
+    select_solver_family,
+    ComparisonReport,
+    compare_solvers,
+)
+from pinneapple_analysis.verification.uncertainty_inverse import (
+    UncertaintyReport,
+    InverseProblemResult,
+    InverseParamAdapter,
+    quantify_uncertainty,
+    solve_inverse_problem,
+)
+from pinneapple_analysis.verification.provenance import ProvenanceRecord
 
 __all__ = [
     # dimensional_analysis
@@ -134,4 +191,23 @@ __all__ = [
     "CalibrationSummary",
     "PhysicsConfidenceScore",
     "compute_physics_confidence",
+    # geometry_intelligence
+    "BoundaryLoop",
+    "SurfaceRegion",
+    "GeometryClassification",
+    "classify_geometry",
+    # solver_orchestration
+    "list_available_solver_families",
+    "SolverRecommendation",
+    "select_solver_family",
+    "ComparisonReport",
+    "compare_solvers",
+    # uncertainty_inverse
+    "UncertaintyReport",
+    "InverseProblemResult",
+    "InverseParamAdapter",
+    "quantify_uncertainty",
+    "solve_inverse_problem",
+    # provenance
+    "ProvenanceRecord",
 ]
