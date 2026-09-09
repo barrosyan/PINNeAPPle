@@ -49,3 +49,13 @@ try:
     __all__ += ["UnifiedPhysicsAgent", "UnifiedAgentResult"]
 except ImportError:
     pass
+
+# AutonomousResearchAgent composes UnifiedPhysicsAgent + ApprovalGate +
+# (optionally) pinneapple_registry's ExperimentMemory -- same
+# optional-dependency treatment: it must not hard-fail this package's import
+# for anyone missing pinneapple_worldmodel or pinneapple_registry.
+try:
+    from .research_loop import AutonomousResearchAgent, IterationRecord, ResearchLoopResult
+    __all__ += ["AutonomousResearchAgent", "IterationRecord", "ResearchLoopResult"]
+except ImportError:
+    pass
