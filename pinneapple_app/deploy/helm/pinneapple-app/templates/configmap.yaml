@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pinneapple-app-config
+  namespace: {{ .Values.namespace }}
+data:
+  PYTHONUNBUFFERED: "1"
+  PINNEAPPLE_REGISTRY_ROOT: {{ .Values.registry.path | quote }}

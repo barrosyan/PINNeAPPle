@@ -1,0 +1,12 @@
+# Non-secret backend configuration. PINNEAPPLE_ADMIN_TOKEN (see
+# core/admin_auth.py) is deliberately NOT here -- put it in a real Secret
+# (kubectl create secret generic pinneapple-admin --from-literal=token=...)
+# and reference it via secretKeyRef in backend-deployment.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pinneapple-app-config
+  namespace: pinneapple
+data:
+  PYTHONUNBUFFERED: "1"
+  PINNEAPPLE_REGISTRY_ROOT: "/data/pinneapple_registry"

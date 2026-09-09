@@ -11,7 +11,7 @@ const STEPS: { id: Step; label: string; icon: string }[] = [
 ]
 
 export function Sidebar() {
-  const { step, setStep, selectedProblem, isCustomProblem, selectedModels, experimentId } = useStore()
+  const { step, setStep, selectedProblem, isCustomProblem, selectedModels, experimentId, showAdmin, setShowAdmin } = useStore()
 
   function canNavigate(id: Step): boolean {
     const order = STEPS.map((s) => s.id)
@@ -58,9 +58,20 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-2 pt-4 border-t border-gray-800 text-xs text-gray-600">
-        <div>PINNeAPPle v1.0</div>
-        <div className="mt-0.5">Physics-Informed AI</div>
+      <div className="px-2 pt-4 border-t border-gray-800">
+        <button
+          onClick={() => setShowAdmin(!showAdmin)}
+          className={clsx(
+            'w-full text-left text-xs px-1 py-1.5 rounded transition-colors',
+            showAdmin ? 'text-brand-400' : 'text-gray-500 hover:text-gray-300',
+          )}
+        >
+          ⚙ Admin
+        </button>
+        <div className="text-xs text-gray-600 mt-2">
+          <div>PINNeAPPle v1.0</div>
+          <div className="mt-0.5">Physics-Informed AI</div>
+        </div>
       </div>
     </aside>
   )

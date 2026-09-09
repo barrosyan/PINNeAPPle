@@ -1,0 +1,92 @@
+# Backend Deployment + Service + HPA. Image is built from
+# pinneapple_app/Dockerfile.backend (see ../../Dockerfile.backend) --
+# this manifest assumes that image has already been built and pushed to
+# a registry your cluster can pull from (build/push is out of scope here,
+# same as the existing docker-compose.yml doesn't push anywhere either).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pinneapple-backend
+  namespace: pinneapple
+  labels:
+    app: pinneapple-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pinneapple-backend
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: pinneapple-backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/api/metrics"
+        prometheus.io/port: "8000"
+    spec:
+      containers:
+        - name: backend
+          image: pinneapple-backend:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: pinneapple-app-config
+          env:
+            - name: PINNEAPPLE_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pinneapple-admin
+                  key: token
+                  optional: true  # admin routes 503 (not silently open) if unset -- see admin_auth.py
+          volumeMounts:
+            - name: registry-data
+              mountPath: /data/pinneapple_registry
+          readinessProbe:
+            httpGet: { path: /api/health, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/health, port: 8000 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits: { cpu: "2", memory: "4Gi" }
+      volumes:
+        - name: registry-data
+          persistentVolumeClaim:
+            claimName: pinneapple-registry-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pinneapple-backend
+  namespace: pinneapple
+spec:
+  selector:
+    app: pinneapple-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: pinneapple-backend
+  namespace: pinneapple
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pinneapple-backend
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }

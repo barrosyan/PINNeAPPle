@@ -1,0 +1,32 @@
+# Requires an nginx ingress controller. TLS/cert-manager block is
+# commented out (same honest "not configured by default" choice this
+# repo's own nginx.conf makes) -- uncomment and set a real host/secret to
+# use it.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pinneapple-app
+  namespace: pinneapple
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: pinneapple-backend
+                port: { number: 8000 }
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pinneapple-frontend
+                port: { number: 80 }
+  # tls:
+  #   - hosts: ["pinneapple.example.com"]
+  #     secretName: pinneapple-tls

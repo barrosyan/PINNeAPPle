@@ -137,6 +137,14 @@ llm = [
   "openai>=1.40",
 ]
 
+# Pipeline orchestration (pinneapple_orchestration) -- without this,
+# every flow/task in that package still runs as a plain Python function
+# (see pinneapple_orchestration/_prefect_compat.py); this extra adds real
+# retries, scheduling, and a UI on top.
+orchestration = [
+  "prefect>=2.19",
+]
+
 # Adaptive (Bayesian/TPE) hyperparameter search -- see
 # pinneapple_neural.trainer.adaptive_sweep. A dependency-free random-search
 # fallback is used automatically if this extra is not installed.
@@ -266,6 +274,7 @@ packages = [
   "pinneapple_worldmodel",
   "pinneapple_quantum",
   "pinneapple_registry",     # local artifact registry: models, datasets, experiments
+  "pinneapple_orchestration", # optional Prefect-based pipeline layer (data gen, training, benchmark, publish, twin prep)
   "pinneapple_hub",          # push_to_hub/from_pretrained model hub
   "pinneapple_llm",          # LLM-assisted pipeline drafting + physics guardrail
   "pinneapple_blender",      # Blender export/render bridge

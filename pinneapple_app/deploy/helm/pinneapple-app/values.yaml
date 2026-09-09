@@ -1,0 +1,45 @@
+namespace: pinneapple
+
+backend:
+  image:
+    repository: pinneapple-backend
+    tag: latest
+  replicas: 2
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { cpu: "2", memory: 4Gi }
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilization: 70
+
+frontend:
+  image:
+    repository: pinneapple-frontend
+    tag: latest
+  replicas: 2
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+registry:
+  storageSize: 20Gi
+  path: /data/pinneapple_registry
+
+admin:
+  # Set via --set admin.tokenSecretName=<your-secret> or create
+  # `pinneapple-admin` (key: token) yourself; left empty by default so a
+  # fresh install doesn't silently ship a guessable admin token.
+  tokenSecretName: pinneapple-admin
+
+ingress:
+  enabled: true
+  className: nginx
+  host: ""   # empty = no host rule (path-based routing on any host)
+  tls:
+    enabled: false
+    secretName: pinneapple-tls
+
+monitoring:
+  prometheusScrape: true

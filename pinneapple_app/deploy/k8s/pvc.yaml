@@ -1,0 +1,13 @@
+# Persists the local artifact registry (pinneapple_registry) across pod
+# restarts/rescheduling -- the same reason ModelStore/DatasetStore write
+# to a filesystem root rather than an in-memory dict.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pinneapple-registry-data
+  namespace: pinneapple
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 20Gi

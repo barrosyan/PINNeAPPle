@@ -6,21 +6,29 @@ import { ModelsStep }     from './components/steps/ModelsStep'
 import { RunStep }        from './components/steps/RunStep'
 import { ResultsStep }    from './components/steps/ResultsStep'
 import { Sidebar }        from './components/Sidebar'
+import { AdminView }      from './components/AdminView'
 
 const STEPS = ['problem', 'geometry', 'models', 'run', 'results'] as const
 
 export default function App() {
   const step = useStore((s) => s.step)
+  const showAdmin = useStore((s) => s.showAdmin)
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-950">
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-6">
-        {step === 'problem'  && <ProblemStep />}
-        {step === 'geometry' && <GeometryStep />}
-        {step === 'models'   && <ModelsStep />}
-        {step === 'run'      && <RunStep />}
-        {step === 'results'  && <ResultsStep />}
+        {showAdmin ? (
+          <AdminView />
+        ) : (
+          <>
+            {step === 'problem'  && <ProblemStep />}
+            {step === 'geometry' && <GeometryStep />}
+            {step === 'models'   && <ModelsStep />}
+            {step === 'run'      && <RunStep />}
+            {step === 'results'  && <ResultsStep />}
+          </>
+        )}
       </main>
     </div>
   )

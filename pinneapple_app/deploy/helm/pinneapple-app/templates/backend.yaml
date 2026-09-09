@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pinneapple-backend
+  namespace: {{ .Values.namespace }}
+  labels: { app: pinneapple-backend }
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels: { app: pinneapple-backend }
+  strategy:
+    rollingUpdate: { maxUnavailable: 0 }
+  template:
+    metadata:
+      labels: { app: pinneapple-backend }
+      annotations:
+        prometheus.io/scrape: {{ .Values.monitoring.prometheusScrape | quote }}
+        prometheus.io/path: "/api/metrics"
+        prometheus.io/port: "8000"
+    spec:
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef: { name: pinneapple-app-config }
+          env:
+            - name: PINNEAPPLE_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.admin.tokenSecretName }}
+                  key: token
+                  optional: true
+          volumeMounts:
+            - name: registry-data
+              mountPath: {{ .Values.registry.path }}
+          readinessProbe:
+            httpGet: { path: /api/health, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/health, port: 8000 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+      volumes:
+        - name: registry-data
+          persistentVolumeClaim: { claimName: pinneapple-registry-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pinneapple-backend
+  namespace: {{ .Values.namespace }}
+spec:
+  selector: { app: pinneapple-backend }
+  ports:
+    - port: 8000
+      targetPort: 8000
+{{- if .Values.backend.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: pinneapple-backend
+  namespace: {{ .Values.namespace }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pinneapple-backend
+  minReplicas: {{ .Values.backend.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.backend.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: {{ .Values.backend.autoscaling.targetCPUUtilization }} }
+{{- end }}

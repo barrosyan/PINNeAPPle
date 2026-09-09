@@ -82,6 +82,10 @@ interface AppState {
   // results
   benchmarkPayload: BenchmarkPayload | null
   setBenchmarkPayload: (p: BenchmarkPayload | null) => void
+
+  // admin (curation/status view, outside the linear problem->results wizard)
+  showAdmin: boolean
+  setShowAdmin: (v: boolean) => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -142,4 +146,8 @@ export const useStore = create<AppState>((set) => ({
   // results
   benchmarkPayload: null,
   setBenchmarkPayload: (p) => set({ benchmarkPayload: p }),
+
+  // admin
+  showAdmin: false,
+  setShowAdmin: (v) => set({ showAdmin: v }),
 }))

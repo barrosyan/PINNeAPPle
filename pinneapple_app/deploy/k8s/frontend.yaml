@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pinneapple-frontend
+  namespace: pinneapple
+  labels:
+    app: pinneapple-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pinneapple-frontend
+  template:
+    metadata:
+      labels:
+        app: pinneapple-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: pinneapple-frontend:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pinneapple-frontend
+  namespace: pinneapple
+spec:
+  selector:
+    app: pinneapple-frontend
+  ports:
+    - port: 80
+      targetPort: 80
