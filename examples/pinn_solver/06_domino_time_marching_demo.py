@@ -24,17 +24,24 @@ We demonstrate two solvers in sequence:
 
 Run::
 
-    python examples/pinneapple_pinn/06_domino_time_marching_demo.py
+    python examples/pinn_solver/06_domino_time_marching_demo.py
 """
 from __future__ import annotations
 
 import math
+import os
+import sys
 
 import numpy as np
 import torch
 import torch.nn as nn
 
-from pinneapple_pinn import DoMINO
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+from pinneapple_physics.pinn_solver.domino import DoMINO
 from pinneapple_train import TimeMarchingTrainer
 
 

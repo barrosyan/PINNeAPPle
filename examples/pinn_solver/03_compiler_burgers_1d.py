@@ -16,19 +16,27 @@ This is a standard PINN benchmark (exact solution exists but is a bit long);
 here we focus on showing how to wire the losses and train.
 
 Run:
-  python examples/pinneapple_pinn/03_compiler_burgers_1d.py
+  python examples/pinn_solver/03_compiler_burgers_1d.py
 """
 
 from __future__ import annotations
 
 import math
+import os
+import sys
 
 import numpy as np
 import torch
 
-from pinneapple_environment.conditions import DirichletBC, InitialCondition
-from pinneapple_environment.spec import PDETermSpec, ProblemSpec
-from pinneapple_pinn import LossWeights, compile_problem
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+from pinneapple_physics.pde_environment.conditions import DirichletBC, InitialCondition
+from pinneapple_physics.pde_environment.spec import PDETermSpec, ProblemSpec
+from pinneapple_physics.pinn_solver.compiler.compile import compile_problem
+from pinneapple_physics.pinn_solver.compiler.loss import LossWeights
 
 
 class MLP(torch.nn.Module):
@@ -92,8 +100,8 @@ def main() -> None:
         fields=("u",),
         pde=PDETermSpec(kind="burgers", fields=("u",), coords=("t", "x"), params={"nu": nu}),
         conditions=(
-            InitialCondition(name_or_values="u0", fields=("u",), value_fn=u0_np, weight=1.0),
-            DirichletBC(name_or_values="bc", fields=("u",), value_fn=bc_np, weight=1.0),
+            InitialCondition(name="u0", fields=("u",), value_fn=u0_np, weight=1.0),
+            DirichletBC(name="bc", fields=("u",), value_fn=bc_np, weight=1.0),
         ),
     )
 

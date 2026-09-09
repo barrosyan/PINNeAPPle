@@ -11,21 +11,27 @@ Once your UPD pipeline is in place, you can add PDE residuals + conditions
 via SchemaAdapter or directly in PINNProblemSpec.
 
 Run:
-  python examples/pinneapple_pinn/05_upd_dataset_data_only_regression.py
+  python examples/pinn_solver/05_upd_dataset_data_only_regression.py
 """
 
 from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 
 import numpy as np
 import torch
 import xarray as xr
 
-from pinneapple_pinn.factory.pinn_factory import NeuralNetwork, PINN, PINNFactory, PINNProblemSpec
-from pinneapple_pinn.io import UPDItem, UPDDataset, build_default_mapping_atmosphere, SamplingSpec
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+from pinneapple_physics.pinn_solver.factory.pinn_factory import NeuralNetwork, PINN, PINNFactory, PINNProblemSpec
+from pinneapple_physics.pinn_solver.io import UPDItem, UPDDataset, build_default_mapping_atmosphere, SamplingSpec
 
 
 def make_synthetic_atmosphere_ds() -> xr.Dataset:
@@ -43,7 +49,7 @@ def make_synthetic_atmosphere_ds() -> xr.Dataset:
 
     ds = xr.Dataset(
         {
-            "T": ("time", "lat", "lon", T),
+            "T": (("time", "lat", "lon"), T),
         },
         coords={"time": time, "lat": lat, "lon": lon},
         attrs={"name": "synthetic_demo"},

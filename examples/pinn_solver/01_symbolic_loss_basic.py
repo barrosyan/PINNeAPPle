@@ -1,6 +1,14 @@
+import os
+import sys
+
 import torch
 
-from pinneapple_pinn.factory.pinn_factory import PINNFactory, PINNProblemSpec
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+from pinneapple_physics.pinn_solver.factory.pinn_factory import PINNFactory, PINNProblemSpec
 
 spec = PINNProblemSpec(
     pde_residuals=["Derivative(u(t,x), t) + u(t,x)"],

@@ -1,8 +1,8 @@
 """Poisson equation (2D) with the *compiler* API.
 
 This example showcases:
-  - pinneapple_environment.ProblemSpec + ConditionSpec
-  - pinneapple_pinn.compile_problem() (autograd-based PDE residuals)
+  - pinneapple_physics.pde_environment.ProblemSpec + ConditionSpec
+  - pinneapple_physics.pinn_solver.compile_problem() (autograd-based PDE residuals)
   - a minimal training loop with a vanilla MLP
 
 Problem (unit square):
@@ -15,19 +15,27 @@ Analytic solution we target:
   => f(x,y) = -2*pi^2 * sin(pi x) sin(pi y)
 
 Run:
-  python examples/pinneapple_pinn/02_compiler_poisson_2d.py
+  python examples/pinn_solver/02_compiler_poisson_2d.py
 """
 
 from __future__ import annotations
 
 import math
+import os
+import sys
 
 import numpy as np
 import torch
 
-from pinneapple_environment.conditions import DirichletBC
-from pinneapple_environment.spec import PDETermSpec, ProblemSpec
-from pinneapple_pinn import LossWeights, compile_problem
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.abspath(os.path.join(_HERE, "..", ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+from pinneapple_physics.pde_environment.conditions import DirichletBC
+from pinneapple_physics.pde_environment.spec import PDETermSpec, ProblemSpec
+from pinneapple_physics.pinn_solver.compiler.compile import compile_problem
+from pinneapple_physics.pinn_solver.compiler.loss import LossWeights
 
 
 class MLP(torch.nn.Module):
