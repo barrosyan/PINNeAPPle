@@ -42,11 +42,11 @@ problem:
   #
   # Common presets:
   #   burgers_1d           — viscous Burgers equation (1D, time-dependent)
-  #   heat_1d              — 1D heat equation (parabolic)
-  #   heat_2d              — 2D steady-state heat (Poisson)
-  #   wave_1d              — 1D wave equation (hyperbolic)
-  #   poisson_2d           — 2D Poisson equation
+  #   poisson_2d           — 2D Poisson equation (steady-state heat/diffusion)
   #   ns_incompressible_2d — 2D incompressible Navier-Stokes
+  #
+  # (heat_1d and wave_1d are not implemented as presets yet -- see
+  # list_presets() for the current full set.)
   #   advection_diffusion_2d — 2D advection-diffusion
   #   rotary_coupling_torsion — 3D structural: rotary coupling wear (FEniCS)
   #   cpu_heatsink_thermal — 2D thermal: CPU cooling

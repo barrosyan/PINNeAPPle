@@ -5,6 +5,7 @@ import numpy as np
 from ..spec import PDETermSpec, ProblemSpec
 from ..conditions import DirichletBC, NeumannBC
 from ..environment_typing import CoordNames
+from .registry import register_preset
 
 
 def _unit_interval(x: np.ndarray, a: float, b: float) -> np.ndarray:
@@ -35,6 +36,7 @@ def _poiseuille_profile_3d(X: np.ndarray, ctx, Umax: float = 1.0) -> np.ndarray:
     return np.stack([u, v, w], axis=1).astype(np.float32)
 
 
+@register_preset("ns_incompressible_2d")
 def ns_incompressible_2d_default(Re: float = 100.0, Umax: float = 1.0) -> ProblemSpec:
     coords: CoordNames = ("x", "y", "t")
     fields = ("u", "v", "p")
