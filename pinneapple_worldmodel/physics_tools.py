@@ -303,8 +303,8 @@ class PhysicsToolRegistry:
             description="Particle-based fluid simulation via pinneapple_dynamics SPH",
             input_schema={"n_particles": "int"},
             output_schema={"particle_states": "List[Tensor]"},
-            module_path="pinneapple_dynamics",
-            fn=self._safe_wrap(_run_sph, "pinneapple_dynamics"),
+            module_path="pinneapple_simulation.particle_dynamics",
+            fn=self._safe_wrap(_run_sph, "pinneapple_simulation"),
             tags=["sph", "particles", "fluid"],
         ))
 
@@ -323,8 +323,8 @@ class PhysicsToolRegistry:
             description="Compile a PINN problem via pinneapple_pinn",
             input_schema={"pde_kind": "str", "domain": "PhysicsDomain"},
             output_schema={"pinn_problem": "CompiledProblem"},
-            module_path="pinneapple_pinn",
-            fn=self._safe_wrap(_compile_pinn, "pinneapple_pinn"),
+            module_path="pinneapple_physics.pinn_solver",
+            fn=self._safe_wrap(_compile_pinn, "pinneapple_physics"),
             tags=["pinn", "pde", "compile"],
         ))
 
@@ -338,8 +338,8 @@ class PhysicsToolRegistry:
             description="Auto-identify PDE structure from a natural-language description",
             input_schema={"description": "str"},
             output_schema={"pde_kind": "str", "suggested_params": "dict"},
-            module_path="pinneapple_environment.capabilities",
-            fn=self._safe_wrap(_identify_pde, "pinneapple_environment"),
+            module_path="pinneapple_physics.pde_environment.capabilities",
+            fn=self._safe_wrap(_identify_pde, "pinneapple_physics"),
             tags=["pde", "auto", "discovery"],
         ))
 
@@ -353,8 +353,8 @@ class PhysicsToolRegistry:
             description="Auto-suggest a ProblemSpec from a description",
             input_schema={"description": "str"},
             output_schema={"problem_spec": "ProblemSpec"},
-            module_path="pinneapple_environment.capabilities",
-            fn=self._safe_wrap(_suggest_problem_spec, "pinneapple_environment"),
+            module_path="pinneapple_physics.pde_environment.capabilities",
+            fn=self._safe_wrap(_suggest_problem_spec, "pinneapple_physics"),
             tags=["spec", "auto", "problem"],
         ))
 
@@ -482,8 +482,8 @@ class PhysicsToolRegistry:
             description="Check conservation laws and physics consistency of predictions",
             input_schema={"model": "nn.Module", "dataset": "Dataset", "scenario": "str"},
             output_schema={"passed": "bool", "metrics": "dict"},
-            module_path="pinneapple_validate",
-            fn=self._safe_wrap(_validate_physics, "pinneapple_validate"),
+            module_path="pinneapple_analysis.validation",
+            fn=self._safe_wrap(_validate_physics, "pinneapple_analysis"),
             tags=["validation", "conservation", "physics"],
         ))
 
@@ -502,8 +502,8 @@ class PhysicsToolRegistry:
             description="Monte-Carlo Dropout uncertainty estimation",
             input_schema={"model": "nn.Module", "x": "Tensor", "n_samples": "int"},
             output_schema={"mean": "Tensor", "std": "Tensor", "epistemic_std": "Tensor"},
-            module_path="pinneapple_uq",
-            fn=self._safe_wrap(_mc_dropout_uq, "pinneapple_uq"),
+            module_path="pinneapple_analysis.uncertainty",
+            fn=self._safe_wrap(_mc_dropout_uq, "pinneapple_analysis"),
             tags=["uq", "mc_dropout", "epistemic"],
         ))
 
@@ -517,8 +517,8 @@ class PhysicsToolRegistry:
             description="Aleatoric (data) uncertainty via heteroscedastic head",
             input_schema={"model": "nn.Module", "x": "Tensor"},
             output_schema={"mean": "Tensor", "aleatoric_std": "Tensor"},
-            module_path="pinneapple_uq",
-            fn=self._safe_wrap(_aleatoric_uq, "pinneapple_uq"),
+            module_path="pinneapple_analysis.uncertainty",
+            fn=self._safe_wrap(_aleatoric_uq, "pinneapple_analysis"),
             tags=["uq", "aleatoric", "heteroscedastic"],
         ))
 
@@ -533,8 +533,8 @@ class PhysicsToolRegistry:
             input_schema={"model": "nn.Module", "x": "Tensor", "n_samples": "int"},
             output_schema={"aleatoric_std": "Tensor", "epistemic_std": "Tensor",
                            "total_std": "Tensor"},
-            module_path="pinneapple_uq",
-            fn=self._safe_wrap(_decompose_uq, "pinneapple_uq"),
+            module_path="pinneapple_analysis.uncertainty",
+            fn=self._safe_wrap(_decompose_uq, "pinneapple_analysis"),
             tags=["uq", "decompose", "aleatoric", "epistemic"],
         ))
 
@@ -555,8 +555,8 @@ class PhysicsToolRegistry:
             input_schema={"model": "nn.Module", "observations": "Tensor",
                           "prior": "distribution"},
             output_schema={"params": "Tensor", "uncertainty": "Tensor"},
-            module_path="pinneapple_inverse",
-            fn=self._safe_wrap(_eki_inversion, "pinneapple_inverse"),
+            module_path="pinneapple_analysis.inverse_problems",
+            fn=self._safe_wrap(_eki_inversion, "pinneapple_analysis"),
             tags=["inverse", "eki", "parameter"],
         ))
 
@@ -571,8 +571,8 @@ class PhysicsToolRegistry:
             description="SINDy sparse equation discovery from trajectory data",
             input_schema={"trajectory": "Tensor"},
             output_schema={"equation": "str", "coefficients": "Tensor"},
-            module_path="pinneapple_inverse",
-            fn=self._safe_wrap(_sindy, "pinneapple_inverse"),
+            module_path="pinneapple_analysis.inverse_problems",
+            fn=self._safe_wrap(_sindy, "pinneapple_analysis"),
             tags=["inverse", "sindy", "discovery", "sparse"],
         ))
 
@@ -586,8 +586,8 @@ class PhysicsToolRegistry:
             description="Local parameter sensitivity analysis (Jacobian-based)",
             input_schema={"model": "nn.Module", "params": "Tensor"},
             output_schema={"jacobian": "Tensor", "sensitivity_scores": "dict"},
-            module_path="pinneapple_inverse",
-            fn=self._safe_wrap(_sensitivity, "pinneapple_inverse"),
+            module_path="pinneapple_analysis.inverse_problems",
+            fn=self._safe_wrap(_sensitivity, "pinneapple_analysis"),
             tags=["inverse", "sensitivity", "jacobian"],
         ))
 
@@ -607,8 +607,8 @@ class PhysicsToolRegistry:
             description="Fine-tune a pre-trained model on a new physics domain",
             input_schema={"source_model": "nn.Module", "target_dataset": "Dataset"},
             output_schema={"model": "nn.Module", "history": "List[dict]"},
-            module_path="pinneapple_transfer",
-            fn=self._safe_wrap(_transfer_train, "pinneapple_transfer"),
+            module_path="pinneapple_adaptation.transfer_learning",
+            fn=self._safe_wrap(_transfer_train, "pinneapple_adaptation"),
             tags=["transfer", "fine-tuning", "adaptation"],
         ))
 
@@ -622,8 +622,8 @@ class PhysicsToolRegistry:
             description="Transfer across a parametric family of PDEs",
             input_schema={"model": "nn.Module", "family": "PDE family descriptor"},
             output_schema={"adapted_model": "nn.Module"},
-            module_path="pinneapple_transfer",
-            fn=self._safe_wrap(_parametric_transfer, "pinneapple_transfer"),
+            module_path="pinneapple_adaptation.transfer_learning",
+            fn=self._safe_wrap(_parametric_transfer, "pinneapple_adaptation"),
             tags=["transfer", "parametric", "pde_family"],
         ))
 
@@ -704,8 +704,8 @@ class PhysicsToolRegistry:
             description="Time-series forecasting via pinneapple_timeseries (LSTM/NBeats/TFT)",
             input_schema={"data": "Tensor", "horizon": "int"},
             output_schema={"forecast": "Tensor", "uncertainty": "Tensor"},
-            module_path="pinneapple_timeseries",
-            fn=self._safe_wrap(_ts_forecast, "pinneapple_timeseries"),
+            module_path="pinneapple_systems.time_series",
+            fn=self._safe_wrap(_ts_forecast, "pinneapple_systems"),
             tags=["timeseries", "forecast", "lstm"],
         ))
 
@@ -719,8 +719,8 @@ class PhysicsToolRegistry:
             description="Compute power spectral density of a time series",
             input_schema={"data": "Tensor"},
             output_schema={"frequencies": "Tensor", "psd": "Tensor"},
-            module_path="pinneapple_timeseries",
-            fn=self._safe_wrap(_power_spectrum, "pinneapple_timeseries"),
+            module_path="pinneapple_systems.time_series",
+            fn=self._safe_wrap(_power_spectrum, "pinneapple_systems"),
             tags=["timeseries", "psd", "spectral"],
         ))
 
@@ -741,8 +741,8 @@ class PhysicsToolRegistry:
             description="Build a multi-physics co-simulation graph",
             input_schema={"nodes": "List[CoSimNode]", "edges": "List[tuple]"},
             output_schema={"engine": "CoSimEngine"},
-            module_path="pinneapple_cosim",
-            fn=self._safe_wrap(_build_cosim, "pinneapple_cosim"),
+            module_path="pinneapple_systems.cosimulation",
+            fn=self._safe_wrap(_build_cosim, "pinneapple_systems"),
             tags=["cosim", "multi-physics", "graph"],
         ))
 
@@ -758,8 +758,8 @@ class PhysicsToolRegistry:
             description="Execute a co-simulation and record the trajectory",
             input_schema={"engine": "CoSimEngine", "t_span": "tuple"},
             output_schema={"trajectory": "dict"},
-            module_path="pinneapple_cosim",
-            fn=self._safe_wrap(_run_cosim, "pinneapple_cosim"),
+            module_path="pinneapple_systems.cosimulation",
+            fn=self._safe_wrap(_run_cosim, "pinneapple_systems"),
             tags=["cosim", "simulation", "multi-physics"],
         ))
 
@@ -801,8 +801,8 @@ class PhysicsToolRegistry:
             description="Create a Signed Distance Function for a shape",
             input_schema={"shape": "str"},
             output_schema={"sdf": "SDF"},
-            module_path="pinneapple_geom",
-            fn=self._safe_wrap(_make_sdf, "pinneapple_geom"),
+            module_path="pinneapple_design.geometry",
+            fn=self._safe_wrap(_make_sdf, "pinneapple_design"),
             tags=["geometry", "sdf", "implicit"],
         ))
 
@@ -821,8 +821,8 @@ class PhysicsToolRegistry:
             description="Run model inference on a 2D grid",
             input_schema={"model": "nn.Module", "x": "Tensor", "y": "Tensor"},
             output_schema={"field": "Tensor(H, W)"},
-            module_path="pinneapple_inference",
-            fn=self._safe_wrap(_infer_2d, "pinneapple_inference"),
+            module_path="pinneapple_neural.predictor",
+            fn=self._safe_wrap(_infer_2d, "pinneapple_neural"),
             tags=["inference", "grid", "2d"],
         ))
 
@@ -836,8 +836,8 @@ class PhysicsToolRegistry:
             description="Visualise a 2D physics field",
             input_schema={"field": "Tensor(H, W)"},
             output_schema={"figure": "matplotlib.Figure"},
-            module_path="pinneapple_inference",
-            fn=self._safe_wrap(_plot_field, "pinneapple_inference"),
+            module_path="pinneapple_neural.predictor",
+            fn=self._safe_wrap(_plot_field, "pinneapple_neural"),
             tags=["viz", "field", "2d"],
         ))
 
@@ -857,8 +857,8 @@ class PhysicsToolRegistry:
             description="Bayesian optimisation of a physics design objective",
             input_schema={"objective": "callable", "bounds": "Tensor(D, 2)"},
             output_schema={"best_design": "Tensor", "best_value": "float"},
-            module_path="pinneapple_design_opt",
-            fn=self._safe_wrap(_bayesian_opt, "pinneapple_design_opt"),
+            module_path="pinneapple_design.design_optimizer",
+            fn=self._safe_wrap(_bayesian_opt, "pinneapple_design"),
             tags=["design", "bayesian", "optimisation"],
         ))
 
@@ -877,8 +877,8 @@ class PhysicsToolRegistry:
             description="Build a real-time digital twin from a trained model + data stream",
             input_schema={"model": "nn.Module", "stream": "DataStream"},
             output_schema={"twin": "DigitalTwin"},
-            module_path="pinneapple_digital_twin",
-            fn=self._safe_wrap(_build_twin, "pinneapple_digital_twin"),
+            module_path="pinneapple_systems.digital_twin",
+            fn=self._safe_wrap(_build_twin, "pinneapple_systems"),
             tags=["digital_twin", "real-time", "assimilation"],
         ))
 
@@ -893,8 +893,8 @@ class PhysicsToolRegistry:
             description="Extended Kalman Filter data assimilation",
             input_schema={"model": "nn.Module", "obs": "Tensor"},
             output_schema={"state_estimate": "Tensor", "covariance": "Tensor"},
-            module_path="pinneapple_digital_twin",
-            fn=self._safe_wrap(_ekf, "pinneapple_digital_twin"),
+            module_path="pinneapple_systems.digital_twin",
+            fn=self._safe_wrap(_ekf, "pinneapple_systems"),
             tags=["kalman", "assimilation", "digital_twin"],
         ))
 
