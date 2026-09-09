@@ -1,7 +1,11 @@
 """34_heat_conduction_3d.py — 3D heat conduction PINN with FEM comparison.
 
 Demonstrates:
-- Heat3DPreset: preconfigured 3D heat conduction problem from pinneapple_physics.pde_environment
+- A hand-specified 3D steady-state heat conduction problem (see constants
+  and T_exact/phi below) -- no preset class for this exists in
+  pinneapple_physics.pde_environment; the closest presets are the
+  function-based steady_heat_conduction_3d_default()/
+  transient_heat_3d_default() in presets/industry.py.
 - FEMSolver (FEniCS bridge): solve the same problem with a FEM reference
 - FDMSolver: finite difference reference on a regular 3D grid
 - Error map comparison: PINN vs FEM, PINN vs FDM on a cross-section plane
@@ -15,8 +19,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from pinneapple_physics.pde_environment import Heat3DPreset, HeatPresetConfig
-
 try:
     from pinneapple_simulation.numerical_solvers.fem import FEMSolver, FEMConfig
     _FEM = True
@@ -24,7 +26,7 @@ except ImportError:
     _FEM = False
     print("[warn] FEniCS not available — FEM comparison will be skipped.")
 
-from pinneapple_simulation.numerical_solvers.fdm import FDMSolver3D, FDMConfig3D
+from pinneapple_simulation.numerical_solvers.fdm3d import HeatConduction3D, HeatConfig3D
 
 
 # ---------------------------------------------------------------------------
@@ -68,17 +70,6 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    # --- Heat3DPreset -------------------------------------------------------
-    preset_config = HeatPresetConfig(
-        conductivity=K_COND,
-        source_magnitude=Q0,
-        source_type="sinusoidal_xyz",
-        domain_bounds=[[0, 1], [0, 1], [0, 1]],
-        bc_type="dirichlet_zero",
-    )
-    preset = Heat3DPreset(config=preset_config)
-    print("Heat3DPreset configured.")
-
     # --- PINN ---------------------------------------------------------------
     net   = build_model().to(device)
     model = lambda xyz: phi(xyz) * net(xyz)
@@ -112,21 +103,32 @@ def main():
             print(f"  epoch {epoch:5d} | loss = {loss.item():.4e}")
 
     # --- FDM reference ------------------------------------------------------
+    # No steady-state 3D Poisson FDM solver exists in this repo; the real
+    # HeatConduction3D (fdm3d.py) is transient (explicit Euler time-marching
+    # diffusion). We get the same steady-state T by time-marching it forward
+    # until it converges: at steady state d T/dt = 0 = alpha*lap(T) + q, i.e.
+    # lap(T) = -q/alpha, matching our target lap(T) = -Q/K_COND when we pick
+    # alpha = K_COND and q(x,y,z) = Q0*sin(pi x)*sin(pi y)*sin(pi z).
     n_fdm = 20
-    fdm_config = FDMConfig3D(
+    dx_fdm = 1.0 / n_fdm
+    alpha_fdm = K_COND
+    dt_fdm = 0.4 / (alpha_fdm * 3.0 / dx_fdm**2)  # keep the CFL-like ratio r < 0.5
+    nt_fdm = 10000  # diffusion time-scale ~ L^2/alpha = 1.0, so this reaches steady state
+    fdm_config = HeatConfig3D(
         nx=n_fdm, ny=n_fdm, nz=n_fdm,
-        dx=1.0 / n_fdm, dy=1.0 / n_fdm, dz=1.0 / n_fdm,
-        conductivity=K_COND,
-        source_fn=lambda x, y, z: Q0 * np.sin(math.pi * x) *
-                                        np.sin(math.pi * y) *
-                                        np.sin(math.pi * z),
-        bc_value=0.0,
-        max_iter=5000,
-        tol=1e-8,
+        nt=nt_fdm,
+        lx=1.0, ly=1.0, lz=1.0,
+        dt=dt_fdm,
+        alpha=alpha_fdm,
+        ic_fn=lambda X, Y, Z: np.zeros_like(X),
+        source_fn=lambda X, Y, Z, t: Q0 * np.sin(math.pi * X) *
+                                           np.sin(math.pi * Y) *
+                                           np.sin(math.pi * Z),
     )
-    fdm_solver = FDMSolver3D(config=fdm_config)
-    T_fdm = fdm_solver.solve()    # returns (nx, ny, nz) array
-    print(f"FDM solved ({n_fdm}³ grid).")
+    fdm_solver = HeatConduction3D(cfg=fdm_config)
+    fdm_result = fdm_solver.solve()
+    T_fdm = fdm_result.u[-1]  # last time slice ~= converged steady state, shape (nx, ny, nz)
+    print(f"FDM solved ({n_fdm}³ grid, time-marched {nt_fdm} steps to steady state).")
 
     # --- FEM reference (optional) -------------------------------------------
     if _FEM:
@@ -157,14 +159,17 @@ def main():
     err_pinn = np.sqrt(((T_pinn - T_ref)**2).mean()) / np.sqrt((T_ref**2).mean())
     print(f"\nPINN relative L2 error (z=0.5 slice): {err_pinn:.4e}")
 
-    # FDM slice at z=0.5 (midpoint)
-    z_idx = n_fdm // 2
-    x_fdm = np.linspace(0, 1, n_fdm + 2)[1:-1]
+    # FDM slice nearest z=0.5. HeatConduction3D's grid is np.linspace(0, lx,
+    # nx) -- nx points spanning the full domain INCLUDING both boundaries
+    # (dx = lx/(nx-1)) -- not an interior-only grid, so evaluate T_exact at
+    # those same real coordinates rather than a different point layout.
+    x_fdm = np.linspace(0, 1, n_fdm)
+    z_idx = int(np.argmin(np.abs(x_fdm - 0.5)))
     xx_fdm, yy_fdm = np.meshgrid(x_fdm, x_fdm)
     T_fdm_slice = T_fdm[:, :, z_idx]
     T_exact_fdm = T_exact(
         np.stack([xx_fdm.ravel(), yy_fdm.ravel(),
-                  0.5 * np.ones(n_fdm**2)], axis=1)
+                  x_fdm[z_idx] * np.ones(n_fdm**2)], axis=1)
     ).reshape(n_fdm, n_fdm)
     err_fdm = np.sqrt(((T_fdm_slice - T_exact_fdm)**2).mean()) / \
               np.sqrt((T_exact_fdm**2).mean())
