@@ -6,7 +6,7 @@ from typing import Dict, Type
 
 from .base import NeuralOperatorBase
 from .deeponet import DeepONet
-from .fno import FourierNeuralOperator
+from .fno import FourierNeuralOperator, FNO2d, FNO3d
 from .gno import GalerkinNeuralOperator
 from .ms_deeponet import MultiScaleDeepONet
 from .pino import PhysicsInformedNeuralOperator
@@ -19,6 +19,8 @@ _REGISTRY: Dict[str, Type[NeuralOperatorBase]] = {
 
     "fno": FourierNeuralOperator,
     "fourier_neural_operator": FourierNeuralOperator,
+    "fno2d": FNO2d,
+    "fno3d": FNO3d,
 
     "gno": GalerkinNeuralOperator,
     "galerkin_neural_operator": GalerkinNeuralOperator,
@@ -56,6 +58,14 @@ def register_into_global() -> None:
 
         if key in ("fno", "fourier_neural_operator"):
             caps.update({"input_kind": "grid_1d", "expects": ["u_grid_1d"]})
+            return caps
+
+        if key == "fno2d":
+            caps.update({"input_kind": "grid_2d", "expects": ["u_grid_2d"]})
+            return caps
+
+        if key == "fno3d":
+            caps.update({"input_kind": "grid_3d", "expects": ["u_grid_3d"]})
             return caps
 
         if key in ("gno", "galerkin_neural_operator"):

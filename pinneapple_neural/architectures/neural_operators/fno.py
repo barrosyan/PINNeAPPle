@@ -276,6 +276,148 @@ class FNO2d(NeuralOperatorBase):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# FNO-3D
+# ─────────────────────────────────────────────────────────────────────────────
+
+class _SpectralConv3d(nn.Module):
+    """3D Spectral Convolution: (B, in_c, D, H, W) -> (B, out_c, D, H, W).
+
+    Generalises ``_SpectralConv2d`` to a third spatial axis. ``rfftn`` keeps
+    only positive frequencies along the last dimension, so the low-frequency
+    "corner" of a 3D spectrum has 4 combinations of +/- modes along the two
+    full-spectrum axes (D, H) instead of 2D's 2 -- four independent weight
+    tensors cover them (mirroring how 2D needed 2 for its one full-spectrum
+    axis).
+    """
+
+    def __init__(self, in_c: int, out_c: int, modes1: int, modes2: int, modes3: int):
+        super().__init__()
+        self.in_c   = int(in_c)
+        self.out_c  = int(out_c)
+        self.modes1 = int(modes1)
+        self.modes2 = int(modes2)
+        self.modes3 = int(modes3)
+
+        scale = 1.0 / max(1, in_c * out_c)
+        shape = (in_c, out_c, self.modes1, self.modes2, self.modes3)
+        self.weights1 = nn.Parameter(scale * torch.randn(*shape, dtype=torch.cfloat))
+        self.weights2 = nn.Parameter(scale * torch.randn(*shape, dtype=torch.cfloat))
+        self.weights3 = nn.Parameter(scale * torch.randn(*shape, dtype=torch.cfloat))
+        self.weights4 = nn.Parameter(scale * torch.randn(*shape, dtype=torch.cfloat))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        B, C, D, H, W = x.shape
+        # rfftn over the last 3 dims -> (B, C, D, H, W//2+1)
+        x_ft = torch.fft.rfftn(x, dim=(-3, -2, -1))
+        _, _, D_f, H_f, W_f = x_ft.shape
+
+        m1 = min(self.modes1, D_f // 2)
+        m2 = min(self.modes2, H_f // 2)
+        m3 = min(self.modes3, W_f)
+
+        out_ft = torch.zeros(B, self.out_c, D_f, H_f, W_f, device=x.device, dtype=torch.cfloat)
+
+        # Four low-frequency corners: +/- along D, +/- along H, always + along W (rfft'd axis)
+        out_ft[:, :, :m1, :m2, :m3] = torch.einsum(
+            "bidhw,iodhw->bodhw", x_ft[:, :, :m1, :m2, :m3], self.weights1[:, :, :m1, :m2, :m3]
+        )
+        out_ft[:, :, -m1:, :m2, :m3] = torch.einsum(
+            "bidhw,iodhw->bodhw", x_ft[:, :, -m1:, :m2, :m3], self.weights2[:, :, :m1, :m2, :m3]
+        )
+        out_ft[:, :, :m1, -m2:, :m3] = torch.einsum(
+            "bidhw,iodhw->bodhw", x_ft[:, :, :m1, -m2:, :m3], self.weights3[:, :, :m1, :m2, :m3]
+        )
+        out_ft[:, :, -m1:, -m2:, :m3] = torch.einsum(
+            "bidhw,iodhw->bodhw", x_ft[:, :, -m1:, -m2:, :m3], self.weights4[:, :, :m1, :m2, :m3]
+        )
+
+        return torch.fft.irfftn(out_ft, s=(D, H, W), dim=(-3, -2, -1))
+
+
+class FNO3d(NeuralOperatorBase):
+    """FNO-3D: Fourier Neural Operator for 3D spatial (or 2D-space + time)
+    fields -- the natural fit for a structured, periodic-in-2-of-3-axes
+    domain like a periodic channel (matches the setup FNO was originally
+    demonstrated on: Li et al. 2020, Navier-Stokes on a periodic torus).
+
+    Input/output shape: ``(B, in_channels, D, H, W) -> (B, out_channels, D, H, W)``.
+
+    Parameters mirror ``FNO2d`` with a third (``modes3``) mode count and
+    spatial axis. ``use_grid`` concatenates 3 normalised coordinate grids
+    (recommended when any axis is non-periodic, e.g. a wall-bounded one --
+    the periodic axes are already handled implicitly by the FFT's circular
+    boundary assumption, but a non-periodic axis needs the network to be
+    told where the boundary actually is).
+    """
+
+    def __init__(
+        self,
+        in_channels:  int,
+        out_channels: int,
+        width:  int = 32,
+        modes1: int = 8,
+        modes2: int = 8,
+        modes3: int = 8,
+        layers: int = 4,
+        *,
+        use_grid: bool = True,
+    ):
+        super().__init__()
+        self.use_grid = bool(use_grid)
+
+        in_c_eff = int(in_channels) + (3 if self.use_grid else 0)
+        self.in_proj = nn.Conv3d(in_c_eff, int(width), kernel_size=1)
+
+        self.convs = nn.ModuleList([
+            _SpectralConv3d(int(width), int(width), int(modes1), int(modes2), int(modes3))
+            for _ in range(int(layers))
+        ])
+        self.ws = nn.ModuleList([
+            nn.Conv3d(int(width), int(width), kernel_size=1)
+            for _ in range(int(layers))
+        ])
+        self.out_proj = nn.Conv3d(int(width), int(out_channels), kernel_size=1)
+
+    @staticmethod
+    def _make_grid_3d(u: torch.Tensor) -> torch.Tensor:
+        """Normalised 3D grid (B, 3, D, H, W) with values in [0, 1]."""
+        B, _, D, H, W = u.shape
+        gd = torch.linspace(0.0, 1.0, D, device=u.device, dtype=u.dtype)
+        gh = torch.linspace(0.0, 1.0, H, device=u.device, dtype=u.dtype)
+        gw = torch.linspace(0.0, 1.0, W, device=u.device, dtype=u.dtype)
+        GD, GH, GW = torch.meshgrid(gd, gh, gw, indexing="ij")
+        grid = torch.stack([GD, GH, GW], dim=0).unsqueeze(0)  # (1, 3, D, H, W)
+        return grid.expand(B, -1, -1, -1, -1)
+
+    def forward(
+        self,
+        u: torch.Tensor,
+        *,
+        y_true: Optional[torch.Tensor] = None,
+        return_loss: bool = False,
+    ) -> OperatorOutput:
+        x = u
+        if self.use_grid:
+            grid = self._make_grid_3d(u)
+            x = torch.cat([x, grid], dim=1)
+
+        x = self.in_proj(x)
+        for sc, w in zip(self.convs, self.ws):
+            x = F.gelu(sc(x) + w(x))
+        y = self.out_proj(x)
+
+        losses = {}
+        if return_loss and y_true is not None:
+            mse = self.mse(y, y_true)
+            losses["mse"] = mse
+            losses["total"] = mse
+        elif return_loss:
+            losses["total"] = torch.tensor(0.0, device=y.device)
+
+        return OperatorOutput(y=y, losses=losses, extras={"use_grid": self.use_grid})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MLP + FNO Hybrid Surrogate
 # ─────────────────────────────────────────────────────────────────────────────
 
