@@ -78,6 +78,7 @@ from .parallel import (
     ThroughputMonitor,
 )
 from .adaptive_sweep import AdaptiveSweepConfig, run_adaptive_sweep
+from .lbfgs_finetune import LBFGSFinetuneResult, multi_round_lbfgs
 
 __all__ = [
     # Training advisor
@@ -152,6 +153,9 @@ __all__ = [
     "MultiRestartConfig",
     "MultiRestartResult",
     "RestartResult",
+    # Multi-round L-BFGS fine-tuning
+    "LBFGSFinetuneResult",
+    "multi_round_lbfgs",
     # Adaptive collocation & data utilities
     "AdaptiveCollocationSampler",
     "AdaptiveCollocationConfig",
