@@ -24,6 +24,7 @@ ready to share.
 from __future__ import annotations
 
 from .dataset_store import DatasetStore
+from .experiment_memory import ExperimentMemory, ExperimentRecord
 from .experiment_store import ExperimentStore
 from .model_store import ModelStore, VALID_STAGES
 from .problem_store import ProblemStore
@@ -34,6 +35,8 @@ __all__ = [
     "ModelStore",
     "DatasetStore",
     "ExperimentStore",
+    "ExperimentMemory",
+    "ExperimentRecord",
     "ProblemStore",
     "VALID_STAGES",
 ]
