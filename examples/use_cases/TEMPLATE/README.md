@@ -129,13 +129,13 @@ pip install pinneapple            # or: pip install -e .  from repo root
 
 ## Step 1 — Define the Problem Spec
 
-pinneapple's `pinneapple_environment` module holds problem presets. Either use an
+pinneapple's `pinneapple_physics.pde_environment` module holds problem presets. Either use an
 existing preset and override parameters, or define a custom spec from scratch.
 
 ### Option A — Use a registered preset
 
 ```python
-from pinneapple_environment import get_preset, list_presets
+from pinneapple_physics.pde_environment import get_preset, list_presets
 
 # List all available presets:
 print(list_presets())
@@ -151,42 +151,39 @@ spec = get_preset(
 )
 print(f"PDE kind   : {spec.pde.kind}")
 print(f"Fields     : {spec.fields}")
-print(f"Coord names: {spec.coord_names}")
+print(f"Coord names: {spec.coords}")
 print(f"Domain     : {spec.domain_bounds}")
 ```
 
 ### Option B — Build a custom spec
 
 ```python
-from pinneapple_environment.spec import ProblemSpec, PDESpec
-from pinneapple_environment.conditions import DirichletBC, NeumannBC, PeriodicBC
+from pinneapple_physics.pde_environment import ProblemBuilder
 
-spec = ProblemSpec(
-    problem_id="{{ YOUR_PROBLEM_ID }}",
-    pde=PDESpec(
-        kind="{{ PDE_KIND }}",          # e.g. "heat", "wave", "poisson", "navier_stokes",
-                                        #      "elasticity", "advection_diffusion"
-        params={
-            "{{ PARAM_1 }}": {{ VALUE_1 }},   # e.g. "nu": 0.01
-            "{{ PARAM_2 }}": {{ VALUE_2 }},   # e.g. "k": 1.0  (thermal conductivity)
-        },
-        order={{ ORDER }},              # 1 (first-order) or 2 (second-order PDE)
-    ),
-    fields=["{{ FIELD_1 }}", "{{ FIELD_2 }}"],   # e.g. ["u"] or ["u", "v", "p"]
-    coord_names=["{{ COORD_1 }}", "{{ COORD_2 }}"],  # e.g. ["x", "t"] or ["x", "y", "t"]
-    domain_bounds={
-        "{{ COORD_1 }}": [{{ X_MIN }}, {{ X_MAX }}],   # e.g. "x": [-1.0, 1.0]
-        "{{ COORD_2 }}": [{{ T_MIN }}, {{ T_MAX }}],   # e.g. "t": [0.0, 1.0]
-    },
-    conditions={
-        "{{ BC_NAME_1 }}": DirichletBC({"{{ FIELD }}": {{ VALUE }}}),
-            # e.g. "left": DirichletBC({"u": 0.0})
-        "{{ BC_NAME_2 }}": NeumannBC({"{{ FIELD }}": {{ FLUX }}}),
-            # e.g. "top": NeumannBC({"u": 0.0})  # zero-flux / insulated
-        # "{{ BC_NAME_3 }}": PeriodicBC(),
-    },
-    solver_spec={"name": "{{ SOLVER_NAME }}", "solver": "{{ SOLVER_METHOD }}"},
-    meta={"description": "{{ BRIEF_DESCRIPTION }}"},
+spec = (
+    ProblemBuilder("{{ YOUR_PROBLEM_ID }}")
+    .domain(
+        {{ COORD_1 }}=({{ X_MIN }}, {{ X_MAX }}),   # e.g. x=(-1.0, 1.0)
+        {{ COORD_2 }}=({{ T_MIN }}, {{ T_MAX }}),   # e.g. t=(0.0, 1.0)
+    )
+    .fields("{{ FIELD_1 }}", "{{ FIELD_2 }}")       # e.g. "u" or "u", "v", "p"
+    .pde(
+        "{{ PDE_KIND }}",               # e.g. "heat_1d", "wave", "poisson", "navier_stokes_incompressible"
+        {{ PARAM_1 }}={{ VALUE_1 }},    # e.g. nu=0.01
+        {{ PARAM_2 }}={{ VALUE_2 }},    # e.g. k=1.0  (thermal conductivity)
+    )
+    .bc(
+        "dirichlet", field="{{ FIELD }}", value={{ VALUE }}, on="{{ BC_NAME_1 }}",
+    )
+        # e.g. .bc("dirichlet", field="u", value=0.0, on="x_boundary")
+    .bc(
+        "neumann", field="{{ FIELD }}", value={{ FLUX }}, on="{{ BC_NAME_2 }}",
+    )
+        # e.g. .bc("neumann", field="u", value=0.0, on="x_max")  # zero-flux / insulated
+    .sample(interior={{ N_COLLOCATION }}, boundary={{ N_BOUNDARY }}, ic={{ N_IC }})
+    .solver(name="{{ SOLVER_NAME }}", method="{{ SOLVER_METHOD }}")
+    .reference("{{ BRIEF_DESCRIPTION }}")
+    .build()
 )
 ```
 
@@ -377,7 +374,6 @@ print(f"Generated {len(dataset)} solver runs")
 
 ```python
 import numpy as np
-from pinneapple_environment.sampling import CollocationSampler
 
 rng = np.random.default_rng({{ SEED }})   # e.g. 42
 
@@ -1077,7 +1073,7 @@ examples/use_cases/{{ USE_CASE_NAME }}/
 
 | Component | pinneapple module | Status |
 |-----------|-----------------|--------|
-| Problem presets | `pinneapple_environment.presets` | Ready — use `list_presets()` |
+| Problem presets | `pinneapple_physics.pde_environment.presets` | Ready — use `list_presets()` |
 | Built-in FDM solver | `pinneapple_solvers` (`builtin`) | Ready |
 | OpenFOAM bridge | `pinneapple_solvers.openfoam_bridge` | Ready — needs OF installed |
 | FEniCS bridge | `pinneapple_solvers.fenics_bridge` | Ready — needs dolfinx/fenics |

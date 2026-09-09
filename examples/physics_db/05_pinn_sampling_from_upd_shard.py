@@ -1,6 +1,6 @@
 """Sample PINN-ready collocation/condition/data points from a UPD shard.
 
-This uses pinneapple_pinn.io.UPDDataset and a PINNMapping that maps:
+This uses pinneapple_physics.pinn_solver.io.UPDDataset and a PINNMapping that maps:
   inputs:  t, lat, lon
   targets: one UPD variable (e.g. T2M)
 

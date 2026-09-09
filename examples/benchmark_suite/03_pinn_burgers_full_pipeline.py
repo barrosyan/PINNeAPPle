@@ -2,15 +2,15 @@
 
 What this demonstrates
 ----------------------
-- Loading a pre-defined problem from pinneapple_environment (Burgers 1D)
-- Generating collocation + boundary + IC points with CollocationSampler
+- Loading a pre-defined problem from pinneapple_physics.pde_environment (Burgers 1D)
+- Generating collocation + boundary + IC points with numpy sampling
 - Building a PINN model (VanillaPINN) with physics-informed loss
 - Training with GPU, AMP, gradient clipping, and torch.compile()
 - Evaluating metrics and running inference on a grid
 - Visualizing loss curves, solution field, and error map
 
 Run from repo root:
-    python examples/pinneapple_arena/03_pinn_burgers_full_pipeline.py
+    python examples/benchmark_suite/03_pinn_burgers_full_pipeline.py
 """
 
 from __future__ import annotations
@@ -33,13 +33,13 @@ sys.path.insert(0, str(REPO_ROOT))
 import torch
 import torch.nn as nn
 
-from pinneapple_environment import get_preset
-from pinneapple_train import (
-    Trainer, TrainConfig,
+from pinneapple_physics.pde_environment import get_preset
+from pinneapple_train import Trainer, TrainConfig
+from pinneapple_neural import (
     best_device, maybe_compile, ThroughputMonitor,
     build_metrics_from_cfg,
+    infer_on_grid_2d,
 )
-from pinneapple_inference import infer_on_grid_2d
 
 
 # ------------------------------------------------------------------
@@ -114,8 +114,10 @@ class BurgersPINN(nn.Module):
 
 model = BurgersPINN(hidden=(64, 64, 64, 64), activation="tanh").to(DEVICE)
 
-# Optional: torch.compile for PyTorch 2.x
-model = maybe_compile(model, mode="default")
+# Note: torch.compile() is intentionally NOT applied here. This PINN loss needs
+# a double backward (d^2u/dx^2 via create_graph=True), which PyTorch's
+# aot_autograd compile backend does not currently support, so maybe_compile()
+# is left imported/available for models that don't need second-order grads.
 
 n_params = sum(p.numel() for p in model.parameters())
 print(f"[Model] Parameters: {n_params:,}")
@@ -266,7 +268,7 @@ t_grid = np.linspace(0, 1, Nt, dtype=np.float32)
 XX, TT = np.meshgrid(x_grid, t_grid)
 X_test = np.column_stack([XX.ravel(), TT.ravel()])
 
-from pinneapple_train import batched_inference
+from pinneapple_neural import batched_inference
 X_tensor = torch.from_numpy(X_test)
 U_pred = batched_inference(model, X_tensor, batch_size=8192, device=str(DEVICE))
 U_pred_grid = U_pred.numpy().reshape(Nt, Nx)

@@ -2,14 +2,14 @@
 
 What this demonstrates
 ----------------------
-- Loading pre-defined engineering problems from pinneapple_environment
+- Loading pre-defined engineering problems from pinneapple_physics.pde_environment
 - Inspecting problem conditions, PDE parameters, domain bounds, solver spec
 - Generating collocation points from domain bounds
 - Training a lightweight PINN surrogate for the CPU heatsink thermal problem
 - Listing all available presets in the library
 
 Run from repo root:
-    python examples/pinneapple_arena/06_engineering_presets_showcase.py
+    python examples/benchmark_suite/06_engineering_presets_showcase.py
 """
 
 from __future__ import annotations
@@ -22,14 +22,14 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from pinneapple_environment import list_presets, get_preset
+from pinneapple_physics.pde_environment import list_presets, get_preset
 
 
 # ------------------------------------------------------------------
 # 1. List all available presets
 # ------------------------------------------------------------------
 print("=" * 60)
-print("Available problem presets in pinneapple_environment:")
+print("Available problem presets in pinneapple_physics.pde_environment:")
 print("=" * 60)
 all_presets = list_presets()
 for name in all_presets:
@@ -56,7 +56,7 @@ for name, kwargs in showcase:
         print(f"[{spec.problem_id}]")
         print(f"  PDE kind   : {spec.pde.kind}")
         print(f"  Fields     : {spec.fields}")
-        print(f"  Coord names: {spec.coord_names}")
+        print(f"  Coord names: {spec.coords}")
         print(f"  Domain     : {spec.domain_bounds}")
         print(f"  Solver     : {spec.solver_spec.get('name')} / {spec.solver_spec.get('solver','')}")
         print(f"  Description: {spec.meta.get('description','')}")
@@ -82,7 +82,7 @@ try:
 
     import torch
     import torch.nn as nn
-    from pinneapple_train import best_device
+    from pinneapple_neural import best_device
 
     DEVICE = best_device()
 

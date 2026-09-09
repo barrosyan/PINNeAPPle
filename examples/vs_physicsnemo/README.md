@@ -235,7 +235,7 @@
 `climate_atmosphere_2d` · `climate_ocean_gyre` · `crystal_phonon` · `material_fracture_2d` · `black_scholes_1d` · `heston_pde_2d` · `pk_two_compartment` · `drug_diffusion_tissue` · `sir_epidemic` · `opinion_dynamics_2d`
 
 ```python
-from pinneapple_environment import list_presets
+from pinneapple_physics.pde_environment import list_presets
 print(list_presets())  # lista todos os presets disponíveis
 ```
 

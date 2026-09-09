@@ -36,8 +36,8 @@ pipeline:
 # PROBLEM DEFINITION
 # ------------------------------------------------------------
 problem:
-  # (REQUIRED) Preset ID registered in pinneapple_environment.
-  # Run `from pinneapple_environment import list_presets; print(list_presets())`
+  # (REQUIRED) Preset ID registered in pinneapple_physics.pde_environment.
+  # Run `from pinneapple_physics.pde_environment import list_presets; print(list_presets())`
   # to see all available presets.
   #
   # Common presets:

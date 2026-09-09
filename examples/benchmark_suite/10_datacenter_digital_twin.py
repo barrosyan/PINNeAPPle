@@ -15,7 +15,7 @@ This pattern applies equally to:
   - cpu_heatsink_thermal        (server thermal management)
 
 Run from repo root:
-    python examples/pinneapple_arena/10_datacenter_digital_twin.py
+    python examples/benchmark_suite/10_datacenter_digital_twin.py
 """
 
 from __future__ import annotations
@@ -32,14 +32,14 @@ sys.path.insert(0, str(REPO_ROOT))
 import torch
 import torch.nn as nn
 
-from pinneapple_environment import get_preset
-from pinneapple_digital_twin import (
+from pinneapple_physics.pde_environment import get_preset
+from pinneapple_systems.digital_twin import (
     DigitalTwin, DigitalTwinConfig, build_digital_twin,
     MockStream, Sensor, SensorRegistry,
     ThresholdDetector, ZScoreDetector,
     EnsembleKalmanFilter, Observation,
 )
-from pinneapple_train import best_device
+from pinneapple_neural import best_device
 
 
 # ------------------------------------------------------------------

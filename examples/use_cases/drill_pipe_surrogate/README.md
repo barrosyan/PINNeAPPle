@@ -64,7 +64,7 @@ pip install pyvista             # 3D visualization
 pinneapple ships a `rotary_coupling_torsion` preset. Extend it for the two scenarios:
 
 ```python
-from pinneapple_environment import get_preset
+from pinneapple_physics.pde_environment import get_preset
 
 # Scenario A: both pin and box rotating (symmetric torsion)
 spec_both = get_preset(
@@ -89,9 +89,14 @@ spec_pin = get_preset(
     axial_force=500e3,
     length=0.12,
 )
-# Modify boundary condition: box face is fixed (no rotation)
-from pinneapple_environment.conditions import DirichletBC
-spec_pin.conditions["box_face"] = DirichletBC({"ux": 0.0, "uy": 0.0, "uz": 0.0})
+# Modify boundary condition: box face is fixed (no rotation).
+# ProblemSpec is a frozen dataclass and `conditions` is a tuple, not a dict,
+# so add the extra condition with dataclasses.replace() instead of item assignment:
+from dataclasses import replace
+from pinneapple_physics.pde_environment.conditions import DirichletBC
+
+box_face_fixed = DirichletBC({"ux": 0.0, "uy": 0.0, "uz": 0.0})
+spec_pin = replace(spec_pin, conditions=spec_pin.conditions + (box_face_fixed,))
 ```
 
 ---
@@ -406,7 +411,7 @@ The following components are **already in pinneapple** and work out-of-the-box:
 
 | Component | Module | Status |
 |-----------|--------|--------|
-| `rotary_coupling_torsion` preset | `pinneapple_environment.presets.structural` | ✅ Ready |
+| `rotary_coupling_torsion` preset | `pinneapple_physics.pde_environment.presets.structural` | ✅ Ready |
 | FEniCS bridge | `pinneapple_solvers.FEnicsBridge` | ✅ Ready |
 | DeepONet / VanillaPINN | `pinneapple_models` | ✅ Ready |
 | Trainer + AMP + compile | `pinneapple_train` | ✅ Ready |
