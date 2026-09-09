@@ -87,6 +87,11 @@ def decompose_uncertainty(
     with torch.no_grad():
         for _ in range(n_samples):
             out = model(x)
+            if hasattr(out, "y"):
+                # Some architectures (e.g. SIREN, PINN-family models) return a
+                # ``ModelOutput``/``PINNOutput`` dataclass wrapper instead of a
+                # plain tensor. Unwrap it so downstream tensor ops work.
+                out = out.y
             if has_aleatoric and isinstance(out, (tuple, list)) and len(out) == 2:
                 mu_i, lv_i = out
                 means_list.append(mu_i)

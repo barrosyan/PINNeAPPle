@@ -111,6 +111,11 @@ class AleatoricHead(nn.Module):
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         """Return ``(mean, log_var)`` tensors, both shape ``(N, out_dim)``."""
         raw = self.base(x)
+        if hasattr(raw, "y"):
+            # Some architectures (e.g. SIREN, PINN-family models) return a
+            # ``ModelOutput``/``PINNOutput`` dataclass wrapper instead of a
+            # plain tensor. Unwrap it so downstream tensor ops work.
+            raw = raw.y
         if raw.ndim == 1:
             raw = raw.unsqueeze(-1)
         mean = raw
