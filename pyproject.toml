@@ -76,6 +76,18 @@ process = [
   "CoolProp>=6.6",
 ]
 
+# Astropy-backed unit-safe constants/coordinate transforms
+# (pinneapple_physics.pde_environment.presets.astropy_bridge)
+astro = [
+  "astropy>=6.0",
+]
+
+# JAX-CFD differentiable CFD solver
+# (pinneapple_simulation.numerical_solvers.jax_cfd_solver)
+jax_cfd = [
+  "jax-cfd>=0.2.0",
+]
+
 # FEniCS / DOLFINx (axisymmetric FEM, rotary couplings, etc.)
 fenics = [
   "fenics-dolfinx>=0.7.0",
