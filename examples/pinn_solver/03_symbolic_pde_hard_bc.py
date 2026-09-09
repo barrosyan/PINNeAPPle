@@ -58,7 +58,7 @@ try:
 except ImportError:
     HAS_MPL = False
 
-from pinneapple_symbolic import HardBC, SymbolicPDE
+from pinneapple_physics.symbolic_pde import HardBC, SymbolicPDE
 
 
 # ---------------------------------------------------------------------------
