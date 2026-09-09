@@ -56,6 +56,53 @@ def regression_metrics(
     return {"overall": overall, "per_field": per_field, "residuals": residuals}
 
 
+def axis_binned_profile(coord: np.ndarray, field: np.ndarray, n_bins: int = 40) -> Dict[str, np.ndarray]:
+    """Bin ``field`` by one coordinate axis and average within each bin --
+    the standard way to compare a statistically-homogeneous-in-the-other-
+    directions field (e.g. a channel/boundary-layer flow's velocity, which
+    varies with wall-normal distance but is turbulent/scattered in the
+    other two directions) against a model's prediction: comparing single
+    (x, z) lines would just compare two different turbulent realizations
+    at the same y, not the underlying profile.
+
+    Parameters
+    ----------
+    coord : (N,) the binning coordinate (e.g. wall-normal y).
+    field : (N,) or (N, k) the scalar/vector field to average per bin.
+    n_bins : number of equal-width bins spanning ``coord``'s range.
+
+    Returns
+    -------
+    dict with ``"bin_centers"`` (mean ``coord`` actually observed in each
+    bin, not the bin's geometric midpoint -- matches what the real data in
+    that bin represents) and ``"bin_means"`` (mean ``field`` per bin, same
+    trailing shape as ``field``). Empty bins get ``coord``'s midpoint and
+    NaN respectively.
+
+    A model's own prediction should be evaluated by sampling many (x, z)
+    (or whatever the other axes are) at each returned ``bin_centers``
+    value and averaging those predictions the same way, then compared
+    against ``bin_means`` (e.g. via :func:`regression_metrics`) -- not by
+    evaluating the model once per bin at one arbitrary point.
+    """
+    coord = np.asarray(coord, dtype=np.float64)
+    field = np.asarray(field)
+    edges = np.linspace(coord.min(), coord.max(), n_bins + 1)
+    idx = np.clip(np.digitize(coord, edges) - 1, 0, n_bins - 1)
+
+    bin_centers = np.empty(n_bins, dtype=np.float64)
+    out_shape = (n_bins,) if field.ndim == 1 else (n_bins, field.shape[1])
+    bin_means = np.full(out_shape, np.nan, dtype=np.float64)
+    for b in range(n_bins):
+        mask = idx == b
+        if mask.any():
+            bin_centers[b] = coord[mask].mean()
+            bin_means[b] = field[mask].mean(axis=0)
+        else:
+            bin_centers[b] = 0.5 * (edges[b] + edges[b + 1])
+    return {"bin_centers": bin_centers, "bin_means": bin_means}
+
+
 def mape(y_true: np.ndarray, y_pred: np.ndarray, eps: float = 1e-8) -> float:
     """Mean Absolute Percentage Error, as a fraction (multiply by 100 for %).
     `eps` guards division by near-zero targets — MAPE dominated by that guard
