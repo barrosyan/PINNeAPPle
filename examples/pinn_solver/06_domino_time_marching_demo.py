@@ -247,34 +247,65 @@ def run_time_marching(device: torch.device, dtype: torch.dtype) -> None:
     torch.manual_seed(0)
 
     # -------------------------------------------------------------------
-    # PDE residual for TimeMarchingTrainer
+    # The wave equation u_tt = c^2 u_xx is *second order in time*, so a
+    # well-posed problem needs TWO initial conditions: u(x,0) AND
+    # u_t(x,0). TimeMarchingTrainer's window hand-off only ever carries
+    # forward the network's raw output at t_hi as the next window's IC
+    # target (appropriate for the first-order-in-time reference problems
+    # it was designed around, e.g. Allen-Cahn/Cahn-Hilliard). If the
+    # network only outputs u, that hand-off carries *position* but never
+    # *velocity*, leaving u_t(x,0) completely unconstrained. Each
+    # freshly-initialized per-window model is then free to pick an
+    # essentially arbitrary velocity component (same order of magnitude
+    # as the true solution itself), which is uncorrelated from one
+    # window to the next and dominates the accumulated error.
+    #
+    # Fix (script-level, no TimeMarchingTrainer changes): reformulate as
+    # a first-order-in-time system with v := u_t as a second network
+    # output. The IC becomes [u(x,0), v(x,0)] = [sin(pi x), 0], and the
+    # hand-off (which is output-dimension agnostic) now carries BOTH u
+    # and v forward, exactly as a 2nd-order-in-time PDE requires.
+    #
+    #   u_t = v
+    #   v_t = c^2 u_xx
+    #
     #   Input x has shape [N, 2]: columns = [x_spatial, t]
-    #   (time is the LAST column for TimeMarchingTrainer convention)
+    #   Output has shape [N, 2]: columns = [u, v]
     # -------------------------------------------------------------------
 
     def tm_residual(model: nn.Module, x: torch.Tensor) -> torch.Tensor:
-        """Wave residual when input is [x_sp, t] (time last)."""
-        u = model(x)
+        """First-order-system wave residual: [u_t - v, v_t - c^2 u_xx]."""
+        out = model(x)
+        u, v = out[:, 0:1], out[:, 1:2]
         ones = torch.ones_like(u)
-        g1 = torch.autograd.grad(u, x, ones, create_graph=True)[0]
-        u_x = g1[:, 0:1]
-        u_t = g1[:, 1:2]
+
+        g_u = torch.autograd.grad(u, x, ones, create_graph=True)[0]
+        u_x, u_t = g_u[:, 0:1], g_u[:, 1:2]
         u_xx = torch.autograd.grad(u_x, x, ones, create_graph=True)[0][:, 0:1]
-        u_tt = torch.autograd.grad(u_t, x, ones, create_graph=True)[0][:, 1:2]
-        return u_tt - (C_WAVE ** 2) * u_xx
+
+        g_v = torch.autograd.grad(v, x, ones, create_graph=True)[0]
+        v_t = g_v[:, 1:2]
+
+        r1 = u_t - v
+        r2 = v_t - (C_WAVE ** 2) * u_xx
+        return torch.cat([r1, r2], dim=1)
 
     # -------------------------------------------------------------------
-    # Initial condition: u(x, 0) = sin(pi x)
-    # Input x: [N, 2] = [x_sp, t=0]
+    # Initial condition: u(x, 0) = sin(pi x),  v(x, 0) = u_t(x, 0) = 0
+    # Input x: [N, 2] = [x_sp, t=0]; target: [N, 2] = [u_ic, v_ic]
     # -------------------------------------------------------------------
 
     def tm_ic_fn(x: torch.Tensor) -> torch.Tensor:
         x_sp = x[:, 0:1]
-        return torch.sin(PI * x_sp)
+        u_ic = torch.sin(PI * x_sp)
+        v_ic = torch.zeros_like(u_ic)
+        return torch.cat([u_ic, v_ic], dim=1)
 
     # -------------------------------------------------------------------
     # Boundary conditions factory for TimeMarchingTrainer:
     #   bc_fns = [callable(t_lo, t_hi, device, dtype) -> (x_bc, u_bc)]
+    #   u(t,0) = u(t,1) = 0 for all t  =>  differentiating w.r.t. t gives
+    #   v(t,0) = v(t,1) = 0 too, so both output components are zero.
     # -------------------------------------------------------------------
 
     def make_bc_fn(n_bc: int = 256, seed: int = 5):
@@ -286,7 +317,7 @@ def run_time_marching(device: torch.device, dtype: torch.dtype) -> None:
             x_sp = np.where(side == 0, 0.0, 1.0).astype(np.float32)
             # Input format for TimeMarchingTrainer: [x_sp, t]
             x_bc = torch.from_numpy(np.hstack([x_sp, t])).to(device=dev, dtype=dt)
-            u_bc = torch.zeros(n_bc, 1, device=dev, dtype=dt)
+            u_bc = torch.zeros(n_bc, 2, device=dev, dtype=dt)
             return x_bc, u_bc
         return bc_fn
 
@@ -296,7 +327,7 @@ def run_time_marching(device: torch.device, dtype: torch.dtype) -> None:
     x_domain = torch.linspace(0.0, 1.0, 500, device=device, dtype=dtype).unsqueeze(1)
 
     trainer = TimeMarchingTrainer(
-        model_factory=lambda: MLP(2, 1, 64, 4),
+        model_factory=lambda: MLP(2, 2, 64, 4),
         t_start=0.0,
         t_end=1.0,
         n_windows=5,
@@ -325,7 +356,9 @@ def run_time_marching(device: torch.device, dtype: torch.dtype) -> None:
     x_flat = XX_e.flatten().unsqueeze(1)  # [N, 1]
     t_flat = TT_e.flatten()               # [N]
 
-    u_pred = trainer.evaluate(x_flat, t_flat).cpu().numpy()
+    # trainer.evaluate returns [N, 2] = [u, v]; only the first column (u)
+    # is the physical field compared against the exact solution.
+    u_pred = trainer.evaluate(x_flat, t_flat)[:, 0:1].cpu().numpy()
 
     # Exact solution on same grid (format: [x_sp, t] → [t, x_sp] for u_exact_np)
     xt_eval = torch.stack([t_flat, x_flat.flatten()], dim=1).cpu().numpy()
