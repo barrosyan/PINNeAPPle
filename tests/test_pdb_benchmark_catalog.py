@@ -37,6 +37,20 @@ series centerline-temperature history, independently re-solved via
 ``scipy.optimize.brentq`` and cross-checked against Incropera & DeWitt's
 published Table 5.1 eigenvalue/coefficient). Same "never fabricate, always
 re-verify" pattern as every other entry in this catalog.
+
+The final three entries integrate PDEBench (Takamoto et al., "PDEBench: An
+Extensive Benchmark for Scientific Machine Learning", NeurIPS 2022 Datasets
+and Benchmarks Track, arXiv:2210.07182) -- a real, well-known open-source
+PDE-ML benchmark suite -- without fetching any of its actual (multi-GB,
+DaRUS-hosted) datasets: ``pdebench_advection_1d`` (PDEBench's 1D linear
+advection equation, cross-checked against its exact method-of-characteristics
+solution), ``pdebench_diffusion_reaction_1d`` (PDEBench's 1D
+diffusion-reaction equation, which is exactly the Fisher-KPP equation,
+cross-checked against the Ablowitz-Zeppetella 1979 exact traveling-wave
+solution), and ``pdebench_darcy_2d`` (PDEBench's 2D Darcy flow equation,
+specialized to homogeneous permeability, cross-checked against both a
+closed-form Fourier series and an independent finite-difference solve).
+See ``benchmarks.py``'s module docstring for full method and citations.
 """
 from __future__ import annotations
 
@@ -59,6 +73,9 @@ _ALL_BENCHMARK_NAMES = {
     "concorde_high_aoa",
     "blasius_flat_plate",
     "planewall_transient_conduction_bi1",
+    "pdebench_advection_1d",
+    "pdebench_diffusion_reaction_1d",
+    "pdebench_darcy_2d",
 }
 
 
@@ -69,8 +86,11 @@ def test_list_benchmarks_contains_lane_emden_entries():
     assert "concorde_high_aoa" in names
     assert "blasius_flat_plate" in names
     assert "planewall_transient_conduction_bi1" in names
+    assert "pdebench_advection_1d" in names
+    assert "pdebench_diffusion_reaction_1d" in names
+    assert "pdebench_darcy_2d" in names
     # Small, curated -- not a comprehensive suite (see benchmarks.py's module docstring).
-    assert len(names) == 5
+    assert len(names) == 8
 
 
 def test_benchmark_catalog_returns_all_entries_by_name():
@@ -271,3 +291,111 @@ def test_planewall_conduction_benchmark_reference_source_cites_incropera():
     entry = get_benchmark("planewall_transient_conduction_bi1")
     assert "Incropera" in entry.reference_source
     assert "Table 5.1" in entry.reference_source
+
+
+# ---------------------------------------------------------------------------
+# PDEBench-derived entries (Takamoto et al., NeurIPS 2022, arXiv:2210.07182)
+# ---------------------------------------------------------------------------
+
+def test_pdebench_advection_benchmark_shapes_and_column_order():
+    entry = get_benchmark("pdebench_advection_1d")
+    assert entry.x_vars == ("x",)
+    assert entry.y_vars == ("u",)
+    n = entry.reference_x.shape[0]
+    assert entry.reference_x.shape == (n, 1)
+    assert entry.reference_y.shape == (n, 1)
+    assert entry.reference_x.dtype == np.float32
+    assert entry.reference_y.dtype == np.float32
+    assert np.all(np.diff(entry.reference_x[:, 0]) > 0)
+
+
+def test_pdebench_advection_benchmark_matches_exact_shifted_sinusoid():
+    """The stored reference must equal the PDE's own exact
+    method-of-characteristics solution u(t,x)=u0(x-beta*t) evaluated at
+    beta=0.4, t=1.3 -- not an approximation."""
+    entry = get_benchmark("pdebench_advection_1d")
+    x = entry.reference_x[:, 0].astype(np.float64)
+    u = entry.reference_y[:, 0].astype(np.float64)
+    beta, t_final = 0.4, 1.3
+    u_exact = np.sin(2.0 * np.pi * (x - beta * t_final))
+    assert np.max(np.abs(u - u_exact)) < 1e-5
+
+
+def test_pdebench_advection_benchmark_reference_source_cites_pdebench():
+    entry = get_benchmark("pdebench_advection_1d")
+    assert "Takamoto" in entry.reference_source
+    assert "2210.07182" in entry.reference_source
+    assert "Strauss" in entry.reference_source
+
+
+def test_pdebench_diffusion_reaction_benchmark_shapes_and_column_order():
+    entry = get_benchmark("pdebench_diffusion_reaction_1d")
+    assert entry.x_vars == ("x",)
+    assert entry.y_vars == ("u",)
+    n = entry.reference_x.shape[0]
+    assert entry.reference_x.shape == (n, 1)
+    assert entry.reference_y.shape == (n, 1)
+    assert entry.reference_x.dtype == np.float32
+    assert entry.reference_y.dtype == np.float32
+    assert np.all(np.diff(entry.reference_x[:, 0]) > 0)
+
+
+def test_pdebench_diffusion_reaction_benchmark_matches_ablowitz_zeppetella_front():
+    """The stored reference must equal the Ablowitz-Zeppetella (1979) exact
+    Fisher-KPP traveling-wave solution for nu=0.5, rho=1.0 at t=2.0, and
+    must look like a genuine monotone front (0 to 1), not a placeholder."""
+    entry = get_benchmark("pdebench_diffusion_reaction_1d")
+    x = entry.reference_x[:, 0].astype(np.float64)
+    u = entry.reference_y[:, 0].astype(np.float64)
+    nu, rho, t_final = 0.5, 1.0, 2.0
+    c = 5.0 * np.sqrt(rho * nu / 6.0)
+    kk = np.sqrt(rho / (6.0 * nu))
+    u_exact = 1.0 / (1.0 + np.exp(kk * (x - c * t_final))) ** 2
+    assert np.max(np.abs(u - u_exact)) < 1e-3
+    assert u[0] == pytest.approx(1.0, abs=1e-3)  # far upstream: fully invaded state
+    assert u[-1] == pytest.approx(0.0, abs=1e-3)  # far downstream: uninvaded state
+    assert np.all(np.diff(u) <= 1e-9)  # monotonically non-increasing front
+
+
+def test_pdebench_diffusion_reaction_benchmark_reference_source_cites_fisher_kpp():
+    entry = get_benchmark("pdebench_diffusion_reaction_1d")
+    assert "Takamoto" in entry.reference_source
+    assert "2210.07182" in entry.reference_source
+    assert "Ablowitz" in entry.reference_source
+    assert "Fisher" in entry.reference_source
+
+
+def test_pdebench_darcy_benchmark_shapes_and_column_order():
+    entry = get_benchmark("pdebench_darcy_2d")
+    assert entry.x_vars == ("x", "y")
+    assert entry.y_vars == ("u",)
+    n = entry.reference_x.shape[0]
+    assert entry.reference_x.shape == (n, 2)
+    assert entry.reference_y.shape == (n, 1)
+    assert entry.reference_x.dtype == np.float32
+    assert entry.reference_y.dtype == np.float32
+    # x, y coordinates must lie strictly inside the unit square (Dirichlet u=0 boundary excluded).
+    assert np.all(entry.reference_x > 0.0)
+    assert np.all(entry.reference_x < 1.0)
+
+
+def test_pdebench_darcy_benchmark_field_is_physically_sane():
+    """u must be positive everywhere in the interior (a uniform positive
+    forcing term with zero Dirichlet boundaries bulges positive, per the
+    maximum principle for -laplacian(u)=c>0) and symmetric under x<->y swap
+    (the unit square + constant forcing problem is symmetric under that
+    reflection) -- a sanity check that the field is a real solution."""
+    entry = get_benchmark("pdebench_darcy_2d")
+    u = entry.reference_y[:, 0]
+    assert np.all(u > 0.0)
+    n_side = int(round(np.sqrt(entry.reference_x.shape[0])))
+    assert n_side * n_side == entry.reference_x.shape[0]
+    u_grid = u.reshape(n_side, n_side)
+    assert np.max(np.abs(u_grid - u_grid.T)) < 1e-6
+
+
+def test_pdebench_darcy_benchmark_reference_source_cites_pdebench():
+    entry = get_benchmark("pdebench_darcy_2d")
+    assert "Takamoto" in entry.reference_source
+    assert "2210.07182" in entry.reference_source
+    assert "0.0736713" in entry.reference_source

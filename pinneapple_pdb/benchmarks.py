@@ -84,6 +84,72 @@ and coefficient ``C1`` are independently solved for here
 (``scipy.optimize.brentq``) and cross-checked against Incropera & DeWitt's
 own published one-term-approximation table (Table 5.1, Bi=1.0:
 ``zeta_1=0.8603``, ``C1=1.1191``).
+
+Entries six through eight integrate PDEBench (Takamoto, M. et al.,
+"PDEBench: An Extensive Benchmark for Scientific Machine Learning", NeurIPS
+2022 Datasets and Benchmarks Track, arXiv:2210.07182) -- a real, well-known
+open-source PDE-ML benchmark suite -- into this catalog. PDEBench's actual
+datasets are large (multi-GB) HDF5 files hosted on DaRUS (the University of
+Stuttgart's Dataverse-based data repository), not something this repo
+fetches or bundles. Instead, each entry below implements PDEBench's own
+*governing equation*, as written in the paper's Appendix D, for a
+simplified-but-legitimate parameter choice, independently solves it with a
+method not borrowed from PDEBench's own code, and cross-checks the result
+against a real, citable closed-form solution from the classical PDE
+literature -- exactly the same "never fabricate, always re-verify" pattern
+used by every other entry in this module. Where the paper's own example
+figures name specific parameter values (e.g. "1D Advection (beta=0.4)"),
+those same values are reused here so the entries visibly correspond to
+PDEBench's own illustrations, not to arbitrarily chosen numbers.
+
+``pdebench_advection_1d`` targets PDEBench's 1D linear advection equation
+(paper Eq. 6-7: ``u_t + beta*u_x = 0``, periodic on ``x in (0,1)``, beta=0.4
+matching the paper's own Figure 6 caption). This equation has an EXACT
+closed-form solution by the method of characteristics,
+``u(t,x) = u0(x - beta*t)`` (periodic wraparound) -- a standard result (see
+e.g. Strauss, "Partial Differential Equations: An Introduction"). The
+initial condition ``u0(x) = sin(2*pi*x)`` is independently evolved to
+``t=1.3`` via a Fourier pseudo-spectral method-of-lines
+(``numpy.fft`` for the spatial derivative + ``scipy.integrate.solve_ivp``,
+DOP853) and cross-checked pointwise against the exact shifted-sinusoid
+solution.
+
+``pdebench_diffusion_reaction_1d`` targets PDEBench's 1D diffusion-reaction
+equation (paper Eq. 9-10: ``u_t - nu*u_xx - rho*u*(1-u) = 0``, nu=0.5,
+rho=1.0 matching the paper's own Figure 6 caption). This is exactly the
+Fisher-KPP equation (Fisher, R.A., "The Wave of Advance of Advantageous
+Genes", Annals of Eugenics 7(4), 1937; Kolmogorov, Petrovsky & Piskunov,
+1937), which has a real, citable EXACT closed-form traveling-wave solution
+for a special wave speed (Ablowitz, M.J. & Zeppetella, A., "Explicit
+Solutions of Fisher's Equation for a Special Wave Speed", Bulletin of
+Mathematical Biology 41(6), 1979, 835-840):
+``u(x,t) = [1 + exp(sqrt(rho/(6*nu))*(x - c*t))]^(-2)``, ``c = 5*sqrt(rho*nu/6)``.
+This closed form is used as the initial condition on a wide truncated
+domain and independently re-evolved forward in time via a second-order
+central-difference-in-space, ``scipy.integrate.solve_ivp``-in-time
+method-of-lines solve of the ACTUAL PDE (diffusion + logistic reaction
+terms, not the closed form itself), then cross-checked against the exact
+traveling-wave solution at the later time.
+
+``pdebench_darcy_2d`` targets PDEBench's 2D Darcy flow equation (paper
+Eq. 13-14: ``-div(a(x)*grad(u(x))) = f(x)`` on the unit square, ``u=0`` on
+the boundary, ``f=beta`` constant, beta=1.0 matching the paper's own
+Figure 7 caption). PDEBench's own ``a(x)`` is in general a random/binary
+permeability field; this entry uses the simplest legitimate member of that
+family, a homogeneous (spatially constant) permeability ``a(x)=a0=1.0``,
+which reduces the equation to the classical Poisson problem
+``-a0*laplacian(u) = beta`` with zero Dirichlet boundary conditions. This
+has a standard textbook closed-form solution as a double Fourier sine
+series (see e.g. Strauss, "Partial Differential Equations: An
+Introduction", section on Poisson's equation on a rectangle) -- and its
+center-point value (~0.0736713, a widely cited constant for the unit-square
+Poisson benchmark, e.g. as used to validate finite-element/finite-difference
+Poisson solvers) is reproduced here to confirm the series is not
+miscoded. The series solution (39x39 odd modes) is independently
+cross-checked against a second, unrelated method: a direct 5-point-stencil
+finite-difference discretization of the SAME PDE, assembled as a sparse
+linear system and solved via ``scipy.sparse.linalg.spsolve`` -- not
+imported from, or structurally related to, the Fourier-series code path.
 """
 from __future__ import annotations
 
@@ -590,5 +656,328 @@ def _planewall_transient_conduction_bi1() -> BenchmarkEntry:
             f"{_PLANEWALL_C1_PUBLISHED} (rel_err={100 * c1_rel_err:.4f}%). Reference curve restricted "
             f"to Fo>={_PLANEWALL_FO_MIN} -- the one-term approximation's own documented validity range -- "
             "so this benchmark is never used outside the regime its citation actually supports."
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# PDEBench (Takamoto et al., NeurIPS 2022 Datasets and Benchmarks,
+# arXiv:2210.07182) integration: three of PDEBench's own governing PDEs
+# (as written in the paper's Appendix D), each independently solved via a
+# method not borrowed from PDEBench's own code, and cross-checked against a
+# real, citable closed-form solution. See module docstring for full method
+# and citation for each entry -- PDEBench's actual (multi-GB, DaRUS-hosted)
+# HDF5 datasets are never fetched here.
+# ---------------------------------------------------------------------------
+
+_PDEBENCH_CITATION = (
+    "Takamoto, M., Praditia, T., Leiteritz, R., MacKinlay, D., Alesiani, F., Pflueger, D. "
+    "& Niepert, M., 'PDEBench: An Extensive Benchmark for Scientific Machine Learning', "
+    "NeurIPS 2022 Datasets and Benchmarks Track, arXiv:2210.07182"
+)
+
+# --- 1D linear advection (PDEBench paper Eq. 6-7) --------------------------
+
+_ADVECTION_BETA = 0.4  # matches the paper's own Figure 6 caption "1D Advection (beta=0.4)"
+_ADVECTION_T_FINAL = 1.3
+_ADVECTION_N_X = 200
+
+
+def _integrate_advection_1d(
+    beta: float = _ADVECTION_BETA, t_final: float = _ADVECTION_T_FINAL, n_x: int = _ADVECTION_N_X,
+) -> Tuple[np.ndarray, np.ndarray, float]:
+    """Independently evolve u_t + beta*u_x = 0 (periodic, x in (0,1)) from
+    u0(x)=sin(2*pi*x) to ``t_final`` via a Fourier pseudo-spectral
+    method-of-lines (exact spatial derivative via ``numpy.fft``, time
+    integration via ``scipy.integrate.solve_ivp``, DOP853 -- not imported
+    from anywhere else in this codebase), and compare pointwise against the
+    PDE's exact method-of-characteristics solution
+    ``u(t,x) = u0(x - beta*t)``.
+
+    Returns ``(reference_x, reference_y, max_abs_err)`` where
+    ``reference_x`` is ``(n_x, 1)`` (the spatial grid) and ``reference_y``
+    is ``(n_x, 1)`` (the exact solution u(t_final, x); the independently
+    -integrated numeric solution is used only for the cross-check, not as
+    the stored reference, since here the exact closed form IS the ground
+    truth and the numeric PDE solve is what is being validated against it).
+    """
+    from scipy.integrate import solve_ivp
+
+    x = np.linspace(0.0, 1.0, n_x, endpoint=False)
+    u0 = np.sin(2.0 * np.pi * x)
+    k = 2.0 * np.pi * np.fft.rfftfreq(n_x, d=1.0 / n_x)
+
+    def rhs(t, u):
+        du_dx = np.fft.irfft(1j * k * np.fft.rfft(u), n=n_x)
+        return -beta * du_dx
+
+    sol = solve_ivp(
+        rhs, [0.0, t_final], u0, t_eval=[t_final], rtol=1e-12, atol=1e-13, method="DOP853",
+    )
+    u_numeric = sol.y[:, -1]
+    u_exact = np.sin(2.0 * np.pi * (x - beta * t_final))
+    max_abs_err = float(np.max(np.abs(u_numeric - u_exact)))
+
+    reference_x = x.reshape(-1, 1).astype("float32")
+    reference_y = u_exact.reshape(-1, 1).astype("float32")
+    return reference_x, reference_y, max_abs_err
+
+
+@register_benchmark("pdebench_advection_1d")
+def _pdebench_advection_1d() -> BenchmarkEntry:
+    reference_x, reference_y, max_abs_err = _integrate_advection_1d()
+    if max_abs_err > 1e-6:
+        raise RuntimeError(
+            f"pdebench_advection_1d: independent Fourier-spectral PDE solve disagrees with the "
+            f"exact method-of-characteristics solution by max_abs_err={max_abs_err:.3e} "
+            "(expected <1e-6) -- refusing to hand back an unverified profile"
+        )
+    return BenchmarkEntry(
+        name="pdebench_advection_1d",
+        description=(
+            "PDEBench's 1D linear advection equation, u_t + beta*u_x = 0, x in (0,1), periodic "
+            f"boundary conditions, advection speed beta={_ADVECTION_BETA} (matching PDEBench's own "
+            f"Figure 6 example), initial condition u0(x)=sin(2*pi*x), evaluated at t={_ADVECTION_T_FINAL}. "
+            "This entry reproduces PDEBench's own governing equation and example parameter, NOT any "
+            "of PDEBench's actual (multi-GB, DaRUS-hosted) sample trajectories -- the reference curve "
+            "is the equation's own exact closed-form solution."
+        ),
+        reference_source=(
+            f"{_PDEBENCH_CITATION} (Eq. 6-7: 1D advection equation, beta=0.4 example per Fig. 6); "
+            "exact solution u(t,x)=u0(x-beta*t) by the method of characteristics is a standard result, "
+            "e.g. Strauss, W.A., 'Partial Differential Equations: An Introduction'."
+        ),
+        x_vars=("x",),
+        y_vars=("u",),
+        reference_x=reference_x,
+        reference_y=reference_y,
+        verification_note=(
+            f"the stored reference IS the PDE's exact closed-form solution u(t,x)=u0(x-beta*t); "
+            f"independently cross-checked by evolving u0 forward via a Fourier pseudo-spectral "
+            f"method-of-lines (numpy.fft spatial derivative + scipy.integrate.solve_ivp DOP853 time "
+            f"integration, not imported from PDEBench or any other solver in this codebase) to "
+            f"t={_ADVECTION_T_FINAL}, giving max_abs_err={max_abs_err:.3e} against the exact solution "
+            "(expected <1e-6)."
+        ),
+    )
+
+
+# --- 1D diffusion-reaction / Fisher-KPP (PDEBench paper Eq. 9-10) ----------
+
+_FISHER_NU = 0.5  # matches the paper's own Figure 6 caption "1D Reaction-Diffusion (nu=0.5, rho=1)"
+_FISHER_RHO = 1.0
+_FISHER_T_FINAL = 2.0
+_FISHER_DOMAIN_L = 20.0
+_FISHER_N_X = 201
+
+
+def _fisher_kpp_exact(x: np.ndarray, t: float, nu: float, rho: float) -> np.ndarray:
+    """Ablowitz & Zeppetella (1979) exact traveling-wave solution of the
+    Fisher-KPP equation ``u_t = nu*u_xx + rho*u*(1-u)`` (PDEBench's own
+    diffusion-reaction equation, ``u_t - nu*u_xx - rho*u*(1-u) = 0``,
+    rearranged), for the special wave speed ``c = 5*sqrt(rho*nu/6)``."""
+    c = 5.0 * np.sqrt(rho * nu / 6.0)
+    kk = np.sqrt(rho / (6.0 * nu))
+    s = kk * (x - c * t)
+    return 1.0 / (1.0 + np.exp(s)) ** 2
+
+
+def _integrate_diffusion_reaction_1d(
+    nu: float = _FISHER_NU, rho: float = _FISHER_RHO, t_final: float = _FISHER_T_FINAL,
+    domain_l: float = _FISHER_DOMAIN_L, n_x: int = _FISHER_N_X,
+) -> Tuple[np.ndarray, np.ndarray, float]:
+    """Independently re-evolve PDEBench's actual diffusion-reaction PDE
+    (``u_t = nu*u_xx + rho*u*(1-u)``, NOT the closed-form formula itself) on
+    a wide truncated domain ``[-domain_l, domain_l]``, initialized from the
+    Ablowitz-Zeppetella exact traveling wave at ``t=0``, via a second-order
+    central-difference spatial Laplacian + ``scipy.integrate.solve_ivp``
+    time integration (boundary points held fixed at their far-field ``t=0``
+    values, which are within ~1e-5 of the true asymptotic 0/1 states given
+    how far the domain edges are from the wavefront over ``t_final``).
+    Returns ``(reference_x, reference_y, max_abs_err)`` -- ``reference_y``
+    is the exact closed-form profile at ``t_final``; ``max_abs_err`` is the
+    independent numeric PDE solve's disagreement with it.
+    """
+    from scipy.integrate import solve_ivp
+
+    x = np.linspace(-domain_l, domain_l, n_x)
+    dx = x[1] - x[0]
+    u0 = _fisher_kpp_exact(x, 0.0, nu, rho)
+    u_left, u_right = float(u0[0]), float(u0[-1])
+
+    def rhs(t, u_interior):
+        u = np.empty(n_x)
+        u[0] = u_left
+        u[-1] = u_right
+        u[1:-1] = u_interior
+        lap = (u[2:] - 2.0 * u[1:-1] + u[:-2]) / dx ** 2
+        reaction = rho * u[1:-1] * (1.0 - u[1:-1])
+        return nu * lap + reaction
+
+    sol = solve_ivp(
+        rhs, [0.0, t_final], u0[1:-1], method="RK45", rtol=1e-10, atol=1e-12, t_eval=[t_final],
+    )
+    u_numeric = np.empty(n_x)
+    u_numeric[0], u_numeric[-1] = u_left, u_right
+    u_numeric[1:-1] = sol.y[:, -1]
+
+    u_exact_final = _fisher_kpp_exact(x, t_final, nu, rho)
+    max_abs_err = float(np.max(np.abs(u_numeric - u_exact_final)))
+
+    reference_x = x.reshape(-1, 1).astype("float32")
+    reference_y = u_exact_final.reshape(-1, 1).astype("float32")
+    return reference_x, reference_y, max_abs_err
+
+
+@register_benchmark("pdebench_diffusion_reaction_1d")
+def _pdebench_diffusion_reaction_1d() -> BenchmarkEntry:
+    reference_x, reference_y, max_abs_err = _integrate_diffusion_reaction_1d()
+    if max_abs_err > 1e-3:
+        raise RuntimeError(
+            f"pdebench_diffusion_reaction_1d: independent finite-difference PDE solve disagrees "
+            f"with the Ablowitz-Zeppetella exact traveling-wave solution by max_abs_err="
+            f"{max_abs_err:.3e} (expected <1e-3) -- refusing to hand back an unverified profile"
+        )
+    return BenchmarkEntry(
+        name="pdebench_diffusion_reaction_1d",
+        description=(
+            "PDEBench's 1D diffusion-reaction equation, u_t - nu*u_xx - rho*u*(1-u) = 0, "
+            f"nu={_FISHER_NU}, rho={_FISHER_RHO} (matching PDEBench's own Figure 6 example) -- "
+            "exactly the Fisher-KPP equation. Reference profile is the Ablowitz-Zeppetella (1979) "
+            f"exact traveling-wave solution evaluated at t={_FISHER_T_FINAL} on x in "
+            f"[-{_FISHER_DOMAIN_L:.0f}, {_FISHER_DOMAIN_L:.0f}]. Reproduces PDEBench's own governing "
+            "equation and example parameters, NOT any of PDEBench's actual sample trajectories."
+        ),
+        reference_source=(
+            f"{_PDEBENCH_CITATION} (Eq. 9-10: 1D diffusion-reaction equation, nu=0.5/rho=1 example "
+            "per Fig. 6); equation is the Fisher-KPP equation (Fisher, R.A., 'The Wave of Advance of "
+            "Advantageous Genes', Annals of Eugenics 7(4), 1937); exact traveling-wave solution per "
+            "Ablowitz, M.J. & Zeppetella, A., 'Explicit Solutions of Fisher's Equation for a Special "
+            "Wave Speed', Bulletin of Mathematical Biology 41(6), 1979, 835-840."
+        ),
+        x_vars=("x",),
+        y_vars=("u",),
+        reference_x=reference_x,
+        reference_y=reference_y,
+        verification_note=(
+            f"the stored reference IS the Ablowitz-Zeppetella (1979) exact closed-form traveling-wave "
+            f"solution; independently cross-checked by evolving the ACTUAL diffusion-reaction PDE "
+            f"forward from that same exact solution's t=0 profile (central-difference-in-space + "
+            f"scipy.integrate.solve_ivp-in-time, not the closed form itself) to t={_FISHER_T_FINAL}, "
+            f"giving max_abs_err={max_abs_err:.3e} against the exact solution (expected <1e-3)."
+        ),
+    )
+
+
+# --- 2D Darcy flow, homogeneous permeability (PDEBench paper Eq. 13-14) ----
+
+_DARCY_A0 = 1.0  # homogeneous/constant specialization of PDEBench's general permeability field a(x)
+_DARCY_BETA = 1.0  # matches the paper's own Figure 7 caption "2D Darcy Flow (beta=1.0)"
+_DARCY_N_MODES = 39  # odd Fourier modes per axis for the closed-form series
+_DARCY_N_REF = 15  # reference grid points per axis (kept small/curated, per module docstring)
+_DARCY_FD_N = 61  # finite-difference cross-check grid points per axis (interior)
+_DARCY_CENTER_PUBLISHED = 0.0736713  # widely cited unit-square Poisson center-value constant
+
+
+def _darcy_fourier_series(x: np.ndarray, y: np.ndarray, c: float, n_modes: int = _DARCY_N_MODES) -> np.ndarray:
+    """Closed-form double Fourier sine series solution of
+    ``-laplacian(u) = c`` on the unit square with ``u=0`` on the boundary
+    (standard textbook result -- see module docstring):
+    ``u(x,y) = sum_{m,n odd} [16*c/(pi^4*m*n*(m^2+n^2))] * sin(m*pi*x)*sin(n*pi*y)``.
+    """
+    u = np.zeros_like(x)
+    for m in range(1, n_modes + 1, 2):
+        for n in range(1, n_modes + 1, 2):
+            coeff = 16.0 * c / (np.pi ** 4 * m * n * (m ** 2 + n ** 2))
+            u = u + coeff * np.sin(m * np.pi * x) * np.sin(n * np.pi * y)
+    return u
+
+
+def _darcy_finite_difference_center(c: float, n_grid: int = _DARCY_FD_N) -> Tuple[np.ndarray, float]:
+    """Independently solve the SAME Poisson problem (``-laplacian(u)=c``,
+    ``u=0`` on the unit-square boundary) via a completely different method:
+    a direct 5-point-stencil finite-difference discretization assembled as
+    a sparse linear system and solved with
+    ``scipy.sparse.linalg.spsolve`` -- no relation to the Fourier-series
+    code path above. Returns the relative L2 disagreement against the
+    series solution (evaluated on the same fine grid) and that grid's
+    center value (for the extra published-constant cross-check).
+    """
+    import scipy.sparse as sp
+    import scipy.sparse.linalg as spla
+
+    h = 1.0 / (n_grid + 1)
+    xs = np.linspace(h, 1.0 - h, n_grid)
+    xg, yg = np.meshgrid(xs, xs, indexing="ij")
+
+    main = np.ones(n_grid)
+    tri = sp.diags([main[:-1], -2.0 * main, main[:-1]], [-1, 0, 1]) / h ** 2
+    ident = sp.identity(n_grid)
+    laplacian = sp.kron(tri, ident) + sp.kron(ident, tri)
+    u_fd = spla.spsolve(laplacian.tocsr(), -c * np.ones(n_grid * n_grid)).reshape(n_grid, n_grid)
+
+    u_series_fine = _darcy_fourier_series(xg, yg, c)
+    rel_l2_err = float(np.linalg.norm(u_fd - u_series_fine) / np.linalg.norm(u_series_fine))
+    center_value = float(u_series_fine[n_grid // 2, n_grid // 2])
+    return rel_l2_err, center_value
+
+
+@register_benchmark("pdebench_darcy_2d")
+def _pdebench_darcy_2d() -> BenchmarkEntry:
+    c = _DARCY_BETA / _DARCY_A0
+    rel_l2_err, center_value = _darcy_finite_difference_center(c)
+    center_rel_err = abs(center_value - _DARCY_CENTER_PUBLISHED) / _DARCY_CENTER_PUBLISHED
+
+    if rel_l2_err > 1e-3:
+        raise RuntimeError(
+            f"pdebench_darcy_2d: independent finite-difference Poisson solve disagrees with the "
+            f"Fourier-series closed-form solution by rel_l2_err={rel_l2_err:.3e} (expected <1e-3) "
+            "-- refusing to hand back an unverified field"
+        )
+    if center_rel_err > 1e-2:
+        raise RuntimeError(
+            f"pdebench_darcy_2d: center-point value {center_value:.6f} does not match the widely "
+            f"cited unit-square Poisson benchmark constant {_DARCY_CENTER_PUBLISHED} "
+            f"(rel_err={100 * center_rel_err:.4f}%, expected <1%) -- refusing to hand back an "
+            "unverified field"
+        )
+
+    xs_ref = np.linspace(0.0, 1.0, _DARCY_N_REF + 2)[1:-1]
+    x_ref, y_ref = np.meshgrid(xs_ref, xs_ref, indexing="ij")
+    u_ref = _darcy_fourier_series(x_ref, y_ref, c)
+
+    reference_x = np.stack([x_ref.ravel(), y_ref.ravel()], axis=1).astype("float32")
+    reference_y = u_ref.ravel().reshape(-1, 1).astype("float32")
+
+    return BenchmarkEntry(
+        name="pdebench_darcy_2d",
+        description=(
+            "PDEBench's 2D Darcy flow equation, -div(a(x)*grad(u(x))) = f(x) on the unit square, "
+            f"u=0 on the boundary, f=beta={_DARCY_BETA} constant (matching PDEBench's own Figure 7 "
+            f"example), specialized to a homogeneous permeability field a(x)=a0={_DARCY_A0} -- the "
+            "simplest legitimate member of PDEBench's general (in general random/binary) a(x) "
+            "family -- which reduces the equation to the classical Poisson problem "
+            "-a0*laplacian(u)=beta. Reproduces PDEBench's own governing equation and example "
+            "parameter, NOT any of PDEBench's actual sample permeability fields/solutions."
+        ),
+        reference_source=(
+            f"{_PDEBENCH_CITATION} (Eq. 13-14: 2D Darcy flow, beta=1.0 example per Fig. 7); "
+            "closed-form double Fourier sine series solution of the unit-square Poisson problem "
+            "with zero Dirichlet boundary conditions is a standard textbook result, e.g. Strauss, "
+            "W.A., 'Partial Differential Equations: An Introduction'; center-point value "
+            f"{_DARCY_CENTER_PUBLISHED} is a widely cited constant for this exact benchmark problem."
+        ),
+        x_vars=("x", "y"),
+        y_vars=("u",),
+        reference_x=reference_x,
+        reference_y=reference_y,
+        verification_note=(
+            f"the stored reference is the closed-form Fourier sine series solution ({_DARCY_N_MODES}"
+            f"x{_DARCY_N_MODES} odd modes); independently cross-checked two ways: (1) a completely "
+            f"separate 5-point-stencil finite-difference discretization solved via "
+            f"scipy.sparse.linalg.spsolve gives rel_l2_err={rel_l2_err:.3e} against the series "
+            f"(expected <1e-3); (2) the series' own center-point value {center_value:.6f} matches "
+            f"the widely cited unit-square Poisson benchmark constant {_DARCY_CENTER_PUBLISHED} "
+            f"(rel_err={100 * center_rel_err:.4f}%, expected <1%)."
         ),
     )
