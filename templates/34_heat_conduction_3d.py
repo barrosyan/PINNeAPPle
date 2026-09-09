@@ -1,7 +1,7 @@
 """34_heat_conduction_3d.py — 3D heat conduction PINN with FEM comparison.
 
 Demonstrates:
-- Heat3DPreset: preconfigured 3D heat conduction problem from pinneapple_environment
+- Heat3DPreset: preconfigured 3D heat conduction problem from pinneapple_physics.pde_environment
 - FEMSolver (FEniCS bridge): solve the same problem with a FEM reference
 - FDMSolver: finite difference reference on a regular 3D grid
 - Error map comparison: PINN vs FEM, PINN vs FDM on a cross-section plane

@@ -1,6 +1,6 @@
 """UPDDataset -> PINNFactory (data-only) end-to-end on a synthetic Zarr shard.
 
-This example showcases the "I/O" side of pinneapple_pinn:
+This example showcases the "I/O" side of pinneapple_physics.pinn_solver:
   - build a tiny xarray Dataset with coords (time, lat, lon)
   - write to Zarr + JSON meta, wrap as UPDItem
   - use PINNMapping + UPDDataset to sample batches

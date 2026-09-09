@@ -1,7 +1,7 @@
 """33_rans_turbulence.py — RANS turbulence modelling with k-ω SST PINN.
 
 Demonstrates:
-- KOmegaSSTResiduals: prebuilt k-ω SST turbulence closure from pinneapple_environment
+- KOmegaSSTResiduals: prebuilt k-ω SST turbulence closure from pinneapple_physics.pde_environment
 - SpalartAllmarasResiduals: SA-model residuals (alternative)
 - Channel flow benchmark: log-law recovery in a turbulent plane channel
 - Reynolds stress prediction and friction velocity estimation
