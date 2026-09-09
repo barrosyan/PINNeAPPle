@@ -158,7 +158,11 @@ class ConformalPredictor:
             self.model.eval()
             self.model.to(device)
 
-        y_hat = self.model(x_cal).detach()
+        y_hat = self.model(x_cal)
+        if hasattr(y_hat, "y"):
+            # Unwrap ModelOutput/PINNOutput-style wrapper dataclasses.
+            y_hat = y_hat.y
+        y_hat = y_hat.detach()
         y_cal_d = y_cal.to(device).detach()
 
         # Flatten output dims and take the max absolute residual per sample.
@@ -204,7 +208,11 @@ class ConformalPredictor:
             self.model.eval()
             self.model.to(device)
 
-        y_pred = self.model(x).detach()
+        y_pred = self.model(x)
+        if hasattr(y_pred, "y"):
+            # Unwrap ModelOutput/PINNOutput-style wrapper dataclasses.
+            y_pred = y_pred.y
+        y_pred = y_pred.detach()
         q_tensor = torch.tensor(q, dtype=y_pred.dtype, device=device)
         lower = y_pred - q_tensor
         upper = y_pred + q_tensor

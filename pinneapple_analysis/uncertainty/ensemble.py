@@ -124,8 +124,12 @@ class EnsembleUQ:
         for model in self.models:
             model.eval()
             model.to(device)
-            out = model(x).detach()
-            member_preds.append(out)
+            out = model(x)
+            if hasattr(out, "y"):
+                # Unwrap ModelOutput/PINNOutput-style wrapper dataclasses
+                # (e.g. SIREN, PINN-family models) before tensor ops.
+                out = out.y
+            member_preds.append(out.detach())
 
         # Stack → (n_members, N, ...)
         samples = torch.stack(member_preds, dim=0)

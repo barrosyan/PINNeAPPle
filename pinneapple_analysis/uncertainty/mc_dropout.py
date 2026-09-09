@@ -149,7 +149,13 @@ class MCDropoutWrapper(nn.Module):
             Model output, same shape as the wrapped model's output.
         """
         self.disable_dropout()
-        return self.model(x)
+        out = self.model(x)
+        if hasattr(out, "y"):
+            # Some architectures (e.g. SIREN, PINN-family models) return a
+            # ``ModelOutput``/``PINNOutput`` dataclass wrapper instead of a
+            # plain tensor. Unwrap it so downstream tensor ops work.
+            out = out.y
+        return out
 
     # ------------------------------------------------------------------
     # Uncertainty estimation
@@ -203,6 +209,9 @@ class MCDropoutWrapper(nn.Module):
         preds: List[Tensor] = []
         for _ in range(n):
             out = self.model(x)
+            if hasattr(out, "y"):
+                # Unwrap ModelOutput/PINNOutput-style wrapper dataclasses.
+                out = out.y
             # Detach to avoid accumulating the computation graph.
             preds.append(out.detach())
 
@@ -323,7 +332,11 @@ class MCDropout:
 
         preds: List[Tensor] = []
         for _ in range(self.config.n_samples):
-            preds.append(self.model(x).detach())
+            out = self.model(x)
+            if hasattr(out, "y"):
+                # Unwrap ModelOutput/PINNOutput-style wrapper dataclasses.
+                out = out.y
+            preds.append(out.detach())
 
         if isinstance(self.model, nn.Module):
             self.model.eval()

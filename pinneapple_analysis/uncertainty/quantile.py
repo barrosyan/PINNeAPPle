@@ -96,6 +96,9 @@ class QuantileHead(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Return quantile predictions, shape ``(B, H, Q)``."""
         y_point = self.base(x)
+        if hasattr(y_point, "y"):
+            # Unwrap ModelOutput/PINNOutput-style wrapper dataclasses.
+            y_point = y_point.y
         if y_point.ndim == 2:
             y_point = y_point.unsqueeze(-1)  # (B, H, 1)
         if y_point.shape[-1] != 1:
