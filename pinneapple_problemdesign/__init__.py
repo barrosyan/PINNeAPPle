@@ -3,6 +3,13 @@ from .schema import ProblemSpec, Gap, Plan, PlanStep, DesignReport, PinneappleSp
 from .state import DesignState
 from .protocol import LLMProvider, LLMMessage, LLMResponse, GeminiProvider
 from .codegen import build_pinneapple_spec
+from .autonomy import (
+    AutonomyLevel,
+    ConsequentialActionClassifier,
+    ApprovalRequest,
+    ApprovalDecision,
+    ApprovalGate,
+)
 
 __all__ = [
     # Agent
@@ -23,6 +30,12 @@ __all__ = [
     "LLMMessage",
     "LLMResponse",
     "GeminiProvider",
+    # Autonomy safety-boundary gate
+    "AutonomyLevel",
+    "ConsequentialActionClassifier",
+    "ApprovalRequest",
+    "ApprovalDecision",
+    "ApprovalGate",
 ]
 
 # UnifiedPhysicsAgent composes DesignAgent with pinneapple_worldmodel's
