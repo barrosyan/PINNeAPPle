@@ -42,6 +42,16 @@ from .models import (
 # --- Signal Decomposition ---
 from .decomposition import FFTForecaster, FFTNNForecaster, HHTNNForecaster
 
+# --- Pretrained foundation-model forecasters (optional: chronos/timesfm) ---
+try:
+    from .foundation_models import ChronosForecaster  # optional — needs chronos-forecasting
+except ImportError:
+    pass
+try:
+    from .foundation_models import TimesFMForecaster  # optional — needs timesfm
+except ImportError:
+    pass
+
 # --- Tuning ---
 from .tuning import ClassicalTuner, NeuralTuner, temporal_split
 
