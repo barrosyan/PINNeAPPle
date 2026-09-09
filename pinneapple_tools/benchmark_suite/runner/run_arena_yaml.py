@@ -181,22 +181,40 @@ def _build_loss_fn(problem_spec, model_spec, physics_weights_cfg: Dict[str, Any]
     """Build a combined loss function for PINN training."""
     physics_loss_fn = _build_physics_loss(problem_spec, model_spec, physics_weights_cfg)
 
-    try:
-        from pinneapple_neural.trainer.losses import build_loss
-        loss_obj = build_loss(
-            problem_spec=problem_spec,
-            model_capabilities={"supports_physics_loss": physics_loss_fn is not None},
-            weights=physics_weights_cfg if physics_weights_cfg else None,
-            supervised_kind="mse",
-            physics_loss_fn=physics_loss_fn,
-        )
+    # pinneapple_neural.trainer.losses.build_loss's CombinedLoss only ever
+    # produces a graph-connected total via two paths: its supervised branch
+    # (keyed on batch["y"]) or its physics branch (only wired up when
+    # physics_loss_fn is not None). This pipeline's batches never contain a
+    # plain "y" key -- generate_pinn_dataset/build_from_bundle populate
+    # y_data/y_bc/y_ic instead -- so when physics_loss_fn is None (e.g. a
+    # fallback nn.Sequential model with no model_spec, so
+    # supports_physics_loss can never be True), CombinedLoss silently falls
+    # through both branches and returns a fresh
+    # torch.tensor(0.0, ...) as "total": a leaf tensor detached from the
+    # model graph that crashes Trainer.fit()'s loss.backward() with
+    # "element 0 of tensors does not require grad and does not have a
+    # grad_fn". Only take this path when a physics loss was actually
+    # compiled, since that's the only case guaranteed to yield a usable,
+    # graph-connected loss; otherwise fall through to _basic_pinn_loss
+    # below, which reads the real batch keys (x_data/y_data, x_bc/y_bc,
+    # x_ic/y_ic) this pipeline actually produces.
+    if physics_loss_fn is not None:
+        try:
+            from pinneapple_neural.trainer.losses import build_loss
+            loss_obj = build_loss(
+                problem_spec=problem_spec,
+                model_capabilities={"supports_physics_loss": physics_loss_fn is not None},
+                weights=physics_weights_cfg if physics_weights_cfg else None,
+                supervised_kind="mse",
+                physics_loss_fn=physics_loss_fn,
+            )
 
-        def loss_fn(model: nn.Module, y_hat: Any, batch: Dict[str, Any]):
-            return loss_obj(model, y_hat, batch)
+            def loss_fn(model: nn.Module, y_hat: Any, batch: Dict[str, Any]):
+                return loss_obj(model, y_hat, batch)
 
-        return loss_fn
-    except Exception:
-        pass
+            return loss_fn
+        except Exception:
+            pass
 
     # Fallback: basic PINN loss using PDE conditions from spec
     def _basic_pinn_loss(model: nn.Module, y_hat: Any, batch: Dict[str, Any]) -> Dict[str, torch.Tensor]:
