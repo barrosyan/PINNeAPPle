@@ -75,12 +75,13 @@ class SolverRegistry:
 _ALL_SOLVER_MODULES = [
     "fft", "hilbert_huang", "eemd", "ceemdan", "vmd", "wavelet", "sst",
     "ssa", "stl",
-    "fdm", "fem", "fvm", "lbm", "spectral",
+    "fdm", "fem", "fvm", "lbm", "spectral", "jax_cfd_solver",
     "sph", "isph", "dfsph",
     "meshfree",
     "xtfc_ivp", "eddy_current_fdm", "immersed_boundary_fdm", "beam_bvp_fdm",
     "elasticity3d_fdm", "nonlinear_beam_fem",
     "xtfc_pde", "xtfc_subdomain", "discrete_time_pinn",
+    "nbody_rebound",
 ]
 
 
