@@ -46,6 +46,17 @@ convergence
     ``solve_fn(resolution)`` across an ascending list of resolutions.
     Generic infrastructure only -- it never imports or knows about any
     specific PDE solver (FDM/FEM/LBM/etc.).
+
+physics_confidence_score
+    A transparent, componentized aggregate confidence score built ONLY
+    from real, already-executed checks a caller supplies (a
+    ``PhysicsGuardrail`` report, a convergence-study ``ConvergenceResult``,
+    real UQ calibration numbers, a benchmark comparison) -- never a
+    check-running black box, never a fabricated number, and always paired
+    with an explicit ``coverage`` fraction so a score built from a subset
+    of the four possible checks can never be mistaken for one built from
+    all of them. See that module's own docstring for the full
+    anti-fabrication design rationale.
 """
 from __future__ import annotations
 
@@ -82,6 +93,12 @@ from pinneapple_analysis.verification.convergence import (
     richardson_extrapolate,
     mesh_independence_study,
 )
+from pinneapple_analysis.verification.physics_confidence_score import (
+    ConfidenceComponent,
+    CalibrationSummary,
+    PhysicsConfidenceScore,
+    compute_physics_confidence,
+)
 
 __all__ = [
     # dimensional_analysis
@@ -112,4 +129,9 @@ __all__ = [
     "MeshIndependenceStudyResult",
     "richardson_extrapolate",
     "mesh_independence_study",
+    # physics_confidence_score
+    "ConfidenceComponent",
+    "CalibrationSummary",
+    "PhysicsConfidenceScore",
+    "compute_physics_confidence",
 ]
