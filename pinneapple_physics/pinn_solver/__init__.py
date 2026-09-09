@@ -1,6 +1,13 @@
 from .compiler import LossWeights, AdaptiveWeights, compile_problem
 from .domino import Subdomain, SubdomainPINN, DoMINO
-from .stochastic import LatentConditionedModel, sample_latent, ensemble_forward, mean_covariance_loss
+from .stochastic import (
+    LatentConditionedModel,
+    sample_latent,
+    CorrelatedLatentField,
+    ensemble_forward,
+    mean_covariance_loss,
+    OPENFOAM_SYMM_TENSOR_PAIRS,
+)
 
 __all__ = [
     "LossWeights",
@@ -13,6 +20,8 @@ __all__ = [
     # Stochastic / latent-conditioned PINN
     "LatentConditionedModel",
     "sample_latent",
+    "CorrelatedLatentField",
     "ensemble_forward",
     "mean_covariance_loss",
+    "OPENFOAM_SYMM_TENSOR_PAIRS",
 ]

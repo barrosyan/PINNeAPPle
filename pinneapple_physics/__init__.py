@@ -111,8 +111,10 @@ from .pinn_solver import (
     DoMINO,
     LatentConditionedModel,
     sample_latent,
+    CorrelatedLatentField,
     ensemble_forward,
     mean_covariance_loss,
+    OPENFOAM_SYMM_TENSOR_PAIRS,
 )
 
 # ── symbolic_pde re-exports ───────────────────────────────────────────────────
@@ -430,7 +432,8 @@ __all__ = [
     "PDEFamily", "list_pde_families", "get_pde_family", "identify_pde", "suggest_problem_spec",
     # pinn_solver
     "LossWeights", "AdaptiveWeights", "compile_problem", "Subdomain", "SubdomainPINN", "DoMINO",
-    "LatentConditionedModel", "sample_latent", "ensemble_forward", "mean_covariance_loss",
+    "LatentConditionedModel", "sample_latent", "CorrelatedLatentField", "ensemble_forward",
+    "mean_covariance_loss", "OPENFOAM_SYMM_TENSOR_PAIRS",
     # symbolic_pde
     "SymbolicPDE", "pde_from_sympy", "auto_residual",
     "HardBC", "PeriodicBC", "MultiPeriodicBC", "SymbolicDirichletBC", "SymbolicNeumannBC",
