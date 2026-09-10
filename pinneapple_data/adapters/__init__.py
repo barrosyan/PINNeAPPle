@@ -26,6 +26,17 @@ from .pinn_batch_builders import (
     build_from_real_data,
 )
 
+from .splash_archive_adapter import (
+    SplashMesh,
+    FieldSnapshot,
+    SplashCase,
+    open_case,
+    load_mesh,
+    save_mesh_cache,
+    load_mesh_cache,
+    load_dense_volumes,
+)
+
 __all__ = [
     "GeometryInput",
     "GeometryLoadOptions",
@@ -40,4 +51,12 @@ __all__ = [
     "build_from_bundle",
     "build_from_solver",
     "build_from_real_data",
+    "SplashMesh",
+    "FieldSnapshot",
+    "SplashCase",
+    "open_case",
+    "load_mesh",
+    "save_mesh_cache",
+    "load_mesh_cache",
+    "load_dense_volumes",
 ]
