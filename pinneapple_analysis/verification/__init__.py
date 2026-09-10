@@ -93,6 +93,36 @@ provenance
     config, environment, and verification report -- so a run can be
     replayed or audited later. Intentionally a plain dataclass +
     ``to_dict()``/``save()``/``load()``, not a database model.
+
+tool_recommendation
+    The sibling of ``solver_orchestration`` for tools OUTSIDE PINNeAPPle:
+    a small, explicitly-cited starter catalog of real, named CFD/FEM/
+    multiphysics/meshing/visualization/UQ software (OpenFOAM, ANSYS,
+    FEniCSx, COMSOL, Siemens STAR-CCM+, SU2, MOOSE, CalculiX, Gmsh,
+    ParaView/PyVista, OpenTURNS), ranked against a ``ProblemSpec`` by
+    documented scope match (never a live availability/license probe,
+    never an accuracy claim -- see the module's own docstring for the
+    full honesty scope).
+
+architecture_recommendation
+    Which PINNeAPPle neural architecture family to reach for FIRST, from
+    a problem's real characteristics (data availability, whether a
+    solver can generate more, cross-parameter/cross-geometry
+    generalization needs, forward vs. inverse). A recommendation-BEFORE-
+    you-train tool -- ``pinneapple_arena``'s ``physics_aware_rank()`` is
+    the after-you've-tried-things empirical comparison this narrows the
+    search space for, not a competitor to it.
+
+architecture_critique
+    A structured, checked-menu "adversarial review" of a proposed
+    architecture/pipeline design -- an LLM playing skeptical Principal
+    Engineer, forced to address every category in a fixed
+    ``FAILURE_MODE_CHECKLIST`` (data leakage, shortcut learning,
+    dimensional inconsistency, identifiability, extrapolation failure,
+    unstable training, bad benchmark design, misleading metrics,
+    malformed physics constraints, deployment dependency risk) with a
+    verdict/severity drawn from a fixed vocabulary -- a hallucinated
+    category, verdict, or severity is rejected, never silently accepted.
 """
 from __future__ import annotations
 
@@ -156,6 +186,31 @@ from pinneapple_analysis.verification.uncertainty_inverse import (
     solve_inverse_problem,
 )
 from pinneapple_analysis.verification.provenance import ProvenanceRecord
+from pinneapple_analysis.verification.tool_recommendation import (
+    ExternalTool,
+    TOOL_CATALOG,
+    ToolRecommendation,
+    recommend_tools,
+    get_tools_by_category,
+    Player,
+    PLAYER_CATALOG,
+    get_player_for_tool,
+    BUY_VS_BUILD_GUIDANCE,
+    buy_vs_build_recommendation,
+    list_buy_vs_build_needs,
+)
+from pinneapple_analysis.verification.architecture_recommendation import (
+    ArchitectureCandidate,
+    ARCHITECTURE_CATALOG,
+    ArchitectureRecommendation,
+    recommend_architecture,
+)
+from pinneapple_analysis.verification.architecture_critique import (
+    FAILURE_MODE_CHECKLIST,
+    CritiqueFinding,
+    AdversarialReviewReport,
+    run_adversarial_review,
+)
 
 __all__ = [
     # dimensional_analysis
@@ -210,4 +265,26 @@ __all__ = [
     "solve_inverse_problem",
     # provenance
     "ProvenanceRecord",
+    # tool_recommendation
+    "ExternalTool",
+    "TOOL_CATALOG",
+    "ToolRecommendation",
+    "recommend_tools",
+    "get_tools_by_category",
+    "Player",
+    "PLAYER_CATALOG",
+    "get_player_for_tool",
+    "BUY_VS_BUILD_GUIDANCE",
+    "buy_vs_build_recommendation",
+    "list_buy_vs_build_needs",
+    # architecture_recommendation
+    "ArchitectureCandidate",
+    "ARCHITECTURE_CATALOG",
+    "ArchitectureRecommendation",
+    "recommend_architecture",
+    # architecture_critique
+    "FAILURE_MODE_CHECKLIST",
+    "CritiqueFinding",
+    "AdversarialReviewReport",
+    "run_adversarial_review",
 ]
