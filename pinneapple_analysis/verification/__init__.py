@@ -123,6 +123,17 @@ architecture_critique
     malformed physics constraints, deployment dependency risk) with a
     verdict/severity drawn from a fixed vocabulary -- a hallucinated
     category, verdict, or severity is rejected, never silently accepted.
+
+evidence_graph
+    A run-level Evidence Graph -- ties one run's ``ProvenanceRecord``
+    together with an optional ``PhysicsConfidenceScore`` and any
+    ``ComparisonReport`` objects into one small, queryable claim ->
+    evidence graph (``build_evidence_graph``), plus ``evidence_summary``
+    and ``explain_trust`` (a plain-text "why trust this result" render).
+    Distinct from ``knowledge_graph`` -- that module builds ONE graph of
+    PINNeAPPle's general physics knowledge; this one builds a DIFFERENT
+    graph per run, grounded only in that run's own already-computed
+    evidence, never re-deriving or fabricating a new verdict.
 """
 from __future__ import annotations
 
@@ -211,6 +222,11 @@ from pinneapple_analysis.verification.architecture_critique import (
     AdversarialReviewReport,
     run_adversarial_review,
 )
+from pinneapple_analysis.verification.evidence_graph import (
+    build_evidence_graph,
+    evidence_summary,
+    explain_trust,
+)
 
 __all__ = [
     # dimensional_analysis
@@ -287,4 +303,8 @@ __all__ = [
     "CritiqueFinding",
     "AdversarialReviewReport",
     "run_adversarial_review",
+    # evidence_graph
+    "build_evidence_graph",
+    "evidence_summary",
+    "explain_trust",
 ]
