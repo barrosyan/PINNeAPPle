@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Real local MQTT + Kafka(-API-compatible) brokers for live integration
 # tests of pinneapple_systems.digital_twin.io.stream's MQTTStream/
 # KafkaStream against a REAL broker, not a mock -- fixes the gap
