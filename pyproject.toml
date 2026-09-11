@@ -172,6 +172,14 @@ finetune = [
   "transformers>=4.44",
 ]
 
+# Vision-language-model dataset curation --
+# pinneapple_tools.dataset_quality.vlm_curation (run a VLM over a short
+# clip of each sequence and filter on its label/confidence judgment).
+vlm_curation = [
+  "transformers>=4.45",
+  "accelerate>=0.30",
+]
+
 # Digital twin (MQTT / Kafka / OPC-UA / Modbus streams)
 digital_twin = [
   "paho-mqtt>=2.0",
@@ -240,6 +248,8 @@ all = [
   "huggingface_hub>=0.24",
   "anthropic>=0.34",
   "openai>=1.40",
+  "transformers>=4.45",
+  "accelerate>=0.30",
 ]
 
 # Visualisation (CFD-style plots, animations)

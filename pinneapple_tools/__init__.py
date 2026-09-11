@@ -21,6 +21,12 @@ compute_backends  (was pinneapple_backend)
     Multi-backend abstraction: PyTorch (default) and JAX (jit_pinn,
     vmap_residual, torch↔jax conversion).
 
+dataset_quality
+    Dataset quality assessment: statistical/heuristic checks over a
+    (coords, fields) point-cloud representation, plus vision-language-
+    model dataset curation (run a VLM over each sequence's clip and
+    filter on its label/confidence judgment before training).
+
 Integration helpers
 -------------------
 ``plot(model, domain, ...)``
@@ -45,6 +51,7 @@ from . import model_export
 from . import hpo_experiments
 from . import benchmark_suite
 from . import compute_backends
+from . import dataset_quality
 
 # backward-compat aliases
 viz        = visualization
@@ -127,6 +134,16 @@ from .compute_backends import (
     JAXBackend, jax_available, jax_pinn, jit_pinn, vmap_residual,
 )
 
+# ── dataset_quality re-exports ────────────────────────────────────────────────
+from .dataset_quality import (
+    analyze_completeness, validate_consistency, analyze_distribution,
+    detect_outliers, field_range_issues, build_1d_linear_interpolant,
+    DEFAULT_LABELS, CurationRecord, build_consistency_prompt,
+    extract_json as extract_curation_json, normalize_label as normalize_curation_label,
+    clamp_confidence, parse_curation_response, load_vlm,
+    curate_sequence, curate_dataset, filter_curated,
+)
+
 
 # ── Integration helpers ────────────────────────────────────────────────────────
 
@@ -168,6 +185,7 @@ def run_benchmark(models: dict, tasks: list | None = None, **bench_kwargs) -> "B
 __all__ = [
     # Sub-modules (new names)
     "visualization", "model_export", "hpo_experiments", "benchmark_suite", "compute_backends",
+    "dataset_quality",
     # Sub-modules (old aliases — backward compat)
     "viz", "export", "researcher", "arena", "backend",
     # Integration
@@ -204,4 +222,11 @@ __all__ = [
     # compute_backends
     "Backend", "get_compute_backend", "set_backend",
     "JAXBackend", "jax_available", "jax_pinn", "jit_pinn", "vmap_residual",
+    # dataset_quality
+    "analyze_completeness", "validate_consistency", "analyze_distribution",
+    "detect_outliers", "field_range_issues", "build_1d_linear_interpolant",
+    "DEFAULT_LABELS", "CurationRecord", "build_consistency_prompt",
+    "extract_curation_json", "normalize_curation_label",
+    "clamp_confidence", "parse_curation_response", "load_vlm",
+    "curate_sequence", "curate_dataset", "filter_curated",
 ]

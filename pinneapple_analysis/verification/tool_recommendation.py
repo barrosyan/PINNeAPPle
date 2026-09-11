@@ -35,6 +35,17 @@ Honest scope limits, stated plainly rather than glossed over:
 - Like ``solver_orchestration``, this has no model of numerical accuracy
   or which tool would "perform better" -- only which tools' own
   documented scope covers the problem at hand.
+- ``TOOL_CATALOG`` has no ``"ML/surrogate"`` entries yet (the category
+  exists in :class:`ExternalTool`'s docstring but nothing is catalogued
+  under it): the ~94-library third-party physics-ML landscape (PINNs,
+  neural operators, differentiable simulators, ML potentials) is a
+  fast-moving, install-status-dependent thing a static, hand-curated
+  entry here can't honestly represent -- that comparison lives instead
+  in PINNeAPPle-arena's external model catalog (a separate app,
+  deliberately not imported from here: this library must stay
+  installable standalone, and a live per-model install/run status isn't
+  a "tool exists and documents this scope" fact this module deals in).
+  See ``BUY_VS_BUILD_GUIDANCE["ml_surrogate_landscape_comparison"]``.
 """
 from __future__ import annotations
 
@@ -561,6 +572,14 @@ BUY_VS_BUILD_GUIDANCE: Dict[str, str] = {
         "Build (this is genuinely the differentiated layer): FNO/GNN/DeepONet/PINO trained on "
         "your own domain's simulation data -- see pinneapple_analysis.verification."
         "architecture_recommendation for which family fits which data/generalization regime."
+    ),
+    "ml_surrogate_landscape_comparison": (
+        "Don't hand-pick from a static list: PINNeAPPle-arena's external model catalog runs "
+        "~94 third-party physics-ML libraries (PINNs/neural operators/differentiable "
+        "simulators/ML potentials) side by side against PINNeAPPle's own architectures, with a "
+        "real per-model install/run status (never a fabricated 'it works') -- consult it before "
+        "assuming PINNeAPPle's own architecture zoo is the only option, or before picking a "
+        "third-party library on reputation alone."
     ),
 }
 
