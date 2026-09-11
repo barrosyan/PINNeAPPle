@@ -204,6 +204,15 @@ research = [
   "pdfminer.six>=20231228",
 ]
 
+# Local embedding-based retrieval (semantic search over a real corpus --
+# pinneapple_analysis.retrieval). A small, CPU-friendly sentence-embedding
+# model (no paid API dependency); the corpus itself is real repository
+# content, never a fabricated index. See that module's own docstring for
+# the honesty scope this stays within.
+retrieval = [
+  "sentence-transformers>=3.0",
+]
+
 # Everything (convenience install)
 all = [
   "trimesh>=4.0.0",
