@@ -1,0 +1,59 @@
+version: "3.9"
+
+# Real local MQTT + Kafka(-API-compatible) brokers for live integration
+# tests of pinneapple_systems.digital_twin.io.stream's MQTTStream/
+# KafkaStream against a REAL broker, not a mock -- fixes the gap
+# documented in the Veriphysics repo's ROADMAP.md item 6 ("Live
+# MQTT/Kafka broker integration testing").
+#
+# Usage:
+#   docker compose -f tests/docker/docker-compose.mqtt-kafka.yml up -d
+#   .venv/bin/python3 -m pytest tests/test_digital_twin_streams_live.py -q
+#   docker compose -f tests/docker/docker-compose.mqtt-kafka.yml down -v
+#
+# Ports (chosen after checking this dev machine for collisions with
+# other already-running projects -- re-verify with `lsof -i :<port>`
+# on a different machine):
+#   1883  -- MQTT
+#   9092  -- Kafka API (Redpanda, a lightweight Kafka-API-compatible
+#            broker -- no Zookeeper/JVM needed, real Kafka wire protocol)
+#   9644  -- Redpanda admin API (used by the container's own healthcheck)
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: pinneapple_test_mosquitto
+    restart: "no"
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -i healthcheck -W 3 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.7
+    container_name: pinneapple_test_redpanda
+    restart: "no"
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=512M
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://127.0.0.1:9092
+    ports:
+      - "9092:9092"
+      - "9644:9644"
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

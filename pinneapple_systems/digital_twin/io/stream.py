@@ -224,7 +224,7 @@ class MQTTStream(BaseStream):
             except Exception as exc:
                 logger.warning(f"MQTTStream parse error: {exc}")
 
-        self._client = mqtt.Client()
+        self._client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         if self.username:
             self._client.username_pw_set(self.username, self.password)
         self._client.on_message = on_message

@@ -175,6 +175,7 @@ finetune = [
 # Digital twin (MQTT / Kafka streams)
 digital_twin = [
   "paho-mqtt>=2.0",
+  "kafka-python>=2.0",
 ]
 
 # Time-series / classical models
@@ -227,6 +228,8 @@ all = [
   "onnx>=1.16",
   "onnxruntime>=1.18",
   "paho-mqtt>=2.0",
+  "kafka-python>=2.0",
+  "sentence-transformers>=3.0",
   "statsmodels>=0.14",
   "requests>=2.31",
   "mujoco>=3.0",
