@@ -24,6 +24,12 @@ from pinneapple_analysis.retrieval.corpus import (
     fetch_literature_documents,
     build_literature_corpus,
     DEFAULT_LITERATURE_TOPICS,
+    code_repo_documents,
+    iter_repo_files,
+    chunk_text,
+    file_fingerprint,
+    DEFAULT_CODE_EXTENSIONS,
+    DEFAULT_EXCLUDE_DIRS,
 )
 from pinneapple_analysis.retrieval.index import RetrievalIndex, SearchResult, DEFAULT_MODEL_NAME
 
@@ -31,6 +37,8 @@ __all__ = [
     "Document", "build_corpus", "fetch_literature_documents", "build_literature_corpus",
     "DEFAULT_LITERATURE_TOPICS", "RetrievalIndex", "SearchResult", "DEFAULT_MODEL_NAME",
     "build_default_index",
+    "code_repo_documents", "iter_repo_files", "chunk_text", "file_fingerprint",
+    "DEFAULT_CODE_EXTENSIONS", "DEFAULT_EXCLUDE_DIRS",
 ]
 
 

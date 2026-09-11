@@ -24,7 +24,6 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
-  "License :: OSI Approved :: Apache Software License",
   "Topic :: Scientific/Engineering",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Scientific/Engineering :: Physics",
@@ -283,9 +282,14 @@ Repository = "https://github.com/barrosyan/PINNeAPPle"
 Issues = "https://github.com/barrosyan/PINNeAPPle/issues"
 Changelog = "https://github.com/barrosyan/PINNeAPPle/blob/main/CHANGELOG.md"
 
-[project.scripts]
-pdb = "pinneapple_pdb.cli:main"
-pinneapple = "pinneapple_pdb.cli:main"
+# NOTE: a `[project.scripts]` section previously declared `pdb`/`pinneapple`
+# console entry points pointing at `pinneapple_pdb.cli:main`, but no
+# `pinneapple_pdb/cli.py` (or any `main()`/argparse/click entry point)
+# exists anywhere in `pinneapple_pdb/` -- confirmed by grepping the package
+# and by a real `pip install` + running the installed console script, which
+# fails with `ModuleNotFoundError: No module named 'pinneapple_pdb.cli'`.
+# Removed rather than shipping a broken command; re-add once
+# pinneapple_pdb/cli.py with a real main() exists.
 
 [tool.hatch.build.targets.wheel]
 packages = [
@@ -324,6 +328,73 @@ packages = [
 ]
 include = [
   "data/bundles/**/*",
+]
+
+# The wheel target's `packages` list already keeps the *wheel* limited to
+# real importable code (verified: `unzip -l dist/*.whl` shows only the 24
+# pinneapple*/ packages + dist-info, nothing else). Hatchling's *sdist*
+# target has no such restriction by default -- without this section it
+# falls back to "everything git-tracks", which on this monorepo pulls in
+# tests/, examples/, docs/, notebooks/, benchmarks/, saas/, projects/,
+# scripts/, templates/, package_map.json (703KB), presentation.html,
+# learning_presentation.html, etc., bloating the sdist to ~20MB of content
+# no installer needs. Restrict the sdist to the same package roots as the
+# wheel, plus the essential metadata files.
+[tool.hatch.build.targets.sdist]
+include = [
+  "pinneapple/**",
+  "pinneapple_data/**",
+  "pinneapple_pdb/**",
+  "pinneapple_problemdesign/**",
+  "pinneapple_physics/**",
+  "pinneapple_neural/**",
+  "pinneapple_analysis/**",
+  "pinneapple_adaptation/**",
+  "pinneapple_simulation/**",
+  "pinneapple_systems/**",
+  "pinneapple_design/**",
+  "pinneapple_tools/**",
+  "pinneapple_worldmodel/**",
+  "pinneapple_quantum/**",
+  "pinneapple_registry/**",
+  "pinneapple_orchestration/**",
+  "pinneapple_hub/**",
+  "pinneapple_llm/**",
+  "pinneapple_blender/**",
+  "pinneapple_perception/**",
+  "pinneapple_arena/**",
+  "pinneapple_models/**",
+  "pinneapple_train/**",
+  "pinneapple_solvers/**",
+  "LICENSE",
+  "NOTICE",
+  "README.md",
+]
+exclude = [
+  "**/__pycache__",
+  "**/*.pyc",
+  "/tests",
+  "/examples",
+  "/docs",
+  "/notebooks",
+  "/benchmarks",
+  "/saas",
+  "/projects",
+  "/scripts",
+  "/templates",
+  "/data",
+  "/pinneapple_app",
+  "/.github",
+  "/.gitignore",
+  "package_map.json",
+  "presentation.html",
+  "learning_presentation.html",
+  "mkdocs.yml",
+  "requirements-docs.txt",
+  "scaffold_manifest.json",
+  "pyproject.toml.example.extras",
+  "run_all_examples.py",
+  "pytest.ini",
 ]
 
 [tool.ruff]

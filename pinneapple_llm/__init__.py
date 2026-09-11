@@ -22,6 +22,7 @@ from .cad_draft import (
 )
 from .twin_draft import draft_digital_twin, build_3d_live_twin, TwinDraftResult
 from .research import search_literature, ResearchReport
+from .org_knowledge import answer_with_context, OrgAnswer
 from .guardrail import PhysicsGuardrail, GuardrailReport, CheckResult
 from .conversation_store import ConversationStore, ConversationRecord
 from ._dispatch import call_llm
@@ -44,6 +45,7 @@ __all__ = [
     "draft_mesh_recipe", "draft_cadquery_template", "build_recipe", "export_recipe", "CadRecipeResult",
     "draft_digital_twin", "build_3d_live_twin", "TwinDraftResult",
     "search_literature", "ResearchReport",
+    "answer_with_context", "OrgAnswer",
     "PhysicsGuardrail", "GuardrailReport", "CheckResult",
     "ConversationStore", "ConversationRecord",
     "call_llm", "local_llm",
