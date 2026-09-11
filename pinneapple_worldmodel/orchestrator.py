@@ -49,11 +49,67 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
-from .physics_tools import PhysicsToolRegistry
+from .physics_tools import PhysicsToolRegistry, PhysicsTool
 
 log = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Optional per-tool gating (additive; see PhysicsOrchestrator's tool_gate arg)
+# ---------------------------------------------------------------------------
+
+class _GatedTool:
+    """Wraps a real :class:`~.physics_tools.PhysicsTool` so ``.call(...)``
+    runs ``tool_gate(name, kwargs)`` first. Every other attribute (``name``,
+    ``category``, ``description``, ``tags``, ``is_available()``, ...) is
+    forwarded unchanged to the real tool -- this wrapper only intercepts
+    invocation, never the tool's own metadata/behavior."""
+
+    def __init__(self, tool: PhysicsTool, gate: "Callable[[str, Dict[str, Any]], None]") -> None:
+        self._tool = tool
+        self._gate = gate
+
+    def call(self, **kwargs: Any) -> Any:
+        self._gate(self._tool.name, kwargs)
+        return self._tool.call(**kwargs)
+
+    def __getattr__(self, item: str) -> Any:
+        return getattr(self._tool, item)
+
+
+class _GatedToolRegistry:
+    """Thin proxy over a real :class:`~.physics_tools.PhysicsToolRegistry`
+    that gates ``.get(name)`` results through ``tool_gate`` before they can
+    be called. Every other real registry method/attribute (``list_by_category``,
+    ``available_tools``, ``search``, ``__len__``, ``__contains__``, ...) is
+    forwarded unchanged -- this proxy touches nothing about tool selection or
+    discovery, only invocation of a tool once ``get()`` has already picked it.
+
+    This is the composition-only mechanism that lets a caller (e.g.
+    :class:`pinneapple_problemdesign.research_loop.AutonomousResearchAgent`)
+    gate every *individual* tool ``PhysicsOrchestrator`` selects internally,
+    not just its own decision to call ``.solve()`` once -- closing the
+    limitation that module's docstring documents, without changing a single
+    line of the real, unmodified :class:`PhysicsToolRegistry`/``PhysicsTool``.
+    """
+
+    def __init__(self, registry: PhysicsToolRegistry, gate: "Callable[[str, Dict[str, Any]], None]") -> None:
+        self._registry = registry
+        self._gate = gate
+
+    def get(self, name: str) -> _GatedTool:
+        return _GatedTool(self._registry.get(name), self._gate)
+
+    def __getattr__(self, item: str) -> Any:
+        return getattr(self._registry, item)
+
+    def __len__(self) -> int:
+        return len(self._registry)
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._registry
 
 
 # ---------------------------------------------------------------------------
@@ -156,6 +212,20 @@ class PhysicsOrchestrator:
     registry : PhysicsToolRegistry or None.
         If None, a new registry is built and all tools are registered.
     verbose : bool
+    tool_gate : callable or None.
+        Optional ``(tool_name: str, tool_args: dict) -> None`` callback,
+        invoked before *every individual* real tool this orchestrator
+        selects and calls internally (``build_world_model_dataset``,
+        ``train_world_model``, ``validate_physics``, ... — every tool any
+        ``_plan_*`` method fetches via ``self.registry.get(...)``). Raise
+        from it (e.g. ``PermissionError``) to block that specific call;
+        returning normally lets it proceed. ``None`` (the default) means
+        no gating at all — identical behavior to every existing caller of
+        this class, since this parameter did not exist before. This is an
+        additive hook only: it changes nothing about which tools get
+        selected or how they're chained, only whether a given call is
+        allowed to actually run. See ``_GatedToolRegistry``/``_GatedTool``
+        above for the (composition-only) mechanism.
 
     Example
     -------
@@ -174,12 +244,14 @@ class PhysicsOrchestrator:
         self,
         registry: Optional[PhysicsToolRegistry] = None,
         verbose: bool = True,
+        tool_gate: "Optional[Callable[[str, Dict[str, Any]], None]]" = None,
     ) -> None:
         if registry is None:
             registry = PhysicsToolRegistry()
             registry.register_all()
-        self.registry = registry
+        self.registry = _GatedToolRegistry(registry, tool_gate) if tool_gate is not None else registry
         self.verbose = verbose
+        self.tool_gate = tool_gate
 
     # ------------------------------------------------------------------
     # Main

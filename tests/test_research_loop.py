@@ -218,6 +218,71 @@ def test_full_autonomous_executes_real_orchestrator_tool():
 
 
 # ---------------------------------------------------------------------------
+# Per-tool gating: the default, loop-constructed orchestrator gates each
+# individual internal tool through the SAME ApprovalGate, not just this
+# loop's own per-iteration dispatch (closes the previously-documented gap).
+# ---------------------------------------------------------------------------
+
+def test_default_orchestrator_gates_individual_internal_tools_for_real():
+    """No custom orchestrator supplied -> AutonomousResearchAgent builds one
+    with tool_gate=self._tool_gate wired to its own ApprovalGate. An
+    approver_fn that approves everything EXCEPT the real internal tool
+    'train_world_model' must let 'build_world_model_dataset' run for real
+    but block training -- proving the gate operates per-tool, mid-call,
+    not just once per iteration."""
+    full_spec = _full_hand_built_spec()
+    seen_tool_names = []
+
+    def approver(request):
+        seen_tool_names.append(request.tool_name)
+        return request.tool_name != "train_world_model"
+
+    loop = AutonomousResearchAgent(
+        llm=_FixedJSONProvider(_FLAT_COMPLETE_PARTIAL_SPEC),
+        autonomy_level=AutonomyLevel.SUPERVISED,  # every tool call gates -> approver_fn decides each
+        approver_fn=approver,
+        physics_domain="heat_conduction",
+        max_iterations=1,
+    )
+
+    result = loop.run(
+        "Solve 2D heat conduction on a unit square and predict the temperature field.",
+        initial_spec=full_spec,
+        statement_overrides=_STATEMENT_OVERRIDES,
+    )
+
+    it = result.iterations[0]
+    assert it.agent_result.status == "execution_failed"
+    assert "train_world_model" in it.agent_result.error
+    assert "not approved" in it.agent_result.error
+
+    # Real proof the gate ran per-tool, not just once for the whole
+    # iteration: it saw the iteration-level check name AND both real
+    # internal tool names, in order, and the run genuinely stopped at the
+    # second one (never reached a third real tool).
+    assert seen_tool_names[0] == "unified_physics_agent.run"
+    assert "build_world_model_dataset" in seen_tool_names
+    assert seen_tool_names[-1] == "train_world_model"
+
+
+def test_gate_internal_tools_false_opts_out_even_without_a_custom_orchestrator():
+    """gate_internal_tools=False must produce a plain, unwrapped
+    PhysicsOrchestrator -- an explicit, visible opt-out, not silently
+    always-on."""
+    from pinneapple_worldmodel.orchestrator import PhysicsOrchestrator
+
+    loop = AutonomousResearchAgent(
+        llm=_NeverCalledLLM(),
+        autonomy_level=AutonomyLevel.SUPERVISED,
+        physics_domain="heat_conduction",
+        gate_internal_tools=False,
+    )
+    assert isinstance(loop.agent.orchestrator, PhysicsOrchestrator)
+    assert type(loop.agent.orchestrator.registry).__name__ == "PhysicsToolRegistry"
+    assert loop.agent.orchestrator.tool_gate is None
+
+
+# ---------------------------------------------------------------------------
 # execution_failed: the loop must surface (not swallow) a real orchestrator
 # failure, and revise its description for the next attempt.
 # ---------------------------------------------------------------------------
