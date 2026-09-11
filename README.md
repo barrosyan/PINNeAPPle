@@ -337,8 +337,8 @@ If you use **PINNeAPPle** in academic research, technical reports, benchmarks, o
   title        = {PINNeAPPle: An Open-Source Physics AI Research and Experimentation Platform},
   author       = {Barros, Yan and Contributors},
   year         = {2026},
-  url          = {https://github.com/barrosyan/PINNeAPPle},
-  version      = {0.1.0}
+  url          = {https://github.com/PINNeAPPle-Labs/PINNeAPPle},
+  version      = {0.5.0}
 }
 ```
 

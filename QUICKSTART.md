@@ -135,4 +135,4 @@ class MyModel(nn.Module):
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-Issues: https://github.com/barrosyan/PINNeAPPle/issues
+Issues: https://github.com/PINNeAPPle-Labs/PINNeAPPle/issues
