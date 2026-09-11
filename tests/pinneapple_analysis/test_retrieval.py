@@ -13,8 +13,25 @@ import pytest
 
 pytest.importorskip("sentence_transformers", reason="'retrieval' extra not installed")
 
-from pinneapple_analysis.retrieval.corpus import Document, build_corpus
+from pinneapple_analysis.retrieval.corpus import (
+    Document,
+    build_corpus,
+    fetch_literature_documents,
+    build_literature_corpus,
+)
 from pinneapple_analysis.retrieval.index import RetrievalIndex, SearchResult
+
+
+def _arxiv_reachable() -> bool:
+    try:
+        import urllib.request
+        urllib.request.urlopen("http://export.arxiv.org/api/query?search_query=all:test&max_results=1", timeout=5)
+        return True
+    except Exception:
+        return False
+
+
+_skip_no_network = pytest.mark.skipif(not _arxiv_reachable(), reason="arXiv API not reachable from this environment")
 
 
 # ---------------------------------------------------------------------------
@@ -126,3 +143,75 @@ def test_index_constructor_rejects_mismatched_lengths():
     embeddings = np.zeros((2, 4), dtype=np.float32)  # 2 rows for 1 document
     with pytest.raises(ValueError, match="must match 1:1"):
         RetrievalIndex(documents=docs, embeddings=embeddings, model_name="fake")
+
+
+# ---------------------------------------------------------------------------
+# External literature (real, live arXiv API) -- gated on network reachability
+# ---------------------------------------------------------------------------
+
+@_skip_no_network
+def test_fetch_literature_documents_returns_real_papers():
+    docs = fetch_literature_documents("physics informed neural networks", k=3)
+    assert len(docs) > 0
+    for d in docs:
+        assert d.doc_id.startswith("arxiv:")
+        assert d.source.startswith("http://arxiv.org/abs/") or d.source.startswith("https://arxiv.org/abs/")
+        assert d.title.strip()
+        assert d.text.strip()
+
+
+@_skip_no_network
+def test_build_literature_corpus_deduplicates_across_topics():
+    docs = build_literature_corpus(
+        ["physics informed neural networks", "physics informed neural network"],  # near-duplicate topics
+        k_per_topic=5,
+    )
+    doc_ids = [d.doc_id for d in docs]
+    assert len(doc_ids) == len(set(doc_ids))  # no arxiv id appears twice
+
+
+@_skip_no_network
+def test_build_literature_corpus_skips_a_failing_topic_without_raising(monkeypatch):
+    import pinneapple_analysis.retrieval.corpus as corpus_module
+
+    real_fetch = corpus_module.fetch_literature_documents
+    calls = []
+
+    def _flaky_fetch(query, **kwargs):
+        calls.append(query)
+        if query == "this topic will fail":
+            raise RuntimeError("simulated network failure for this one topic")
+        return real_fetch(query, **kwargs)
+
+    monkeypatch.setattr(corpus_module, "fetch_literature_documents", _flaky_fetch)
+    docs = corpus_module.build_literature_corpus(
+        ["this topic will fail", "physics informed neural networks"], k_per_topic=2,
+    )
+    assert calls == ["this topic will fail", "physics informed neural networks"]
+    assert len(docs) > 0  # the second, real topic's results still came through
+
+
+@_skip_no_network
+def test_build_corpus_with_literature_included():
+    docs = build_corpus(
+        include_literature=True,
+        literature_topics=["physics informed neural networks"],
+        literature_k_per_topic=3,
+    )
+    doc_ids = {d.doc_id for d in docs}
+    assert any(doc_id.startswith("arxiv:") for doc_id in doc_ids)
+    assert "verification_module:dimensional_analysis" in doc_ids  # internal sources still included too
+
+
+@_skip_no_network
+def test_search_over_combined_corpus_ranks_a_real_paper_for_a_literature_query():
+    """The real, load-bearing proof this integration works: a query
+    specifically about neural-operator PDE solving should surface a
+    real fetched paper near the top, not just internal presets/modules."""
+    docs = (
+        [Document(doc_id="d_dummy", source="test", title="unrelated", text="unrelated filler content about nothing in particular")]
+        + build_literature_corpus(["fourier neural operator", "deep operator network"], k_per_topic=5)
+    )
+    index = RetrievalIndex.build(docs)
+    results = index.search("a neural operator architecture for learning solution operators of PDEs", top_k=3)
+    assert any(r.document.doc_id.startswith("arxiv:") for r in results)
