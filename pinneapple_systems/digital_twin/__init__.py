@@ -37,7 +37,7 @@ from .state import SystemState, Observation
 from .io import (
     Sensor, SensorRegistry,
     BaseStream, FileWatchStream, MQTTStream,
-    HTTPPollStream, KafkaStream, MockStream,
+    HTTPPollStream, KafkaStream, OPCUAStream, ModbusStream, MockStream,
 )
 from .assimilation import ExtendedKalmanFilter, EnsembleKalmanFilter
 from .monitoring import (
@@ -82,6 +82,8 @@ __all__ = [
     "MQTTStream",
     "HTTPPollStream",
     "KafkaStream",
+    "OPCUAStream",
+    "ModbusStream",
     "MockStream",
     # Assimilation
     "ExtendedKalmanFilter",

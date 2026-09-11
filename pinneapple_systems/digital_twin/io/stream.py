@@ -5,6 +5,8 @@ Provides adapters for multiple data sources:
 - ``MQTTStream``: subscribes to an MQTT broker (requires paho-mqtt)
 - ``HTTPPollStream``: periodically polls a REST endpoint
 - ``KafkaStream``: reads from Apache Kafka (requires kafka-python)
+- ``OPCUAStream``: polls an OPC-UA server's tags (requires asyncua)
+- ``ModbusStream``: polls a Modbus TCP server's holding registers (requires pymodbus)
 - ``MockStream``: synthetic stream for testing/simulation
 
 All streams emit ``Observation`` objects to a shared queue consumed by
@@ -364,6 +366,168 @@ class KafkaStream(BaseStream):
             except Exception as exc:
                 logger.warning(f"KafkaStream parse error: {exc}")
         consumer.close()
+
+
+# ---------------------------------------------------------------------------
+# OPC-UA stream
+# ---------------------------------------------------------------------------
+
+class OPCUAStream(BaseStream):
+    """
+    Polls an OPC-UA server for real-time tag values.
+
+    Requires ``asyncua``: pip install asyncua
+
+    OPC-UA is a pull (polled) protocol at the level this class uses it
+    (reading each node's current value on an interval) -- unlike
+    MQTT/Kafka, there is no server-push subscription used here, so
+    ``poll_interval`` directly controls how fresh the emitted
+    ``Observation``s are. (A real OPC-UA subscription -- server pushes
+    on value change -- is possible via ``asyncua``'s subscription API
+    but adds real complexity, e.g. a running event loop and a
+    datachange callback, for a benefit -- lower latency -- this
+    polling-based digital twin update loop does not need, since
+    ``DigitalTwin`` itself already runs its own fixed-interval update
+    loop on top of this.)
+
+    Parameters
+    ----------
+    server_url : e.g. ``"opc.tcp://127.0.0.1:4840/freeopcua/server/"``
+    node_ids : maps ``field_name -> a real OPC-UA NodeId string``
+        (e.g. ``"ns=2;s=Temperature"`` or ``"ns=2;i=2"``) -- the caller
+        must know the real node ids on the target server (browse the
+        server's address space to find them; this class does not guess
+        or browse for a matching node by name).
+    """
+
+    def __init__(
+        self,
+        server_url: str,
+        node_ids: Dict[str, str],
+        sensor_id: str,
+        field_names: List[str],
+        *,
+        poll_interval: float = 1.0,
+    ) -> None:
+        super().__init__(sensor_id, field_names)
+        self.server_url = server_url
+        self.node_ids = dict(node_ids)
+        self.poll_interval = float(poll_interval)
+
+    def _run(self) -> None:
+        try:
+            from asyncua.sync import Client
+        except ImportError:
+            logger.error("asyncua not installed. pip install asyncua")
+            return
+
+        try:
+            client = Client(url=self.server_url)
+            client.connect()
+        except Exception as exc:
+            logger.error(f"OPCUAStream: failed to connect to {self.server_url}: {exc}")
+            return
+
+        try:
+            nodes = {f: client.get_node(nid) for f, nid in self.node_ids.items() if f in self.field_names}
+            while self._running:
+                try:
+                    values = {f: float(node.read_value()) for f, node in nodes.items()}
+                    if values:
+                        self._emit(
+                            Observation(timestamp=time.time(), sensor_id=self.sensor_id, values=values, coords=None)
+                        )
+                except Exception as exc:
+                    logger.warning(f"OPCUAStream read error: {exc}")
+                time.sleep(self.poll_interval)
+        finally:
+            try:
+                client.disconnect()
+            except Exception:
+                pass
+
+
+# ---------------------------------------------------------------------------
+# Modbus stream
+# ---------------------------------------------------------------------------
+
+class ModbusStream(BaseStream):
+    """
+    Polls a Modbus TCP server's holding registers for real-time values.
+
+    Requires ``pymodbus``: pip install pymodbus
+
+    Like :class:`OPCUAStream`, this is polling-based -- Modbus itself is
+    a request/response protocol with no native push/subscribe mechanism,
+    so polling is the only option, not a design shortcut taken here.
+
+    Parameters
+    ----------
+    host, port : the Modbus TCP server's address (standard Modbus TCP
+        port is 502; many real devices and simulators instead expose a
+        non-privileged port such as 5020/5502 in test/dev setups).
+    register_map : maps ``field_name -> (register_address, scale)`` --
+        ``scale`` converts the raw 16-bit unsigned integer register
+        value to a real physical float (e.g. a register storing
+        millidegrees needs ``scale=0.001``). Every field is read as ONE
+        holding register (count=1) -- multi-register (32-bit/float)
+        values are not supported by this class.
+    device_id : the Modbus unit/device id (also called "slave id" in
+        older Modbus terminology) -- 1 by default, matching the most
+        common single-device setup.
+    """
+
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        register_map: Dict[str, "tuple[int, float]"],
+        sensor_id: str,
+        field_names: List[str],
+        *,
+        poll_interval: float = 1.0,
+        device_id: int = 1,
+    ) -> None:
+        super().__init__(sensor_id, field_names)
+        self.host = host
+        self.port = int(port)
+        self.register_map = dict(register_map)
+        self.poll_interval = float(poll_interval)
+        self.device_id = int(device_id)
+
+    def _run(self) -> None:
+        try:
+            from pymodbus.client import ModbusTcpClient
+        except ImportError:
+            logger.error("pymodbus not installed. pip install pymodbus")
+            return
+
+        client = ModbusTcpClient(self.host, port=self.port)
+        if not client.connect():
+            logger.error(f"ModbusStream: failed to connect to {self.host}:{self.port}")
+            return
+
+        try:
+            while self._running:
+                try:
+                    values: Dict[str, float] = {}
+                    for f, (address, scale) in self.register_map.items():
+                        if f not in self.field_names:
+                            continue
+                        result = client.read_holding_registers(address, count=1, device_id=self.device_id)
+                        if result.isError():
+                            logger.warning(f"ModbusStream: error reading register {address} for field {f!r}")
+                            continue
+                        values[f] = float(result.registers[0]) * scale
+                    if values:
+                        self._emit(
+                            Observation(timestamp=time.time(), sensor_id=self.sensor_id, values=values, coords=None)
+                        )
+                except Exception as exc:
+                    logger.warning(f"ModbusStream read error: {exc}")
+                time.sleep(self.poll_interval)
+        finally:
+            client.close()
 
 
 # ---------------------------------------------------------------------------

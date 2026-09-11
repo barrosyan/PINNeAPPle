@@ -172,10 +172,12 @@ finetune = [
   "transformers>=4.44",
 ]
 
-# Digital twin (MQTT / Kafka streams)
+# Digital twin (MQTT / Kafka / OPC-UA / Modbus streams)
 digital_twin = [
   "paho-mqtt>=2.0",
   "kafka-python>=2.0",
+  "asyncua>=1.1",
+  "pymodbus>=3.6",
 ]
 
 # Time-series / classical models

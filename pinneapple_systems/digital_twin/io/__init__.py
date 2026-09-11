@@ -6,6 +6,8 @@ from .stream import (
     MQTTStream,
     HTTPPollStream,
     KafkaStream,
+    OPCUAStream,
+    ModbusStream,
     MockStream,
 )
 
@@ -17,5 +19,7 @@ __all__ = [
     "MQTTStream",
     "HTTPPollStream",
     "KafkaStream",
+    "OPCUAStream",
+    "ModbusStream",
     "MockStream",
 ]
