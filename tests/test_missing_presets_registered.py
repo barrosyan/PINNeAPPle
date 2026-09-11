@@ -47,3 +47,51 @@ def test_ns_incompressible_2d_returns_valid_spec():
     # Default Re (not overridden) should differ from the explicit Re above.
     default_spec = get_preset("ns_incompressible_2d")
     assert default_spec.pde.params.get("Re") == 100.0
+
+
+# ---------------------------------------------------------------------------
+# pinneapple_physics/pde_environment/presets/industry.py had ZERO
+# register_preset() calls at all -- 7 real, complete preset factories were
+# silently unreachable via get_preset()/list_presets(). This locks in the
+# fix. linear_elasticity_3d_default collided with structural.py's real,
+# already-registered "linear_elasticity_3d" (a different, generic
+# parametrization) -- registered under the distinguishing
+# "linear_elasticity_3d_industry" name instead of overwriting it.
+# ---------------------------------------------------------------------------
+
+_INDUSTRY_PRESETS = {
+    "steady_heat_conduction_3d": {"dim": 3, "fields": ("T",)},
+    "transient_heat_3d": {"dim": 3, "fields": ("T",)},
+    "linear_elasticity_3d_industry": {"dim": 3, "fields": ("ux", "uy", "uz")},
+    "darcy_pressure_only_3d": {"dim": 3, "fields": ("p",)},
+    "helmholtz_acoustics_3d": {"dim": 3, "fields": ("u",)},
+    "wave_ultrasound_3d": {"dim": 3, "fields": ("u",)},
+    "reaction_diffusion_2d": {"dim": 2, "fields": ("c",)},
+}
+
+
+def test_all_industry_presets_are_registered():
+    names = list_presets()
+    for name in _INDUSTRY_PRESETS:
+        assert name in names, f"{name!r} missing from list_presets()"
+
+
+def test_all_industry_presets_return_valid_specs():
+    for name, expected in _INDUSTRY_PRESETS.items():
+        spec = get_preset(name)
+        assert isinstance(spec, ProblemSpec), name
+        assert spec.dim == expected["dim"], name
+        assert spec.fields == expected["fields"], name
+        assert len(spec.coords) >= 2, name
+
+
+def test_linear_elasticity_3d_industry_does_not_collide_with_structural_variant():
+    """The generic structural.py preset and this industry-flavored one are
+    real, distinct configurations (different sample_defaults/field_ranges/
+    BCs) -- both must remain independently reachable."""
+    generic = get_preset("linear_elasticity_3d")
+    industry = get_preset("linear_elasticity_3d_industry")
+    assert generic.fields == industry.fields == ("ux", "uy", "uz")
+    assert generic.pde.kind == industry.pde.kind == "linear_elasticity"
+    # Distinct, real configurations -- not accidentally the same object/dict.
+    assert generic.sample_defaults != industry.sample_defaults or generic.field_ranges != industry.field_ranges

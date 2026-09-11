@@ -6,8 +6,10 @@ from ..spec import PDETermSpec, ProblemSpec
 from ..conditions import DirichletBC, InitialCondition
 from ..scales import ScaleSpec
 from ..environment_typing import CoordNames
+from .registry import register_preset
 
 
+@register_preset("steady_heat_conduction_3d")
 def steady_heat_conduction_3d_default() -> ProblemSpec:
     coords: CoordNames = ("x", "y", "z")
     fields = ("T",)
@@ -53,6 +55,7 @@ def steady_heat_conduction_3d_default() -> ProblemSpec:
     )
 
 
+@register_preset("transient_heat_3d")
 def transient_heat_3d_default() -> ProblemSpec:
     coords: CoordNames = ("x", "y", "z", "t")
     fields = ("T",)
@@ -98,6 +101,7 @@ def transient_heat_3d_default() -> ProblemSpec:
     )
 
 
+@register_preset("linear_elasticity_3d_industry")
 def linear_elasticity_3d_default() -> ProblemSpec:
     coords: CoordNames = ("x", "y", "z")
     fields = ("ux", "uy", "uz")
@@ -135,6 +139,7 @@ def linear_elasticity_3d_default() -> ProblemSpec:
     )
 
 
+@register_preset("darcy_pressure_only_3d")
 def darcy_pressure_only_3d_default() -> ProblemSpec:
     coords: CoordNames = ("x", "y", "z")
     fields = ("p",)
@@ -180,6 +185,7 @@ def darcy_pressure_only_3d_default() -> ProblemSpec:
     )
 
 
+@register_preset("helmholtz_acoustics_3d")
 def helmholtz_acoustics_3d_default() -> ProblemSpec:
     coords: CoordNames = ("x", "y", "z")
     fields = ("u",)
@@ -216,6 +222,7 @@ def helmholtz_acoustics_3d_default() -> ProblemSpec:
     )
 
 
+@register_preset("wave_ultrasound_3d")
 def wave_ultrasound_3d_default() -> ProblemSpec:
     coords: CoordNames = ("x", "y", "z", "t")
     fields = ("u",)
@@ -261,6 +268,7 @@ def wave_ultrasound_3d_default() -> ProblemSpec:
     )
 
 
+@register_preset("reaction_diffusion_2d")
 def reaction_diffusion_2d_default() -> ProblemSpec:
     coords: CoordNames = ("x", "y", "t")
     fields = ("c",)
