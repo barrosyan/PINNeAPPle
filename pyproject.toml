@@ -280,7 +280,6 @@ dev = [
 Homepage = "https://github.com/barrosyan/PINNeAPPle"
 Repository = "https://github.com/barrosyan/PINNeAPPle"
 Issues = "https://github.com/barrosyan/PINNeAPPle/issues"
-Changelog = "https://github.com/barrosyan/PINNeAPPle/blob/main/CHANGELOG.md"
 
 # NOTE: a `[project.scripts]` section previously declared `pdb`/`pinneapple`
 # console entry points pointing at `pinneapple_pdb.cli:main`, but no
