@@ -1,0 +1,46 @@
+{
+  "experiment_name": "burgers_1d_pinn_comparison",
+  "problem_id": "burgers_1d",
+  "models": {
+    "mlp_small": {
+      "best_val": 2.640722414071206e-06,
+      "eval_metrics": {
+        "mse": 1.3379100209931494e-06,
+        "rmse": 0.001156680635176599,
+        "rel_l2": 18506889216.0,
+        "r2": -342504960.0,
+        "max_error": 0.0026901140809059143
+      },
+      "elapsed_sec": 5.317675828933716
+    },
+    "mlp_medium": {
+      "best_val": 1.9940422646413936e-08,
+      "eval_metrics": {
+        "mse": 8.563822539997545e-09,
+        "rmse": 9.254092583432794e-05,
+        "rel_l2": 1480654848.0,
+        "r2": -2192337.5,
+        "max_error": 0.00030972063541412354
+      },
+      "elapsed_sec": 8.180476903915405
+    },
+    "mlp_large": {
+      "best_val": 9.286701896371596e-08,
+      "eval_metrics": {
+        "mse": 4.943761311437811e-08,
+        "rmse": 0.00022234571224544197,
+        "rel_l2": 3557531648.0,
+        "r2": -12656028.0,
+        "max_error": 0.0008333325386047363
+      },
+      "elapsed_sec": 15.153085947036743
+    }
+  },
+  "visualizations": {
+    "solution_u_mlp_small": "/Users/yanbarros/Documents/GitHub/PINNeAPPle/data/artifacts/experiments/burgers_1d/plots/solution_u_mlp_small.png",
+    "solution_u_mlp_medium": "/Users/yanbarros/Documents/GitHub/PINNeAPPle/data/artifacts/experiments/burgers_1d/plots/solution_u_mlp_medium.png",
+    "solution_u_mlp_large": "/Users/yanbarros/Documents/GitHub/PINNeAPPle/data/artifacts/experiments/burgers_1d/plots/solution_u_mlp_large.png",
+    "comparison_u": "/Users/yanbarros/Documents/GitHub/PINNeAPPle/data/artifacts/experiments/burgers_1d/plots/comparison_u.png"
+  },
+  "out_dir": "/Users/yanbarros/Documents/GitHub/PINNeAPPle/data/artifacts/experiments/burgers_1d"
+}

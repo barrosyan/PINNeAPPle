@@ -58,7 +58,10 @@ parâmetro escalar, PDE) — validado em Navier-Stokes, calor e onda com uma
 **Já existe**: `portfolio/pinneapple/inverse_sindy` — EKI + SINDy
 redescobre o sistema de Lorenz (100% de acerto na estrutura). Dado dados
 observacionais sem a equação explícita, descobre a PDE governante via
-regressão simbólica/esparsa restrita por física.
+regressão simbólica/esparsa restrita por física. Este item é a semente de
+uma vertente muito maior — geometria/manifold escondido, transições
+ordem↔caos, invariantes desconhecidos, causalidade estrutural, eventos
+extremos — consolidada em **§8, "Structure Discovery / Chaos-to-Law"**.
 
 ### Uncertainty Quantification Lab
 **Sobreposição parcial.** Padronizar a saída de todo modelo Physics AI do
@@ -183,6 +186,19 @@ arXiv — ATHENA + ideia própria. Precedente real direto:
 `pinn_reproduction_results` (reprodução de Raissi et al. 2017 e Lu et al.
 2019, incluindo bugs reais encontrados e corrigidos) — este projeto
 generaliza esse esforço manual em um pipeline automatizado e contínuo.
+
+### Corpus de referência PIELM/XTFC/TFC/OpInf (material recebido, não integrado)
+**Peça em aberto.** `PINNeAPPle-Talk/resources/` (ver `MANIFEST.md`)
+recebeu nesta sessão implementações reais em MATLAB de PIELM e X-TFC para
+PDEs de advecção-difusão (`Advection-Diffusion_PIELM-&-XTFC/`,
+`PDE_matlab/`, `Laura/`, `codes/`, `common/`), mais uma pasta de
+referências dedicada a TFC (`References/TFC/`) e papers de Operator
+Inference/POD (`OpInf_summary_2022{a,b}.pdf`, `POD-ROM.pdf`, em
+`deeponet_papers_and_notebooks/`). Conecta diretamente com módulos já
+reais: `pinneapple_neural/architectures/rom/{opinf,pod}.py` (existentes)
+e o `TFC/ELM` já usado em produção pelo `HelioTFC` (`pinneapple-apps`).
+Vale avaliar se o código MATLAB tem algo que valide/estenda o `OpInf`/
+`POD` já implementados, antes de tratar como só leitura de referência.
 
 ### CrunchOptimizer/PINNs — SS-Quasi-Newton (SSBFGS/SSBroyden)
 **Projeto novo.** Otimizadores quasi-Newton curvature-aware
@@ -312,6 +328,27 @@ carregamento, com Neural Operator substituindo FEM tradicional (17 min →
 e otimizar orientação dos painéis, cronograma de limpeza e resfriamento
 para maximizar energia e minimizar custo operacional.
 
+### Fire Spread / Wildfire PINN
+**Projeto novo**, com uma semente de código real. Existe um script
+standalone `Fire_PINN_PlusLowDifusion.py` em
+`PINNeAPPle-Talk/resources/deeponet_papers_and_notebooks/` (ver
+`PINNeAPPle-Talk/resources/MANIFEST.md`) — um PINN para dinâmica de
+propagação de fogo/baixa difusão, nunca integrado a este portfólio.
+Avaliar se vale a pena portar como ponto de partida em vez de começar do
+zero.
+
+### Optimal Control / Nuclear & Radiative Transport (domínios não cobertos)
+**Peça em aberto — nenhum repo do ecossistema cobre isso hoje.** Um
+levantamento de referências recebido nesta sessão (`PINNeAPPle-Talk/
+resources/References/`, ver MANIFEST) tem pastas inteiras dedicadas a
+controle ótimo/HJB/GNC/controle adaptativo (`Optimal Control /`,
+`Roberto-Suggestions/`) e a transporte nuclear/radiativo/equações de
+cinética pontual (`Transport/{Radiative,Neutron,PKE}`) — nenhum dos dois
+domínios existe em nenhum repo do PINNeAPPle-Labs hoje. Não é
+necessariamente um novo produto, mas vale decidir deliberadamente se
+algum dos dois merece entrar no catálogo de domínios físicos antes de
+continuar acumulando referência sem repo correspondente.
+
 ---
 
 ## 7. GPU-native / verificação de hardware / plataformas comerciais (referências externas, fora do catálogo CoupleTasks)
@@ -406,6 +443,155 @@ prever algo que ainda não vi? Módulo relacionado: `pinneapple_worldmodel`
 
 ---
 
+## 8. Structure Discovery / Chaos-to-Law — nova vertente
+
+Trazido por Yan nesta sessão como uma pergunta diferente da que o
+portfólio normalmente faz. Em vez de "como eu preveja este sistema",
+perguntar **"que estrutura mais simples explica este sistema"** —
+geometria intrínseca, dinâmica reduzida, causalidade, invariantes,
+regimes de caos/ordem, eventos extremos. O item "Physics Discovery /
+Equation Discovery" (§1) já é uma instância real e validada disso; esta
+seção generaliza a mesma pergunta para eixos que o portfólio ainda não
+cobre, verificado diretamente no código desta sessão (não assumido).
+
+Pipeline-alvo da vertente inteira:
+
+```
+sistema observado
+   ├─ geometria  (manifold/TDA)
+   ├─ dinâmica   (Koopman/DMD/SINDy)  ── já existe, ver abaixo
+   └─ causalidade (GNN/NOTEARS/PCMCI)
+        │
+   estrutura latente
+        │
+   invariantes / leis / regimes
+        │
+   modelo físico → PINN / FNO / GNN (motor já existente do PINNeAPPle)
+```
+
+### Dynamics-to-Law: SINDy / Koopman / DMD / HAVOK / POD / OpInf
+**Já existe**, o pilar mais maduro desta lista de longe.
+`pinneapple_neural/architectures/rom/` já implementa `SINDy`,
+`DynamicModeDecomposition`, `HAVOK` (Hankel-DMD via delay embedding),
+`KoopmanAutoencoder` (uma segunda implementação vive em
+`reservoir_computing/koopman.py`), `OperatorInference`, `POD`,
+`NeuralROM`, `ROMHybrid` e `DeepUQROM`, todos catalogados via
+`ROMCatalog` (`rom/registry.py`). O precedente citado em §1
+(`inverse_sindy` redescobrindo Lorenz via EKI+SINDy, 100% de acerto
+estrutural) é a validação ponta a ponta deste pilar — é literalmente o
+"problema concreto 1" do brainstorm desta sessão (Lorenz → descoberta
+automática da estrutura), só que já feito. **Falta**: um benchmark
+dedicado comparando SINDy vs. Koopman vs. DMD/HAVOK na mesma bateria de
+sistemas (ver "Bateria de validação" abaixo) com métrica de *acerto
+estrutural*, não só erro numérico — encaixe natural em
+`PINNeAPPle-arena` (§1), no mesmo espírito do benchmark PINN/FNO/DeepONet
+que já existe lá.
+
+### Symbolic regression livre (estilo PySR / AI Feynman)
+**Peça em aberto.** `pinneapple_neural/trainer/graybox.py` já antecipa a
+ideia no próprio docstring do `GrayBoxNet` ("if the term is later
+distilled into a closed-form expression, e.g. via symbolic regression")
+mas não implementa busca simbólica livre — hoje toda "descoberta de
+equação" do portfólio é restrita a uma base de termos conhecida (SINDy)
+ou a uma rede substituta (gray-box), nunca uma busca evolutiva por
+expressão fechada como PySR/AI Feynman. Projeto novo:
+`pinneapple_neural.architectures.symbolic` — wrapper sobre PySR com
+verificação determinística de erro de ajuste antes de aceitar qualquer
+expressão (mesmo princípio anti-fabricação do resto do portfólio), com
+uma rota explícita para "distilar" um `GrayBoxNet` já treinado numa
+expressão fechada.
+
+### Geometria / manifold escondido
+**Projeto novo — gap confirmado no código.** Nenhuma implementação de
+UMAP, Isomap, Diffusion Maps ou autoencoder-como-manifold-discovery
+encontrada no repo (`POD` é hoje a única redução de dimensionalidade, e é
+linear). Diffusion Maps é o candidato mais interessante trazido nesta
+sessão: descobre a geometria intrínseca de dados de alta dimensão sem
+assumir linearidade — complementa, não substitui, o `POD`/`DMD` lineares
+já existentes. Composição proposta: dados observados → alta dimensão →
+Diffusion Maps/UMAP → coordenadas intrínsecas → alimentar como input do
+`SINDy`/`KoopmanAutoencoder` já existentes (manifold discovery + SINDy +
+PINN). Módulo relacionado: novo `pinneapple_neural.architectures.manifold`
+ao lado de `rom/`. Referência já disponível: "Elements of Dimensionality
+Reduction and Manifold Learning" (Ghojogh, Crowley, Karray, Ghodsi,
+Springer 2023) está duplicado em `PINNeAPPle-Talk/resources/
+deeponet_papers_and_notebooks/Papers e Documentos/` e em
+`PINNeAPPle-Talk/resources/cfd_pde_neuralnets_notebooks/` (ver MANIFEST).
+
+### Invariant Discovery Engine
+**Projeto novo.** Hoje o portfólio só *impõe* invariantes já conhecidos
+(ex.: divergente nulo em `reality2physics`, leis de conservação como
+termo de perda nos PINNs) — nada *descobre* uma quantidade conservada
+desconhecida a partir de trajetórias observadas. Ideia concreta desta
+sessão: treinar uma rede pequena `I_θ(x)` penalizando `dI_θ/dt` ao longo
+de trajetórias reais e, depois, tentar destilar `I_θ` numa expressão
+simbólica via o item de symbolic regression acima — a mesma composição
+"descobrir → destilar" do resto desta seção. Conecta com `veriphysics`:
+um invariante descoberto e destilado é exatamente o tipo de claim que o
+Decision Record/trust score do `veriphysics` deveria verificar
+independentemente antes de ser aceito como real, não só o PINNeAPPle
+produzindo o número.
+
+### Transição ordem↔caos (Lyapunov, RQA, bifurcação, entropia)
+**Projeto novo — gap confirmado no código.** Nenhuma métrica de caos
+(maior expoente de Lyapunov, entropia de Kolmogorov-Sinai/permutação,
+dimensão de correlação, recurrence plots/RQA, seções de Poincaré,
+análise de bifurcação) encontrada no repo. É infraestrutura de
+diagnóstico, não um modelo — barata de construir e reutilizável por
+qualquer item acima (ex.: usar RQA para decidir automaticamente se um
+sistema está no regime em que SINDy/Koopman conseguem generalizar, antes
+de gastar treino de verdade). Módulo relacionado: novo
+`pinneapple_analysis.chaos_metrics`.
+
+### Causal discovery estrutural (GNN / NOTEARS / PCMCI)
+**Projeto novo — gap confirmado no código.** Nenhum algoritmo de
+descoberta causal (NOTEARS, PCMCI+, LiNGAM, Neural Relational Inference,
+GNN causal) encontrado no repo. Pergunta central: dado `x_1(t), ...,
+x_n(t)` de um sistema de alta dimensão, existe uma estrutura causal
+esparsa por trás da bagunça estatística? Conecta com `pinneapple_worldmodel`
+(agentes/ambientes, já citado em §7 para os digital twins biológicos) —
+descoberta causal seria o passo que precede a construção de qualquer um
+daqueles twins a partir de dados observacionais puros, em vez de assumir
+a topologia do grafo a priori.
+
+### Extreme events / rare-event discovery
+**Projeto novo.** Nenhuma infraestrutura de Extreme Value Theory,
+rare-event/importance sampling ou large deviation theory encontrada.
+Em vez de estudar o comportamento médio, estudar o que produz os eventos
+raros (turbulência extrema, falha industrial, crash) — pergunta natural
+para o mesmo domínio industrial que já motiva `pinneapple_systems.digital_twin`
+e os produtos de monitoramento do `PINNeAPPle-apps`. Ponto de entrada
+mais barato: aplicar EVT sobre os mesmos dados de sensor/SCADA que já
+alimentam twins industriais existentes (ex. `shinagawa-ai-platform`,
+hoje em `ChordIQ-tech` — o método é agnóstico a onde os dados moram)
+antes de qualquer simulação nova de rare-event.
+
+### Bateria de validação (extensão do PINNeAPPle-arena)
+**Projeto novo**, extensão natural do `PINNeAPPle-arena` (§1) — antes de
+tratar "Structure Discovery" como produto, validar contra ground truth
+conhecida, no mesmo espírito anti-fabricação do `PINNeAPPle-Research`
+(que só pontua contra problemas já resolvidos). Bateria mínima trazida
+nesta sessão:
+1. **Lorenz → recuperação da equação** — já validado via `inverse_sindy`
+   (ver acima); vira o baseline "fácil" da bateria.
+2. **Navier-Stokes turbulento → detecção automática de troca de regime**
+   (POD + Koopman + Lyapunov + clustering, todos já existentes ou
+   listados acima).
+3. **Sistemas multiestáveis** — aprender bacias de atração automaticamente.
+4. **Rare events** — caminho mais provável de um estado normal a um
+   evento extremo.
+5. **Invariant discovery cego** — dado só `x(t), y(t), z(t)`, redescobrir
+   o que é conservado.
+6. **Generalização entre regimes nunca vistos** (treinar em `Re_1, Re_2`,
+   testar em `Re_3`) — testa se o método descobre a lei, não memoriza o
+   regime.
+7. **Universal Structure Discovery** (o item mais ambicioso): dado
+   qualquer sinal (série temporal, imagem, grafo, simulação) sem dizer a
+   matemática a priori, decidir sozinho qual das perguntas acima se
+   aplica — e produzir uma explicação, não só uma previsão.
+
+---
+
 ## Como este roadmap se conecta ao resto do ecossistema
 
 - §1 (Scientific Intelligence Platform) é onde a maior parte do valor já
@@ -419,3 +605,13 @@ prever algo que ainda não vi? Módulo relacionado: `pinneapple_worldmodel`
   CoupleTasks nesta sessão — cada uma tem uma conexão explícita com um
   módulo real do PINNeAPPle ou com `veriphysics`/`pinneapple-apps`,
   nunca uma integração "porque é legal".
+- §8 (Structure Discovery / Chaos-to-Law) generaliza o item "Physics
+  Discovery / Equation Discovery" de §1: a metade "dinâmica" já existe de
+  verdade (`rom/` — SINDy, Koopman, DMD, HAVOK, POD, OpInf), a metade
+  "geometria/causalidade/regime/evento extremo" é gap confirmado no
+  código, não suposição. A bateria de validação proposta em §8 é o
+  candidato mais natural para o próximo ciclo de expansão do
+  `PINNeAPPle-arena` (§1), e `reality2physics` (§1, §7) é a superfície de
+  aplicação onde a "camada de descoberta de PDE" do seu próprio roadmap
+  (`README.md`, seção Roadmap) deveria consumir este pilar em vez de
+  reimplementá-lo.

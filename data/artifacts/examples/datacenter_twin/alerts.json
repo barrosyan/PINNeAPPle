@@ -1,0 +1,18 @@
+[
+  {
+    "msg": "[ALERT] rack_edge_out/T  obs=321.1 K  score=4.48  (zscore)",
+    "t": 1788917358.7103958
+  },
+  {
+    "msg": "[ALERT] rack_edge_out/T  obs=321.1 K  score=4.48  (zscore)",
+    "t": 1788917358.7103958
+  },
+  {
+    "msg": "[ALERT] rack_edge_out/T  obs=320.8 K  score=3.23  (zscore)",
+    "t": 1788917358.961917
+  },
+  {
+    "msg": "[ALERT] rack_edge_out/T  obs=323.2 K  score=3.00  (zscore)",
+    "t": 1788917359.212331
+  }
+]
