@@ -1,0 +1,3086 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Modular Physics AI framework for reproducible PINN research">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>PINNeAPPle → "the Hugging Face of Physics AI": full roadmap - PINNeAPPle</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pinneapple-the-hugging-face-of-physics-ai-full-roadmap" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="PINNeAPPle" class="md-header__button md-logo" aria-label="PINNeAPPle" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PINNeAPPle
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              PINNeAPPle → "the Hugging Face of Physics AI": full roadmap
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/barrosyan/PINNeAPPle" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    barrosyan/PINNeAPPle
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PINNeAPPle" class="md-nav__button md-logo" aria-label="PINNeAPPle" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PINNeAPPle
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/barrosyan/PINNeAPPle" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    barrosyan/PINNeAPPle
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../why/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why PINNeAPPle?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/system_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/execution_model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/package_layers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package Layers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/first_pinn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First PINN
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/project_layout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Layout
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/physical_sample/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PhysicalSample
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/problem_definition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ProblemDefinition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/geometry_domain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geometry & Domain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/pinn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PINN / Physics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/training_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/researcher_benchmarking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Researcher & Benchmarking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_physics/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_physics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_neural/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_neural
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_analysis/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_adaptation/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_adaptation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_simulation/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_simulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_systems/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_design/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_tools/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_data/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_pdb/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_pdb
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_problemdesign/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_problemdesign
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_arena/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_arena
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_quantum/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_quantum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_worldmodel/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_worldmodel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_models/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_solvers/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_solvers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_train/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_train
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_registry/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_hub/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_hub
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_llm/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_llm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_blender/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_blender
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_perception/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_perception
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#p0-done-or-in-progress-this-session-branch-featopenfoam-binary-wale-adaptive-stochastic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0 — done or in progress this session (branch feat/openfoam-binary-wale-adaptive-stochastic)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#domain-specialization-astrophysicsspace-chosen-initial-vertical" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain specialization: astrophysics/space (chosen initial vertical)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#category-1-unsupported-pde-kind-batch-fix-a-second-follow-up-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Category-1 "Unsupported PDE kind" batch fix (a second follow-up pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#splash-pinneapple-pipeline-migration-downstream-consumer-separate-repo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        splash-pinneapple pipeline migration (downstream consumer, separate repo)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#active-learning-transfermeta-learning-and-physics-from-perception" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Active learning, transfer/meta-learning, and physics-from-perception
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llm-driven-cadgeometry-generation-tested-against-a-real-local-llama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM-driven CAD/geometry generation, tested against a real local Llama
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#p1-near-term-days-one-engineer-no-new-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P1 — near-term (days, one engineer, no new infrastructure)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#p2-mid-term-13-weeks-still-no-hosted-infrastructure-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P2 — mid-term (1–3 weeks, still no hosted infrastructure required)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#p3-the-no-software-only-guarantee-part-physics-grounded-verification-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P3 — the "no software-only guarantee" part: physics-grounded verification layer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#suggested-execution-order-if-resumed-by-a-team" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Suggested execution order (if resumed by a team)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/barrosyan/PINNeAPPle/edit/main/docs/dev/ROADMAP_PHYSICS_AI_HUB.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/barrosyan/PINNeAPPle/raw/main/docs/dev/ROADMAP_PHYSICS_AI_HUB.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+<h1 id="pinneapple-the-hugging-face-of-physics-ai-full-roadmap">PINNeAPPle → "the Hugging Face of Physics AI": full roadmap<a class="headerlink" href="#pinneapple-the-hugging-face-of-physics-ai-full-roadmap" title="Permanent link">&para;</a></h1>
+<p>Written 2026-09-04, during the <code>feat/openfoam-binary-wale-adaptive-stochastic</code>
+branch (see its commits for everything already shipped). This is the
+complete plan for the full scope requested — a from-scratch, evidence-based
+audit of the whole library; automatic hyperparameter tuning; a Blender
+bridge; an LLM-assisted pipeline-generation module; and a physics-grounded
+anti-hallucination guarantee layer — broken into phases with what's
+actually achievable in a single working session (P0, done or in progress
+now) versus what genuinely needs more time, a team, or external
+infrastructure this repository alone cannot provide (P1–P3).</p>
+<p><strong>Honesty note, load-bearing for the whole plan:</strong> "a perfect and complete
+audit" of an ~90-architecture, 8-mega-module framework, and "0%
+hallucination guaranteed," are not real deliverables — no audit of a
+codebase this size is ever complete (only ever more or less thoroughly
+sampled), and no software can guarantee an LLM never hallucinates. What
+<em>is</em> real and buildable: broad, evidence-based coverage (test as much as
+time allows, report exactly what was and wasn't checked), and a
+<strong>verification layer that catches and blocks ungrounded results</strong> rather
+than a metaphysical promise that none occur. Every item below is scoped to
+what can actually be shipped and checked, not to what sounds complete.</p>
+<hr />
+<h2 id="p0-done-or-in-progress-this-session-branch-featopenfoam-binary-wale-adaptive-stochastic">P0 — done or in progress this session (branch <code>feat/openfoam-binary-wale-adaptive-stochastic</code>)<a class="headerlink" href="#p0-done-or-in-progress-this-session-branch-featopenfoam-binary-wale-adaptive-stochastic" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Status</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Binary OpenFOAM FoamFile reader + polyMesh reconstruction</td>
+<td>✅ done, validated byte-for-byte against a real 244 MB LES case</td>
+<td><code>pinneapple_simulation/external_solvers/openfoam/{binary_reader,mesh_reader}.py</code></td>
+</tr>
+<tr>
+<td><code>openfoam_case_to_upd</code> domain-mistag fix (<code>"grid"</code> → <code>"mesh"</code> + real <code>geometry.nodes</code>)</td>
+<td>✅ done</td>
+<td><code>openfoam/field_reader.py</code></td>
+</tr>
+<tr>
+<td><code>MultiPeriodicBC</code> (fixes the 2+-axis chaining bug in <code>PeriodicBC</code>)</td>
+<td>✅ done</td>
+<td><code>pinneapple_physics/symbolic_pde/bc.py</code></td>
+</tr>
+<tr>
+<td><code>WALEResiduals</code> — first 3D/LES turbulence closure in the repo</td>
+<td>✅ done</td>
+<td><code>pinneapple_physics/pde_environment/turbulence_presets.py</code></td>
+</tr>
+<tr>
+<td><code>body_force_fn</code> hook on <code>navier_stokes_incompressible</code></td>
+<td>✅ done</td>
+<td><code>pinneapple_physics/pinn_solver/compiler/compile.py</code></td>
+</tr>
+<tr>
+<td><code>AdaptiveWeights</code> (relative-to-hardest-term loss balancing, with the trivial-solution pitfall documented)</td>
+<td>✅ done</td>
+<td><code>pinneapple_physics/pinn_solver/compiler/loss.py</code></td>
+</tr>
+<tr>
+<td>Stochastic/latent-conditioned PINN utilities (<code>LatentConditionedModel</code>, <code>ensemble_forward</code>, <code>mean_covariance_loss</code>)</td>
+<td>✅ done</td>
+<td><code>pinneapple_physics/pinn_solver/stochastic.py</code></td>
+</tr>
+<tr>
+<td><code>solve_pde()</code> — was calling a nonexistent <code>TrainConfig(n_epochs=...)</code>/<code>Trainer(...).train()</code>; now a real, tested Adam loop with auto-sampled BC/IC/data batches for <code>"all"</code>/<code>"callable"</code> selector conditions</td>
+<td>✅ done, tested against a real preset (<code>burgers_1d</code>, loss verified decreasing)</td>
+<td><code>pinneapple_physics/__init__.py</code></td>
+</tr>
+<tr>
+<td><code>UPDDataset.save(format="zarr")</code> — was importing a <code>ZarrWriteSpec</code> that doesn't exist</td>
+<td>✅ done</td>
+<td><code>pinneapple_data/serialization.py</code></td>
+</tr>
+<tr>
+<td>CGNS / Exodus II / Fluent-mesh(ASCII, geometry-only) / Abaqus <code>.inp</code>+<code>.odb</code>-bridge readers</td>
+<td>✅ code done; real-writer validation follow-up done for 3/4 — <strong>CGNS</strong>: ✅ validated against a file from the real CGNS Mid-Level Library (C, via <code>brew install cgns</code>), independently <code>cgnscheck</code>-passed first, read correctly, no bug; <strong>Exodus II</strong>: ✅ validated against a real classic-NetCDF file from <code>meshio</code>+<code>netCDF4</code>, read correctly — found &amp; fixed a real bug (a confusing raw <code>scipy</code> <code>TypeError</code> on the HDF5-based Exodus variant, now a clear <code>NotImplementedError</code>); <strong>Fluent/Gambit mesh</strong>: ✅ validated against a real <code>meshio</code>-written ASCII <code>.msh</code>, read correctly, no bug; <strong>Abaqus</strong>: ⚠️ partial — <code>.inp</code> mesh reader ✅ validated against a real <code>meshio</code>-written <code>.inp</code>, no bug; <code>.odb</code> bridge still <strong>not validatable here</strong> (no licensed Abaqus install on this machine, confirmed via <code>which abaqus</code> + filesystem search — needs a machine with one)</td>
+<td><code>pinneapple_simulation/external_solvers/cfd_formats/</code>, fixtures + tests in <code>tests/fixtures/cfd_formats/</code>, <code>tests/test_cfd_format_readers.py</code></td>
+</tr>
+<tr>
+<td><code>templates/33_rans_turbulence.py</code> (<code>KOmegaSSTConfig</code> import doesn't exist, plus a second bug: <code>kwsst.channel_residuals(...)</code> didn't exist either — the template assumed an API that was never built)</td>
+<td>✅ done — fixed the import, and added a real <code>KOmegaSSTResiduals.channel_residuals()</code> (1D fully-developed-channel reduction) since that's what the template actually needed; ran the template live, confirmed it trains without error</td>
+<td><code>templates/33_rans_turbulence.py</code>, <code>pde_environment/turbulence_presets.py</code></td>
+</tr>
+<tr>
+<td><code>Trainer.fit</code>'s validation loop breaks <code>create_graph=True</code> residuals (ran inside <code>torch.no_grad()</code>)</td>
+<td>✅ done — new <code>TrainConfig.physics_aware_validation</code> (default True) runs validation under <code>torch.enable_grad()</code>; tested end-to-end with a real <code>compile_problem</code> residual through <code>Trainer.fit</code> (no crash, previously did)</td>
+<td><code>pinneapple_neural/trainer/trainer.py</code></td>
+</tr>
+<tr>
+<td>Model hub (<code>push_to_hub</code>/<code>from_pretrained</code> + <code>ModelCard</code>)</td>
+<td>✅ done — full local round-trip tested (push, download, reconstruct, weights verified identical via a faked-local HF Hub)</td>
+<td>new <code>pinneapple_hub/</code></td>
+</tr>
+<tr>
+<td>CI: Tier A breadth matrix (90 architectures × 47 presets) + Tier B manufactured-solution physics-correctness tests + GitHub Actions workflow</td>
+<td>✅ done and actually run — see <code>AUDIT_REPORT.md</code> for the full, real results (62/137 Tier-A failures found and categorised; both Tier-B tests pass)</td>
+<td><code>tests/test_full_library_matrix.py</code>, <code>tests/test_manufactured_solutions.py</code>, <code>.github/workflows/tests.yml</code>, <code>AUDIT_REPORT.md</code></td>
+</tr>
+<tr>
+<td><code>pinneapple.pipeline()</code> task abstraction</td>
+<td>✅ done, tested (<code>pp.pipeline("burgers_1d", nu=0.01, epochs=15).predict(...)</code>)</td>
+<td><code>pinneapple_physics/__init__.py</code></td>
+</tr>
+<tr>
+<td>k-ω SST 1D channel-flow reduction (<code>channel_residuals</code>)</td>
+<td>✅ done (see the template-fix row above); full 3D generalisation of the general <code>__call__</code> residual (2D kept, 3D added) done in a later follow-up pass, see P2.4</td>
+<td><code>pde_environment/turbulence_presets.py</code></td>
+</tr>
+<tr>
+<td>Blender bridge (<code>.ply</code>-sequence export, no dependency beyond numpy/matplotlib; a real Blender <code>bpy</code> add-on script for the import/render side, subprocess-bridged like the Abaqus <code>.odb</code> bridge)</td>
+<td>✅ done and now genuinely run inside real Blender, in a later follow-up pass — <code>brew install --cask blender</code> (5.2.1 LTS) was added specifically to close this gap. Running it for real found and fixed 2 real bugs: (1) <code>_colormap</code> used <code>matplotlib.cm.get_cmap</code>, removed in matplotlib &gt;=3.9 (this machine has 3.11.1) — silently caught by a broad <code>except Exception</code> and falling back to a plain grayscale ramp, so every exported PLY got grayscale vertex colours, never the real colormap, with no warning; confirmed via a real exported frame's raw RGB (R==G==B) before the fix, fixed via the modern <code>matplotlib.colormaps[name]</code> API; (2) the add-on never cleared Blender's factory-default Cube/Camera/Light before importing — confirmed by opening a real generated <code>.blend</code> and listing its objects, and by an actual test render where the leftover default Cube fully obscured the imported point cloud; fixed via <code>bpy.ops.wm.read_factory_settings(use_empty=True)</code>. End-to-end validated: real PLY export → real <code>blender --background</code> subprocess import → correct per-frame visibility keyframing (verified via a second, independent Blender process listing objects/keyframes, not just "returned without raising") → a real headless render (a point cloud has no faces by design, so making it visible needs a small Geometry Nodes "mesh to points" step exactly as <code>export.py</code>'s own docstring already says — confirmed this is a genuine, working, already-documented pattern, not a defect). 7 new regression tests in <code>tests/test_blender_bridge.py</code> (skipped, not failed, if <code>blender</code> isn't on PATH, matching this repo's <code>ffmpeg</code>-skip convention in <code>test_perception.py</code>).</td>
+<td><code>pinneapple_blender/</code>, <code>tests/test_blender_bridge.py</code></td>
+</tr>
+<tr>
+<td>LLM pipeline-generation module + physics guardrail (<code>pinneapple_llm</code>)</td>
+<td>✅ done and tested, including the anti-hallucination checks actually rejecting a fabricated preset name and a fabricated kwarg (not just "should work in theory")</td>
+<td>new <code>pinneapple_llm/</code></td>
+</tr>
+<tr>
+<td>LLM-assisted geometry drafting, digital-twin drafting (+ a real Blender-bridged "3D live twin" glue function), literature/repo search (real arXiv+GitHub API results, LLM only summarises what was actually returned)</td>
+<td>✅ done and tested (beyond the original ask — added once the user asked for CAD/research/digital-twin LLM integration specifically)</td>
+<td><code>pinneapple_llm/{geometry_draft,twin_draft,research}.py</code></td>
+</tr>
+<tr>
+<td>Local LLM provider (Ollama, HTTP API, no SDK) + SQLite conversation log + LoRA fine-tuning driver on logged conversations</td>
+<td>✅ done and now genuinely run end-to-end (previously only code-reviewed): pulled <code>qwen2.5:1.5b</code> via real <code>ollama pull</code>, used <code>local_llm.call_ollama</code> to generate 15 real physics/PINN Q&amp;A turns and logged them into a real <code>ConversationStore</code> SQLite db, ran <code>finetune.prepare_dataset</code> to export a real JSONL dataset, then <code>finetune.finetune_lora</code> (real <code>transformers</code> 5.16.1 + <code>peft</code> 0.20.0 + <code>datasets</code> 5.0.1 APIs) to LoRA fine-tune <code>Qwen/Qwen2.5-0.5B</code> (rank 4, 1 epoch, 8 steps, on Apple MPS) for real, producing a genuine <code>adapter_model.safetensors</code>. Reloaded the adapter onto the base model with <code>PeftModel.from_pretrained</code> and ran a real forward pass + <code>generate()</code>: correct logits shape <code>(1, seq_len, 151936)</code> matching the model's vocab size, and coherent generated text. No code bugs were found in <code>local_llm</code>/<code>conversation_store</code>/<code>finetune</code> — the existing implementation ran correctly as written against current library versions. (Base model in this test run was <code>Qwen/Qwen2.5-0.5B</code>, not the <code>FinetuneConfig</code> default <code>meta-llama/Llama-3.2-1B</code>, since the latter is gated on Hugging Face and no HF token was available in this session; the default is unchanged and works the same way given a token.)</td>
+<td><code>pinneapple_llm/{local_llm,conversation_store,finetune}.py</code></td>
+</tr>
+<tr>
+<td>Adaptive (Bayesian/TPE via Optuna, random-search fallback) hyperparameter search — the existing <code>run_parallel_sweep</code>/<code>SweepConfig</code> turned out to already exist and work, but is grid-only, not adaptive; also fixed that shim's own re-export gap (<code>pinneapple_train</code> never actually exported <code>SweepConfig</code>/<code>run_parallel_sweep</code> despite <code>QUICKSTART.md</code>'s own example importing them from there)</td>
+<td>✅ done and tested, both the Optuna path and the dependency-free fallback (found and fixed a real bug in the process: <code>suggest_float</code>'s <code>log</code> parameter is keyword-only, an early version passed it positionally and crashed every trial)</td>
+<td><code>pinneapple_neural/trainer/adaptive_sweep.py</code>, <code>pinneapple_train/__init__.py</code></td>
+</tr>
+<tr>
+<td><strong>Second audit pass: the pre-existing <code>tests/</code> suite</strong> (never run successfully before this session — 4 <code>ModuleNotFoundError</code>s aborted collection of the <em>entire</em> tree before a single test could run) — fixed all 4 collection-blockers (<code>pinneapple_pinn</code> bad import, <code>pinneapple_train.trainer/.losses/.metrics</code> submodules missing, <code>pinneapple_solvers.fft</code> missing + a silent <code>FFTProcessor</code>→<code>None</code> swallow bug in the same file, <code>pinneapple_models.registry</code> missing), then found and fixed 4 more real bugs the now-runnable suite surfaced: <code>real_gas_eos.py</code>'s <code>NameError</code> (should be a clean <code>ImportError</code> when CoolProp isn't installed), <code>Trainer.fit()</code> never returning <code>"history"</code>, and — highest severity — <code>pinneapple_app</code>'s experiment <code>progress_cb</code> doing <code>ev["epoch"]</code> unconditionally when the auto-fix advisor loop sends event shapes without that key, <strong>crashing any experiment that used the advisor/retrain feature</strong> (confirmed pre-existing via <code>git stash</code>, not introduced this session)</td>
+<td>✅ done — suite went from 0 tests able to run to <strong>0 failures</strong> across the whole thing (<code>pytest tests/ --ignore=tests/test_full_library_matrix.py --ignore=tests/test_manufactured_solutions.py</code>); <code>tests/test_app_backend.py</code> alone went from 6 failures to 34/34 passing</td>
+<td>see <code>AUDIT_REPORT.md</code>'s "Zero" section for the full per-bug breakdown; files touched: <code>pinneapple_train/{trainer,losses,metrics}.py</code> (new), <code>pinneapple_solvers/{__init__,fft}.py</code>, <code>pinneapple_models/registry.py</code> (new), <code>pinneapple_systems/process_components/real_gas_eos.py</code>, <code>pinneapple_neural/trainer/trainer.py</code>, <code>pinneapple_app/backend/routers/experiments.py</code>, <code>pyproject.toml</code> (<code>process</code> extra), 3 test files (<code>test_sympy_backend.py</code>, <code>test_mesh_ops.py</code>, <code>test_process_components.py</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Third audit pass</strong> (done): import-smoke-tested all 295 modules across the
+previously-untouched <code>pinneapple_design</code>, <code>pinneapple_systems</code>,
+<code>pinneapple_analysis</code>, <code>pinneapple_adaptation</code>, <code>pinneapple_tools</code>, and
+<code>pinneapple_simulation</code> packages. Found and fixed 2 real bugs: a broken
+import in <code>pinneapple_tools/benchmark_suite/runner/run_models_from_cfg.py</code>
+(referenced a nonexistent <code>compiler.collate</code> module; <code>dict_collate</code>
+actually lives in <code>compiler.dataset</code>), and <code>numerical_solvers/registry.py</code>'s
+<code>register_all()</code> being a flat list of imports where one missing optional
+dependency (<code>pywt</code>, for the wavelet solver) silently aborted registration
+of every solver listed after it — <code>SolverRegistry.list()</code> returned only 8
+of ~26 real solvers as a result; rewritten to import each module
+independently (26/26 now register, with only the 2 genuinely-missing-
+optional-dep ones reported back instead of eating everything after them).</p>
+<p><strong>Still open</strong> (this pass only checked "does it import," not "does it run
+correctly"), two separate items:
+- <strong>Item A — architecture×preset cartesian product</strong>: ✅ done —
+  <code>tests/test_cartesian_breadth.py</code>. <strong>Not</strong> the full ~92×~54 cartesian
+  product (4968 combos — infeasible at a real training budget in a test
+  suite); a deliberately-diverse <strong>10 architectures × 7 presets = 70
+  combinations</strong>, documented family-by-family (why each was picked) in the
+  file's own module docstring. Architectures: <code>vanilla_pinn</code> (plain
+  baseline), <code>modified_mlp</code> (Fourier-feature highway MLP — also Tier A's
+  own fixed preset-test architecture), <code>bench_res_mlp</code> (residual/deep MLP),
+  <code>bench_fourier_mlp</code> (a second, independent Fourier-features MLP),
+  <code>siren</code> (sinusoidal/implicit-neural-representation family), <code>vpinn</code>
+  (variational/weak-form loss family), <code>xtfc</code> (functional-connections/
+  hard-constraint family), plus <code>pinnsformer</code> (attention/transformer),
+  <code>deeponet</code> and <code>fno</code> (operator learning) included specifically as
+  <strong>expected negative cases</strong> to exercise the skip logic honestly. No true
+  KAN is registered (<code>kae</code> is a Kolmogorov-Arnold-style <em>autoencoder</em>,
+  <code>x -&gt; x_hat</code>, not a coordinate regressor a PINN preset can train), so it
+  was left out rather than forced in. Presets: <code>laplace_2d</code>/<code>poisson_2d</code>
+  (elliptic), <code>burgers_1d</code> (hyperbolic/nonlinear), <code>drug_diffusion_tissue</code>
+  (parabolic reaction-diffusion), <code>lid_driven_cavity_3d</code> (incompressible
+  Navier-Stokes), <code>plane_stress_2d</code> (structural/elasticity — called with
+  <code>E=1.0, nu=0.3</code> instead of real-steel <code>E=210e9</code>, since at the real
+  modulus the residual's magnitude sits outside float32 precision and the
+  loss is numerically frozen regardless of learning rate, confirmed by
+  hand — a non-dimensionalization gap in the preset itself, worth its own
+  follow-up), and <code>space_debris_cw_relative_motion</code> (this repo's
+  astrophysics/space vertical — <code>kepler_two_body_orbit</code> was tried first
+  and rejected: its <code>1/r**3</code> term makes the residual numerically explode
+  from an untrained network at every learning rate tried, a real property
+  of that preset, not an epoch-budget problem).
+  Settings: 150 epochs, <code>n_collocation=256</code>, <code>hidden_dim=32, n_layers=3</code>,
+  <code>lr=1e-3</code> (<code>lr=3e-4</code> for <code>xtfc</code> only — found empirically flaky at 1e-3
+  specifically on <code>burgers_1d</code> across 5 seeds, stable at 3e-4 with no
+  regression on the other 6 presets). Pass criterion: <code>final_loss &lt; 0.5 *
+  first_epoch_loss</code> — chosen because every genuinely-training combination
+  clears it with wide margin (worst observed ratio 0.192, most under
+  0.01), while a wrong-signature call that runs but never trains (ratio
+  ≥ 1) fails it immediately — the exact class of bug Tier A's
+  finite-loss-only check cannot catch. Real result: <strong>49/70 ran and
+  passed, 21/70 skipped</strong> (7×<code>pinnsformer</code> — double-backward through a
+  fused attention kernel not implemented on CPU, a real current PyTorch
+  limitation, new heuristic added for this since Tier A's single-backward
+  smoke test never needs <code>create_graph=True</code>; 7×<code>deeponet</code> — needs
+  <code>branch_dim</code>/<code>trunk_dim</code> at construction, reusing Tier A's existing
+  incompatible-calling-convention heuristic; 7×<code>fno</code> — rejects the flat
+  point-cloud input, reusing Tier A's existing wrong-input-shape
+  heuristic), <strong>0 failed</strong>, run twice to confirm no flakiness. Wall-clock:
+  ~230s for the 49 training combinations run standalone (isolated
+  measurement); ~6:47 for a <code>pytest</code> invocation that happened to run
+  concurrently with another agent's test suite in the same shared
+  checkout (CPU-contention noise, not this file's own cost).
+- <strong>Item B — 6-package breadth extension</strong> (done): extended Tier-A-style
+  "build one instance, run one operation, assert no crash" breadth testing
+  to these 6 packages' actual classes, not just their imports (the "third
+  audit pass" above only checked imports). New file:
+  <code>tests/test_breadth_six_packages.py</code> (2900+ lines). Enumeration method:
+  every package's public classes were found by an AST scan cross-referenced
+  against each package's own <code>__init__.py</code> top-level re-exports, then read
+  by hand (not guessed) to decide, per class, whether a plausible generic
+  synthetic input exists. Pure dataclass-style config/result containers
+  (177 of them, across the 5 non-<code>pinneapple_adaptation</code> packages) are
+  covered separately by one systematic <code>test_breadth_dataclass_construction</code>
+  sweep at the bottom of the file, which imports every submodule of each
+  package and tries to construct every dataclass found with a generic
+  placeholder value (a zero array/tensor, <code>1</code>/<code>1.0</code>/<code>"test"</code>/<code>True</code>, an
+  empty list/dict, etc.) for any field lacking a default.</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Non-dataclass classes found</th>
+<th>Exercised</th>
+<th>Skipped (reason)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pinneapple_adaptation</code></td>
+<td>10 (incl. 3 dataclass configs, all consumed as real trainer/model inputs, not placeholders)</td>
+<td>10</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>pinneapple_design</code></td>
+<td>46</td>
+<td>42 (incl. 2 verified-abstract contract checks: <code>ConstraintBase</code>/<code>ObjectiveBase</code> confirmed to raise <code>TypeError</code>)</td>
+<td>4 (3 base classes whose methods are <code>NotImplementedError</code> stubs meant to be overridden — <code>PhysicsDomain2D</code>/<code>PhysicsDomain3D</code>/<code>SDFShape</code>; 1 needs a real STL file + missing optional <code>trimesh</code> — <code>STLDomainBatchBuilder</code>)</td>
+</tr>
+<tr>
+<td><code>pinneapple_systems</code></td>
+<td>61</td>
+<td>45</td>
+<td>16 (4 abstract bases confirmed via <code>TypeError</code>/never-instantiated-directly — <code>CoSimNode</code>, <code>BaseStream</code>, <code>ForecastModel</code>, plus <code>EdgeRuntime</code> needing <code>onnxruntime</code>; 2 need a live network broker — <code>MQTTStream</code>/<code>KafkaStream</code>; 10 need an optional dependency not installed in this environment — 6 classical forecasters (xgboost/lightgbm/scikit-learn-family), <code>FFTNNForecaster</code>/<code>HHTNNForecaster</code> (sklearn/PyEMD), <code>ClassicalTuner</code>/<code>NeuralTuner</code> (optuna))</td>
+</tr>
+<tr>
+<td><code>pinneapple_analysis</code></td>
+<td>39</td>
+<td>36</td>
+<td>3 (abstract bases confirmed via <code>TypeError</code> — <code>DataMisfitBase</code>, <code>RegularizerBase</code>, <code>ObsOperatorBase</code>)</td>
+</tr>
+<tr>
+<td><code>pinneapple_tools</code></td>
+<td>8</td>
+<td>5</td>
+<td>3 (<code>Backend</code> Protocol confirmed non-instantiable; <code>BenchmarkTaskBase</code> abstract base; <code>JAXBackend</code> needs <code>jax</code>, not installed)</td>
+</tr>
+<tr>
+<td><code>pinneapple_simulation</code></td>
+<td>21</td>
+<td>19 (incl. 2 verified-abstract contract checks: <code>ParticleSystem</code>/<code>SolverBase</code> confirmed to raise <code>NotImplementedError</code>)</td>
+<td>1 (<code>MATLABEngine</code> needs a real licensed MATLAB install) — <strong>plus 1 genuine bug, kept as a strict <code>xfail</code>, see below</strong></td>
+</tr>
+<tr>
+<td><strong>dataclass sweep (5 packages, cross-cutting)</strong></td>
+<td>177 dataclasses</td>
+<td>165 constructed successfully</td>
+<td>12 (9 have a field type with no generic placeholder and no default — e.g. <code>ThreadProfile</code>, <code>GasState</code>, <code>RateFn</code>, <code>TimeSeriesSpec</code>, <code>BenchmarkTaskBase</code>, <code>ItemType</code>, <code>Type[SolverBase]</code>; 3 rejected the sweep's generic placeholder via their own real validation, not a bug — <code>GasComposition</code> mole-fraction sum, <code>MuJoCoConfig</code> needs a real model path/XML, <code>MeshData</code> vertex-shape check)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bug found (FOUND-NOT-FIXED, not a small/obviously-safe fix)</strong>:
+  <code>pinneapple_simulation/external_solvers/fenics/solver.py</code>'s
+  <code>solve_and_package()</code> imports a nonexistent <code>FEniCSBridge</code> (the real class
+  is <code>FEnicsBridge</code>, lower-case "n") — fails with <code>ImportError</code> regardless
+  of whether dolfinx/FEniCS is installed — and even fixing that name would
+  not be enough, since it then calls the bridge with a constructor signature
+  (<code>pde=</code>, <code>domain=</code>, <code>bcs=</code>, <code>**solver_opts</code>) that the real
+  <code>FEnicsBridge.__init__</code> (<code>mesh_nx, mesh_ny, element_degree,
+  solver_backend</code>) does not accept; this convenience wrapper appears to
+  predate a later refactor of the bridge to a <code>problem_spec</code>-based calling
+  convention. Kept as <code>test_breadth_fenics_workflow_solve_and_package_bug</code>,
+  a strict <code>@pytest.mark.xfail(raises=ImportError)</code> with the full
+  root-cause analysis in its docstring, rather than silently patched or
+  swept into a skip — a genuine future fix flips it to an
+  unexpected-pass failure instead of quietly going green. No other bugs
+  were found in this pass (contrast the "third audit pass" above, which
+  found 2 import-path bugs via import-smoke-testing alone).</p>
+<p><strong>Final result</strong>: <code>pytest tests/test_breadth_six_packages.py -v</code> →
+  <strong>296 passed, 39 skipped, 1 xfailed, 0 failed</strong> (~31s).</p>
+<hr />
+<h2 id="domain-specialization-astrophysicsspace-chosen-initial-vertical">Domain specialization: astrophysics/space (chosen initial vertical)<a class="headerlink" href="#domain-specialization-astrophysicsspace-chosen-initial-vertical" title="Permanent link">&para;</a></h2>
+<p><strong>Decision</strong>: rather than staying a flat catalog of ~50 unrelated
+presets, PINNeAPPle's first release picks ONE domain to go deep on and
+demonstrably get right end-to-end, before expanding to others. This
+session's choice, made explicitly by the user: <strong>astrophysics and space
+systems</strong>, covering both research astrophysics and industrial/applied
+space engineering (the user specifically asked for both, and separately
+asked for space-debris and "similar space areas" to be included).</p>
+<p><strong>Shipped this session</strong>: 7 new, real benchmark presets in
+<code>pinneapple_physics/pde_environment/presets/astrophysics.py</code>, each with a
+literature reference, a real/representative default parameter set (not
+placeholder numbers), and — critically — an independently-verified
+reference/analytic solution used to prove the compiled residual actually
+reproduces the correct physics (see <code>AUDIT_REPORT.md</code>'s astrophysics
+section for the full per-preset verification table: 16/16 Tier-B checks
+pass, and the process caught one real bug — a sign/parity error in the
+Lane-Emden n=0 case — before it shipped).</p>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Applicability</th>
+<th>New compiler kind?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>kepler_two_body_orbit</code></td>
+<td>research + industrial (every mission design tool)</td>
+<td>yes: <code>kepler_two_body_orbit</code></td>
+</tr>
+<tr>
+<td><code>space_debris_cw_relative_motion</code></td>
+<td>industrial (conjunction assessment, proximity ops)</td>
+<td>yes: <code>space_debris_cw_relative_motion</code></td>
+</tr>
+<tr>
+<td><code>satellite_j2_perturbation</code></td>
+<td>industrial (LEO/SSO satellite station-keeping)</td>
+<td>yes: <code>satellite_j2_perturbation</code></td>
+</tr>
+<tr>
+<td><code>spacecraft_attitude_euler_rotation</code></td>
+<td>industrial (ADCS design/verification)</td>
+<td>yes: <code>spacecraft_attitude_euler_rotation</code></td>
+</tr>
+<tr>
+<td><code>lane_emden_polytrope</code></td>
+<td>research (stellar structure)</td>
+<td>yes: <code>lane_emden_polytrope</code></td>
+</tr>
+<tr>
+<td><code>nfw_dark_matter_potential</code></td>
+<td>research (galactic dynamics/cosmology)</td>
+<td>no — reused existing <code>poisson</code> kind</td>
+</tr>
+<tr>
+<td><code>sod_shock_tube_astro</code></td>
+<td>research (astrophysical hydro-code validation)</td>
+<td>yes: <code>euler_compressible_1d</code></td>
+</tr>
+<tr>
+<td><code>cr3bp_planar_synodic</code></td>
+<td>research + industrial (libration-point mission design)</td>
+<td>yes: <code>cr3bp_planar_synodic</code></td>
+</tr>
+<tr>
+<td><code>schwarzschild_light_bending_weak_field</code></td>
+<td>research (GR light deflection)</td>
+<td>yes: <code>schwarzschild_light_bending_weak_field</code></td>
+</tr>
+<tr>
+<td><code>shakura_sunyaev_accretion_disk</code></td>
+<td>research (accretion-disk/X-ray-binary and AGN disk spectra)</td>
+<td>yes: <code>shakura_sunyaev_disk_1d</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Byproduct fix</strong>: building the generic ODE-residual pattern for these
+presets also fixed 2 pre-existing, unrelated Category-1 "Unsupported PDE
+kind" gaps from the Tier A audit above: <code>sir_ode</code> and
+<code>pk_two_compartment_ode</code> now compile and run (Tier A failures: 62→60/137).</p>
+<p><strong>Done in a follow-up pass</strong>: <code>examples/pde_environment/05_kepler_orbit_validation.py</code>
+trains a real network on <code>kepler_two_body_orbit</code> end-to-end and plots
+predicted vs. exact orbit. First attempt (physics residual + initial
+condition only) is a documented real finding, not just a footnote:
+PDE+IC loss converged to ~0.001 (looking "done") while position RMSE was
+~104% of the semi-major axis -- a textbook PINN pure-IVP failure mode
+(the IC only pins the solution at one point, so a small residual+IC loss
+does not imply the globally correct trajectory was found). Fixed by
+adding 15 sparse "tracking data" points from the exact solution as a
+<code>DataConstraint</code> -- which doubles as an honest reframing of the
+preset's real industrial use case (orbit determination <em>is</em> fitting
+dynamics to sparse radar/optical tracking data). Final result, Adam +
+cosine LR decay + gradient clipping, 3000 epochs (~45s on CPU): <strong>1.85%
+position RMSE, 2.65% velocity RMSE</strong> over a full orbital period; specific
+orbital energy and angular momentum (conserved quantities, not directly
+supervised) match the exact values to ~1.9% and ~0.7% respectively.</p>
+<p><strong>Also done in that follow-up pass</strong>: <code>examples/pde_environment/06_space_debris_cw_validation.py</code>
+trains <code>space_debris_cw_relative_motion</code> end-to-end. This confirmed the
+pure-IVP failure mode above is NOT specific to Kepler's nonlinearity --
+physics+IC alone converged loss to ~1e-12 while position RMSE was still
+~360% of the trajectory's own scale, for a perfectly LINEAR ODE system.
+A second, CW-specific pitfall was found and fixed while chasing this
+down: Hill's along-track coordinate y(t) has a genuine secular
+(linearly-growing) term and reaches ~-12 km over one period while x/z
+stay within +/-1.5 km, so the single shared position-scale that worked
+fine for Kepler's more uniformly-bounded x/y badly under-scales y here
+and stalls convergence around 17% RMSE -- per-axis scaling matched to
+each coordinate's actual range fixed it. Final result (same recipe as
+Kepler, 15 sparse anchors including analytic velocities, 3000 epochs,
+~64s): <strong>3.00% position RMSE</strong>.</p>
+<p><strong>Follow-up pass also closed both <code>satellite_j2_perturbation</code> and
+<code>lane_emden_polytrope</code>'s previously-flagged gaps</strong>, both via independent
+numerical validation (new test files, not just claims):
+- <code>tests/test_j2_secular_validation.py</code>: integrates the SAME J2
+  acceleration formula (reimplemented independently with
+  <code>scipy.integrate.solve_ivp</code>, not imported from compile.py) over
+  800/400 orbits, fits the osculating RAAN/argument-of-perigee secular
+  trend, and compares to the literature formulas. <strong>Nodal regression:
+  0.45% agreement. Apsidal precession: 0.53% agreement</strong> (at an
+  inclination away from the ~63.435° critical inclination, where the
+  literature formula's own zero-crossing makes relative-error comparison
+  meaningless -- confirmed while building this test: naively testing at
+  63.4° gives a spurious "45% error" purely from that near-zero
+  denominator, not a real discrepancy; documented as a caveat in the test
+  file so it isn't mistaken for a bug later).
+- <code>tests/test_lane_emden_numerical_validation.py</code>: independently
+  integrates the Lane-Emden equation (again via <code>solve_ivp</code>, not
+  compile.py) for n=1.5 (white dwarf) and n=3 (Eddington standard model)
+  and compares the first zero crossing xi_1 against published textbook
+  tables (Chandrasekhar 1939; Hansen, Kawaler &amp; Trimble). <strong>n=1.5: match
+  to 0.0001%. n=3: match to 0.00002%.</strong> The integrator itself is first
+  sanity-checked against the n=0/n=1 closed forms (match to &lt;1e-6) before
+  being trusted for the no-closed-form cases.
+- <strong>Three of the five previously-deferred items are now done, each with
+  its own independent numerical verification (not just "compiles")</strong>,
+  added across further follow-up passes while keeping this same "verify a
+  small set properly" discipline (3 of 5, not all 5, picked deliberately):
+  - <strong>N-body (3+ body) gravitational dynamics</strong> — <code>cr3bp_planar_synodic</code>,
+    the planar circular restricted three-body problem (Earth-Moon system,
+    synodic frame; Szebehely 1967, Curtis 2020). The triangular Lagrange
+    points L4/L5 are an EXACT equilibrium of the compiled residual for
+    ANY mass ratio (verified symbolically with <code>sympy</code>: force balance
+    reduces to exactly 0). The collinear points L1/L2/L3 have no closed
+    form; independently solved for via Newton-Raphson/<code>brentq</code> (two
+    separate root-finder implementations, one in the preset, one in the
+    test) and cross-checked against well-known tabulated Earth-Moon
+    distances: <strong>L1 0.006%, L2 0.003%, L3 0.020% agreement</strong>
+    (<code>tests/test_cr3bp_lagrange_point_validation.py</code>). A small
+    perturbation from L4, propagated 10 synodic periods with an
+    independent <code>scipy.integrate.solve_ivp</code> integration, stays bounded
+    (max excursion 15.8x the initial 1e-4 perturbation, not runaway),
+    confirming L4's known linear stability for a mass ratio below Routh's
+    critical value.
+  - <strong>General-relativistic content (light bending)</strong> —
+    <code>schwarzschild_light_bending_weak_field</code>, the Schwarzschild
+    null-geodesic equation <code>d²u/dφ²+u=3mu²</code> (u=1/r; this ODE is EXACT, not
+    an approximation — it follows directly from the exact null-geodesic
+    first integral). The weak-field closed-form solution used for the
+    <code>sympy</code> manufactured-solution check is a first-order perturbative
+    approximation (verified to have exactly-zero O(m⁰) and O(m¹) residual
+    terms, leaving a characterized pure-O(m²) remainder). Independently
+    integrating the EXACT (non-perturbative) equation with
+    <code>scipy.integrate.solve_ivp</code> from the Sun-grazing impact parameter
+    (the historic 1919-eclipse-expedition configuration) reproduces the
+    weak-field analytic formula 4GM/(c²b) to <strong>0.0006% agreement</strong> and
+    gives a deflection angle of <strong>1.7512 arcsec</strong>, matching Einstein's
+    famous "1.75 arcseconds" prediction confirmed by Dyson, Eddington &amp;
+    Davidson's 1919 expedition
+    (<code>tests/test_schwarzschild_light_bending_validation.py</code>). Explicitly
+    scoped to the weak-field/large-impact-parameter regime — NOT valid
+    near the photon sphere.
+  - <strong>Accretion-disk physics</strong> — <code>shakura_sunyaev_accretion_disk</code>, the
+    steady, geometrically-thin, optically-thick alpha-disk model (Shakura
+    &amp; Sunyaev, 1973, A&amp;A, 24, 337) around a compact object, posed as a
+    differential torque-balance equation for the local radiative flux
+    F(r), <code>d/dr[r³F(r)] = (3GMṀ√R_in)/(16π) r^(-3/2)</code>, whose solution
+    satisfying the zero-torque inner boundary F(R_in)=0 is the textbook
+    effective-flux/temperature profile
+    <code>T_eff(r) = {(3GMṀ)/(8πσ_SB r³)·[1-√(R_in/r)]}^(1/4)</code>. Default
+    parameters describe a real 10-solar-mass black hole accreting at 10%
+    of the Eddington rate (R_in = 6GM/c² = the Schwarzschild ISCO):
+    <strong>R_in ≈ 88.6 km, peak T_eff ≈ 4.22×10⁶ K (~0.36 keV) at the
+    well-known peak radius r_peak=(49/36)R_in</strong> — realistic numbers for a
+    soft-state stellar-mass black-hole X-ray binary (e.g. Cygnus X-1-like).
+    Verified two ways: (a) <code>sympy</code> confirms the exact flux profile gives
+    an identically-zero torque-balance residual (and F(R_in)=0 exactly),
+    written into <code>tests/test_astrophysics_validation.py</code> as a compiled-
+    residual manufactured-solution check (near-zero for the exact profile,
+    clearly nonzero for a profile missing the inner-truncation term); (b)
+    <code>tests/test_shakura_sunyaev_disk_validation.py</code> independently
+    integrates the same ODE with <code>scipy.integrate.solve_ivp</code> (a
+    from-scratch reimplementation, not calling <code>compile_problem</code>) and
+    finds <strong>agreement with the closed-form profile to &lt;1.24e-9 relative
+    error</strong> across 6 decades of r/R_in, confirms F(R_in)=0, confirms the
+    analytic peak-radius extremum to ~2.8e-15 relative precision, and
+    confirms the far-field T_eff∝r^(-3/4) power law to <strong>0.066% relative
+    error</strong> in slope over r/R_in∈[1e4,1e6]. The compiled PDE is posed in
+    dimensionless (r/R_in, F/F0) variables — both because the SS73 profile
+    shape is genuinely scale-free (verified with <code>sympy</code>) and because the
+    real SI-unit numbers (GM~1e21, Mdot~1e15) would overflow a float32
+    training loss.
+- <strong>Still genuinely deferred</strong> (not attempted this pass either): no
+  radiative-transfer/stellar-atmosphere preset, no cosmological
+  perturbation-growth preset — both considered, both deferred to keep
+  each pass's set small enough to verify properly rather than large and
+  unverified. A further batch covering these would be the natural way to
+  keep deepening this specialization.
+- No UI/documentation/tutorial notebook showcasing this vertical to a
+  user browsing presets — the presets exist and are correct, but nothing
+  yet highlights "PINNeAPPle is good at astrophysics/space" to someone
+  exploring the library for the first time.</p>
+<hr />
+<h2 id="category-1-unsupported-pde-kind-batch-fix-a-second-follow-up-pass">Category-1 "Unsupported PDE kind" batch fix (a second follow-up pass)<a class="headerlink" href="#category-1-unsupported-pde-kind-batch-fix-a-second-follow-up-pass" title="Permanent link">&para;</a></h2>
+<p>Acted on this section's own P1.1 recommendation ("thermal
+<code>heat_equation_steady</code> covers several presets in one fix, structural
+<code>linear_elasticity_plane_stress</code>/<code>plane_strain</code> covers several, then the
+rest") — see <code>AUDIT_REPORT.md</code>'s Category 1 section for the full table of
+which new/fixed <code>pde_kind</code> closed which presets, each with <code>sympy</code>- or
+manufactured-solution-verified physics before being written into
+<code>compile.py</code>, not just "no longer raises." <strong>Tier A failures: 60/137 →
+45/137</strong> (15 closed: steady Navier-Stokes for 3 presets, 3 new steady-heat
+kinds for 5 presets, plane-stress/plane-strain elasticity for 7 presets
+including 3 found as a bonus while re-verifying). <code>thermoelasticity_2d</code>'s
+coupled thermal-strain term is the one new kind without its own MMS test
+(a <code>laplacian()</code>-helper autograd-graph-connectivity limitation with
+spatially-constant fields, not a defect — documented, not hidden).</p>
+<p><strong>Update — fully closed in later follow-up passes</strong> (see
+<code>AUDIT_REPORT.md</code>'s twelve-batch breakdown for the complete list): every
+one of the Category 1 gaps named above was closed across later sessions
+of this same work — aerospace (aircraft wing aero, the full axial
+compressor family including the rotating 3D case, rocket nozzle CFD),
+automotive (car external aero, car brake thermal), datacenter
+(airflow/CFD-3D), climate (atmosphere-2D shallow water, ocean gyre),
+finance (Black-Scholes, Heston), materials (crystal phonon transport,
+phase-field fracture), and the one non-PDE case (Bekker-Wong
+terramechanics' inequality constraints). Tier A failures: 62/137 → 24/146
+(the registry grew by 9 items along the way, mainly the astrophysics
+presets). The generic breadth test's remaining ~24 "failures" were then
+individually confirmed (not estimated) and reclassified as clean,
+documented skips — see <code>AUDIT_REPORT.md</code>'s "Finalized" section — leaving
+<strong>0 unexplained failures</strong> in the entire Tier A suite.</p>
+<hr />
+<h2 id="splash-pinneapple-pipeline-migration-downstream-consumer-separate-repo"><code>splash-pinneapple</code> pipeline migration (downstream consumer, separate repo)<a class="headerlink" href="#splash-pinneapple-pipeline-migration-downstream-consumer-separate-repo" title="Permanent link">&para;</a></h2>
+<p>The original ask that started this whole audit/porting effort — updating
+<code>/Users/yanbarros/Documents/GitHub/splash-pinneapple/pipeline</code> (the
+turbulent-channel-flow LES surrogate project this work was upstreamed
+from) to consume the now-real upstream PINNeAPPle instead of its own
+locally duplicated implementations — was completed in a follow-up pass
+(delegated to a background agent, verified before being reported here).</p>
+<p><strong>Migrated to upstream imports</strong>: the OpenFOAM binary/mesh readers
+(<code>openfoam_binary.py</code>/<code>splash_mesh.py</code>, byte-identical logic, upstream
+adds one safety <code>.copy()</code>), the periodic-BC embedding (<code>model.py</code>'s
+<code>PeriodicEmbedding</code> now composes upstream <code>MultiPeriodicBC</code>, numerically
+verified <strong>bit-identical</strong>, gradients included, to the old hand-rolled
+version), and the adaptive loss-weighting scheme (<code>loss_balance.py</code> now
+a thin re-export of upstream <code>AdaptiveWeights</code>, confirmed to carry the
+same "relative-to-hardest-term" fix as the local version, not the naive
+scheme that caused this project's own v3 collapse to <code>U≡0</code>).</p>
+<p><strong>Intentionally left local</strong> (with reasoning, not silently skipped):
+the WALE closure (<code>physics_les.py</code> — math confirmed identical to
+upstream <code>WALEResiduals</code>, but upstream's API doesn't have hooks for the
+per-y-only delta lookup or the stochastic latent variable this project's
+<code>train_stochastic.py</code> genuinely needs); <code>splash_dataset.py</code> (upstream's
+<code>field_reader</code> solves a different problem — one OpenFOAM case directory,
+not several time steps concatenated from a zipped <code>.splash</code> archive with
+mesh caching and <code>UMean</code>/<code>pMean</code> substitution); <code>train.py</code>'s training
+loop (upstream <code>solve_pde()</code> has no L-BFGS/resume/mesh-sampling support
+this project relies on).</p>
+<p><strong>Verified, not just claimed</strong>: both a deterministic smoke run
+(<code>configs/channel_wale_retau180_smoke.json</code>, full path through the
+migrated mesh reader → <code>MultiPeriodicBC</code> model → <code>AdaptiveWeights</code>
+training → L-BFGS fine-tune → checkpoint/export) and a stochastic smoke
+run (<code>train_stochastic.py</code>, exercising the latent-conditioned ensemble
+path) completed with finite, sane losses and no errors. No v1-v6
+configs or their validated run outputs were touched.</p>
+<p><strong>Update — the belt-and-suspenders re-run above is now done, in a
+later follow-up pass</strong>: a full re-run of <code>channel_wale_retau180</code> against
+the migrated code (<code>runs/channel_wale_retau180_v4_reverify/</code>) gave
+<strong>9.71% RMSE</strong>, not a regression from the original 12.72% — the
+difference was traced to a pre-existing L-BFGS config drift between the
+original run and the current config file, unrelated to the migration
+itself (confirmed by inspecting both configs directly). Migration
+confirmed numerically safe, exactly as the bit-identical/logic-identical
+static verification predicted. The v6 config (<code>channel_wale_retau180_v6</code>)
+was separately restarted after an earlier attempt died from memory
+contention (swap exhaustion running concurrently with v4) — this time
+run serialized after v4 finished, monitored healthy through its full
+200-epoch Adam phase and into L-BFGS fine-tuning with no thrashing.</p>
+<hr />
+<h2 id="active-learning-transfermeta-learning-and-physics-from-perception">Active learning, transfer/meta-learning, and physics-from-perception<a class="headerlink" href="#active-learning-transfermeta-learning-and-physics-from-perception" title="Permanent link">&para;</a></h2>
+<p>User request: "include ways to do active learning and transfer learning
+in PINNeAPPle" and, separately, "some way to try to extract physics from
+images/videos/sounds, etc."</p>
+<p><strong>Active learning and transfer/meta-learning already existed</strong>,
+comprehensively so — <code>pinneapple_data/active_learning.py</code>
+(residual/variance/expected-improvement/RAR strategies) and
+<code>pinneapple_adaptation/{transfer_learning,meta_learning}</code> (layer
+freezing, progressive unfreezing, discriminative LRs, parametric-family
+transfer, MMD domain adaptation, MAML, Reptile) — but neither had ever
+been exercised end-to-end by any test. Verifying them (not rebuilding
+them) found two real bugs, the same shape as several others this
+session: a documented top-level convenience function silently skipping a
+required setup call.</p>
+<ul>
+<li><code>pinneapple_adaptation.fine_tune()</code> never called
+  <code>TransferTrainer.prepare()</code> — every call raised <code>RuntimeError</code> no
+  matter what.</li>
+<li><code>pinneapple_adaptation.meta_learning.meta_train()</code> never called
+  <code>trainer.train()</code> — it returned an UNTRAINED trainer despite its own
+  docstring promising "Trained trainer object with .adapt() method";
+  <code>.adapt()</code> on it ran without error but adapted from the model's random
+  initialization, not a real meta-learned one.</li>
+</ul>
+<p>Both fixed and verified: <code>fine_tune()</code> against a real compiled Laplace
+residual (loss 0.0039→0.0005 over 20 epochs); <code>meta_train</code> (Reptile)
+against a real parametric Burgers-ν task family (meta-loss decreasing,
+<code>.adapt()</code> producing a usable model). <code>ResidualBasedAL</code> (existing
+active-learning code) was also run through a full residual-based
+adaptive-refinement (RAR) loop against a real compiled residual — no bug
+found, already correct. All three locked in as regression tests in
+<code>tests/test_adaptation_and_active_learning.py</code>.</p>
+<p><strong>Physics-from-perception was genuinely new</strong> — no inverse
+(image/video/audio → physics) capability existed;
+<code>pinneapple_worldmodel</code> is the forward direction (simulate physics →
+render synthetic training images/video). Added <code>pinneapple_perception</code>,
+three extractors, each validated against a synthetic known-ground-truth
+case (not just "runs"), using only numpy/scipy (no new dependency):</p>
+<ul>
+<li><code>video_piv.piv_velocity_field</code> — cross-correlation Particle Image
+  Velocimetry (the actual standard experimental-fluid-dynamics
+  technique, not a generic optical-flow method repurposed for this).
+  Recovers a known integer-pixel shift to &lt;0.005px and a known sub-pixel
+  shift to ~0.15px (the well-documented "peak-locking" bias inherent to
+  correlation-based sub-pixel estimation, not an implementation defect —
+  matches published PIV accuracy). Found and fixed a real bug while
+  validating it: windows near the image border returned wildly wrong
+  vectors (search regions got asymmetrically clipped by the border, so a
+  genuine large displacement had no valid match candidate inside the
+  truncated search region) — fixed by excluding near-border windows
+  entirely rather than searching a truncated region, matching standard
+  PIV practice.</li>
+<li><code>image_geometry.extract_boundary_points</code> / <code>estimate_bounding_circle</code>
+  — boundary-pixel extraction + ordering into a contour, validated
+  against a known synthetic circle (center recovered to 0.01px, radius
+  to &lt;1px given expected pixelization bias).</li>
+<li><code>audio_modal.extract_dominant_frequencies</code> — FFT peak-picking with
+  sub-bin parabolic refinement, validated against known synthetic
+  sine-wave frequencies (recovered to &lt;0.03 Hz for non-bin-aligned true
+  frequencies).</li>
+</ul>
+<p>Output from all three is plain numpy arrays shaped to drop directly into
+an existing <code>DataConstraint</code>/<code>solve_pde</code> call — no new integration layer
+needed, they produce exactly the x/y (/t) + field-value arrays those
+already expect.</p>
+<p><strong>Also fixed as a byproduct</strong>: <code>pyproject.toml</code>'s <code>packages</code> list was
+missing <code>pinneapple_hub</code>, <code>pinneapple_llm</code>, and <code>pinneapple_blender</code>
+(all added earlier this session) — a real packaging gap found while
+adding <code>pinneapple_perception</code> to the same list: a built wheel/sdist
+would have silently excluded those three packages entirely, even though
+they work fine in this editable-install development environment where
+the whole repo is on <code>sys.path</code> regardless of what's declared.</p>
+<p><strong>Done in a follow-up pass</strong>: <code>video_piv</code> was validated against a REAL
+<code>ffmpeg</code>/<code>libx264</code>-encoded video, not just numpy arrays --
+<code>tests/fixtures/perception/known_shift_real.mp4</code> (built from frames with
+a known constant sub-pixel velocity, then genuinely video-compressed;
+full provenance in that directory's README), decoded via a real
+<code>ffmpeg</code> subprocess in <code>tests/test_perception.py</code>. First attempt used
+<code>ffmpeg</code>'s own <code>scroll</code> video filter to generate the motion and gave
+wildly inconsistent frame-to-frame velocity (varying from -20 to +11px
+across consecutive frame pairs that should all show the same constant
+value) — traced to the <code>scroll</code> filter's own semantics not producing the
+assumed simple constant-velocity translation (confirmed it wasn't a
+compression-artifact issue by re-testing at <code>-qp 0</code>, near-lossless,
+which gave the identical inconsistent pattern). Switched to generating
+frames directly with <code>scipy.ndimage.shift</code> at a known velocity BEFORE
+encoding, which isolates exactly the encode/decode round-trip: recovered
+<code>u=2.21±0.07, v=-1.79±0.06 px/frame</code> against the true <code>(2.3, -1.7)</code> --
+same ~0.1-0.15px "peak-locking" precision as the pure-numpy synthetic
+test, confirming real video compression doesn't meaningfully degrade
+this technique's accuracy.</p>
+<p><strong>Done in a further follow-up pass, using real content already present on
+this offline, camera-less machine</strong> (no internet access to fetch an
+external dataset, no camera/microphone to capture new real-world data —
+both genuinely infeasible here):</p>
+<ul>
+<li><code>audio_modal.extract_dominant_frequencies</code> validated against a real,
+  mastered, uncompressed-PCM macOS system sound
+  (<code>/System/Library/Sounds/Glass.aiff</code>, not a numpy sine wave), decoded
+  via <code>ffmpeg</code>. Of the 14 stock system sounds surveyed (Ping, Tink, Glass,
+  Morse, Bottle, Purr, Frog, Sosumi, Basso, Blow, Funk, Hero, Pop,
+  Submarine), most do NOT have one stable dominant tone: Sosumi/Morse play
+  a multi-note pattern (the true dominant pitch changes over time), and
+  Tink/Ping decay so fast that later time windows are mostly noise floor.
+  Glass has a single clean resonance across its ~1.4s decay. Since a
+  mastered sound effect has no known ground-truth frequency to assert
+  against, the test cross-validates against real physics instead: a
+  genuine resonant mode's frequency must be constant over time, so two
+  independent, non-overlapping time windows of the same real recording
+  were checked for agreement — confirmed empirically at 390.95 Hz vs
+  391.32 Hz (0.37 Hz apart), with a peak1/peak2 amplitude dominance ratio
+  of ~3.6 (a genuinely clean single tone). Test:
+  <code>test_audio_modal_recovers_stable_tone_from_real_system_sound</code>.</li>
+<li><code>image_geometry.extract_boundary_points</code>/<code>estimate_bounding_circle</code>
+  validated against a real, externally-produced image asset: macOS's
+  Clock.app icon (<code>AppIcon.icns</code>), which contains a genuine circular
+  clock face rendered/PNG-compressed by Apple's design tooling, not by
+  this codebase or numpy. This is honestly NOT a photograph of a physical
+  circular object (a photographed coin/pipe/shaft cross-section) — that
+  remains genuinely infeasible here. Other real image content on the
+  machine was surveyed first and rejected as unsuitable: the
+  <code>/System/Library/Desktop Pictures/*.heic</code> wallpapers are almost all
+  abstract gradient graphics with no clean circular boundary; scipy's own
+  bundled <code>dots.png</code> test image turned out to be purely binary (2 unique
+  pixel values, no anti-aliasing) — a hand-drawn test bitmap no more
+  "real" than the existing numpy test; and the only genuine photograph
+  found in local dependencies (matplotlib's bundled <code>grace_hopper.jpg</code>) is
+  a photo of an identifiable real person, deliberately not used for this.
+  The Clock icon does add real value the synthetic test can't: naively
+  thresholding a real anti-aliased/compressed image is messy in a
+  realistic way (it also picks up the boundary of every digit/hand mark
+  drawn inside the face, giving a badly broken contour — confirmed
+  empirically: max consecutive boundary jump ~46px, fit residual std
+  ~21px) until a standard <code>scipy.ndimage.binary_fill_holes</code> pass is
+  applied first. After that, the fitted circle (127.3, 128.5, r=88.0)
+  agrees with an independent bounding-box estimate (127.5, 128.5, r=88.0)
+  to within 0.5px. Test:
+  <code>test_image_geometry_recovers_circle_from_real_rendered_icon</code>.</li>
+<li><code>video_piv</code> tested against REAL, ffmpeg-implemented camera-realistic
+  degradations applied to the existing real-encoded fixture
+  (<code>known_shift_real.mp4</code>): lens distortion (<code>lenscorrection</code>) and
+  non-uniform/vignette lighting (<code>vignette</code>), at fairly strong but
+  photographically plausible levels, left the recovered velocity within
+  the same ~0.3px tolerance as the undistorted fixture (u err 0.14 vs.
+  baseline 0.09, v err 0.04 vs. 0.09) — the normalized cross-correlation
+  is robust to these because each interrogation window is independently
+  normalized. Motion blur (<code>tmix</code>, temporal frame-blending — approximating
+  a real camera's finite-exposure smear) does NOT hold up: mean error
+  rose to 0.54/0.25px and per-vector scatter roughly 10x (u std 0.88 vs.
+  0.07), a genuine, honestly-documented limitation, not swept under an
+  inflated tolerance. Tests: <code>test_piv_robust_to_real_lens_distortion_and_vignette</code>,
+  <code>test_piv_degraded_by_real_motion_blur</code>.</li>
+</ul>
+<p><strong>Still not done, and genuinely infeasible in this environment</strong>:
+<code>video_piv</code> still hasn't been tested against a real, published PIV
+benchmark image pair (a genuine experimental fluid-flow recording, as
+opposed to a random-noise texture built specifically to have this
+technique's ideal statistical properties, or the camera-realistic
+<em>effects</em> layered onto it above) — that requires either internet access
+to fetch a real dataset (e.g. a standard PIV challenge image pair) or a
+real seeded-flow capture, neither available on this offline,
+camera-less machine. Likewise, <code>image_geometry</code> still hasn't been
+validated against an actual photograph of a physical part/object (as
+opposed to a real rendered icon asset) — no such photo exists on this
+machine that isn't either an identifiable person's photo or an abstract
+graphic.</p>
+<hr />
+<h2 id="llm-driven-cadgeometry-generation-tested-against-a-real-local-llama">LLM-driven CAD/geometry generation, tested against a real local Llama<a class="headerlink" href="#llm-driven-cadgeometry-generation-tested-against-a-real-local-llama" title="Permanent link">&para;</a></h2>
+<p>User priority: "garantir que o PINNeAPPle consegue gerar diferentes
+geometrias, inclusive em níveis de complexidade distintas, usando LLMs...
+para os testes usando o llama local" — generate CAD files via an LLM, at
+varying complexity, tested with the local Ollama model rather than a
+hosted API.</p>
+<p><strong>Found first</strong>: this needed real infrastructure that wasn't installed --
+<code>cadquery</code> (declared in <code>pyproject.toml</code>'s <code>cad</code> extra but never actually
+installed), <code>trimesh</code>/<code>manifold3d</code> (the <code>geom</code> extra + a real boolean-CSG
+engine), and a local <code>llama3.2:3b</code> model (only <code>qwen2.5:1.5b</code> had been
+pulled earlier this session, for the unrelated fine-tuning work). All
+installed into <code>.venv</code> before any of this could be tested for real.</p>
+<p><strong>New module</strong>: <code>pinneapple_llm/cad_draft.py</code> — same constrained
+"LLM selects/parametrises real building blocks, never writes code"
+pattern as <code>draft.py</code>/<code>geometry_draft.py</code>, extended from picking ONE named
+preset to <em>composing</em> a recipe:
+- <code>draft_mesh_recipe</code>: the LLM proposes a (possibly CSG-nested) tree of
+  <code>pinneapple_design.geometry.gen.primitives.build_mesh</code> builders (box,
+  sphere, cylinder, plane, channel) combined via real boolean ops (union/
+  cut/intersect) — validated recursively against the real registry at
+  every depth before a single line of geometry code runs, exactly
+  mirroring <code>draft_problem</code>'s hallucination check but recursive.
+- <code>draft_cadquery_template</code>: the LLM picks + parametrises one of
+  <code>cadquery_gen</code>'s genuinely parametric CAD templates (<code>cold_plate_channel</code>,
+  <code>finned_plate</code>) for a true B-rep, STEP-exportable part.
+- <code>build_recipe</code>/<code>export_recipe</code>: deterministic, non-LLM execution +
+  export (<code>.stl</code> always for a mesh recipe; <code>.step</code> too, honestly labelled
+  as a triangulated shell rather than a true B-rep, if <code>cadquery</code> is
+  installed; a genuine parametric STEP for a CadQuery template).</p>
+<p><strong>Complexity ladder actually exercised, end-to-end, against a real local
+<code>llama3.2:3b</code></strong> (not just unit-tested against hand-built recipes):
+1. a single primitive (a sphere) — correct on every attempt tried.
+2. one CSG boolean (a box with a cylindrical hole) — structurally valid
+   every time (a real, watertight solid), but see the reliability finding
+   below.
+3. a nested, multi-level CSG combination — verified deterministically
+   (not LLM-drafted, since composing a <em>specific</em> multi-step spatial
+   layout via natural language is a much harder ask of a 3B model than
+   this ladder needed to prove the point); the execution path itself
+   handles arbitrary nesting depth correctly.
+4. a genuinely parametric CAD template (a 12-fin heat-sink plate) —
+   correct parameters, real STEP file (<code>ISO-10303-21</code> header from the
+   actual OCC kernel) confirmed on every attempt tried.</p>
+<p><strong>Three real bugs found and fixed</strong> while getting this to actually work
+against a real (not hypothetical) local-model response, not from theory:
+1. <code>_dispatch.call_llm</code>/<code>local_llm.call_ollama</code> silently dropped the
+   <code>json_mode</code> flag for the <code>"ollama"</code> provider (unlike the <code>"openai"</code>
+   branch, which already maps it to <code>response_format</code>) — every
+   <code>json_mode=True</code> caller (<code>draft_problem</code>, <code>draft_geometry</code>, and this
+   new module) got an unconstrained chat completion against a local
+   model, with no error or warning that JSON mode was ignored. Fixed by
+   forwarding Ollama's own <code>format: "json"</code> request field.
+2. The model naturally nests builder parameters under a <code>"params"</code> key
+   (matching this repo's own <code>"kwargs"</code> convention elsewhere) — an
+   earlier, flatter schema draft silently defaulted a requested
+   <code>radius=0.5</code> to the builder's own default (<code>1.0</code>) with no error at
+   all when the model didn't match that exact flat shape. Fixed by
+   matching the schema to the model's (and this repo's) natural
+   convention, PLUS explicit-shape validation that rejects any
+   unexpected top-level key rather than silently ignoring it —
+   re-checked at <code>build_recipe</code>'s own execution boundary too, not
+   trusted to have already been checked by whichever drafting call
+   produced the recipe.
+3. The same model sometimes stringifies an array value inside <code>"params"</code>
+   (<code>"extents": "[1, 1, 1]"</code> instead of a real JSON array) even when the
+   rest of the response is entirely correct. Fixed via a narrow, lossless
+   JSON re-decode of exactly that pattern — a genuinely wrong string
+   still fails naturally downstream, this only recovers a known,
+   observed formatting quirk.
+4. (Found in <code>pinneapple_design.geometry.gen.primitives</code>, surfaced while
+   validating CSG composition, not an LLM-related bug): <code>_boolean_engines_
+   available()</code> crashed on <code>sorted()</code> (mixing a literal <code>None</code> sentinel
+   with engine-name strings from <code>trimesh.boolean.engines_available</code>) and
+   the surrounding bare <code>except Exception</code> silently swallowed it — so
+   this function ALWAYS reported "no boolean engine available", and
+   every CSG operation silently fell back to non-watertight
+   concatenation even with a real, working <code>manifold3d</code> engine installed.
+   Confirmed directly: <code>a.difference(b)</code> on two real solids succeeds and
+   returns a watertight mesh when called directly, but silently
+   degraded through <code>build_mesh</code> before this fix.</p>
+<p><strong>Reliability finding, and this one WAS empirically improved (not just
+diagnosed)</strong>: asked for "a box with a cylindrical hole cut through it,"
+<code>llama3.2:3b</code> used to sometimes return the CSG operands in the wrong
+order (<code>cylinder MINUS box</code> instead of <code>box MINUS cylinder</code>) —
+structurally valid (a real watertight solid comes out either way) but
+not the shape the prompt described. The candidate fix flagged here
+earlier ("a more constrained prompt... requiring an explicit
+<code>"primary"</code>/<code>"subtracted"</code> labelling instead of positional
+"self"/"other"") was implemented and measured against the real model,
+10 trials per side:
+- OLD schema (<code>"boolean": {"op": "cut", "other": &lt;node&gt;}</code>, this node
+  implicitly the base): <strong>0/10 (0%) correct order</strong> — 6/10 (60%) swapped
+  (cylinder as base, box as tool), 4/10 (40%) didn't even attempt a CSG
+  boolean at all.
+- NEW schema (<code>"boolean": {"op": "cut", "base": &lt;node&gt;, "tool":
+  &lt;node&gt;}</code>, both operands named explicitly, no implicit "self";
+  <code>cad_draft.py</code>'s <code>_SYSTEM_PROMPT_MESH</code>): <strong>18/20 (90%) correct order</strong>
+  across two 10-trial runs — 0/20 swapped, 2/20 (10%) failed for an
+  unrelated reason (a malformed/null builder name, correctly rejected by
+  the existing hallucination guard, not an ordering mistake). The new
+  schema surfaced its own small formatting quirk in the process — the
+  model sometimes closes the "boolean" object one bracket early and
+  writes "tool" as a sibling of "boolean" rather than nested inside it —
+  recovered losslessly by a new <code>_normalize_recipe_node</code> (same category
+  of fix as the earlier stringified-array recovery: the base/tool pair
+  is still unambiguously present, just mis-nested). Net effect: a real,
+  large, measured improvement (0% to 90%, zero swaps at the new rate),
+  not a claim of perfect reliability — the model still occasionally
+  fails outright on roughly 1/10 attempts, which is why this path's test
+  still retries a few times before failing rather than assuming success
+  on the first try.</p>
+<p>A second live instance of the same class of variability, on the
+<code>draft_cadquery_template</code> path: asked for a 12-fin heat-sink plate, the
+model sometimes invents a parameter name (<code>"r"</code>) not in <code>finned_plate</code>'s
+real schema — correctly caught and rejected by the hallucination guard
+with a clear <code>ValueError</code>, exactly as designed, on that specific call.
+The test for this path retries a few times before failing (mirroring
+what a real caller would actually do — these calls are cheap and
+stateless, rejection isn't fatal, just worth trying again), which is
+itself the honest, correct way to consume a guarded LLM call against a
+model that isn't perfectly reliable on the first attempt, rather than
+either loosening the guard or demanding one-shot perfection from a 3B
+local model.</p>
+<p><strong>Also actually tested for real, not by inference</strong>: <code>pinneapple_blender</code>
+(Blender bridge, done in an earlier follow-up pass) and this module now
+both exercise real local tool installs end-to-end in the same session --
+<code>brew install --cask blender</code> and this module's <code>cadquery</code>/<code>trimesh</code>/
+<code>manifold3d</code>/local-Llama install, respectively.</p>
+<p>Tests: <code>tests/test_mesh_primitives_registry.py</code> (the boolean-engine bug,
+deterministic), <code>tests/test_llm_cad_generation.py</code> (11 tests: 8
+deterministic validation/normalization regressions + 3 real, live-Ollama
+end-to-end tests across the complexity ladder, skipped — not failed — if
+no local Ollama server/model is reachable). Also fixed, found as a
+byproduct while installing <code>trimesh</code> for this work (previously latent,
+since <code>tests/pinneapple_geom/test_mesh_ops.py</code>'s own <code>importorskip
+("trimesh")</code> short-circuited collection before reaching the broken
+import when trimesh wasn't installed): a stale import path
+(<code>pinneapple_geom.*</code>, a package that no longer exists — renamed to
+<code>pinneapple_design.geometry</code> in an earlier refactor this session, this
+one test file never updated) — fixed as a plain import-path correction
+(verified the actual API is otherwise unchanged), plus installing the
+declared <code>fast-simplification</code> optional dependency the test's simplify
+step also needs.</p>
+<p><strong>Not attempted</strong>: a genuinely free-form CAD-code-generation path (the
+LLM writing actual CadQuery/OpenSCAD-style script text) — deliberately
+out of scope, for the same reason <code>draft_problem</code> never lets the LLM
+write PDE code: an LLM asked to write CAD code directly can silently
+produce geometry that looks plausible while being dimensionally wrong or
+self-intersecting, with nothing mechanically checking it. Also not
+attempted: exposing the more exotic registered builders (<code>woven_tube</code>/
+<code>braid_tube</code>, many interacting parameters) to the LLM catalog — a
+deliberate scoping choice for reliability with a small local model,
+documented in <code>cad_draft.py</code>'s own module docstring; any name actually in
+the real registry is still accepted and executed if named, only the
+prompt's own catalog list is curated.</p>
+<hr />
+<h2 id="p1-near-term-days-one-engineer-no-new-infrastructure">P1 — near-term (days, one engineer, no new infrastructure)<a class="headerlink" href="#p1-near-term-days-one-engineer-no-new-infrastructure" title="Permanent link">&para;</a></h2>
+<p><strong>Status update</strong>: 1.2, 1.3, and 1.4 below were all completed in later
+follow-up passes and are recorded (with evidence) in the P0 table above
+— kept here unedited as the original plan, not because they're still
+open. 1.1's harness (Tier A + Tier B) is built and run, but its own
+"Still open" callout above (cartesian product, 6-package breadth
+extension) is still accurate. 1.5 is the one item in this section with
+no follow-up work done on it yet — see its own note below.</p>
+<h3 id="11-full-library-evidenced-audit-the-honest-version-of-audit-everything">1.1 Full-library evidenced audit (the honest version of "audit everything")<a class="headerlink" href="#11-full-library-evidenced-audit-the-honest-version-of-audit-everything" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Method has two tiers, because "does it crash" and "is the physics
+  right" are different questions</strong> (the user's own distinction: model
+  correctness, training correctness, <em>and</em> whether the physics losses
+  being generated are actually correct):</li>
+<li><strong>Tier A — runs-without-crashing (breadth)</strong>: for every registered
+    model in <code>ModelRegistry.list()</code> (90 names), build it with a small
+    <code>in_dim</code>/<code>out_dim</code>, run one forward + backward pass, assert no
+    NaN/exception. For every <code>numerical_solvers</code> class, instantiate at
+    minimum size and run one step. Cheap, catches API-mismatch bugs (the
+    <code>solve_pde</code>/zarr/<code>Trainer.fit</code> class of bug found in P0), but proves
+    nothing about physical correctness — a residual with a sign error
+    still "runs."</li>
+<li><strong>Tier B — method of manufactured solutions (depth, the actual
+    correctness check)</strong>: for every <code>pde_environment</code> preset with a
+    known closed-form or tabulated solution (<code>laplace_2d</code>: pick any
+    harmonic function; <code>poisson_2d</code>: pick any <code>u</code>, forcing term is then
+    <code>-∇²u</code> by construction; <code>burgers_1d</code>: the Cole-Hopf solution; <code>heat
+    _equation_steady</code>, <code>advection_diffusion</code>, ...), plug the <em>exact</em>
+    solution into <code>compile_problem</code>'s own compiled residual directly (no
+    training involved) and assert the residual is ~0 to floating-point
+    tolerance; then plug in a <em>deliberately wrong</em> function and assert
+    the residual is measurably nonzero (a residual that returns ~0 for
+    everything is exactly as broken as one that's wrong for everything,
+    and Tier A cannot tell the two apart). This is the only rigorous way
+    to answer "is this physics loss actually the PDE it claims to be" —
+    a trained network's loss going down is consistent with a correct
+    residual driving it toward the right answer <em>or</em> a broken residual
+    it can trivially satisfy (the WALE <code>pde_momentum</code> weight-collapse
+    failure mode documented in <code>AdaptiveWeights</code>, P0, is exactly this
+    class of trap). Presets without a known analytical solution
+    (most real-world CFD/structural presets) can't get a Tier B check
+    this way — for those, Tier B instead means comparing a trained
+    result against a cited reference dataset via <code>PhysicsGuardrail</code>
+    (P3.2), the same mechanism this project's own <code>problem_config.json</code>
+    validation table used by hand.</li>
+<li><strong>Training-loop correctness</strong>: for a handful of representative presets
+    (one per PDE family: elliptic, parabolic, hyperbolic, Navier-Stokes),
+    run a real <code>Trainer.fit</code>/<code>solve_pde</code> for enough epochs to expect
+    convergence on a <em>tiny</em> version of the problem, and assert the final
+    loss is below a fixed threshold, not just "lower than the first
+    epoch" (a loop that trains for 5 epochs and calls "finite and
+    decreasing" a pass would not have caught how badly under-trained
+    v1-v3 of this very project's own channel-flow surrogate were before
+    v4's fixes — "loss decreased" and "loss is now actually small enough
+    to trust" are different bars).</li>
+<li><strong>Deliverable</strong>: <code>tests/test_full_library_matrix.py</code> (Tier A, parametrized,
+  <code>pytest -k audit_breadth</code>), <code>tests/test_manufactured_solutions.py</code> (Tier
+  B, <code>pytest -k audit_physics</code>), + a generated <code>AUDIT_REPORT.md</code> table
+  (pass/fail per item for both tiers, with the exception message or
+  residual-magnitude number for failures) committed alongside.</li>
+<li><strong>Known-likely findings</strong> (pattern-matched from what P0 already found):
+  more <code>TrainConfig</code>/<code>Trainer</code> API mismatches wherever another module
+  wraps them the way <code>solve_pde</code> did; more presets whose <code>value_fn</code>/
+  <code>selector</code> combinations don't actually match what their own residual
+  branch in <code>compile.py</code> expects; broken imports in <code>templates/</code> (only one
+  found so far, <code>33_rans_turbulence.py</code>, but that directory was not
+  exhaustively checked).</li>
+<li><strong>Effort</strong>: ~2–3 days for one engineer to build the harness, run it, and
+  triage/fix the P1-severity findings (crashes, wrong-signature calls);
+  P2-severity findings (numerically-off-but-not-crashing results,
+  physics-questionable defaults) need domain review, not just test-passing.</li>
+</ul>
+<h3 id="12-automatic-hyperparameter-tuning">1.2 Automatic hyperparameter tuning<a class="headerlink" href="#12-automatic-hyperparameter-tuning" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>What exists today</strong>: <code>pinneapple_train.run_parallel_sweep</code>/
+  <code>SweepConfig</code> (per <code>QUICKSTART.md</code>) — a <strong>grid/parallel sweep runner</strong>,
+  not an adaptive search (no Bayesian optimization, no successive halving/
+  ASHA, no early-stopping-aware budget allocation). Needs to be confirmed
+  directly (<code>pinneapple_train/</code> audit is part of 1.1) rather than assumed
+  from the README.</li>
+<li><strong>Gap</strong>: no adaptive/automatic tuner. Add <code>pinneapple_train.tuning</code>:</li>
+<li>An Optuna-backed <code>AdaptiveSweep</code> (optional dependency, matching the
+    project's existing <code>optional-dependencies</code> pattern in <code>pyproject.toml</code>)
+    with TPE sampling + a median/ASHA pruner keyed off the training loop's
+    per-epoch loss (needs a pruning callback hook in <code>Trainer.fit</code> — a
+    small, additive change).</li>
+<li>A dependency-free fallback (random search + successive halving) for
+    users without <code>optuna</code> installed, so the feature isn't extras-gated
+    entirely.</li>
+<li>Wire <code>AdaptiveWeights</code> (P0) as a tunable itself (<code>momentum</code>,
+    <code>max_ratio</code>) since loss-balancing hyperparameters are exactly the kind
+    of thing that benefits from search.</li>
+<li><strong>Effort</strong>: ~2 days.</li>
+</ul>
+<h3 id="13-trainerfit-no-grad-validation-fix">1.3 <code>Trainer.fit</code> no-grad validation fix<a class="headerlink" href="#13-trainerfit-no-grad-validation-fix" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Wrap the validation forward/loss-fn call in <code>torch.enable_grad()</code>
+  instead of leaving it inside the outer <code>torch.no_grad()</code> block, gated by
+  a new <code>TrainConfig.physics_aware_validation: bool = True</code> (default on,
+  since it's strictly more capable — the only reason to turn it off is
+  memory pressure from keeping a validation graph, which the flag lets a
+  memory-constrained caller opt out of explicitly rather than discovering
+  the crash the hard way).</li>
+<li><strong>Effort</strong>: ~2 hours + regression-testing every existing <code>Trainer</code> call
+  site in <code>examples/</code> (part of 1.1's matrix).</li>
+</ul>
+<h3 id="14-pinneapplepipeline-task-abstraction">1.4 <code>pinneapple.pipeline()</code> task abstraction<a class="headerlink" href="#14-pinneapplepipeline-task-abstraction" title="Permanent link">&para;</a></h3>
+<ul>
+<li>One call per common named task
+  (<code>pinneapple.pipeline("channel_flow_les", Ubar=..., Re_tau=...)</code>,
+  <code>pinneapple.pipeline("airfoil_rans", naca="0012", alpha=5)</code>, ...) that
+  wires <code>get_preset</code>/a custom <code>ProblemSpec</code> + <code>build_model</code> + <code>solve_pde</code>
+  (P0) into one call, returning a thin object with <code>.model</code>, <code>.history</code>,
+  and <code>.predict(x)</code>. Mirrors HF's <code>pipeline()</code> UX directly.</li>
+<li><strong>Effort</strong>: ~1–2 days for a first set of ~10 named tasks across the
+  domains QUICKSTART.md already advertises (fluid, thermal, structural).</li>
+</ul>
+<h3 id="15-governance-as-code-for-the-model-hub">1.5 Governance-as-code for the model hub<a class="headerlink" href="#15-governance-as-code-for-the-model-hub" title="Permanent link">&para;</a></h3>
+<p><strong>Status: now done</strong>, in this follow-up pass — see
+<code>scripts/validate_model_card.py</code> and the CI job added to
+<code>.github/workflows/tests.yml</code>.</p>
+<ul>
+<li><code>ModelCard</code> schema (architecture + weights hash + training config +
+  data lineage + validation metrics + citation — see P1.6) is already
+  planned as part of the hub (1.6). Governance-as-code on top:</li>
+<li><code>scripts/validate_model_card.py</code>: schema + required-fields check
+    (rejects a push with no <code>validation_metrics</code> block or no
+    <code>reference_source</code> citation).</li>
+<li>A CI job (part of 1.1's GitHub Actions workflow) that runs this
+    validator on any PR touching a model card.</li>
+<li>This is the actual code-shaped version of "governance" — the <em>human</em>
+    review process (who approves a new public model) is a project/policy
+    decision for the repo owner, not something a plan like this can
+    implement.</li>
+<li><strong>Effort</strong>: ~1 day.</li>
+</ul>
+<hr />
+<h2 id="p2-mid-term-13-weeks-still-no-hosted-infrastructure-required">P2 — mid-term (1–3 weeks, still no hosted infrastructure required)<a class="headerlink" href="#p2-mid-term-13-weeks-still-no-hosted-infrastructure-required" title="Permanent link">&para;</a></h2>
+<p><strong>Status update</strong>: 2.1 (model hub client), 2.2 (real-file format
+validation), and 2.3 (Blender bridge, export side) were all completed in
+later follow-up passes — see the P0 table above for evidence. 2.3's
+<code>bpy</code>-side add-on remains spec-correct but genuinely un-run (no local
+Blender install this session). <strong>2.4 (3D k-ω SST) is the one item in
+this section actually built in this follow-up pass</strong> — see its own note
+below.</p>
+<h3 id="21-model-hub-client-pinneapple_hub">2.1 Model hub client (<code>pinneapple_hub</code>)<a class="headerlink" href="#21-model-hub-client-pinneapple_hub" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>push_to_hub(model, repo_id, model_card, weights_path=None)</code> /
+  <code>from_pretrained(repo_id, revision="main")</code>, built on the <strong>Hugging Face
+  Hub's own infrastructure</strong> via the <code>huggingface_hub</code> client library
+  (optional dependency) — not a new hosting service. This is the
+  pragmatic, already-proven pattern (many domain libraries piggyback on
+  HF Hub's actual storage/auth/versioning rather than reinventing it): a
+  PINNeAPPle checkpoint + <code>model_card.json</code> uploaded as files in a normal
+  HF Hub model repo, with a <code>pinneapple</code>-specific loader convention on top
+  (a <code>pinneapple_config.json</code> sidecar file recording which <code>ModelRegistry</code>
+  name + <code>in_dim</code>/<code>out_dim</code>/<code>hidden_dim</code>/... to reconstruct the
+  architecture before loading the <code>state_dict</code>).</li>
+<li>Ship <code>ModelCard</code> (dataclass: <code>architecture</code>, <code>training_config</code>,
+  <code>data_lineage</code>, <code>validation_metrics: Dict[str, float]</code>,
+  <code>reference_source: str</code>, <code>citation: str</code>) serialized alongside every
+  push — the reproducibility contract from P1.5.</li>
+<li><strong>Effort</strong>: ~1 week (client code + <code>ModelCard</code> schema + docs + a couple
+  of real example pushes to validate the round-trip).</li>
+</ul>
+<h3 id="22-cgnsexodusfluentabaqus-readers-real-file-validation">2.2 CGNS/Exodus/Fluent/Abaqus readers: real-file validation<a class="headerlink" href="#22-cgnsexodusfluentabaqus-readers-real-file-validation" title="Permanent link">&para;</a></h3>
+<ul>
+<li>P0 shipped these against the documented spec only (no reference file
+  available). Close the loop: generate or obtain one small real file per
+  format (CGNS: <code>cgns_utils</code> or any open CFD tutorial case; Exodus: any
+  SEACAS example mesh; Fluent: a Gambit/Fluent tutorial <code>.msh</code>; Abaqus:
+  a trivial <code>.inp</code> + (if a license is available in CI) an <code>.odb</code> from
+  running it) and add them as fixtures in <code>tests/</code>.</li>
+<li><strong>Effort</strong>: ~2–3 days, mostly sourcing/generating the fixture files
+  (the Abaqus <code>.odb</code> fixture specifically needs a licensed Abaqus
+  install somewhere in CI or this stays a manual/local-only check).</li>
+</ul>
+<h3 id="23-blender-bridge-pinneapple_blender">2.3 Blender bridge (<code>pinneapple_blender</code>)<a class="headerlink" href="#23-blender-bridge-pinneapple_blender" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>bpy</code> is Blender's own bundled Python and cannot be <code>pip install</code>ed into
+  a normal environment, so — same shape as the Abaqus <code>.odb</code> bridge (P0)
+  — this is a <strong>subprocess bridge</strong>, not an in-process import:</li>
+<li><code>pinneapple_blender.export_scene(sample_or_trajectory, out_path,
+    format="abc"|"obj_sequence")</code>: PINNeAPPle-side, no Blender needed —
+    writes an Alembic (<code>.abc</code>, time-varying point-cloud/mesh cache,
+    industry standard for sim-to-DCC handoff) or a numbered OBJ sequence
+    from a <code>PhysicalSample</code>/trajectory (field values baked as vertex
+    colors or an attribute layer).</li>
+<li><code>pinneapple_blender/blender_addon/</code>: a genuine Blender add-on
+    (<code>bpy</code>-only code, runs <em>inside</em> Blender) that imports that Alembic/OBJ
+    sequence, sets up a color ramp keyed to the field values, and can kick
+    off a headless render (<code>blender --background --python
+    render_script.py</code>) driven from the PINNeAPPle side via
+    <code>subprocess.run(["blender", ...])</code> — matching the Abaqus bridge
+    pattern exactly (shell out to the real tool's own Python, never guess
+    its internals).</li>
+<li>Reverse direction (Blender geometry → PINNeAPPle domain/SDF): export
+    the modeled geometry as <code>.obj</code>/<code>.stl</code> from Blender (built-in exporter,
+    no custom code needed) and feed it through the already-existing
+    <code>pinneapple_design.geometry</code> SDF/mesh pipeline.</li>
+<li><strong>Effort</strong>: ~1–1.5 weeks (export writer + add-on + a documented example
+  end-to-end: LES surrogate → Alembic → Blender render).</li>
+</ul>
+<h3 id="24-3d-komegasstresiduals">2.4 3D <code>KOmegaSSTResiduals</code><a class="headerlink" href="#24-3d-komegasstresiduals" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Full 3D generalization of the existing 2D-only k-ω SST residual
+  (production/dissipation/cross-diffusion terms extended with the third
+  velocity component and z-derivatives, mirroring the pattern
+  <code>WALEResiduals</code> (P0) already established for going from a 2D helper
+  style to a genuine 3D one in this same file).</li>
+<li><strong>Effort</strong>: ~3–4 days (the physics derivation and its numerical
+  stability testing are the actual cost, not the code volume).</li>
+<li><strong>Status: done</strong>, in this follow-up pass — <code>KOmegaSSTResiduals.__call__</code>
+  now dispatches on <code>x_col.shape[1]</code> (2 -&gt; the original, numerically
+  unchanged 2D closure, refactored into <code>_call_2d</code>; 3 -&gt; a new
+  <code>_call_3d</code>), so existing 2D callers keep their exact residual values.
+  <code>_call_3d</code> maps <code>(x,y,z) -&gt; (u,v,w,p,k,omega)</code>: momentum-x/y/z built
+  from a genuine 3D viscous-stress divergence (<code>_viscous_stress_
+  divergence_3d</code>, full Hessians of u/v/w via a new <code>_hessian_components_
+  3d</code> helper, no incompressibility-based term-dropping, mirroring
+  <code>_viscous_stress_divergence_2d</code>'s construction exactly), continuity
+  <code>u_x+v_y+w_z=0</code>, strain-rate magnitude from the full 3D symmetric
+  <code>S_ij</code> (6 independent components), and the k-/omega-equations extended
+  with 3D Laplacians (<code>_laplacian</code> already summed over every column of
+  <code>x</code>, so it needed no change) and 3D cross-diffusion `k_x w_x + k_y w_y</li>
+<li>k_z w_z<code>.
+  **Verification method** (there is no closed-form exact solution for the
+  full nonlinear coupled system, same difficulty class as</code>compressible_euler_rotating_3d<code>above): a concrete non-trivial trial
+  field —</code>u=a·sin(x)cos(y)+a₂z²<code>,</code>v=b·xz+b₂sin(y)<code>,</code>w=c·y²+c₂cos(x)z<code>,</code>p=d(x+y+z)+d₂xyz<code>,</code>k=e₀+e₁x²+e₂yz<code>,</code>omega=g₀+g₁z+g₂xy<code>(every term genuinely non-zero, including the
+  cross-diffusion dot product) — was differentiated two independent
+  ways: by</code>sympy<code>, directly from the equations restated for 3D, and by
+  running the real</code>_call_3d<code>torch/autograd code on an</code>nn.Module<code>evaluating the identical formulas.</code>F2=0<code>was used to keep the
+  eddy-viscosity Bradshaw limiter on its smooth branch (</code>nu_t<code>reduces
+  exactly to</code>k/omega<code>, no max-kink to disagree across), and the
+  realizability/cross-diffusion clips were confirmed numerically
+  inactive at every sample point before being treated as absent in the
+  closed form. **Result**: all six residuals (momentum_x/y/z,
+  continuity, k_eq, omega_eq) agree to machine precision in float64 —
+  max abs diff 4.6e-13 (omega_eq), 3.1e-13 (k_eq), &lt;7e-16 for the rest,
+  against residual magnitudes of order 1–40 (float32 also checked during
+  development: ~8e-6 max abs diff, ordinary float32 roundoff, not a
+  precision problem — nothing here spans more than ~2 orders of
+  magnitude, unlike</code>phonon_bte_1d_gray<code>'s ~20-order spread). A second
+  test feeds in a field satisfying none of the six equations and
+  confirms a clearly nonzero aggregate residual, the same exact/wrong
+  pair convention used throughout</code>test_manufactured_solutions.py<code>. See</code>pde_environment/turbulence_presets.py<code>(</code>KOmegaSSTResiduals._call_3d<code>,</code>_viscous_stress_divergence_3d<code>,</code>_hessian_components_3d<code>) and</code>tests/test_manufactured_solutions.py<code>(</code>test_audit_physics_k_omega_sst_3d_matches_independent_closed_form<code>,</code>test_audit_physics_k_omega_sst_3d_wrong_solution_gives_nonzero_residual<code>).
+  The existing 1D</code>channel_residuals()<code>reduction (P0) is byte-for-byte
+  unchanged and still the one used by</code>templates/33_rans_turbulence.py<code>;</code>tests/test_manufactured_solutions.py<code>(36/36) and</code>tests/test_full_library_matrix.py` (71 passed, 75 skipped, 0 failed —
+  same as before this change) both confirmed regression-free.</li>
+</ul>
+<hr />
+<h2 id="p3-the-no-software-only-guarantee-part-physics-grounded-verification-layer">P3 — the "no software-only guarantee" part: physics-grounded verification layer<a class="headerlink" href="#p3-the-no-software-only-guarantee-part-physics-grounded-verification-layer" title="Permanent link">&para;</a></h2>
+<p>This is the honest shape of "make hallucination impossible": not a
+promise, a <strong>mandatory verification gate</strong> every LLM-assisted or
+auto-generated pipeline output must pass before being labeled trustworthy.</p>
+<p><strong>Status update</strong>: 3.1 (<code>pinneapple_llm</code> drafting module) is done — see
+the P0 table above. 3.2 (<code>PhysicsGuardrail</code>) was already shipped with two
+of its four checks (parameter sanity, PDE residual, reference-data
+match) — the <strong>conservation check and the real dimensional-analysis
+check were still missing</strong> and are what this follow-up pass adds; see
+3.2's own note below for what changed.</p>
+<h3 id="31-pinneapple_llm-llm-assisted-pipeline-generation-routed-through-pinneapples-own-typed-api">3.1 <code>pinneapple_llm</code> — LLM-assisted pipeline generation, routed through PINNeAPPle's own typed API<a class="headerlink" href="#31-pinneapple_llm-llm-assisted-pipeline-generation-routed-through-pinneapples-own-typed-api" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>The differentiation mechanism, stated plainly</strong>: an LLM asked to "just
+  write CFD code" free-form can silently fabricate boundary conditions,
+  invent physically-impossible parameter combinations, or produce code
+  that runs and looks plausible while violating conservation. This module
+  never lets the LLM's output <em>be</em> the result — the LLM only ever
+  proposes a <code>ProblemSpec</code> + model/training config <strong>using PINNeAPPle's
+  existing typed dataclasses</strong> (<code>ProblemSpec</code>, <code>PDETermSpec</code>,
+  <code>ConditionSpec</code>, <code>TrainConfig</code>, ...), which then goes through
+  PINNeAPPle's own compiler (<code>compile_problem</code>) and, critically, through
+  <strong>3.2's verification gate</strong> before any result is reported back to the
+  user as trustworthy. The LLM drafts; PINNeAPPle's physics — not the
+  LLM's confidence — decides what's real.</li>
+<li>API sketch:
+  <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pinneapple_llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">draft_problem</span><span class="p">,</span> <span class="n">PhysicsGuardrail</span>
+
+<span class="n">spec</span><span class="p">,</span> <span class="n">model_config</span> <span class="o">=</span> <span class="n">draft_problem</span><span class="p">(</span>
+    <span class="s2">"Steady turbulent flow around a NACA 0012 airfoil at Re=1e6, alpha=5deg"</span><span class="p">,</span>
+    <span class="n">provider</span><span class="o">=</span><span class="s2">"anthropic"</span><span class="p">,</span>  <span class="c1"># or "openai" — provider-agnostic, bring your own API key</span>
+<span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">solve_pde</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">build_model</span><span class="p">(</span><span class="o">**</span><span class="n">model_config</span><span class="p">))</span>
+<span class="n">report</span> <span class="o">=</span> <span class="n">PhysicsGuardrail</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>  <span class="c1"># -&gt; see 3.2</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">report</span><span class="o">.</span><span class="n">trustworthy</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">report</span><span class="o">.</span><span class="n">as_error</span><span class="p">()</span>  <span class="c1"># residuals/conservation/reference-mismatch, itemised</span>
+</code></pre></div></li>
+<li>Provider-agnostic (<code>anthropic</code>/<code>openai</code> SDKs, optional deps), with the
+  prompt template constrained to emit only fields the <code>ProblemSpec</code>/
+  <code>PDETermSpec</code> dataclasses actually accept (schema-constrained
+  generation, e.g. via the target SDK's structured-output/tool-calling
+  mode) — the LLM cannot emit arbitrary code, only a structured spec
+  PINNeAPPle itself will validate and compile.</li>
+<li><strong>Effort</strong>: ~1 week for the drafting module; depends on 3.2 to be
+  meaningful at all (drafting alone, with no verification gate, would be
+  exactly the ungrounded-LLM-output problem this whole item exists to
+  avoid).</li>
+</ul>
+<h3 id="32-physicsguardrail-the-actual-anti-hallucination-layer">3.2 <code>PhysicsGuardrail</code> — the actual anti-hallucination layer<a class="headerlink" href="#32-physicsguardrail-the-actual-anti-hallucination-layer" title="Permanent link">&para;</a></h3>
+<ul>
+<li>A structured, automatic check run on any <code>solve_pde</code>/training result,
+  independent of whether an LLM was involved at all (useful for <em>every</em>
+  PINNeAPPle user, not just the LLM path):</li>
+<li><strong>Residual check</strong>: re-evaluate <code>compile_problem</code>'s own PDE residual
+    on a fresh, dense collocation sample post-training; fail if the
+    residual norm is above a spec-appropriate threshold (this is the one
+    that would have caught, e.g., a training run that "looked" converged
+    on its own reported loss but was actually numerically unstable).</li>
+<li><strong>Conservation checks</strong>: mass/momentum/energy balance over the domain
+    boundary (already partially scaffolded by <code>pinneapple_analysis
+    .validation</code> per the package map — audit (1.1) whether it's wired to
+    anything, extend if not).</li>
+<li><strong>Reference-data check</strong> (when available): if the <code>ProblemSpec</code> (or
+    the LLM-drafted one) references a known benchmark (a named DNS/
+    experimental dataset, e.g. via <code>pinneapple_pdb</code>), automatically pull
+    it and compute the same RMSE-vs-Ubar-style metric this very project's
+    <code>problem_config.json</code> records by hand — turning "matches DNS to X%"
+    from a documentation claim into a computed, re-checkable number every
+    time.</li>
+<li><strong>Dimensional-analysis sanity check</strong>: verify the compiled residual's
+    units are self-consistent (catches an LLM- or human-authored spec
+    with a physically nonsensical parameter, e.g. a negative viscosity or
+    incompatible unit system) — a cheap, high-value check to run first.</li>
+<li>Output: a <code>GuardrailReport</code> (per-check pass/fail + numeric detail),
+    not a single boolean — "trustworthy" is a compound claim and should
+    show its work, exactly so a user isn't asked to take "0%
+    hallucination" on faith either.</li>
+<li><strong>Effort</strong>: ~1.5–2 weeks (the reference-data auto-fetch and dimensional-
+  analysis checks are the largest pieces; the residual/conservation
+  checks reuse existing <code>compile_problem</code>/<code>pinneapple_analysis</code> machinery
+  once 1.1 confirms what's actually wired up there today).</li>
+<li><strong>Status: conservation + dimensional-analysis checks added in this
+  follow-up pass</strong> (<code>pinneapple_llm/guardrail.py</code>,
+  <code>tests/test_physics_guardrail.py</code>) — precise scope below, since
+  overclaiming "units + conservation checked" would be exactly the kind
+  of vague, unfalsifiable claim this whole gate exists to prevent.</li>
+</ul>
+<p><code>_check_dimensional_analysis</code> (dispatched from
+  <code>_check_parameter_sanity</code>, which now always runs exactly ONE of it or
+  the legacy heuristic below, never both) is a real, table-driven units-
+  and-structure check, but <strong>only for five <code>pde_kind</code> families</strong>, each
+  keyed separately (parameter names collide across families with
+  different physical meanings — found for real via this table: <code>nu</code> is
+  kinematic viscosity [L^2/T], must be &gt; 0, in the diffusion/Navier-
+  Stokes families below, but the <em>dimensionless</em> Poisson's ratio in the
+  elasticity family, valid range (-1, 0.5), legitimately negative for an
+  auxetic material — the old global "nu must be positive" heuristic
+  would have wrongly rejected that):
+    - diffusion/advection-diffusion/Burgers (<code>heat_equation</code>,
+      <code>advection_diffusion</code>, <code>burgers</code>): the diffusion/viscosity
+      coefficient (<code>alpha</code>/<code>kappa</code>/<code>nu</code>, whichever this pde_kind's
+      compiled residual reads) must be a positive [L^2/T] real number.
+    - steady conduction (<code>heat_equation_steady</code>, <code>_multilayer</code>,
+      <code>_anisotropic</code>): thermal conductivity (<code>k</code>/<code>k_eff</code>/<code>k_x,y,z</code>) must
+      be a positive [M·L/(T^3·Θ)] real number.
+    - transient conduction (<code>heat_equation_transient</code>): <code>alpha</code> must be
+      a positive diffusivity, AND — when <code>k</code>, <code>rho</code>, <code>cp</code> are <em>also</em>
+      declared (as <code>car_brake_thermal</code>'s preset does, alongside the
+      <code>alpha</code> the compiled residual actually reads) — the NUMERIC
+      relation <code>alpha == k/(rho*cp)</code> is verified to hold (the dimensions
+      force this exactly: <code>[k]/([rho]*[cp]) = [L^2/T]</code>). Confirmed
+      <code>car_brake_thermal</code>'s own declared values satisfy this to &lt;0.01%;
+      a synthetic mismatch is caught with a clear &gt;2% relative-error
+      report.
+    - incompressible Navier-Stokes (<code>navier_stokes_incompressible</code>,
+      <code>incompressible_navier_stokes_2d</code>): <code>Re</code>/<code>inv_Re</code> must be positive
+      and dimensionless, <code>Re*inv_Re == 1</code> when both given, <code>nu</code> (if
+      given) must be a positive [L^2/T] viscosity.
+    - linear elasticity (<code>linear_elasticity</code>, <code>_plane_strain</code>,
+      <code>_plane_stress</code>): <code>E</code> and <code>mu</code> (shear modulus) must be positive
+      stresses; <code>lambda</code>/<code>lam</code> (first Lame parameter) need only be
+      finite — NOT positive, since an auxetic material makes it
+      negative — with the real stability constraint checked on the
+      implied bulk modulus <code>lambda + 2*mu/3 &gt; 0</code> instead; <code>nu</code> must be
+      in (-1, 0.5); and when <code>E</code>, <code>nu</code>, <code>lambda</code>, <code>mu</code> are all given, the
+      standard isotropic relations <code>lambda == E*nu/((1+nu)(1-2nu))</code> and
+      <code>mu == E/(2*(1+nu))</code> are verified numerically. <strong>Real finding from
+      building this</strong>: <code>aircraft_wing_structural</code> and
+      <code>car_suspension_fatigue</code> (both in <code>presets/engineering.py</code>) declare
+      their Lame parameter under the key <code>"lam"</code>, but
+      <code>compile.py</code>'s <code>linear_elasticity*</code> residual reads
+      <code>params["lambda"]</code> only (defaulting silently to <code>1.0</code> if absent) —
+      this check now catches that mismatch and reports it as a failing
+      <code>dimensional_analysis</code> check; the two presets themselves are NOT
+      fixed as part of this pass (out of scope for the guardrail work,
+      left as a now-documented, concretely-reproducible open item for
+      whoever next touches <code>presets/engineering.py</code>).
+  Every other <code>pde_kind</code> (laplace, poisson, wave_equation, darcy, stokes,
+  hyperelasticity_neo_hookean, maxwell_te, biot_poroelasticity, ... —
+  everything not in the five families above) falls back to the
+  ORIGINAL positivity-only heuristic (still runs, so nothing regresses,
+  but not the same rigor) — the report's own check name
+  (<code>dimensional_analysis</code> vs. <code>parameter_sanity</code>) tells a caller which
+  one actually ran for a given spec, rather than leaving it implicit.</p>
+<p><code>_check_conservation</code> re-evaluates a Monte-Carlo boundary-flux estimate
+  for <strong>exactly two families</strong>, and is ABSENT from the report (never a
+  false pass) for every other <code>pde_kind</code>:
+    - incompressible continuity (<code>navier_stokes_incompressible</code>,
+      <code>incompressible_navier_stokes_2d</code>): net outward volume flux of the
+      model's velocity field through <code>domain_bounds</code>'s box boundary,
+      which the divergence theorem says must be ~0 for a divergence-free
+      field. For a time-dependent spec, evaluated at one fixed time
+      slice (continuity holds instantaneously, not just aggregated over
+      time).
+    - steady heat conduction with <strong>no source term</strong> (<code>heat_equation_
+      steady</code>, <code>_multilayer</code>, <code>_anisotropic</code>): net Fourier's-law flux
+      (<code>-k*grad(T)</code>, or <code>-k_i*dT/dx_i</code> per-axis for the anisotropic
+      kind) through the boundary, must be ~0. This explicitly ASSUMES
+      <code>q=0</code> — a spec solved with a nonzero <code>ctx['source_fn']</code> (a
+      training-time argument, not part of <code>ProblemSpec</code> itself, so this
+      check has no way to see it) will report a nonzero imbalance even
+      for an otherwise-correct solution. Documented as an explicit scope
+      limit, not silently ignored.</p>
+<p>Both report a <em>normalised</em> imbalance ratio (<code>|net flux| / sum(|per-face
+  flux|)</code>), not a raw flux value, specifically so one threshold works
+  across arbitrarily different domain sizes/field magnitudes. The
+  default threshold (0.15) and sample count (2048 points/face) were
+  picked from an empirical noise-floor characterization done BEFORE
+  choosing them, not guessed: on a numerically-EXACT divergence-free 3D
+  velocity field (built from <code>curl</code> of a smooth vector potential, so its
+  divergence is exactly zero by construction), the observed imbalance
+  ratio at 2048 points/face had mean ~0.007–0.010 and max ~0.027–0.05
+  over 50-trial resampling on domains matching this repo's own
+  <code>channel_flow_3d</code>/<code>lid_driven_cavity_3d</code> presets; the steady-conduction
+  analogue is far quieter (~1e-4 at the same sample count, on an exact
+  harmonic <code>T</code>). A deliberately non-conservative field (nonzero-
+  divergence velocity; a non-harmonic <code>T</code> implying a hidden source) gave
+  a ratio of exactly 1.0 in both cases (no cross-face cancellation at
+  all). 0.15 sits ~3–20x above the observed noise ceiling and ~6.7x
+  below the "clearly broken" ratio of 1.0 — comfortable margin on both
+  sides for a Monte-Carlo estimator, not a coin-flip threshold; see
+  <code>tests/test_physics_guardrail.py</code> for the exact-good/exact-bad
+  contrast tests this was validated against (24 tests, all passing) and
+  <code>pinneapple_llm/guardrail.py</code>'s own class docstring for the full
+  derivation.</p>
+<p><strong>Reference-data auto-fetch: audited and built across two follow-up
+  passes.</strong> The first pass audited <code>pinneapple_pdb</code> (<code>builder.py</code>,
+  <code>templates.py</code>, <code>validate.py</code>, <code>shard.py</code>, <code>derived.py</code>, read in full)
+  and found <strong>no named-benchmark-dataset catalog</strong>: <code>PhysicalDatasetBuilder</code>
+  only ever builds datasets by querying external Earth-data hubs (NASA CMR
+  / earthaccess) and writing the result to disk; it has no reader of its
+  own. Its <code>catalog_path</code> parquet is an <em>output</em> manifest of what a given
+  build produced (keyed by a content-hash <code>uid</code>), not an <em>input</em> registry
+  a caller could resolve a friendly name against without having built it
+  first. <code>schema_templates()</code> was the only name→dict lookup in the
+  package, and it returns physical-schema metadata (governing equations,
+  units policy) — never x/y data arrays. That pass explicitly declined to
+  invent a fake named catalog with placeholder entries just to have
+  something to ship (exactly the kind of overclaiming this gate exists to
+  prevent), and instead added <code>PhysicsGuardrail.check()</code>'s
+  <code>reference_dataset_path</code> argument: an ADDITIVE alternative to the
+  manual <code>reference_x</code>/<code>reference_y</code> arrays (which keep working
+  completely unchanged) that resolves a real <strong>file path</strong> to the on-disk
+  UPD zarr format <code>PhysicalDatasetBuilder._write_upd</code> actually writes for
+  every shard, via the <code>_load_reference_from_upd_zarr</code> helper.</p>
+<p><strong>This pass added the actual named-benchmark catalog</strong> —
+  <code>pinneapple_pdb/benchmarks.py</code>'s <code>benchmark_catalog()</code> / <code>get_benchmark
+  (name)</code> / <code>list_benchmarks()</code>, following the same <code>@register_x</code> /
+  <code>get_x(name)</code> / <code>list_x()</code> convention as
+  <code>pinneapple_physics.pde_environment.presets.registry</code>. Honest about
+  scope: it is <strong>two curated entries, not a comprehensive suite</strong>:
+  <code>"lane_emden_n1.5"</code> (non-relativistic degenerate star / white-dwarf
+  core) and <code>"lane_emden_n3"</code> (Eddington standard model / relativistic
+  degenerate limit) — the astrophysically standard Lane-Emden polytropic
+  indices that <code>lane_emden_polytrope</code> already models but has no
+  closed-form solution for. Each entry independently re-integrates the
+  Lane-Emden ODE with <code>scipy.integrate.solve_ivp</code> (a fresh implementation,
+  not imported from the compiled residual) into a real <code>theta(xi)</code>/<code>phi
+  (xi)</code> profile from the center to the surface, and is cross-checked on
+  every lookup against the published surface radius xi_1 (Hansen, Kawaler
+  &amp; Trimble, <em>Stellar Interiors</em>, 2nd ed., Table 4.1: xi_1=3.65375 for
+  n=1.5, 6.89685 for n=3 — the same numbers
+  <code>tests/test_lane_emden_numerical_validation.py</code> independently verifies)
+  to &lt;0.1% relative error; a drift beyond that raises rather than
+  silently handing back an unverified profile. A real OpenFOAM LES
+  channel-flow dataset (Re_tau=180) also exists, in the sibling
+  <code>splash-pinneapple</code> project on this machine, and was deliberately
+  <strong>not</strong> added as a third entry: it lives at an absolute filesystem path
+  outside this repository (not portable to another checkout, CI, or
+  contributor's machine), is a 200+MB zipped OpenFOAM case rather than a
+  small in-repo array, and needs bespoke OpenFOAM-binary-format parsing
+  code that exists only in that other project, not in PINNeAPPle — real
+  future work, not something to fake with a hardcoded single-machine path.</p>
+<p><code>PhysicsGuardrail.check()</code> now has a THIRD, additive
+  <code>reference_benchmark</code> argument (e.g. <code>reference_benchmark=
+  "lane_emden_n1.5"</code>) resolving through this catalog into real reference
+  arrays via the new <code>_load_reference_from_benchmark</code> helper, then feeding
+  the existing, unchanged <code>_check_reference</code> exactly like a
+  manually-supplied array pair would — <code>reference_x</code>/<code>reference_y</code> and
+  <code>reference_dataset_path</code> both keep working completely unchanged, and all
+  three are mutually exclusive. Proven end-to-end (same <code>CheckResult</code>,
+  same RMSE, same pass/fail as the manual-array path fed the identical
+  data) in <code>tests/test_physics_guardrail.py</code>'s new reference-benchmark
+  section (5 new tests, 35 total in the file, all passing); the catalog
+  itself has its own correctness tests in
+  <code>tests/test_pdb_benchmark_catalog.py</code> (11 tests: shapes, column order,
+  monotonic/physically-sane profiles, and the published-xi_1 cross-check,
+  all passing). Side finding while wiring this up: <code>pinneapple_pdb/
+  __init__.py</code> imported <code>earthaccess</code>/<code>python-cmr</code> — an <em>optional</em> extra
+  (<code>pip install pinneapple[earthdata]</code>) — unconditionally at module level
+  in <code>builder.py</code>, making the whole package (including the new benchmark
+  catalog) fail to import in any environment without that extra installed
+  (confirmed failing before this fix: <code>tests/test_smoke_imports.py</code>).
+  Fixed by making those imports lazy (inside the methods that actually use
+  them), which the package's own <code>pyproject.toml</code> extras structure already
+  implied should be the case.</p>
+<p>Dimensional analysis and conservation both remain scoped to the
+  families listed above, not generalized to every <code>pde_kind</code> this project
+  supports (see <code>pinneapple_llm/guardrail.py</code>'s docstring for why a fully
+  general per-equation symbolic balance-checker was explicitly not
+  attempted this pass).</p>
+<h3 id="33-why-an-llm-alone-cannot-replace-this">3.3 Why an LLM alone cannot replace this<a class="headerlink" href="#33-why-an-llm-alone-cannot-replace-this" title="Permanent link">&para;</a></h3>
+<p>Worth stating explicitly, since it's the actual competitive thesis: a raw
+LLM asked to solve a physics problem either (a) writes code from scratch,
+with no guarantee it implements the stated closure/BCs/discretization
+correctly and no automatic check that it does, or (b) states an answer
+from training-data pattern-matching, with no residual/conservation
+computation behind it at all. <strong>PINNeAPPle's differentiation is not "our
+LLM is smarter" (it's the same commodity LLMs everyone has) — it's that
+every claim is required to pass through a compiled, autograd-checked
+residual and a numeric verification report before it's presented as
+correct.</strong> That property is what a user cannot get "just using a language
+model" regardless of which one, and it's the property 3.1+3.2 together
+are built to make load-bearing rather than aspirational.</p>
+<hr />
+<h2 id="suggested-execution-order-if-resumed-by-a-team">Suggested execution order (if resumed by a team)<a class="headerlink" href="#suggested-execution-order-if-resumed-by-a-team" title="Permanent link">&para;</a></h2>
+<ol>
+<li>P0 items still open today (<code>Trainer.fit</code> no-grad fix, broken template,
+   hub client, CI matrix, <code>pipeline()</code>, 3D k-ω SST, Blender, LLM module) —
+   whatever this session gets through, in the order listed in the P0
+   table.</li>
+<li>P1.1 (evidenced audit harness) <strong>before</strong> P1.2–P1.5 — it will surface
+   real bugs that change the priority of everything after it.</li>
+<li>P2 in any order (independent of each other).</li>
+<li>P3.2 (<code>PhysicsGuardrail</code>) before P3.1 (LLM drafting) — the guardrail is
+   useful standalone and is a hard prerequisite for the LLM module to be
+   trustworthy rather than decorative.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.highlight", "search.suggest", "content.action.edit", "content.action.view", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

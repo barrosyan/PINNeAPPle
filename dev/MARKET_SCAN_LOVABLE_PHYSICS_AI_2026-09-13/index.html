@@ -1,0 +1,1781 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Modular Physics AI framework for reproducible PINN research">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Pesquisa: Physics AI / Simulação / CAE / Digital Twin em lovable.app - PINNeAPPle</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pesquisa-physics-ai-simulacao-cae-digital-twin-em-lovableapp" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="PINNeAPPle" class="md-header__button md-logo" aria-label="PINNeAPPle" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PINNeAPPle
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Pesquisa: Physics AI / Simulação / CAE / Digital Twin em lovable.app
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/barrosyan/PINNeAPPle" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    barrosyan/PINNeAPPle
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PINNeAPPle" class="md-nav__button md-logo" aria-label="PINNeAPPle" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PINNeAPPle
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/barrosyan/PINNeAPPle" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    barrosyan/PINNeAPPle
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Philosophy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../why/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why PINNeAPPle?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/system_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/execution_model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/package_layers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package Layers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/first_pinn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First PINN
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/project_layout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Layout
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/physical_sample/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PhysicalSample
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/problem_definition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ProblemDefinition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/geometry_domain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Geometry & Domain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/pinn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PINN / Physics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/training_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core_concepts/researcher_benchmarking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Researcher & Benchmarking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_physics/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_physics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_neural/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_neural
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_analysis/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_adaptation/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_adaptation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_simulation/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_simulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_systems/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_design/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_tools/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_data/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_pdb/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_pdb
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_problemdesign/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_problemdesign
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_arena/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_arena
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_quantum/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_quantum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_worldmodel/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_worldmodel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_models/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_solvers/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_solvers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_train/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_train
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_registry/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_hub/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_hub
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_llm/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_llm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_blender/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_blender
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/pinneapple_perception/index.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pinneapple_perception
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-appsprojetos-reais-e-relevantes-encontrados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Apps/projetos reais e relevantes encontrados
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-os-dois-apps-citados-pelo-yan-nao-confirmados" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Os dois apps citados pelo Yan: NÃO CONFIRMADOS
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-buscas-que-nao-retornaram-nada-relevante-relato-honesto" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Buscas que não retornaram nada relevante (relato honesto)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-top-10-ideias-mais-promissoras-para-o-pinneapple" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Top 10 ideias mais promissoras para o PINNeAPPle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resumo-quantitativo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resumo quantitativo
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/barrosyan/PINNeAPPle/edit/main/docs/dev/MARKET_SCAN_LOVABLE_PHYSICS_AI_2026-09-13.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/barrosyan/PINNeAPPle/raw/main/docs/dev/MARKET_SCAN_LOVABLE_PHYSICS_AI_2026-09-13.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+<h1 id="pesquisa-physics-ai-simulacao-cae-digital-twin-em-lovableapp">Pesquisa: Physics AI / Simulação / CAE / Digital Twin em lovable.app<a class="headerlink" href="#pesquisa-physics-ai-simulacao-cae-digital-twin-em-lovableapp" title="Permanent link">&para;</a></h1>
+<p>Data da pesquisa: 2026-09-13
+Método: Google Search (via WebSearch, operador <code>site:lovable.app</code> + variações) e leitura de páginas (WebFetch) para os achados mais relevantes. Nenhum código foi escrito; apenas pesquisa.</p>
+<blockquote>
+<p>Nota geral honesta sobre metodologia: o índice do Google para <code>lovable.app</code> é parcial e ruidoso — muitas queries retornam matches por coincidência de string (ex: "FEA" = New Jersey Education Association; "FEM" = "cinco" em dinamarquês/sueco; "N-body" = "real-body-vibe"). Só reporto abaixo apps que verifiquei terem relação real com o tema, e marco explicitamente as buscas que não retornaram nada útil.</p>
+</blockquote>
+<hr />
+<h2 id="1-appsprojetos-reais-e-relevantes-encontrados">1. Apps/projetos reais e relevantes encontrados<a class="headerlink" href="#1-appsprojetos-reais-e-relevantes-encontrados" title="Permanent link">&para;</a></h2>
+<h3 id="physics-ai-sciml">Physics AI / SciML<a class="headerlink" href="#physics-ai-sciml" title="Permanent link">&para;</a></h3>
+<p><strong>Physics-LLM</strong>
+- URL: https://preview--discover-assist.lovable.app/ (nome no snippet: "Physics-LLM: Agentic Assistants for Autonomous Scientific Discovery")
+- Categoria: Physics AI
+- O que faz: Agentes de IA autônomos (LLM) para pesquisa física reprodutível e eficiente, combinando conhecimento de domínio com LLMs. Aparece atribuído a um "Dr. A. Khalatyan" nos snippets de busca.
+- Feature notável: agentes autônomos que assistem descoberta científica (não é um solver físico, é um "copilot" de pesquisa).
+- Relevância p/ PINNeAPPle: ideia de feature — um agente/copilot que ajuda a configurar experimentos de PINN (malha, condições de contorno, pesos de loss) de forma autônoma.</p>
+<p><strong>Physics ABC</strong>
+- URL: https://physicsabc.lovable.app/
+- Categoria: Physics AI (educação)
+- O que faz: Plataforma de ensino de física do nível JSS até universidade, com lições pesquisáveis, exemplos resolvidos, simulações de laboratório virtual e tutor de IA.
+- Feature notável: laboratório virtual + tutor IA integrados ao currículo.
+- Relevância: complementar/ideia — não é concorrente direto (é educacional), mas mostra apetite por "simulação + IA tutora" como combinação de produto.</p>
+<p><strong>PhysicsLearn</strong>
+- URL: https://visual-phys-lab.lovable.app/
+- Categoria: Physics AI (educação)
+- O que faz: Ensino de física via simulações interativas, quizzes e lições (mecânica, eletricidade, ondas).
+- Relevância: mesma categoria de "sandbox educacional" — ideia de feature (ver Top 10).</p>
+<p><strong>Quantum Explorer</strong>
+- URL: https://quantum-wonder-lab.lovable.app/
+- Categoria: Physics AI (educação)
+- O que faz: App educacional interativo para tornar física quântica, filosofia quântica e metafísica exploráveis.
+- Relevância: baixa relevância direta (é conceitual/filosófico, não numérico), mas confirma demanda por "explorar física interativamente" no navegador.</p>
+<p><strong>physics-playgrounds-adventures</strong>
+- URL: https://physics-playgrounds-adventures.lovable.app/
+- Categoria: Physics AI / Simulação (educação)
+- O que faz: apareceu repetidamente em várias queries ("physics-informed", "computational physics", "particle simulation"), mas o conteúdo detalhado da página não pôde ser confirmado (snippets mínimos). Aparenta ser um playground de simulações físicas para fins didáticos.
+- Relevância: mencionar com cautela — não confirmei detalhes reais além do nome/URL.</p>
+<p><strong>Computation Lab</strong>
+- URL: https://compute-play-learn.lovable.app/
+- Categoria: Outro (adjacente — ciência da computação, não física)
+- O que faz: Simulação interativa de 2h sobre computação, algoritmos, modelos, máquinas de Turing e representação.
+- Relevância: baixa — é sobre teoria da computação, não física, mas usa o mesmo padrão de "sandbox interativo de conceito científico".</p>
+<h3 id="simulacao-cae-cfdfeafem">Simulação / CAE (CFD/FEA/FEM)<a class="headerlink" href="#simulacao-cae-cfdfeafem" title="Permanent link">&para;</a></h3>
+<p><strong>Kármán Vortex Lab — Real-time CFD</strong>
+- URL: https://karman-vortex-street.lovable.app/
+- Categoria: CAE/CFD
+- O que faz: Permite correr um experimento de CFD via método de lattice Boltzmann (LBM) diretamente no navegador, explorando "vórtices de Kármán" em tempo real (segundo o snippet de busca — não consegui confirmar via fetch direto pois a página só retornou o título "vortex-stream-playground" sem conteúdo adicional acessível).
+- Feature notável: CFD real (LBM) rodando client-side, em tempo real, no browser — sem backend de simulação pesado.
+- Relevância p/ PINNeAPPle: <strong>muito relevante como referência de UX</strong> — é exatamente o tipo de demo leve e visual que poderia mostrar um solver PINN/neural operator "ao vivo" no navegador como gancho de marketing/produto.</p>
+<p><strong>Strawhat CFD</strong>
+- URL: https://strawhat-flow-solutions.lovable.app/
+- Categoria: CAE/CFD (serviço)
+- O que faz: Empresa (baseada em Dubai, sob "Strawhat Data Acquisition Services") que oferece soluções de CFD sob demanda para pequenas e médias empresas — simulações customizadas, otimização de design, consultoria e treinamento de equipes, com integração ao workflow do cliente.
+- Feature notável: posicionamento explícito como "CFD acessível para SMBs" (alternativa a grandes consultorias).
+- Relevância: <strong>concorrente/complementar direto</strong> — é literalmente "CAE-as-a-service" para quem não tem orçamento para ANSYS/Fluent. Modelo de negócio replicável pelo PINNeAPPle com PINNs no lugar de CFD tradicional (mais rápido/barato).</p>
+<p><strong>DrivAerNet++ Leaderboard</strong>
+- URL: https://drivaernet-leaderboard.lovable.app/
+- Categoria: CAE/CFD + Physics AI (dataset/benchmark)
+- O que faz: Leaderboard público comparando modelos de deep learning que preveem propriedades aerodinâmicas a partir de geometria 3D de carros. Dataset subjacente: 39 TB de simulações CFD de alta fidelidade em 8.000 designs de veículos (modelos paramétricos, point clouds, malhas 3D, campos de pressão/velocidade).
+- Feature notável: benchmark aberto com submissão via GitHub PR, métricas padronizadas (MSE, MAE, R²), visualizações de predição vs. ground-truth CFD.
+- Relevância p/ PINNeAPPle: <strong>ideia de feature forte</strong> — publicar um leaderboard público de benchmarks de PINN/neural operators (Navier-Stokes, heat transfer, etc.) seria uma forma de construir comunidade/credibilidade científica, no mesmo molde.</p>
+<p><strong>BJT Simulator</strong>
+- URL: https://bjts.lovable.app/
+- Categoria: CAE/Outro (eletrônica)
+- O que faz: Simula transistores NPN/PNP com gráficos I-V em tempo real, visualização 3D e animação de fluxo de elétrons.
+- Relevância: adjacente — não é física de PDE/CFD, mas mostra demanda por "simulador de engenharia educacional interativo" fora do nicho de física clássica.</p>
+<p><strong>Physics Simulator (physics-simulator-playground)</strong>
+- URL: https://preview--physics-simulator-playground.lovable.app/
+- Categoria: Simulação (genérico)
+- O que faz: não confirmado em detalhe (apenas snippet). Aparenta ser um playground genérico de física/simulação.</p>
+<h3 id="digital-twin">Digital Twin<a class="headerlink" href="#digital-twin" title="Permanent link">&para;</a></h3>
+<p><strong>Digital Twin Forge Platform</strong>
+- URL: https://digital-twin-forge-platform.lovable.app/
+- Categoria: Digital Twin (manufatura/engenharia) — <strong>achado mais relevante da pesquisa</strong>
+- O que faz: Plataforma que usa IA para criar digital twins que identificam falhas de design antes da manufatura, visando evitar recalls caros e acelerar ciclos de desenvolvimento. Direcionado a empresas Fortune 500 / programas de US$100M–10B+.
+- Feature notável: (1) predição de falhas via ML analisando padrões de design; (2) otimização automática de design (peso, distribuição de tensão, eficiência de material); (3) colaboração em tempo real entre engenheiros no mesmo digital twin; (4) integração CAD "one-click" com SolidWorks, CATIA e ANSYS; (5) workflows paralelos (CAD + simulação + validação simultâneos, não sequenciais). Reivindica ~90% de redução em falhas de design e 6+ meses de redução em time-to-market.
+- Relevância p/ PINNeAPPle: <strong>concorrente/complementar direto</strong> — é essencialmente o "produto de digital twin físico" que o PINNeAPPle poderia mirar, mas sem deixar claro (no site) se usa física real (PINN/FEM) ou é um wrapper de ML genérico sobre ANSYS. Ponto de diferenciação: PINNeAPPle pode vender "física garantida" (residual de PDE, não só correlação estatística).</p>
+<p><strong>DataTwin Labs</strong>
+- URL: https://datatwinlabs-nl.lovable.app/
+- Categoria: Digital Twin (cidades inteligentes/energia/logística)
+- O que faz: Constrói pipelines de dados em tempo real (Kafka, Spark, Delta Lake), digital twins urbanos em 3D (tráfego, qualidade do ar) com dashboards interativos, um assistente de IA conversacional (ODIN, RAG), modelos de forecasting/otimização (demanda energética, emissões, logística) e infraestrutura MLOps (Azure/Databricks).
+- Feature notável: métricas reais divulgadas — previsão de energia com MAPE &lt;8%, redução de 42% no tempo de resposta a incidentes urbanos, 18% de redução de CO₂ em logística.
+- Relevância: complementar — mostra como "digital twin + forecasting" é vendido com métricas de precisão como diferencial comercial; o PINNeAPPle poderia usar forecasting fisicamente informado (não puramente estatístico) como vantagem de precisão/explicabilidade.</p>
+<p><strong>WINNIIO — Digital Twin Specialists for the Built Environment</strong>
+- URL: https://preview--winniioglow-atlas.lovable.app/ (a página redireciona para um auth-bridge do Lovable; não consegui ler o conteúdo completo)
+- Categoria: Digital Twin (construção/edifícios inteligentes)
+- O que faz (via snippet de busca): consultoria e soluções de digital twin + serviços de IA agenticos para edifícios e infraestrutura inteligente, "10+ anos de experiência no ambiente construído".
+- Relevância: complementar — nicho de digital twin para AEC (arquitetura/engenharia/construção), adjacente ao CAE.</p>
+<p><strong>Kalamata Digital Twin — Climate Neutral City 2030</strong>
+- URL: https://kalamata-vision-map-01153.lovable.app/
+- Categoria: Digital Twin (urbano/clima)
+- O que faz: Ferramenta interativa de cenários de planejamento urbano para uma cidade (Kalamata) rumo à neutralidade climática até 2030.
+- Relevância: baixa/complementar — é mais visualização/planejamento do que física simulada, mas confirma o padrão "digital twin urbano" no Lovable.</p>
+<p><strong>NovaGrid Energy</strong>
+- URL: https://nova-grid-energies.lovable.app/
+- Categoria: Digital Twin / Outro (energia)
+- O que faz (via snippet): menciona digital twins, forecasting orientado por IA e gestão preditiva de ativos como parte de suas soluções de energia limpa.
+- Relevância: complementar — setor de energia é um alvo natural para digital twins físicos (turbinas, redes).</p>
+<p><strong>BioReplica.ai / Aethernis AI</strong>
+- Categoria: Outro (saúde — digital twins biológicos/médicos, não físicos de engenharia)
+- O que fazem: BioReplica.ai cria digital twins para prever resultados de fármacos antes de testes humanos; Aethernis AI constrói digital twins médicos a partir de prontuários, wearables, imagens e exames.
+- Relevância: baixa/tangencial — usam o termo "digital twin" mas são bio/saúde, não física computacional de engenharia. Mencionados só para mostrar a amplitude do termo no ecossistema Lovable.</p>
+<h3 id="predictive-maintenance-adjacente">Predictive Maintenance (adjacente)<a class="headerlink" href="#predictive-maintenance-adjacente" title="Permanent link">&para;</a></h3>
+<p><strong>Sentinel — AI Predictive Maintenance for Smart Manufacturing</strong>
+- URL: https://predict-wise-47.lovable.app/
+- Categoria: Outro (manutenção preditiva industrial)
+- O que faz: Monitoramento de sensores em tempo real e predição de falhas por IA em chão de fábrica.
+- Relevância: ideia de feature — combinar manutenção preditiva com residual de física (PINN) em vez de anomalia puramente estatística, para maior explicabilidade.</p>
+<p><strong>Pitstop.ai / Mainfold AI</strong>
+- Categoria: Outro (manutenção preditiva automotiva / consultoria de IA industrial)
+- O que fazem: Pitstop.ai prevê manutenção automotiva via análise de imagens e AR; Mainfold AI oferece inspeção visual de qualidade e manutenção preditiva como parte de serviços de implementação de IA.
+- Relevância: baixa/tangencial, mas reforça que "manutenção preditiva" é um caso de uso recorrente no Lovable.</p>
+<h3 id="aeroespacialautomotivo-adjacente">Aeroespacial/Automotivo (adjacente)<a class="headerlink" href="#aeroespacialautomotivo-adjacente" title="Permanent link">&para;</a></h3>
+<p><strong>Aero Insight Portal, Vertexmotion, Laksh Duhlani (portfolio)</strong>
+- Categoria: Outro
+- O que fazem: portal de conteúdo sobre aerodinâmica; estúdio de design automotivo com otimização aerodinâmica (styling/CMF, não CFD numérico); portfólio pessoal de estudante de engenharia aeroespacial com pesquisa em mecânica orbital.
+- Relevância: baixa — são conteúdo/portfólio/serviço de design, não ferramentas de simulação física em si. Mencionados por completude.</p>
+<hr />
+<h2 id="2-os-dois-apps-citados-pelo-yan-nao-confirmados">2. Os dois apps citados pelo Yan: NÃO CONFIRMADOS<a class="headerlink" href="#2-os-dois-apps-citados-pelo-yan-nao-confirmados" title="Permanent link">&para;</a></h2>
+<p>Fiz buscas extensivas e não consegui confirmar a existência pública/indexada de:</p>
+<ul>
+<li><strong>"ThermoSync"</strong> (monitoramento térmico de data centers com mapas de calor, previsão por IA, análise de fluxo de ar, digital twin com simulação física)</li>
+<li><strong>"Codec Nerds"</strong> (RT3D, simulação fisicamente fundamentada, digital twins industriais)</li>
+</ul>
+<p>Tentei múltiplas variações de busca para cada um:
+- <code>site:lovable.app ThermoSync</code>, <code>site:lovable.app "Codec Nerds"</code>, busca livre por <code>"ThermoSync"</code> e <code>"Codec Nerds"</code> sem restrição de site, combinações com "data center", "thermal map", "airflow", "RT3D", "digital twin industrial", etc.
+- O único resultado próximo a "ThermoSync" foi um produto físico não relacionado (thermowells industriais da Parker) e apps de nome parecido (ThermoSynth, HeatSync) que não têm relação.
+- Para "Codec Nerds", o único resultado real foi uma página de empresa no LinkedIn (<code>linkedin.com/company/codec-nerds</code>), sem conteúdo suficiente indexado para confirmar se é o app descrito, e nada em lovable.app.</p>
+<p><strong>Conclusão honesta:</strong> não posso confirmar que esses dois apps existem publicamente em lovable.app com esse nome exato, ou eles não estão indexados pelo Google, ou o nome/grafia está um pouco diferente do que foi passado. Recomendo ao Yan verificar o link direto (se ele tiver) para eu poder analisar o conteúdo real via fetch direto da URL.</p>
+<hr />
+<h2 id="3-buscas-que-nao-retornaram-nada-relevante-relato-honesto">3. Buscas que não retornaram nada relevante (relato honesto)<a class="headerlink" href="#3-buscas-que-nao-retornaram-nada-relevante-relato-honesto" title="Permanent link">&para;</a></h2>
+<p>As queries abaixo não encontraram nenhum app real e relevante em lovable.app (retornaram apenas ruído — Wikipedia, coincidências de string, ou nada):</p>
+<ul>
+<li><code>site:lovable.app "physics AI"</code> (só achou Physics-LLM, Physics ABC, já listados)</li>
+<li><code>site:lovable.app PINN</code> — nenhum resultado relevante (colisões de nome aleatórias)</li>
+<li><code>site:lovable.app "physics informed neural network"</code> — zero</li>
+<li><code>site:lovable.app "scientific machine learning"</code> — zero</li>
+<li><code>site:lovable.app SciML</code> — zero</li>
+<li><code>site:lovable.app "numerical simulation"</code> — zero</li>
+<li><code>site:lovable.app "computational physics"</code> — zero (só re-achou physics-playgrounds-adventures)</li>
+<li><code>site:lovable.app "real-time simulation"</code> — zero</li>
+<li><code>site:lovable.app "computational fluid dynamics"</code> (frase exata) — zero (mas achamos CFD por outras queries)</li>
+<li><code>site:lovable.app "finite element"</code> — zero</li>
+<li><code>site:lovable.app FEA</code> — colisões (New Jersey Education Association, sigla de rede de hospitalidade)</li>
+<li><code>site:lovable.app FEM</code> — colisões ("fem" = "cinco" em dinamarquês/sueco)</li>
+<li><code>site:lovable.app "structural analysis"</code> — zero (só a página de guia do próprio lovable.dev)</li>
+<li><code>site:lovable.app "physics-based digital twin"</code> — zero</li>
+<li><code>site:lovable.app "industrial digital twin"</code> (frase exata) — só um resultado de baixo detalhe (digital-twin-forge-platform, já listado)</li>
+<li><code>site:lovable.app "simulation twin"</code> — zero</li>
+<li><code>site:lovable.app "Navier-Stokes"</code> — zero</li>
+<li><code>site:lovable.app "surrogate model"</code> — zero</li>
+<li><code>site:lovable.app "neural operator"</code> — zero</li>
+<li><code>site:lovable.app "engineering simulation"</code> — zero</li>
+<li><code>site:lovable.app "computational engineering"</code> — zero</li>
+<li><code>site:lovable.app "RT3D"</code> — zero</li>
+<li><code>site:lovable.app "N-body"</code> — zero (colisão de nome)</li>
+</ul>
+<hr />
+<h2 id="4-top-10-ideias-mais-promissoras-para-o-pinneapple">4. Top 10 ideias mais promissoras para o PINNeAPPle<a class="headerlink" href="#4-top-10-ideias-mais-promissoras-para-o-pinneapple" title="Permanent link">&para;</a></h2>
+<p>Sintetizando os padrões observados (não é só "copiar apps", é extrair o mecanismo de produto por trás de cada achado):</p>
+<ol>
+<li>
+<p><strong>Demo de solver rodando 100% no browser, em tempo real</strong> (inspirado no Kármán Vortex Lab). Um PINN/neural operator pré-treinado exportado para rodar client-side (WebGL/WASM), deixando o usuário mudar Reynolds/geometria e ver o campo de escoamento mudar instantaneamente — vira o "gancho" de marketing/onboarding do PINNeAPPle, sem precisar de backend GPU.</p>
+</li>
+<li>
+<p><strong>"CAE-as-a-service" acessível para PMEs</strong> (inspirado no Strawhat CFD). Oferecer análises de CFD/estrutural via PINN a uma fração do custo/tempo de um solver tradicional, empacotado como serviço de consultoria + self-serve, mirando empresas que não têm orçamento para ANSYS/Fluent.</p>
+</li>
+<li>
+<p><strong>Leaderboard público de benchmarks de PINN/Neural Operators</strong> (inspirado no DrivAerNet++ Leaderboard). Publicar datasets de referência (Navier-Stokes, condução de calor, elasticidade) com métricas padronizadas e submissão via PR — constrói autoridade científica e comunidade, e vira canal de aquisição de talento/pesquisa.</p>
+</li>
+<li>
+<p><strong>Digital twin de manufatura com integração CAD nativa</strong> (inspirado no Digital Twin Forge Platform). Plugins "one-click" para SolidWorks/CATIA/ANSYS que rodam um PINN como camada de predição de falha/otimização de design — diferencial: usar física real (residual de PDE) em vez de ML puramente estatístico, com selo de "verificação física" no resultado.</p>
+</li>
+<li>
+<p><strong>Forecasting fisicamente informado com métricas de precisão publicadas</strong> (inspirado no DataTwin Labs). Em vez de anunciar apenas "IA prevê X", publicar métricas comparativas (MAPE, erro vs. física real) mostrando que o PINN é mais preciso/consistente do que forecasting puramente estatístico — vira argumento de venda B2B.</p>
+</li>
+<li>
+<p><strong>Manutenção preditiva com "residual de física" como sinal de anomalia</strong> (inspirado no Sentinel/Mainfold AI). Em vez de detectar anomalias por desvio estatístico, usar a violação da equação física (ex: balanço de energia, PDE) como sinal — mais explicável e defensável para clientes industriais regulados.</p>
+</li>
+<li>
+<p><strong>Digital twin térmico de data centers/infraestrutura crítica</strong> (o conceito descrito como "ThermoSync", mesmo sem confirmação pública). Nicho validado pelo mercado (EkkoSense, Cadence Reality, AKCP Quicklime já existem fora do Lovable) — combinar mapas de calor + CFD rápido via neural operator + previsão de fluxo de ar seria um produto vertical forte e defensável para o PINNeAPPle.</p>
+</li>
+<li>
+<p><strong>Sandbox educacional "PDE ao vivo" com tutor de IA</strong> (inspirado em Physics ABC/PhysicsLearn/Computation Lab). Um ambiente onde o usuário ajusta parâmetros de uma EDP e vê lado a lado a solução analítica/numérica clássica vs. a solução do PINN — reduz a barreira de entendimento de "physics-informed AI" para não-especialistas, e serve de funil de vendas/educação.</p>
+</li>
+<li>
+<p><strong>Copilot agentic para configurar experimentos de PINN</strong> (inspirado no Physics-LLM). Um assistente LLM que ajuda o usuário a definir malha, condições de contorno, pesos de função de perda e arquitetura de rede automaticamente a partir de uma descrição em linguagem natural do problema físico — reduz fricção de setup, que é hoje a maior barreira de adoção de PINNs.</p>
+</li>
+<li>
+<p><strong>Colaboração em tempo real sobre o mesmo modelo físico</strong> (inspirado no "real-time collaboration" do Digital Twin Forge Platform). Múltiplos engenheiros editando/comentando o mesmo digital twin/simulação PINN simultaneamente, com histórico de versões — feature de infraestrutura que os concorrentes de digital twin já anunciam como diferencial competitivo.</p>
+</li>
+</ol>
+<hr />
+<h2 id="resumo-quantitativo">Resumo quantitativo<a class="headerlink" href="#resumo-quantitativo" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Apps/projetos reais catalogados com relevância confirmada: <strong>~25</strong> (contando categorias Physics AI, CAE/CFD, Digital Twin, e adjacentes como predictive maintenance)</li>
+<li>Apps mais fortes/concretos (leitura de página completa via fetch, não só snippet): <strong>Digital Twin Forge Platform, DataTwin Labs, Strawhat CFD, DrivAerNet++ Leaderboard</strong> — esses 4 são os achados de maior qualidade de sinal.</li>
+<li>ThermoSync e Codec Nerds: <strong>não confirmados publicamente</strong> apesar de ~10 variações de busca.</li>
+<li>Ideias de produto sintetizadas: <strong>10</strong> (seção 4).</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "toc.follow", "search.highlight", "search.suggest", "content.action.edit", "content.action.view", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
